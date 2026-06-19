@@ -461,22 +461,29 @@ async function renderOpinions() {
   const { data: ops } = await query;
 
   if (!ops || !ops.length) {
-    // Fallback to static data if DB is empty
     renderStaticOpinions();
     return;
   }
   grid.innerHTML = ops.map((op, i) => `
-    <div class="opinion-card ${i === 0 ? 'rank-1' : ''}" data-opinion-id="${op.id}">
-      <div class="op-rank">#${i + 1}</div>
-      <div class="op-topic tt-${op.topic}">${topicLabel(op.topic)}</div>
-      <div class="op-text">"${op.body}"</div>
-      <div class="op-meta">
-        <span class="op-avatar">${op.profiles?.avatar || '😎'}</span>
-        <span class="op-username">@${op.profiles?.username || 'anonymous'}</span>
+    <div class="opinion-card ${i === 0 ? 'rank-1' : ''}" data-opinion-id="${op.id}"
+         onclick="openCommunity()">
+      <div class="op-rank">
+        <span class="op-rank-num">#${i + 1}</span>
+      </div>
+      <div class="op-body">
+        <div class="op-meta">
+          <span class="op-avatar">${op.profiles?.avatar || '😎'}</span>
+          <span class="op-username">@${op.profiles?.username || 'anonymous'}</span>
+          <span class="op-topic tt-${op.topic}">${topicLabel(op.topic)}</span>
+        </div>
+        <div class="op-text">"${op.body}"</div>
       </div>
       <div class="op-votes">
-        <button class="op-vote-btn" onclick="votePost('${op.id}',1);renderOpinions()">▲ ${op.upvotes || 0}</button>
-        <button class="op-vote-btn" onclick="votePost('${op.id}',-1);renderOpinions()">▼ ${op.downvotes || 0}</button>
+        <button class="op-vote-btn up"
+          onclick="event.stopPropagation();votePost('${op.id}',1);renderOpinions()">
+          ▲
+        </button>
+        <span class="op-vote-count">${op.upvotes || 0}</span>
       </div>
     </div>`).join('');
 }
@@ -719,15 +726,8 @@ function timeAgo(dateStr) {
   return Math.floor(diff / 86400) + 'd ago';
 }
 
-// ── FLAVOUR WORD CYCLE ───────────────────────────────────────
-const flavorWords = ['Flavor?', 'Topic?', 'Track?', 'Skill?', 'Edge?'];
-let flavorIdx = 0;
-function cycleFlavorWord() {
-  flavorIdx = (flavorIdx + 1) % flavorWords.length;
-  const el = document.getElementById('flavorWord');
-  if (el) el.textContent = flavorWords[flavorIdx];
-}
-setInterval(cycleFlavorWord, 2800);
+// ── FLAVOUR WORD (static) ────────────────────────────────────
+// Kept static per design decision — no cycling
 
 // ── TRENDING ─────────────────────────────────────────────────
 function buildTrending() {
@@ -754,24 +754,29 @@ function buildTrending() {
 
 // ── STATIC OPINIONS FALLBACK ─────────────────────────────────
 function renderStaticOpinions() {
-  // Falls back to staticOpinions from data.js if DB has no opinions yet
   const grid = document.getElementById('opinionsGrid');
   if (!grid || !staticOpinions) return;
   const ops = opinionsFilter === 'all'
     ? staticOpinions
     : staticOpinions.filter(o => o.topic === opinionsFilter);
   grid.innerHTML = ops.slice(0, 6).map((op, i) => `
-    <div class="opinion-card ${i === 0 ? 'rank-1' : ''} rc-${op.topic}" data-opinion-id="${op.id}">
-      <div class="op-rank">#${i + 1}</div>
-      <div class="op-topic tt-${op.topic}">${topicLabel(op.topic)}</div>
-      <div class="op-text">"${op.body}"</div>
-      <div class="op-meta">
-        <span class="op-avatar">${op.avatar}</span>
-        <span class="op-username">@${op.username}</span>
+    <div class="opinion-card ${i === 0 ? 'rank-1' : ''} rc-${op.topic}"
+         data-opinion-id="${op.id}" onclick="openCommunity()">
+      <div class="op-rank">
+        <span class="op-rank-num">#${i + 1}</span>
+      </div>
+      <div class="op-body">
+        <div class="op-meta">
+          <span class="op-avatar">${op.avatar}</span>
+          <span class="op-username">@${op.username}</span>
+          <span class="op-topic tt-${op.topic}">${topicLabel(op.topic)}</span>
+        </div>
+        <div class="op-text">"${op.body}"</div>
       </div>
       <div class="op-votes">
-        <button class="op-vote-btn">▲ ${op.upvotes}</button>
-        <button class="op-vote-btn">▼ ${op.downvotes}</button>
+        <button class="op-vote-btn up"
+          onclick="event.stopPropagation();openAuth('signup')">▲</button>
+        <span class="op-vote-count">${op.upvotes}</span>
       </div>
     </div>`).join('');
 }

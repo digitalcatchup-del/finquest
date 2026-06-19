@@ -3,9 +3,13 @@
 // Think1st · FinQuest Learning Platform
 // ============================================================
 
-const SUPABASE_URL     = 'https://ikctnljbgsmlbyrcfrsi.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_4Ahn6SSiVaug4WDDQaelDw_ylrnPw-F';
+const SUPABASE_URL      = 'https://ikctnljbgsmlbyrcfrsi.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3RubGpiZ3NtbGJ5cmNmcnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzMxOTEsImV4cCI6MjA5NzQ0OTE5MX0.wT1fALAXQcSKIR27Xkv4wa6mtULcHy54DGK5htuppNo';
 
-// Supabase JS v2 — createClient is on the global supabase object
-// loaded via CDN: <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/...">
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    autoRefreshToken:   true,
+    persistSession:     true,
+    detectSessionInUrl: true
+  }
+});
