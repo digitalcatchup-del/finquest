@@ -304,10 +304,33 @@ function closeCommunity() {
 
 async function loadAndRenderForum() {
   const feed = document.getElementById('forumFeed');
+  if (!feed) return;
   feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;padding:20px 0;">Loading discussions…</p>';
-  const posts = await loadPosts(forumTopicFilter);
-  currentForumPosts = posts;
-  renderForumFeed(posts);
+
+  try {
+    let query = db
+      .from('posts')
+      .select('*, profiles(username, avatar)')
+      .eq('is_opinion', false)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (forumTopicFilter !== 'all') query = query.eq('topic', forumTopicFilter);
+
+    const { data: posts, error } = await query;
+
+    if (error) {
+      console.error('Forum load error:', error);
+      feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">Could not load posts. Please try again.</p>';
+      return;
+    }
+
+    currentForumPosts = posts || [];
+    renderForumFeed(currentForumPosts);
+  } catch (err) {
+    console.error('Forum error:', err);
+    feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">Could not load posts. Please try again.</p>';
+  }
 }
 
 function renderForumFeed(posts) {
@@ -320,14 +343,17 @@ function renderForumFeed(posts) {
 }
 
 function renderForumPost(p) {
-  const ago = timeAgo(p.created_at);
+  const ago    = timeAgo(p.created_at);
   const avatar = p.profiles?.avatar || '😎';
   const uname  = p.profiles?.username || 'anonymous';
+  const ups    = p.upvotes || 0;
+  const downs  = p.downvotes || 0;
+  const replies = p.reply_count || 0;
   return `
     <div class="forum-post" onclick="openForumThread('${p.id}')" style="cursor:pointer;">
       <div class="forum-post-header">
         <span class="forum-avatar">${avatar}</span>
-        <span class="forum-username" onclick="event.stopPropagation();openProfileByUsername('${uname}')">@${uname}</span>
+        <span class="forum-username" onclick="event.stopPropagation();">@${uname}</span>
         <span class="forum-ago">${ago}</span>
         <span class="forum-topic-tag tt-${p.topic}">${topicLabel(p.topic)}</span>
       </div>
@@ -335,12 +361,12 @@ function renderForumPost(p) {
       <div class="forum-post-body">${p.body}</div>
       <div class="forum-post-actions">
         <button class="forum-vote-btn" onclick="event.stopPropagation();handlePostVote('${p.id}',1)">
-          ▲ ${p.upvotes || 0}
+          ▲ ${ups}
         </button>
         <button class="forum-vote-btn" onclick="event.stopPropagation();handlePostVote('${p.id}',-1)">
-          ▼ ${p.downvotes || 0}
+          ▼ ${downs}
         </button>
-        <span class="forum-reply-count">💬 ${p.reply_count || 0} replies</span>
+        <span class="forum-reply-count">💬 ${replies} ${replies === 1 ? 'reply' : 'replies'}</span>
       </div>
     </div>`;
 }
@@ -397,7 +423,19 @@ async function submitForumPost() {
 
 // ── FORUM THREAD ─────────────────────────────────────────────
 async function openForumThread(postId) {
-  const post = currentForumPosts.find(p => p.id === postId);
+  // First try to find in cached posts
+  let post = currentForumPosts.find(p => p.id === postId);
+
+  // If not found, fetch from DB
+  if (!post) {
+    const { data } = await db
+      .from('posts')
+      .select('*, profiles(username, avatar)')
+      .eq('id', postId)
+      .single();
+    post = data;
+  }
+
   if (!post) return;
   currentThreadPost = post;
   document.getElementById('forumThreadPost').innerHTML = renderForumPost(post);
