@@ -362,30 +362,34 @@ function renderForumFeed(posts) {
 }
 
 function renderForumPost(p) {
-  const ago    = timeAgo(p.created_at);
-  const avatar = p.profiles?.avatar || '😎';
-  const uname  = p.profiles?.username || 'anonymous';
-  const ups    = p.upvotes || 0;
-  const downs  = p.downvotes || 0;
+  const ago     = timeAgo(p.created_at);
+  const avatar  = p.profiles?.avatar || '😎';
+  const uname   = p.profiles?.username || 'anonymous';
+  const ups     = p.upvotes || 0;
   const replies = p.reply_count || 0;
   return `
-    <div class="forum-post" onclick="openForumThread('${p.id}')" style="cursor:pointer;">
-      <div class="forum-post-header">
-        <span class="forum-avatar">${avatar}</span>
-        <span class="forum-username" onclick="event.stopPropagation();">@${uname}</span>
-        <span class="forum-ago">${ago}</span>
-        <span class="forum-topic-tag tt-${p.topic}">${topicLabel(p.topic)}</span>
-      </div>
-      ${p.title ? `<div class="forum-post-title">${p.title}</div>` : ''}
-      <div class="forum-post-body">${p.body}</div>
-      <div class="forum-post-actions">
-        <button class="forum-vote-btn" onclick="event.stopPropagation();handlePostVote('${p.id}',1)">
-          ▲ ${ups}
-        </button>
-        <button class="forum-vote-btn" onclick="event.stopPropagation();handlePostVote('${p.id}',-1)">
-          ▼ ${downs}
-        </button>
-        <span class="forum-reply-count">💬 ${replies} ${replies === 1 ? 'reply' : 'replies'}</span>
+    <div class="forum-post-card" onclick="openForumThread('${p.id}')">
+      <div class="forum-post-avatar">${avatar}</div>
+      <div class="forum-post-body">
+        <div class="forum-post-meta">
+          <span class="forum-post-name">@${uname}</span>
+          <span class="forum-post-dot">·</span>
+          <span class="forum-post-time">${ago}</span>
+          <span class="forum-post-dot">·</span>
+          <span class="op-topic tt-${p.topic}">${topicLabel(p.topic)}</span>
+        </div>
+        ${p.title ? `<div class="forum-post-text" style="font-weight:700;color:var(--white);margin-bottom:4px;">${p.title}</div>` : ''}
+        <div class="forum-post-text">${p.body}</div>
+        <div class="forum-post-actions">
+          <button class="forum-action-btn"
+            onclick="event.stopPropagation();handlePostVote('${p.id}',1)">
+            ▲ ${ups}
+          </button>
+          <button class="forum-action-btn"
+            onclick="event.stopPropagation();openForumThread('${p.id}')">
+            💬 ${replies} ${replies === 1 ? 'reply' : 'replies'}
+          </button>
+        </div>
       </div>
     </div>`;
 }
@@ -468,21 +472,43 @@ function closeForumThread() {
 
 async function loadAndRenderReplies(postId) {
   const el = document.getElementById('forumThreadReplies');
+  if (!el) return;
   el.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">Loading replies…</p>';
-  const replies = await loadReplies(postId);
-  if (!replies.length) {
-    el.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">No replies yet.</p>';
+
+  // Fetch replies
+  const { data: replies } = await db
+    .from('replies')
+    .select('id, user_id, body, upvotes, created_at')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
+
+  if (!replies || !replies.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">No replies yet — share your take.</p>';
     return;
   }
-  el.innerHTML = replies.map(r => `
-    <div class="forum-post" style="margin-top:12px;">
-      <div class="forum-post-header">
-        <span class="forum-avatar">${r.profiles?.avatar || '😎'}</span>
-        <span class="forum-username">@${r.profiles?.username || 'anonymous'}</span>
-        <span class="forum-ago">${timeAgo(r.created_at)}</span>
-      </div>
-      <div class="forum-post-body">${r.body}</div>
-    </div>`).join('');
+
+  // Fetch profiles for reply authors
+  const userIds = [...new Set(replies.map(r => r.user_id))];
+  const { data: profilesData } = await db
+    .from('profiles').select('id, username, avatar').in('id', userIds);
+  const profileMap = {};
+  (profilesData || []).forEach(p => { profileMap[p.id] = p; });
+
+  el.innerHTML = replies.map(r => {
+    const profile = profileMap[r.user_id] || { username: 'anonymous', avatar: '😎' };
+    return `
+      <div class="forum-post-card" style="cursor:default;">
+        <div class="forum-post-avatar forum-reply-avatar">${profile.avatar}</div>
+        <div class="forum-post-body">
+          <div class="forum-post-meta">
+            <span class="forum-post-name">@${profile.username}</span>
+            <span class="forum-post-dot">·</span>
+            <span class="forum-post-time">${timeAgo(r.created_at)}</span>
+          </div>
+          <div class="forum-post-text">${r.body}</div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function updateForumReplyCharCount() {
