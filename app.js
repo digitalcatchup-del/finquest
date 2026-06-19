@@ -308,28 +308,47 @@ async function loadAndRenderForum() {
   feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;padding:20px 0;">Loading discussions…</p>';
 
   try {
+    // Step 1: Get posts
     let query = db
       .from('posts')
-      .select('*, profiles(username, avatar)')
+      .select('id, user_id, topic, title, body, upvotes, downvotes, reply_count, is_opinion, created_at')
       .eq('is_opinion', false)
       .order('created_at', { ascending: false })
       .limit(20);
 
     if (forumTopicFilter !== 'all') query = query.eq('topic', forumTopicFilter);
-
     const { data: posts, error } = await query;
 
     if (error) {
-      console.error('Forum load error:', error);
-      feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">Could not load posts. Please try again.</p>';
+      feed.innerHTML = `<p style="color:var(--muted);font-size:0.82rem;">Error: ${error.message}</p>`;
       return;
     }
 
-    currentForumPosts = posts || [];
-    renderForumFeed(currentForumPosts);
+    if (!posts || posts.length === 0) {
+      feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;padding:20px 0;">No posts yet — be the first to share your take.</p>';
+      return;
+    }
+
+    // Step 2: Get profiles for those user_ids separately
+    const userIds = [...new Set(posts.map(p => p.user_id))];
+    const { data: profilesData } = await db
+      .from('profiles')
+      .select('id, username, avatar')
+      .in('id', userIds);
+
+    // Step 3: Merge profiles into posts
+    const profileMap = {};
+    (profilesData || []).forEach(p => { profileMap[p.id] = p; });
+    const enriched = posts.map(p => ({
+      ...p,
+      profiles: profileMap[p.user_id] || { username: 'anonymous', avatar: '😎' }
+    }));
+
+    currentForumPosts = enriched;
+    renderForumFeed(enriched);
+
   } catch (err) {
-    console.error('Forum error:', err);
-    feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">Could not load posts. Please try again.</p>';
+    feed.innerHTML = `<p style="color:var(--muted);font-size:0.82rem;">Error: ${err.message}</p>`;
   }
 }
 
@@ -826,5 +845,6 @@ document.addEventListener('DOMContentLoaded', function () {
   buildTrending();
   renderOpinions();
   initDailyTip();
-  startSearchPlaceholderRotation();
+  // Small delay to ensure data.js searchQuestionBatches is available
+  setTimeout(startSearchPlaceholderRotation, 300);
 });
