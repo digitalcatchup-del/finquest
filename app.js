@@ -711,7 +711,7 @@ function initiateStripeCheckout() {
   if (typeof PaystackPop === "undefined") { alert("Payment system loading — please try again."); return; }
   const handler = PaystackPop.setup({
     key:       PAYSTACK_PUBLIC_KEY,
-    email,
+    email:     email,
     amount:    amountKobo,
     currency:  'NGN',
     ref:       'FQ_' + Date.now(),
@@ -722,24 +722,29 @@ function initiateStripeCheckout() {
         { display_name: 'User ID', variable_name: 'user_id', value: currentUser?.id || '' },
       ]
     },
-    callback: async function(response) {
-      // Payment successful — mark user as subscribed
-      if (currentUser?.id) {
-        await db.from('profiles').update({
-          is_subscribed:     true,
-          subscription_tier: plan.name.toLowerCase()
-        }).eq('id', currentUser.id);
-        currentUser.isSubscribed = true;
-        currentUser.tier = plan.name.toLowerCase();
-      }
-      document.getElementById('paymentContent').style.display = 'none';
-      document.getElementById('paymentSuccess').classList.add('show');
+    callback: function(response) {
+      // Regular function wrapper — Paystack requires a plain function reference,
+      // not an async function, for its internal validation.
+      handlePaystackSuccess(plan);
     },
     onClose: function() {
       // User closed payment modal — do nothing
     }
   });
   handler.openIframe();
+}
+
+async function handlePaystackSuccess(plan) {
+  if (currentUser?.id) {
+    await db.from('profiles').update({
+      is_subscribed:     true,
+      subscription_tier: plan.name.toLowerCase()
+    }).eq('id', currentUser.id);
+    currentUser.isSubscribed = true;
+    currentUser.tier = plan.name.toLowerCase();
+  }
+  document.getElementById('paymentContent').style.display = 'none';
+  document.getElementById('paymentSuccess').classList.add('show');
 }
 
 // ── DAILY TIP ────────────────────────────────────────────────
