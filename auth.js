@@ -51,7 +51,23 @@ async function completeSignup() {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase signup error:', JSON.stringify(error));
+      alert('Signup error: ' + (error.message || error.status || JSON.stringify(error)));
+      btn.textContent = 'Create Account →';
+      btn.disabled = false;
+      return;
+    }
+
+    // Check if email confirmation is required
+    if (data.user && !data.session) {
+      // Email confirmation required — tell the user
+      btn.textContent = 'Create Account →';
+      btn.disabled = false;
+      alert(`Almost there! We've sent a confirmation email to ${email}. Please check your inbox and click the link to activate your account, then log in.`);
+      switchAuthTab('login');
+      return;
+    }
 
     // Update profile with bio (trigger creates it, we patch extra fields)
     if (data.user) {
@@ -67,7 +83,8 @@ async function completeSignup() {
     showStep('welcome');
 
   } catch (err) {
-    alert('Signup error: ' + err.message);
+    console.error('Signup catch error:', err);
+    alert('Signup error: ' + (err.message || err.status || JSON.stringify(err)));
     btn.textContent = 'Create Account →';
     btn.disabled = false;
   }
