@@ -872,5 +872,9 @@ document.addEventListener('DOMContentLoaded', function () {
   renderOpinions();
   initDailyTip();
   // Small delay to ensure data.js searchQuestionBatches is available
-  setTimeout(startSearchPlaceholderRotation, 300);
+  setTimeout(() => {
+    if (typeof startSearchPlaceholderRotation === 'function') {
+      startSearchPlaceholderRotation();
+    }
+  }, 300);
 });
