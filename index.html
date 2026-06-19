@@ -3,23 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FinQuest · Butterfly Dynamix</title>
+<title>FinQuest · Think1st</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --bg:#0a0a0a;--surface:#111111;--surface2:#181818;--surface3:#1e1e1e;
-  --border:#222222;--border2:#333333;--border3:#444444;
-  --white:#ffffff;--off:#e0e0e0;--muted:#777777;--muted2:#444444;
-  --gold:#c9a84c;--gold-dim:rgba(201,168,76,0.12);--gold-dim2:rgba(201,168,76,0.06);
-  --green:#4caf7d;--green-dim:rgba(76,175,125,0.12);
-  --red:#e05555;--red-dim:rgba(224,85,85,0.12);
-  --blue:#4c8faf;--blue-dim:rgba(76,143,175,0.12);
+  --bg:#eaf2ff;--surface:#ffffff;--surface2:#f3f8ff;--surface3:#e9f0fc;
+  --border:#cfe0fb;--border2:#a9c6f5;--border3:#7fa8ec;
+  --white:#0e1f38;--off:#1f3358;--muted:#5b7299;--muted2:#9db3da;
+  --gold:#3566d6;--gold-dim:rgba(53,102,214,0.10);--gold-dim2:rgba(53,102,214,0.05);
+  --green:#1f9d6f;--green-dim:rgba(31,157,111,0.12);
+  --red:#d6435b;--red-dim:rgba(214,67,91,0.12);
+  --blue:#3566d6;--blue-dim:rgba(53,102,214,0.12);
+  --purple:#7c5cbf;--purple-dim:rgba(124,92,191,0.12);
+  --orange:#e07840;--orange-dim:rgba(224,120,64,0.12);
+  --teal:#1f9d8f;--teal-dim:rgba(31,157,143,0.12);
+  --pink:#c45c9a;--pink-dim:rgba(196,92,154,0.12);
+  --indigo:#5c7abf;--indigo-dim:rgba(92,122,191,0.12);
+  --lime:#5a9d2a;--lime-dim:rgba(90,157,42,0.12);
+  --accent-on:#ffffff;
 }
 html{scroll-behavior:smooth;}
-body{background:var(--bg);color:var(--off);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;}
+body{background:linear-gradient(180deg,#bad2ff 0%,#ffffff 100%);color:var(--off);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;}
 
-/* NAV */
-nav{display:flex;justify-content:space-between;align-items:center;padding:14px 40px;border-bottom:1px solid var(--border);background:rgba(10,10,10,0.97);backdrop-filter:blur(16px);position:sticky;top:0;z-index:300;}
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;}
+
+/* ── NAV ── */
+nav{display:flex;justify-content:space-between;align-items:center;padding:14px 40px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);position:sticky;top:0;z-index:300;}
 .logo-wrap{display:flex;align-items:center;gap:10px;cursor:pointer;}
 .logo-svg{width:28px;height:28px;}
 .logo-text{display:flex;flex-direction:column;line-height:1;}
@@ -28,36 +39,25 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .nav-center{display:flex;align-items:center;gap:4px;}
 .nav-link{font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;padding:7px 12px;transition:color 0.15s;border-radius:3px;}
 .nav-link:hover{color:var(--white);background:var(--surface);}
-.nav-link.active-page{color:var(--white);}
-
-/* SERVICES DROPDOWN */
-.services-nav{position:relative;}
-.services-btn{display:flex;align-items:center;gap:5px;}
-.services-btn .arr{font-size:0.6rem;transition:transform 0.2s;}
-.services-nav:hover .arr{transform:rotate(180deg);}
-.services-dropdown{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px;width:520px;z-index:400;box-shadow:0 20px 60px rgba(0,0,0,0.6);}
-.services-nav:hover .services-dropdown{display:block;}
-.sd-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
-.sd-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:5px;cursor:pointer;transition:background 0.15s;border:1px solid transparent;}
-.sd-item:hover{background:var(--surface2);border-color:var(--border);}
-.sd-icon{font-size:1.2rem;margin-top:1px;flex-shrink:0;}
-.sd-info h4{font-size:0.78rem;font-weight:700;color:var(--white);margin-bottom:2px;}
-.sd-info p{font-size:0.68rem;color:var(--muted);}
-.sd-footer{border-top:1px solid var(--border);margin-top:8px;padding-top:8px;text-align:center;}
-.sd-footer button{font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);background:none;border:none;cursor:pointer;}
-
 .nav-right{display:flex;align-items:center;gap:10px;}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:3px;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border:none;transition:all 0.15s;}
-.btn-gold{background:var(--gold);color:#000;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:3px;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border:none;transition:all 0.15s;min-height:40px;}
+
+/* ── MOBILE HAMBURGER MENU ── */
+.nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:44px;height:44px;background:none;border:none;cursor:pointer;padding:0;}
+.nav-hamburger span{display:block;width:22px;height:2px;background:var(--off);border-radius:1px;transition:transform 0.2s,opacity 0.2s;margin:0 auto;}
+.nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.nav-hamburger.open span:nth-child(2){opacity:0;}
+.nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+.mobile-nav-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:0 12px 24px rgba(53,102,214,0.12);flex-direction:column;padding:8px;z-index:299;}
+.mobile-nav-dropdown.open{display:flex;}
+.mobile-nav-link{display:block;width:100%;text-align:left;font-size:0.85rem;font-weight:700;color:var(--off);background:none;border:none;cursor:pointer;padding:14px 16px;border-radius:4px;min-height:44px;}
+.mobile-nav-link:active{background:var(--surface2);}
+.btn-gold{background:var(--gold);color:var(--accent-on);}
 .btn-gold:hover{opacity:0.88;}
-.btn-white{background:var(--white);color:#000;}
-.btn-white:hover{background:var(--off);}
 .btn-outline{background:transparent;border:1px solid var(--border2);color:var(--off);}
 .btn-outline:hover{border-color:var(--white);color:var(--white);}
 .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:0.7rem;}
 .btn-ghost:hover{border-color:var(--border2);color:var(--off);}
-.btn-green{background:var(--green);color:#000;}
-.btn-green:hover{opacity:0.88;}
 .btn-full{width:100%;}
 
 /* USER NAV */
@@ -65,49 +65,121 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .nav-user.show{display:flex;}
 .pip-ticker{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:5px 10px;}
 .pip-label{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);}
-.pip-value{font-size:0.85rem;font-weight:900;font-variant-numeric:tabular-nums;color:var(--green);transition:color 0.3s;letter-spacing:0.02em;}
+.pip-value{font-size:0.85rem;font-weight:900;font-variant-numeric:tabular-nums;color:var(--green);letter-spacing:0.02em;}
 .pip-arrow{font-size:0.7rem;color:var(--green);}
 .nav-streak{font-size:0.72rem;font-weight:700;color:var(--off);}
 .nav-avatar{width:34px;height:34px;border-radius:4px;background:var(--surface2);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.1rem;cursor:pointer;}
 .nav-logout{font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px;}
 .nav-logout:hover{color:var(--red);}
 
-/* PAGES */
-.page{display:none;}
-.page.active{display:block;}
-
-/* HERO */
-#heroSection{min-height:calc(100vh - 57px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;text-align:center;position:relative;overflow:hidden;}
-.hero-bg{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse 70% 50% at 50% 60%,rgba(201,168,76,0.07) 0%,transparent 70%);}
+/* ── HERO ── */
+#heroSection{min-height:calc(100vh - 57px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px 40px;text-align:center;position:relative;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse 70% 50% at 50% 40%,rgba(53,102,214,0.10) 0%,transparent 70%);}
 .hero-eyebrow{font-size:0.65rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;z-index:1;position:relative;}
 .hero-heading{font-size:clamp(2.2rem,5vw,3.8rem);font-weight:900;letter-spacing:-0.03em;color:var(--white);line-height:1.1;margin-bottom:14px;z-index:1;position:relative;}
 .hero-heading span{color:var(--gold);}
-.hero-sub{font-size:0.95rem;color:var(--muted);max-width:480px;line-height:1.7;margin-bottom:48px;z-index:1;position:relative;}
-.flavor-grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:720px;z-index:1;position:relative;margin-bottom:20px;}
-.flavor-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px 22px;cursor:pointer;transition:all 0.2s;text-align:left;min-width:150px;display:flex;flex-direction:column;gap:8px;}
-.flavor-card:hover{border-color:var(--gold);background:var(--gold-dim2);transform:translateY(-2px);}
-.flavor-card.selected{border-color:var(--gold);background:var(--gold-dim);}
-.flavor-icon{font-size:1.4rem;}
-.flavor-name{font-size:0.82rem;font-weight:800;color:var(--white);}
-.flavor-desc{font-size:0.7rem;color:var(--muted);}
-.flavor-cta{font-size:0.7rem;color:var(--muted);z-index:1;position:relative;}
+.hero-sub{font-size:0.95rem;color:var(--muted);max-width:480px;line-height:1.7;margin-bottom:32px;z-index:1;position:relative;}
 
-/* LOGGED IN HERO */
+/* ── SEARCH BAR ── */
+.search-wrap{width:100%;max-width:620px;z-index:1;position:relative;margin-bottom:48px;}
+.search-box{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:4px 4px 4px 18px;transition:border-color 0.2s,box-shadow 0.2s;gap:8px;position:relative;}
+.search-box:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.08);}
+.search-icon{font-size:1rem;color:var(--muted);flex-shrink:0;}
+.search-input{flex:1;background:none;border:none;outline:none;color:var(--white);font-size:0.9rem;padding:10px 0;font-family:inherit;min-width:0;}
+.search-input::placeholder{color:transparent;}
+.search-fake-placeholder{position:absolute;left:42px;right:96px;top:50%;transform:translateY(-50%);overflow:hidden;pointer-events:none;height:1.4em;display:flex;align-items:center;}
+.search-fake-placeholder span{display:inline-block;white-space:nowrap;color:var(--muted2);font-size:0.9rem;font-family:inherit;transition:none;}
+.search-fake-placeholder.scroll-out span{}
+.search-btn{background:var(--gold);color:var(--accent-on);border:none;border-radius:4px;padding:10px 20px;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;flex-shrink:0;}
+.search-btn:hover{opacity:0.88;}
+.search-suggestions{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:6px;overflow:hidden;z-index:200;display:none;box-shadow:0 16px 40px rgba(53,102,214,0.18);}
+.search-suggestions.open{display:block;}
+.suggestion-group-label{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px;}
+.suggestion-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);}
+.suggestion-item:last-child{border-bottom:none;}
+.suggestion-item:hover{background:var(--surface2);}
+.sug-icon{font-size:0.9rem;width:20px;text-align:center;flex-shrink:0;}
+.sug-text{font-size:0.82rem;color:var(--off);}
+.sug-tag{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-left:auto;}
+
+/* ── FLAVOR GRID ── */
+.flavor-section{width:100%;max-width:920px;z-index:1;position:relative;margin-bottom:40px;}
+.flavor-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+.flavor-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px 14px;cursor:pointer;transition:all 0.2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;aspect-ratio:1/1;justify-content:center;position:relative;overflow:hidden;}
+.flavor-card::after{content:'';position:absolute;inset:0;opacity:0;transition:opacity 0.2s;}
+.flavor-card:hover{transform:translateY(-3px);}
+.flavor-card:hover::after{opacity:1;}
+.flavor-card.selected{transform:translateY(-3px);}
+.flavor-card.selected::after{opacity:1;}
+
+/* Per-card accent colors */
+.fc-acc::after{background:linear-gradient(135deg,rgba(76,175,125,0.08),transparent);}
+.fc-acc:hover,.fc-acc.selected{border-color:var(--green);}
+.fc-fin::after{background:linear-gradient(135deg,rgba(201,168,76,0.08),transparent);}
+.fc-fin:hover,.fc-fin.selected{border-color:var(--gold);}
+.fc-econ::after{background:linear-gradient(135deg,rgba(76,143,175,0.08),transparent);}
+.fc-econ:hover,.fc-econ.selected{border-color:var(--blue);}
+.fc-trd::after{background:linear-gradient(135deg,rgba(124,92,191,0.08),transparent);}
+.fc-trd:hover,.fc-trd.selected{border-color:var(--purple);}
+.fc-arts::after{background:linear-gradient(135deg,rgba(224,120,64,0.08),transparent);}
+.fc-arts:hover,.fc-arts.selected{border-color:var(--orange);}
+.fc-social::after{background:linear-gradient(135deg,rgba(58,184,168,0.08),transparent);}
+.fc-social:hover,.fc-social.selected{border-color:var(--teal);}
+.fc-stem::after{background:linear-gradient(135deg,rgba(196,92,154,0.08),transparent);}
+.fc-stem:hover,.fc-stem.selected{border-color:var(--pink);}
+.fc-reform::after{background:linear-gradient(135deg,rgba(92,122,191,0.08),transparent);}
+.fc-reform:hover,.fc-reform.selected{border-color:var(--indigo);}
+.fc-future::after{background:linear-gradient(135deg,rgba(122,191,58,0.08),transparent);}
+.fc-future:hover,.fc-future.selected{border-color:var(--lime);}
+
+.flavor-icon{font-size:1.8rem;position:relative;z-index:1;}
+.flavor-name{font-size:0.75rem;font-weight:800;color:var(--white);letter-spacing:0.03em;line-height:1.3;position:relative;z-index:1;}
+.flavor-count{font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;position:relative;z-index:1;}
+.fc-acc .flavor-count{color:var(--green);}
+.fc-fin .flavor-count{color:var(--gold);}
+.fc-econ .flavor-count{color:var(--blue);}
+.fc-trd .flavor-count{color:var(--purple);}
+.fc-arts .flavor-count{color:var(--orange);}
+.fc-social .flavor-count{color:var(--teal);}
+.fc-stem .flavor-count{color:var(--pink);}
+.fc-reform .flavor-count{color:var(--indigo);}
+.fc-future .flavor-count{color:var(--lime);}
+
+/* ── TRENDING ── */
+.trending-section{width:100%;max-width:920px;z-index:1;position:relative;}
+.trending-label-row{display:flex;align-items:center;gap:16px;margin-bottom:12px;}
+.trending-label{font-size:0.68rem;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:var(--white);white-space:nowrap;flex-shrink:0;}
+.trending-line{flex:1;height:1px;background:var(--border);}
+.trending-ticker-wrap{position:relative;width:100%;overflow:hidden;}
+.trending-ticker{display:flex;gap:10px;flex-wrap:nowrap;}
+@keyframes trendScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.trend-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
+.trend-chip:hover{border-color:var(--border2);background:var(--surface2);}
+.trend-num{font-size:0.6rem;font-weight:800;color:var(--gold);}
+.trend-text{font-size:0.72rem;color:var(--off);}
+.trend-tag{font-size:0.6rem;font-weight:700;padding:2px 6px;border-radius:2px;letter-spacing:0.08em;text-transform:uppercase;}
+.tt-acc{background:var(--green-dim);color:var(--green);}
+.tt-fin{background:var(--gold-dim);color:var(--gold);}
+.tt-econ{background:var(--blue-dim);color:var(--blue);}
+.tt-trd{background:var(--purple-dim);color:var(--purple);}
+.tt-stem{background:var(--pink-dim);color:var(--pink);}
+.tt-arts{background:var(--orange-dim);color:var(--orange);}
+.tt-social{background:var(--teal-dim);color:var(--teal);}
+.tt-reform{background:var(--indigo-dim);color:var(--indigo);}
+.tt-future{background:var(--lime-dim);color:var(--lime);}
+
+/* ── LOGGED IN HERO ── */
 #liHero{display:none;min-height:calc(100vh - 57px);flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;text-align:center;position:relative;}
 #liHero.show{display:flex;}
 .li-greeting{font-size:clamp(1.8rem,4vw,3rem);font-weight:900;letter-spacing:-0.03em;color:var(--white);margin-bottom:10px;position:relative;z-index:1;}
 .li-greeting span{color:var(--gold);}
 .li-sub{font-size:0.9rem;color:var(--muted);margin-bottom:32px;position:relative;z-index:1;}
-
-/* PIP DASHBOARD */
 .pip-dashboard{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 28px;margin-bottom:32px;position:relative;z-index:1;max-width:500px;width:100%;}
 .pip-dash-label{font-size:0.6rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
-.pip-dash-value{font-size:2.5rem;font-weight:900;font-variant-numeric:tabular-nums;color:var(--green);letter-spacing:0.02em;transition:all 0.3s;}
-.pip-dash-value.surge{color:var(--gold);text-shadow:0 0 20px rgba(201,168,76,0.4);}
+.pip-dash-value{font-size:2.5rem;font-weight:900;font-variant-numeric:tabular-nums;color:var(--green);letter-spacing:0.02em;}
 .pip-dash-sub{font-size:0.72rem;color:var(--muted);margin-top:4px;}
 .pip-bar{background:var(--border2);border-radius:2px;height:3px;margin-top:12px;overflow:hidden;}
 .pip-bar-fill{background:linear-gradient(90deg,var(--green),var(--gold));height:100%;border-radius:2px;transition:width 0.5s ease;}
-
 .li-stats{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:28px;position:relative;z-index:1;}
 .li-stat{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 22px;text-align:center;}
 .li-stat .val{font-size:1.4rem;font-weight:900;color:var(--white);}
@@ -116,13 +188,13 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .li-track{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:8px 16px;font-size:0.75rem;font-weight:700;color:var(--off);cursor:pointer;transition:all 0.15s;}
 .li-track:hover{border-color:var(--gold);color:var(--gold);}
 
-/* TRUST */
+/* ── TRUST BAR ── */
 #trust{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:28px 40px;display:flex;justify-content:center;gap:60px;flex-wrap:wrap;}
 .trust-stat{text-align:center;}
 .trust-val{font-size:1.6rem;font-weight:900;color:var(--white);letter-spacing:-0.03em;}
 .trust-lbl{font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-top:3px;}
 
-/* HOW */
+/* ── HOW IT WORKS ── */
 #how{padding:80px 40px;max-width:900px;margin:0 auto;}
 .section-eyebrow{font-size:0.62rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
 .section-heading{font-size:clamp(1.4rem,3vw,2rem);font-weight:900;letter-spacing:-0.02em;color:var(--white);margin-bottom:40px;}
@@ -136,44 +208,154 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .step p{font-size:0.77rem;color:var(--muted);line-height:1.65;}
 .step-arrow{position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:1.2rem;z-index:1;}
 
-/* DISCUSS */
-#discuss{padding:80px 40px;max-width:900px;margin:0 auto;}
-.discuss-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
-.topic-filter{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:3px;}
-.tf{padding:6px 14px;border-radius:3px;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);cursor:pointer;border:none;background:none;transition:all 0.15s;}
-.tf.active{background:var(--white);color:#000;}
-.posts{display:flex;flex-direction:column;gap:2px;}
-.post{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:18px 20px;display:flex;gap:14px;transition:border-color 0.15s;}
-.post:hover{border-color:var(--border2);}
-.vote-col{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:36px;}
-.vote-btn{background:none;border:none;color:var(--muted2);font-size:0.9rem;cursor:pointer;transition:color 0.15s;padding:2px;}
-.vote-btn:hover,.vote-btn.up.voted{color:var(--gold);}
-.vote-btn.dn.voted{color:var(--red);}
-.vote-count{font-size:0.78rem;font-weight:800;color:var(--off);}
-.post-body{flex:1;}
-.post-meta{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
-.post-topic{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:2px 8px;border-radius:2px;}
-.pt-acc{background:var(--green-dim);color:var(--green);border:1px solid rgba(76,175,125,0.25);}
-.pt-fin{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,168,76,0.25);}
-.pt-trd{background:rgba(255,255,255,0.06);color:var(--off);border:1px solid var(--border2);}
-.post-author{font-size:0.72rem;color:var(--muted);}
-.post-time{font-size:0.68rem;color:var(--muted2);}
-.post-title{font-size:0.9rem;font-weight:700;color:var(--white);margin-bottom:5px;line-height:1.4;}
-.post-preview{font-size:0.78rem;color:var(--muted);line-height:1.55;}
-.post-footer{display:flex;gap:14px;margin-top:10px;}
-.post-stat{font-size:0.68rem;color:var(--muted2);}
-.discuss-cta{text-align:center;margin-top:24px;}
-.lock-note{font-size:0.72rem;color:var(--muted);margin-top:10px;}
+/* ── OPINIONS ── */
+#opinionsSection{padding:80px 40px;max-width:1000px;margin:0 auto;}
+.opinions-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;flex-wrap:wrap;gap:16px;}
+.op-filter{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:3px;}
+.pf{padding:6px 14px;border-radius:3px;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);cursor:pointer;border:none;background:none;transition:all 0.15s;}
+.pf.active{background:var(--gold);color:var(--accent-on);}
+.opinions-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.opinion-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px 20px;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:start;transition:border-color 0.15s;cursor:pointer;}
+.opinion-card.opinion-highlight{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim);}
+.opinion-card:hover{border-color:var(--border2);}
+.opinion-card.rank-1{border-color:rgba(201,168,76,0.3);background:linear-gradient(135deg,rgba(201,168,76,0.03),var(--surface));}
 
-/* TIP */
+/* RANK */
+.op-rank{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:32px;}
+.rank-num{width:28px;height:28px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:900;}
+.rank-1 .rank-num{background:linear-gradient(135deg,var(--gold),#5a8ef0);color:var(--accent-on);}
+.rank-2 .rank-num{background:rgba(148,163,184,0.15);border:1px solid rgba(148,163,184,0.25);color:#94a3b8;}
+.rank-3 .rank-num{background:rgba(205,127,50,0.15);border:1px solid rgba(205,127,50,0.25);color:#cd7f32;}
+.rank-4 .rank-num,.rank-5 .rank-num{background:var(--surface2);border:1px solid var(--border);color:var(--muted);}
+
+/* OP BODY */
+.op-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.op-topic{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:2px 8px;border-radius:2px;}
+.ot-acc{background:var(--green-dim);color:var(--green);border:1px solid rgba(76,175,125,0.2);}
+.ot-fin{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,168,76,0.2);}
+.ot-econ{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(76,143,175,0.2);}
+.ot-trd{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(124,92,191,0.2);}
+.op-author{font-size:0.72rem;color:var(--muted);}
+.op-pip-score{font-size:0.65rem;color:var(--gold);font-weight:700;}
+.op-time{font-size:0.65rem;color:var(--muted2);}
+.op-title{font-size:0.9rem;font-weight:800;color:var(--white);margin-bottom:5px;line-height:1.4;}
+.op-preview{font-size:0.78rem;color:var(--muted);line-height:1.55;}
+
+/* SIMPLIFIED VOTE DISPLAY */
+.op-votes{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:60px;}
+.vote-up-count{display:flex;align-items:center;gap:4px;font-size:0.75rem;font-weight:700;color:var(--green);}
+.vote-dn-count{display:flex;align-items:center;gap:4px;font-size:0.75rem;font-weight:700;color:var(--red);}
+.vote-icon{font-size:0.8rem;}
+.vote-divider{width:100%;height:1px;background:var(--border);}
+
+/* OPINIONS CTA */
+.opinions-cta{text-align:center;}
+.opinions-cta-note{font-size:0.68rem;color:var(--muted);margin-top:8px;}
+
+/* ── DISCUSSION FORUM (Twitter-like: composer, post cards, replies) ── */
+.forum-composer{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:20px;}
+.forum-composer textarea,.forum-reply-composer textarea{width:100%;background:none;border:none;outline:none;resize:none;min-height:60px;font-size:0.88rem;color:var(--white);font-family:inherit;line-height:1.5;}
+.forum-composer textarea::placeholder,.forum-reply-composer textarea::placeholder{color:var(--muted2);}
+.forum-composer-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:10px;border-top:1px solid var(--border2);}
+.forum-char-count{font-size:0.7rem;color:var(--muted);}
+.forum-reply-composer{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:14px 16px;margin:18px 0;}
+
+.forum-feed{display:flex;flex-direction:column;gap:1px;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.forum-post-card{background:var(--surface);padding:16px 18px;display:flex;gap:12px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);}
+.forum-post-card:last-child{border-bottom:none;}
+.forum-post-card:hover{background:var(--surface2);}
+.forum-post-card-detail{cursor:default;border:1px solid var(--border);border-radius:8px;margin-bottom:0;}
+.forum-post-card-detail:hover{background:var(--surface);}
+.forum-post-avatar{flex-shrink:0;width:42px;height:42px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;cursor:pointer;}
+.forum-reply-avatar{width:34px;height:34px;font-size:1.05rem;}
+.forum-post-body{flex:1;min-width:0;}
+.forum-post-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px;}
+.forum-post-name{font-size:0.84rem;font-weight:800;color:var(--white);cursor:pointer;}
+.forum-post-name:hover{text-decoration:underline;}
+.forum-post-username{font-size:0.78rem;color:var(--muted);cursor:pointer;}
+.forum-post-dot{color:var(--muted2);font-size:0.7rem;}
+.forum-post-time{font-size:0.76rem;color:var(--muted2);}
+.forum-post-text{font-size:0.88rem;color:var(--off);line-height:1.55;margin-bottom:10px;word-wrap:break-word;}
+.forum-post-text-full{font-size:0.92rem;color:var(--off);line-height:1.65;margin-bottom:12px;word-wrap:break-word;white-space:pre-wrap;}
+.forum-post-actions{display:flex;gap:18px;align-items:center;}
+.forum-action-btn{background:none;border:none;cursor:pointer;font-size:0.78rem;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:4px;transition:background 0.15s,color 0.15s;}
+.forum-action-btn:hover{background:var(--gold-dim);color:var(--gold);}
+.forum-vote-btn:hover{color:var(--green);background:var(--green-dim);}
+.forum-replies-label{font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;}
+.forum-inline-comments{margin-top:12px;padding-top:12px;border-top:1px solid var(--border2);}
+.forum-inline-comments .forum-reply-card{margin-bottom:8px;}
+.forum-inline-comments .forum-reply-card:last-of-type{margin-bottom:8px;}
+.forum-reply-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;gap:10px;margin-bottom:8px;}
+
+/* ── USER PROFILE PAGE ── */
+.profile-header-card{text-align:center;padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.profile-avatar-large{width:80px;height:80px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:2.4rem;margin:0 auto 14px;}
+.profile-name-large{font-size:1.2rem;font-weight:900;color:var(--white);}
+.profile-username-large{font-size:0.84rem;color:var(--muted);margin-bottom:18px;}
+.profile-stats-row{display:flex;justify-content:center;gap:32px;}
+.profile-stat-val{font-size:1.05rem;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;}
+.profile-stat-label{font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.profile-tabs{display:flex;gap:8px;margin-bottom:16px;}
+
+/* COMMUNITY PAGE */
+.community-app{max-width:1000px;margin:0 auto;padding-bottom:60px;}
+.community-hero{padding:24px 40px 40px;text-align:center;}
+.community-section{padding:40px 40px;border-top:1px solid var(--border);}
+.community-section:first-of-type{border-top:none;}
+.leaderboard-list{display:flex;flex-direction:column;gap:8px;}
+.leaderboard-row{display:grid;grid-template-columns:auto 1fr auto auto;gap:16px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 18px;transition:border-color 0.15s;}
+.leaderboard-row:hover{border-color:var(--border2);}
+.leaderboard-row.lb-top{border-color:rgba(201,168,76,0.3);background:linear-gradient(135deg,rgba(201,168,76,0.03),var(--surface));}
+.lb-rank{font-size:0.95rem;font-weight:800;color:var(--muted);min-width:28px;text-align:center;}
+.lb-rank.lb-medal{font-size:1.2rem;}
+.lb-user{display:flex;align-items:center;gap:12px;}
+.lb-avatar{font-size:1.4rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:50%;border:1px solid var(--border);}
+.lb-name{font-size:0.82rem;font-weight:800;color:var(--white);}
+.lb-username{font-size:0.68rem;color:var(--muted);}
+.lb-streak{font-size:0.7rem;color:var(--muted);text-align:right;white-space:nowrap;}
+.lb-pip{font-size:0.85rem;font-weight:800;color:var(--green);text-align:right;white-space:nowrap;}
+
+.guidelines-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.guideline-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;}
+.guideline-icon{font-size:1.4rem;margin-bottom:8px;}
+.guideline-card h3{font-size:0.82rem;font-weight:800;color:var(--white);margin-bottom:6px;}
+.guideline-card p{font-size:0.74rem;color:var(--muted);line-height:1.5;}
+
+/* POST OPINION MODAL */
+.post-opinion-modal{padding:28px;}
+.poi-topics{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+.poi-topic{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:7px 14px;font-size:0.75rem;font-weight:700;color:var(--muted);cursor:pointer;transition:all 0.15s;}
+.poi-topic.sel-acc{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+.poi-topic.sel-fin{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+.poi-topic.sel-econ{border-color:var(--blue);color:var(--blue);background:var(--blue-dim);}
+.poi-topic.sel-trd{border-color:var(--purple);color:var(--purple);background:var(--purple-dim);}
+.char-count{font-size:0.65rem;color:var(--muted2);text-align:right;margin-top:4px;}
+
+/* ── DAILY TIP ── */
 #tip{padding:60px 40px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
 .tip-inner{max-width:680px;margin:0 auto;display:flex;gap:28px;align-items:flex-start;}
-.tip-date-badge{background:var(--gold);color:#000;font-size:0.6rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;padding:5px 12px;border-radius:3px;white-space:nowrap;}
+.tip-date-badge{background:var(--gold);color:var(--accent-on);font-size:0.6rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;padding:5px 12px;border-radius:3px;white-space:nowrap;}
 .tip-eyebrow{font-size:0.6rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
 .tip-text{font-size:1.05rem;font-weight:700;color:var(--white);line-height:1.6;margin-bottom:8px;}
 .tip-source{font-size:0.72rem;color:var(--muted);}
 
-/* NEWSLETTER */
+/* ── PRICING ── */
+#pricing{padding:80px 40px;max-width:900px;margin:0 auto;text-align:center;}
+.pricing-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px;}
+.pricing-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px;text-align:left;transition:border-color 0.2s;}
+.pricing-card.featured{border-color:var(--gold);position:relative;}
+.pricing-card.featured::before{content:'Most Popular';position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--accent-on);font-size:0.6rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;padding:4px 12px;border-radius:20px;white-space:nowrap;}
+.pc-name{font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.pc-price{font-size:2.2rem;font-weight:900;color:var(--white);letter-spacing:-0.03em;margin-bottom:4px;}
+.pc-price span{font-size:0.85rem;font-weight:600;color:var(--muted);}
+.pc-desc{font-size:0.75rem;color:var(--muted);margin-bottom:20px;line-height:1.55;}
+.pc-features{margin-bottom:24px;}
+.pc-feat{display:flex;align-items:flex-start;gap:8px;font-size:0.75rem;color:var(--muted);margin-bottom:8px;line-height:1.4;}
+.pc-feat::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px;}
+.pc-feat.no::before{content:'✕';color:var(--muted2);}
+.pc-feat.no{color:var(--muted2);}
+
+/* ── NEWSLETTER ── */
 #newsletter{padding:80px 40px;}
 .nl-inner{max-width:540px;margin:0 auto;text-align:center;}
 .nl-inner h2{font-size:1.4rem;font-weight:900;letter-spacing:-0.02em;color:var(--white);margin-bottom:8px;}
@@ -184,84 +366,46 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .nl-input::placeholder{color:var(--muted2);}
 .nl-note{font-size:0.65rem;color:var(--muted2);margin-top:10px;}
 
-/* FOOTER */
+/* ── FOOTER ── */
 footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
 .footer-logo{font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);}
+.footer-links{display:flex;gap:16px;}
+.footer-link{font-size:0.68rem;color:var(--muted2);background:none;border:none;cursor:pointer;text-decoration:underline;}
 .footer-copy{font-size:0.68rem;color:var(--muted2);}
 
-/* ══ SERVICES PAGE ══ */
-#servicesPage{padding:60px 40px;max-width:1000px;margin:0 auto;}
-.services-hero{text-align:center;margin-bottom:60px;}
-.services-hero h1{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;letter-spacing:-0.03em;color:var(--white);margin-bottom:10px;}
-.services-hero p{font-size:0.9rem;color:var(--muted);max-width:520px;margin:0 auto;line-height:1.7;}
-.services-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:60px;}
-.svc-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px;transition:border-color 0.2s;}
-.svc-card:hover{border-color:var(--border2);}
-.svc-card.featured{border-color:var(--gold);}
-.svc-badge{font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:3px 10px;border-radius:2px;display:inline-block;margin-bottom:14px;}
-.badge-gold{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,168,76,0.3);}
-.badge-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(76,175,125,0.3);}
-.badge-blue{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(76,143,175,0.3);}
-.badge-white{background:rgba(255,255,255,0.06);color:var(--off);border:1px solid var(--border2);}
-.svc-icon{font-size:2rem;margin-bottom:12px;}
-.svc-card h3{font-size:1rem;font-weight:800;color:var(--white);margin-bottom:8px;}
-.svc-card p{font-size:0.8rem;color:var(--muted);line-height:1.65;margin-bottom:16px;}
-.svc-pricing{margin-bottom:20px;}
-.price-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
-.price-row:last-child{border-bottom:none;}
-.price-tier{font-size:0.78rem;font-weight:700;color:var(--off);}
-.price-amount{font-size:0.82rem;font-weight:800;color:var(--gold);}
-.svc-features{margin-bottom:20px;}
-.svc-feat{display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--muted);margin-bottom:6px;}
-.svc-feat::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;}
-.svc-actions{display:flex;gap:8px;}
-.svc-actions .btn{flex:1;font-size:0.68rem;padding:8px 12px;}
-
-/* BOOKING MODAL */
+/* ── OVERLAYS ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:600;align-items:center;justify-content:center;padding:20px;}
 .overlay.open{display:flex;}
 .modal{background:var(--surface);border:1px solid var(--border2);border-radius:8px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;position:relative;}
-.modal-close-btn{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;}
+.modal-close-btn{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;z-index:10;}
 .modal-close-btn:hover{color:var(--white);}
-.modal-inner{padding:28px;}
-.modal-eyebrow{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
-.modal-title{font-size:1rem;font-weight:800;color:var(--white);margin-bottom:4px;}
-.modal-sub{font-size:0.78rem;color:var(--muted);margin-bottom:22px;line-height:1.55;}
-.modal-tabs{display:flex;gap:1px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:20px;}
-.m-tab{flex:1;padding:8px;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);background:var(--surface2);border:none;cursor:pointer;transition:all 0.15s;}
-.m-tab.active{background:var(--gold);color:#000;}
-.m-panel{display:none;}
-.m-panel.active{display:block;}
-.field{margin-bottom:14px;}
-.field label{display:block;font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
-.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:10px 14px;color:var(--white);font-size:0.85rem;outline:none;transition:border-color 0.15s;font-family:inherit;}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);}
-.field input::placeholder,.field textarea::placeholder{color:var(--muted2);}
-.field select option{background:var(--surface2);}
-.field textarea{resize:none;height:80px;}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.time-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;}
-.time-slot{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:8px;font-size:0.72rem;font-weight:700;text-align:center;cursor:pointer;color:var(--muted);transition:all 0.15s;}
-.time-slot:hover{border-color:var(--border2);color:var(--off);}
-.time-slot.selected{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
-.success-msg{display:none;text-align:center;padding:20px 0;}
-.success-msg.show{display:block;}
-.success-icon{font-size:2.5rem;margin-bottom:12px;}
-.success-msg h3{font-size:0.95rem;font-weight:800;color:var(--white);margin-bottom:6px;}
-.success-msg p{font-size:0.78rem;color:var(--muted);line-height:1.55;}
 
-/* AUTH OVERLAY */
+/* AUTH */
 .auth-tabs{display:flex;border-bottom:1px solid var(--border);}
 .auth-tab{flex:1;padding:16px;font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;transition:all 0.15s;border-bottom:2px solid transparent;margin-bottom:-1px;}
 .auth-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
 .auth-step{display:none;padding:28px;}
 .auth-step.active{display:block;}
 .step-indicator{display:flex;gap:6px;margin-bottom:24px;align-items:center;}
-.si-dot{width:24px;height:3px;border-radius:2px;background:var(--border2);transition:background 0.2s;}
+.si-dot{width:24px;height:3px;border-radius:2px;background:var(--border2);}
 .si-dot.done{background:var(--gold);}
 .si-label{font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-left:6px;}
 .auth-heading{font-size:1rem;font-weight:800;color:var(--white);margin-bottom:4px;}
 .auth-sub{font-size:0.78rem;color:var(--muted);margin-bottom:22px;line-height:1.55;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.field input,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:10px 14px;color:var(--white);font-size:0.85rem;outline:none;transition:border-color 0.15s;font-family:inherit;}
+.field input:focus,.field textarea:focus{border-color:var(--gold);}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted2);}
+.field textarea{resize:none;height:72px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.field-err{font-size:0.65rem;color:var(--red);margin-top:5px;display:none;}
+.field-err.show{display:block;}
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:40px;}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.8rem;}
+.pw-strength{height:3px;border-radius:2px;background:var(--border2);margin-top:6px;overflow:hidden;}
+.pw-strength-fill{height:100%;border-radius:2px;width:0%;transition:all 0.3s;}
 .avatar-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
 .av-opt{width:44px;height:44px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.3rem;cursor:pointer;transition:all 0.15s;}
 .av-opt.selected{border-color:var(--gold);background:var(--gold-dim);}
@@ -269,27 +413,18 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .fm-chip{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:7px 12px;font-size:0.72rem;font-weight:700;color:var(--muted);cursor:pointer;transition:all 0.15s;}
 .fm-chip.selected{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
 .step-nav{display:flex;gap:8px;margin-top:20px;}
-.pw-wrap{position:relative;}
-.pw-wrap input{padding-right:40px;}
-.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.8rem;}
-.pw-strength{height:3px;border-radius:2px;background:var(--border2);margin-top:6px;overflow:hidden;}
-.pw-strength-fill{height:100%;border-radius:2px;width:0%;transition:all 0.3s;}
-.field-err{font-size:0.65rem;color:var(--red);margin-top:5px;display:none;}
-.field-err.show{display:block;}
 .welcome-screen{padding:40px 28px;text-align:center;}
 .welcome-avatar{font-size:3rem;margin-bottom:12px;}
 .welcome-name{font-size:1.3rem;font-weight:900;color:var(--white);margin-bottom:6px;}
 .welcome-sub{font-size:0.82rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
 .welcome-flavors{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;}
 .wf-chip{background:var(--gold-dim);border:1px solid rgba(201,168,76,0.3);border-radius:3px;padding:5px 12px;font-size:0.72rem;font-weight:700;color:var(--gold);}
-
-/* PIP ANIMATION */
-@keyframes pipFlash{0%{opacity:1}50%{opacity:0.4}100%{opacity:1}}
-.pip-flash{animation:pipFlash 0.4s ease;}
-@keyframes pipSurge{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
-.pip-surge-anim{animation:pipSurge 0.5s ease;}
+.switch-mode{text-align:center;margin-top:14px;font-size:0.75rem;color:var(--muted);}
+.switch-mode button{background:none;border:none;color:var(--gold);font-size:0.75rem;cursor:pointer;font-weight:700;text-decoration:underline;}
+.forgot-link{font-size:0.7rem;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;margin-top:4px;display:inline-block;}
 
 /* LESSON OVERLAY */
+.lesson-modal{max-width:560px;}
 .modal-head{padding:24px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;}
 .modal-head h2{font-size:1rem;font-weight:800;color:var(--white);line-height:1.4;max-width:85%;}
 .modal-tag{margin:10px 28px 0;display:inline-block;font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;border:1px solid var(--gold);color:var(--gold);padding:3px 10px;border-radius:2px;}
@@ -317,27 +452,212 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .signup-prompt.show{display:block;}
 .signup-prompt h3{font-size:0.95rem;font-weight:800;color:var(--white);margin-bottom:6px;}
 .signup-prompt p{font-size:0.78rem;color:var(--muted);margin-bottom:16px;}
-.switch-mode{text-align:center;margin-top:14px;font-size:0.75rem;color:var(--muted);}
-.switch-mode button{background:none;border:none;color:var(--gold);font-size:0.75rem;cursor:pointer;font-weight:700;text-decoration:underline;}
-.forgot-link{font-size:0.7rem;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;margin-top:4px;display:inline-block;}
+
+/* PAYMENT */
+.payment-modal{padding:28px;}
+.payment-plan-name{font-size:1.1rem;font-weight:900;color:var(--white);margin-bottom:4px;}
+.payment-plan-price{font-size:2rem;font-weight:900;color:var(--gold);margin-bottom:20px;}
+.payment-plan-price span{font-size:0.85rem;color:var(--muted);font-weight:600;}
+.flw-note{font-size:0.72rem;color:var(--muted);text-align:center;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:6px;}
+.payment-success{display:none;text-align:center;padding:20px 0;}
+.payment-success.show{display:block;}
+.payment-success .ps-icon{font-size:3rem;margin-bottom:12px;}
+.payment-success h3{font-size:1rem;font-weight:800;color:var(--white);margin-bottom:8px;}
+.payment-success p{font-size:0.78rem;color:var(--muted);}
+
+@keyframes pipFlash{0%,100%{opacity:1}50%{opacity:0.4}}
+.pip-flash{animation:pipFlash 0.4s ease;}
+
+/* ── TRACK PAGE ── */
+.track-app{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 57px);position:relative;transition:grid-template-columns 0.25s ease;}
+.track-app.sidebar-collapsed{grid-template-columns:0px 1fr;}
+.track-sidebar{background:var(--surface);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;overflow-x:hidden;transition:opacity 0.2s ease;}
+.track-app.sidebar-collapsed .track-sidebar{opacity:0;pointer-events:none;}
+.track-sb-toggle{position:absolute;top:50%;left:280px;transform:translate(-1px,-50%);width:24px;height:44px;border-radius:0 6px 6px 0;background:var(--surface);border:1px solid var(--border);border-left:none;color:var(--muted);font-size:1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:50;transition:color 0.15s,border-color 0.15s,left 0.25s ease;overflow:hidden;}
+.track-app.sidebar-collapsed .track-sb-toggle{left:0px;border-radius:6px;border-left:1px solid var(--border);}
+.track-sb-toggle:hover{color:var(--gold);border-color:var(--border2);}
+.track-sb-header{padding:0 20px 20px;border-bottom:1px solid var(--border);}
+.track-sb-back{display:flex;align-items:center;gap:6px;font-size:0.68rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;margin-bottom:16px;padding:0;}
+.track-sb-back:hover{color:var(--off);}
+.track-sb-title{font-size:0.88rem;font-weight:800;color:var(--white);margin-bottom:4px;}
+.track-sb-sub{font-size:0.68rem;color:var(--muted);}
+.track-sb-pip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:8px 12px;flex:1;}
+.track-sb-pip-row{display:flex;align-items:center;gap:8px;margin-top:12px;}
+.track-sb-settings-btn{flex-shrink:0;width:38px;height:38px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:0.95rem;cursor:pointer;transition:color 0.15s,border-color 0.15s;}
+.track-sb-settings-btn:hover{color:var(--gold);border-color:var(--border2);}
+.track-sb-pip-label{font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);}
+.track-sb-pip-val{font-size:0.9rem;font-weight:900;color:var(--green);font-variant-numeric:tabular-nums;}
+.track-stage-tabs{display:flex;gap:2px;padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.track-stage-tab{flex:1;padding:8px 6px;border-radius:3px;font-size:0.62rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);cursor:pointer;border:1px solid transparent;background:none;transition:all 0.15s;text-align:center;line-height:1.3;}
+.track-stage-tab:hover{color:var(--off);border-color:var(--border2);}
+.track-stage-tab.active{background:var(--gold);color:var(--accent-on);border-color:var(--gold);}
+.track-stage-recommend{font-size:0.62rem;color:var(--gold);padding:8px 20px 0;line-height:1.5;}
+.track-sb-progress{padding:16px 20px;border-bottom:1px solid var(--border);}
+.track-sb-prog-label{display:flex;justify-content:space-between;font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.track-sb-prog-bar{background:var(--border2);border-radius:2px;height:3px;}
+.track-sb-prog-fill{background:var(--gold);height:100%;border-radius:2px;transition:width 0.5s ease;}
+.track-sb-lessons{padding:12px 0;}
+.track-sb-lesson{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;transition:background 0.15s;border-left:2px solid transparent;}
+.track-sb-lesson:hover{background:var(--surface2);}
+.track-sb-lesson.active{background:var(--surface2);border-left-color:var(--gold);}
+.track-sb-num{width:28px;height:28px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:800;flex-shrink:0;}
+.tsn-locked{background:var(--border2);color:var(--muted2);}
+.tsn-active{background:var(--gold);color:var(--accent-on);}
+.tsn-done{background:var(--green);color:#fff;}
+.track-sb-info{flex:1;min-width:0;}
+.track-sb-lesson-title{font-size:0.78rem;font-weight:700;color:var(--off);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.track-sb-lesson-meta{font-size:0.65rem;color:var(--muted);margin-top:2px;}
+.track-sb-pip-badge{font-size:0.6rem;font-weight:700;color:var(--gold);}
+.track-main{padding:40px 48px;width:100%;box-sizing:border-box;}
+.track-lesson-eyebrow{font-size:0.62rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.track-lesson-title{font-size:clamp(1.4rem,3vw,2rem);font-weight:900;letter-spacing:-0.02em;color:var(--white);margin-bottom:8px;line-height:1.2;}
+.track-lesson-meta-row{display:flex;align-items:center;gap:12px;margin-bottom:32px;flex-wrap:wrap;}
+.track-meta-tag{font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:3px 10px;border-radius:2px;border:1px solid var(--border2);color:var(--muted);}
+.track-meta-tag.beginner{border-color:var(--green);color:var(--green);}
+.track-lesson-content{font-size:0.92rem;line-height:1.85;color:var(--off);margin-bottom:40px;}
+.track-lesson-content h2{font-size:1.1rem;font-weight:800;color:var(--white);margin:28px 0 12px;letter-spacing:-0.01em;}
+.track-lesson-content p{margin-bottom:14px;color:var(--off);}
+.track-lesson-content strong{color:var(--white);}
+.track-lesson-content em{color:var(--gold);font-style:normal;font-weight:600;}
+.track-callout{background:var(--surface2);border-left:3px solid var(--gold);border-radius:0 4px 4px 0;padding:14px 18px;margin:20px 0;}
+.track-callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+.track-callout p{margin:0;font-size:0.85rem;color:var(--off);}
+.track-example-box{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:16px 20px;margin:20px 0;}
+.track-example-label{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.track-example-box p{margin:0 0 6px;font-size:0.85rem;}
+.track-example-box p:last-child{margin:0;}
+.track-key-terms{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:20px 0;}
+.track-key-term{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:12px 14px;}
+.track-kt-term{font-size:0.75rem;font-weight:800;color:var(--gold);margin-bottom:4px;}
+.track-kt-def{font-size:0.72rem;color:var(--muted);line-height:1.5;}
+.track-divider{height:1px;background:var(--border);margin:32px 0;}
+.track-quiz-section{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px;margin-bottom:32px;}
+.track-quiz-header{margin-bottom:20px;}
+.track-quiz-eyebrow{font-size:0.6rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.track-quiz-title{font-size:0.95rem;font-weight:800;color:var(--white);}
+.track-quiz-pip-info{font-size:0.72rem;color:var(--gold);margin-top:4px;}
+.track-q-block{margin-bottom:24px;}
+.track-q-num{font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted2);margin-bottom:8px;}
+.track-q-text{font-size:0.9rem;font-weight:700;color:var(--white);margin-bottom:12px;line-height:1.5;}
+.track-q-opts{display:flex;flex-direction:column;gap:6px;}
+.track-q-opt{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:10px 14px;cursor:pointer;font-size:0.82rem;color:var(--off);text-align:left;transition:all 0.15s;}
+.track-q-opt:hover:not(.disabled){border-color:var(--border2);background:var(--surface);}
+.track-q-opt.correct{border-color:var(--green);background:var(--green-dim);color:var(--white);}
+.track-q-opt.wrong{border-color:var(--red);background:var(--red-dim);}
+.track-q-opt.disabled{pointer-events:none;}
+.track-q-feedback{font-size:0.78rem;padding:10px 14px;border-radius:3px;margin-top:8px;display:none;line-height:1.55;}
+.track-q-feedback.show{display:block;}
+.track-q-feedback.cfb{border-left:3px solid var(--green);background:var(--green-dim);color:var(--off);}
+.track-q-feedback.wfb{border-left:3px solid var(--red);background:var(--red-dim);color:var(--off);}
+.track-quiz-result{display:none;text-align:center;padding:28px 20px;border-top:1px solid var(--border);margin-top:24px;}
+.track-quiz-result.show{display:block;}
+.track-qr-pip{font-size:2rem;font-weight:900;color:var(--green);font-variant-numeric:tabular-nums;margin-bottom:4px;}
+.track-qr-label{font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.track-qr-score{font-size:0.85rem;color:var(--off);margin-bottom:16px;}
+.track-qr-msg{font-size:0.8rem;color:var(--muted);margin-bottom:20px;line-height:1.55;}
+.track-lesson-nav{display:flex;gap:10px;justify-content:center;}
+.track-complete-screen{display:none;text-align:center;padding:80px 20px;}
+.track-complete-screen.show{display:block;}
+
+/* ── KNOWLEDGE NUGGET LESSON LAYOUT (definition → scenario → question) ── */
+.nugget-def-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px 32px;margin-bottom:20px;}
+.nugget-def-label{font-size:0.62rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;}
+.nugget-def-text{font-size:1rem;color:var(--off);line-height:1.75;margin-bottom:16px;}
+.nugget-votes-toggle{font-size:0.72rem;font-weight:700;color:var(--muted);cursor:pointer;display:inline-block;transition:color 0.15s;}
+.nugget-votes-toggle:hover{color:var(--gold);}
+.nugget-votes-panel{margin-top:14px;padding-top:14px;border-top:1px solid var(--border2);}
+.nugget-votes-row{display:flex;gap:10px;margin-bottom:10px;}
+.nugget-vote-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:0.82rem;font-weight:700;color:var(--off);cursor:pointer;transition:border-color 0.15s,background 0.15s;}
+.nugget-vote-btn:hover{border-color:var(--border3);}
+.nugget-vote-btn.up:hover{border-color:var(--green);color:var(--green);}
+.nugget-vote-btn.down:hover{border-color:var(--red);color:var(--red);}
+.nugget-votes-note{font-size:0.72rem;color:var(--muted);line-height:1.6;}
+.nugget-scenario-card{background:var(--surface2);border:1px solid var(--border2);border-left:3px solid var(--gold);border-radius:6px;padding:24px 28px;margin-bottom:20px;}
+.nugget-scenario-label{font-size:0.62rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.nugget-scenario-text{font-size:0.92rem;color:var(--off);line-height:1.75;}
+.nugget-suggest-btn{margin-top:14px;background:none;border:1px solid var(--border2);border-radius:6px;padding:8px 14px;font-size:0.76rem;font-weight:700;color:var(--off);cursor:pointer;transition:border-color 0.15s,color 0.15s;}
+.nugget-suggest-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ── LESSON START GATE — focuses the screen on one topic before content reveals ── */
+.lesson-gate{width:100%;text-align:center;min-height:calc(100vh - 57px - 80px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;box-sizing:border-box;}
+.lesson-gate-icon{font-size:2.6rem;margin-bottom:12px;}
+.lesson-gate-sub{font-size:0.88rem;color:var(--muted);line-height:1.7;margin:18px 0 26px;}
+
+/* ── CLICKABLE KEYWORDS — highlighted, deliberately not underlined ── */
+.track-keyword-link{background:var(--gold-dim);color:var(--gold);padding:1px 4px;border-radius:3px;cursor:pointer;font-weight:700;text-decoration:none;transition:background 0.15s;}
+.track-keyword-link:hover{background:var(--gold-dim2);}
+
+/* ── FEATURE SETTINGS MODAL ── */
+.feature-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--border);}
+.feature-toggle-row:last-child{border-bottom:none;}
+.feature-toggle-title{font-size:0.88rem;font-weight:700;color:var(--white);margin-bottom:4px;}
+.feature-toggle-desc{font-size:0.76rem;color:var(--muted);line-height:1.5;max-width:320px;}
+.feature-switch{position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0;}
+.feature-switch input{opacity:0;width:0;height:0;}
+.feature-switch-track{position:absolute;cursor:pointer;inset:0;background:var(--border2);border-radius:24px;transition:background 0.2s;}
+.feature-switch-track::before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:var(--surface);border-radius:50%;transition:transform 0.2s;}
+.feature-switch input:checked + .feature-switch-track{background:var(--gold);}
+.feature-switch input:checked + .feature-switch-track::before{transform:translateX(18px);}
+
+
+/* ── EXAM UI ── */
+.exam-intro{text-align:center;max-width:480px;margin:40px auto;}
+.exam-intro-icon{font-size:2.5rem;margin-bottom:16px;}
+.exam-stat-row{display:flex;gap:12px;justify-content:center;margin:24px 0;flex-wrap:wrap;}
+.exam-stat{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 20px;text-align:center;}
+.exam-stat .val{font-size:1.2rem;font-weight:900;color:var(--white);}
+.exam-stat .lbl{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-top:3px;}
+.exam-result-icon{font-size:3rem;margin-bottom:12px;}
+.exam-pass{color:var(--green);}
+.exam-fail{color:var(--red);}
 
 @media(max-width:700px){
-  nav{padding:12px 16px;flex-wrap:wrap;gap:8px;}
+  /* Track/lesson player: on mobile the sidebar becomes a fixed, floating
+     overlay panel (toggled on/off), not a grid column sharing space with
+     the content — so .track-app drops the grid layout entirely here and
+     .track-main is free to behave like a normal block element that fills
+     its parent's width, which is far more predictable than trying to get
+     a grid `1fr` track to cooperate with a hidden 0-width sibling. */
+  .track-app{display:block;}
+  .track-sidebar{position:fixed;top:57px;left:0;height:calc(100vh - 57px);width:240px;z-index:80;opacity:0;pointer-events:none;transition:opacity 0.2s ease;}
+  .track-app.sidebar-open .track-sidebar{opacity:1;pointer-events:auto;box-shadow:4px 0 16px rgba(53,102,214,0.18);}
+  .track-app.sidebar-collapsed .track-sidebar{opacity:0;pointer-events:none;}
+  .track-sb-toggle{left:0px;transform:translate(0,-50%);}
+  .track-app.sidebar-open .track-sb-toggle{left:240px;}
+  .track-main{display:block;padding:24px 20px;width:100%;max-width:100%;box-sizing:border-box;}
+  .track-key-terms{grid-template-columns:1fr;}
+  .community-hero{padding:20px 20px 28px;}
+  .community-section{padding:28px 20px;}
+  .forum-action-btn{padding:10px 10px;min-height:40px;}
+  .forum-post-actions{flex-wrap:wrap;}
+}
+
+
+@media(max-width:700px){
+  nav{padding:12px 16px;flex-wrap:wrap;gap:8px;position:relative;}
   .nav-center{display:none;}
-  #heroSection,#liHero{padding:48px 20px;min-height:auto;padding-top:80px;}
+  .nav-hamburger{display:flex;}
+  .trending-ticker-wrap{overflow:hidden;width:100%;}
+  .trend-chip{flex-shrink:0;}
+  .trend-text{white-space:nowrap;}
+  .search-box{padding:6px 6px 6px 14px;border-radius:8px;}
+  .search-fake-placeholder{left:36px;right:80px;}
+  .search-input{font-size:0.85rem;min-width:0;}
+  .search-btn{padding:12px 16px;min-height:40px;font-size:0.66rem;}
+  .nav-auth-btn{padding:12px 14px !important;font-size:0.7rem !important;min-height:44px;}
+  #heroSection,#liHero{padding:48px 20px 32px;min-height:auto;padding-top:80px;}
   #trust{gap:28px;padding:20px;}
-  #how,#discuss,#newsletter,#servicesPage{padding:48px 20px;}
+  #how,#opinionsSection,#pricing,#newsletter{padding:48px 20px;}
   #tip{padding:36px 20px;}
-  .steps,.services-grid{grid-template-columns:1fr;}
+  .steps,.pricing-cards{grid-template-columns:1fr;}
   .step{border-radius:4px !important;}
   .step-arrow{display:none;}
   .nl-form{flex-direction:column;}
   footer{padding:16px 20px;flex-direction:column;text-align:center;}
-  .services-dropdown{width:300px;}
-  .sd-grid{grid-template-columns:1fr;}
-  .field-row{grid-template-columns:1fr;}
-  .svc-actions{flex-direction:column;}
   .tip-inner{flex-direction:column;gap:12px;}
+  .field-row{grid-template-columns:1fr;}
+  .opinion-card{grid-template-columns:auto 1fr;}
+  .op-votes{flex-direction:row;grid-column:1/-1;justify-content:flex-end;}
 }
 </style>
 </head>
@@ -345,40 +665,33 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
 <!-- NAV -->
 <nav>
-  <div class="logo-wrap" onclick="showPage('home')">
+  <div class="logo-wrap" onclick="showPage('homePage')" style="cursor:pointer;">
     <svg class="logo-svg" viewBox="0 0 28 28" fill="none">
       <path d="M14 7C9 3 2 7 4 14C6 18 11 20 14 18C17 20 22 18 24 14C26 7 19 3 14 7Z" fill="none" stroke="#c9a84c" stroke-width="1.4"/>
       <path d="M14 7C13 10 13 14 14 18" stroke="#c9a84c" stroke-width="1" stroke-dasharray="2,2"/>
       <circle cx="14" cy="7" r="1.4" fill="#c9a84c"/>
     </svg>
     <div class="logo-text">
-      <span class="logo-main">Butterfly Dynamix</span>
-      <span class="logo-sub">FinQuest Learning</span>
+      <span class="logo-main">Think1st</span>
     </div>
   </div>
   <div class="nav-center">
-    <button class="nav-link" onclick="showPage('home')">Home</button>
-    <button class="nav-link" onclick="smoothScroll('#discuss')">Community</button>
-    <div class="services-nav">
-      <button class="nav-link services-btn">Our Services <span class="arr">▾</span></button>
-      <div class="services-dropdown">
-        <div class="sd-grid">
-          <div class="sd-item" onclick="showPage('services')"><div class="sd-icon">📒</div><div class="sd-info"><h4>Bookkeeping & Accounting</h4><p>Professional books management from ₦25,000/mo</p></div></div>
-          <div class="sd-item" onclick="showPage('services')"><div class="sd-icon">📱</div><div class="sd-info"><h4>Bookkeeping App</h4><p>Self-serve app — 14-day free trial</p></div></div>
-          <div class="sd-item" onclick="showPage('services')"><div class="sd-icon">📈</div><div class="sd-info"><h4>Trading Platform</h4><p>Open a trading account from $100</p></div></div>
-          <div class="sd-item" onclick="showPage('services')"><div class="sd-icon">🏦</div><div class="sd-info"><h4>Open a Bank Account</h4><p>Zero opening fee · ₦1,000 min balance</p></div></div>
-          <div class="sd-item" onclick="showPage('services')"><div class="sd-icon">📊</div><div class="sd-info"><h4>Data Science Services</h4><p>Projects from ₦150,000</p></div></div>
-          <div class="sd-item" onclick="showPage('services')"><div class="sd-icon">💼</div><div class="sd-info"><h4>Investment Services</h4><p>Managed investing from ₦100,000</p></div></div>
-        </div>
-        <div class="sd-footer"><button onclick="showPage('services')">View All Services & Pricing →</button></div>
-      </div>
-    </div>
-    <button class="nav-link" onclick="smoothScroll('#how')">How It Works</button>
+    <button class="nav-link" onclick="openCommunity()">Community</button>
+    <button class="nav-link" onclick="showPage('howPage')">How It Works</button>
+    <button class="nav-link" onclick="showPage('pricingPage')">Pricing</button>
+  </div>
+  <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileNav()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="mobile-nav-dropdown" id="mobileNavDropdown">
+    <button class="mobile-nav-link" onclick="openCommunity();closeMobileNav();">Community</button>
+    <button class="mobile-nav-link" onclick="showPage('howPage');closeMobileNav();">How It Works</button>
+    <button class="mobile-nav-link" onclick="showPage('pricingPage');closeMobileNav();">Pricing</button>
   </div>
   <div class="nav-right">
     <div id="guestNav" style="display:flex;align-items:center;gap:8px;">
-      <button class="btn btn-outline" onclick="openAuth('login')" style="padding:7px 14px;font-size:0.68rem;">Log In</button>
-      <button class="btn btn-gold" onclick="openAuth('signup')" style="padding:7px 14px;font-size:0.68rem;">Join Free</button>
+      <button class="btn btn-outline nav-auth-btn" onclick="openAuth('login')" style="padding:7px 14px;font-size:0.68rem;">Log In</button>
+      <button class="btn btn-gold nav-auth-btn" onclick="openAuth('signup')" style="padding:7px 14px;font-size:0.68rem;">Join Free</button>
     </div>
     <div class="nav-user" id="userNav">
       <div class="pip-ticker">
@@ -394,334 +707,353 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 </nav>
 
 <!-- HOME PAGE -->
-<div id="homePage" class="page active">
-  <!-- GUEST HERO -->
-  <section id="heroSection">
-    <div class="hero-bg"></div>
-    <p class="hero-eyebrow">Microlearning · Finance · Trading · Accounting</p>
-    <h1 class="hero-heading">What's Your <span>Flavor?</span></h1>
-    <p class="hero-sub">Pick a topic and jump straight into a free lesson. No sign-up needed to start.</p>
-    <div class="flavor-grid">
-      <div class="flavor-card" onclick="pickFlavor('acc',this)"><div class="flavor-icon">📊</div><div class="flavor-name">Financial Accounting</div><div class="flavor-desc">Balance sheets, income statements & more</div></div>
-      <div class="flavor-card" onclick="pickFlavor('trd',this)"><div class="flavor-icon">📈</div><div class="flavor-name">Technical Analysis</div><div class="flavor-desc">Charts, patterns & price action</div></div>
-      <div class="flavor-card" onclick="pickFlavor('fin',this)"><div class="flavor-icon">💰</div><div class="flavor-name">Fundamental Analysis</div><div class="flavor-desc">Valuations, ratios & business health</div></div>
-      <div class="flavor-card" onclick="pickFlavor('psy',this)"><div class="flavor-icon">🧠</div><div class="flavor-name">Trading Psychology</div><div class="flavor-desc">Discipline, bias & decision-making</div></div>
-      <div class="flavor-card" onclick="pickFlavor('risk',this)"><div class="flavor-icon">🛡️</div><div class="flavor-name">Risk Management</div><div class="flavor-desc">Position sizing, stop-loss & exposure</div></div>
-    </div>
-    <p class="flavor-cta">Select a topic above to start your free lesson →</p>
-  </section>
+<div id="homePage" class="page">
+<!-- GUEST HERO -->
+<section id="heroSection">
+  <div class="hero-bg"></div>
+  <p class="hero-eyebrow">Find Meaning</p>
+  <h1 class="hero-heading">What's Your <span id="flavorWord">Flavor?</span></h1>
+  <p class="hero-sub">Search any topic or pick a category and jump straight into your lesson. We're starting with Accounting — more categories are on the way.</p>
 
-  <!-- LOGGED IN HERO -->
-  <section id="liHero">
-    <div class="hero-bg"></div>
-    <p class="hero-eyebrow" style="position:relative;z-index:1">Welcome Back</p>
-    <h1 class="li-greeting">Good to see you, <span id="liName">Alex</span> 👋</h1>
-    <p class="li-sub">Your pip score is live. Every correct answer moves it forward.</p>
-    <div class="pip-dashboard">
-      <div class="pip-dash-label">Your Live Pip Score</div>
-      <div class="pip-dash-value" id="dashPip">1.00000</div>
-      <div class="pip-dash-sub" id="dashPipSub">Keep answering correctly to move your pip upward</div>
-      <div class="pip-bar"><div class="pip-bar-fill" id="pipBarFill" style="width:0%"></div></div>
+  <!-- SEARCH BAR -->
+  <div class="search-wrap">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" type="text" id="searchInput" placeholder=" " autocomplete="off" oninput="onSearch(this.value);updateFakePlaceholder(this.value);" onkeydown="onSearchKey(event)" onfocus="hideFakePlaceholder()" onblur="showFakePlaceholder()"/>
+      <div class="search-fake-placeholder" id="searchFakePlaceholder"><span id="searchFakePlaceholderText">Search accounting topics, e.g. depreciation, VAT, IFRS...</span></div>
+      <button class="search-btn" onclick="doSearch()">Search</button>
     </div>
-    <div class="li-stats">
-      <div class="li-stat"><div class="val" id="liStreak">0</div><div class="lbl">Day Streak 🔥</div></div>
-      <div class="li-stat"><div class="val" id="liLessons">0</div><div class="lbl">Lessons Done</div></div>
-      <div class="li-stat"><div class="val" id="liCorrect">0</div><div class="lbl">Correct Answers</div></div>
+    <div class="search-suggestions" id="searchSuggestions"></div>
+  </div>
+
+  <!-- ACCOUNTING ENTRY — plain button, no card/widget -->
+  <div class="flavor-section">
+    <div style="text-align:center;">
+      <button class="btn btn-gold" onclick="openAccounting()" style="font-size:0.95rem;padding:14px 36px;">📊 Accounting</button>
     </div>
-    <div class="li-tracks" id="liTracks"></div>
-  </section>
+    <div style="text-align:center;margin-top:14px;">
+      <button class="link-btn" onclick="openSampleNugget()" style="background:none;border:none;color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;text-decoration:underline;">Try a free 1-minute knowledge nugget →</button>
+    </div>
+  </div>
 
-  <section id="trust">
-    <div class="trust-stat"><div class="trust-val">4,200+</div><div class="trust-lbl">Active Learners</div></div>
-    <div class="trust-stat"><div class="trust-val">54</div><div class="trust-lbl">Bite-Sized Lessons</div></div>
-    <div class="trust-stat"><div class="trust-val">1,800+</div><div class="trust-lbl">Community Posts</div></div>
-    <div class="trust-stat"><div class="trust-val">6</div><div class="trust-lbl">Services</div></div>
-  </section>
+  <!-- TRENDING -->
+  <div class="trending-section">
+    <div class="trending-label-row">
+      <span class="trending-label">Trending Discussions</span>
+      <div class="trending-line"></div>
+    </div>
+    <div class="trending-ticker-wrap">
+      <div class="trending-ticker" id="trendingTicker"></div>
+    </div>
+  </div>
+</section>
 
-  <section id="how">
+<!-- LOGGED IN HERO -->
+<section id="liHero">
+  <div class="hero-bg"></div>
+  <p class="hero-eyebrow" style="position:relative;z-index:1">Welcome Back</p>
+  <h1 class="li-greeting">Good to see you, <span id="liName">Alex</span> 👋</h1>
+  <p class="li-sub">Your pip score is live. Every correct answer moves it forward.</p>
+  <div class="pip-dashboard">
+    <div class="pip-dash-label">Your Live Pip Score</div>
+    <div class="pip-dash-value" id="dashPip">1.00000</div>
+    <div class="pip-dash-sub" id="dashPipSub">Keep answering correctly to move your pip upward</div>
+    <div class="pip-bar"><div class="pip-bar-fill" id="pipBarFill" style="width:0%"></div></div>
+  </div>
+  <div class="li-stats">
+    <div class="li-stat"><div class="val" id="liStreak">0</div><div class="lbl">Day Streak 🔥</div></div>
+    <div class="li-stat"><div class="val" id="liLessons">0</div><div class="lbl">Lessons Done</div></div>
+    <div class="li-stat"><div class="val" id="liCorrect">0</div><div class="lbl">Correct Answers</div></div>
+  </div>
+  <div class="li-tracks" id="liTracks"></div>
+</section>
+
+<!-- TRUST BAR -->
+<section id="trust">
+  <div class="trust-stat"><div class="trust-val">4,200+</div><div class="trust-lbl">Active Learners</div></div>
+  <div class="trust-stat"><div class="trust-val">90+</div><div class="trust-lbl">Topic Tracks</div></div>
+  <div class="trust-stat"><div class="trust-val">1,800+</div><div class="trust-lbl">Community Posts</div></div>
+  <div class="trust-stat"><div class="trust-val">17</div><div class="trust-lbl">Accounting Topics</div></div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <p class="section-eyebrow">How It Works</p>
+  <h2 class="section-heading">Professional learning, reimagined.</h2>
+  <div class="steps">
+    <div class="step"><div class="step-num">Step 01</div><div class="step-icon">🎯</div><h3>Pick Your Topic</h3><p>Choose from 17 accounting topics and jump straight into a free lesson — no commitment needed.</p><div class="step-arrow">→</div></div>
+    <div class="step"><div class="step-num">Step 02</div><div class="step-icon">⚡</div><h3>Earn Pips</h3><p>Every correct answer moves your pip score up — like a live trade going in your favour.</p><div class="step-arrow">→</div></div>
+    <div class="step"><div class="step-num">Step 03</div><div class="step-icon">💬</div><h3>Join the Community</h3><p>Post opinions, vote on ideas and learn from a global community of curious professionals.</p></div>
+  </div>
+</section>
+
+<!-- COMMUNITY OPINIONS -->
+<section id="opinionsSection">
+  <div class="opinions-header">
+    <div>
+      <p class="section-eyebrow" style="cursor:pointer;" onclick="openCommunity()">Community →</p>
+      <h2 class="section-heading" style="margin-bottom:0">Top Opinions This Week</h2>
+    </div>
+    <div class="op-filter">
+      <button class="pf active" onclick="filterOpinions('all',this)">All</button>
+      <button class="pf" onclick="filterOpinions('acc',this)">Accounting</button>
+    </div>
+  </div>
+  <div class="opinions-grid" id="opinionsGrid"></div>
+  <div class="opinions-cta">
+    <button class="btn btn-outline" onclick="openPostOpinion()">+ Post Your Opinion</button>
+    <p class="opinions-cta-note">Join free to post and vote on community opinions</p>
+  </div>
+</section>
+
+<!-- DAILY TIP -->
+<section id="tip">
+  <div class="tip-inner">
+    <div><div class="tip-date-badge" id="tipDate">Today</div></div>
+    <div>
+      <p class="tip-eyebrow">Daily Insight</p>
+      <p class="tip-text" id="tipText"></p>
+      <p class="tip-source" id="tipSource"></p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <p class="section-eyebrow">Pricing</p>
+  <h2 class="section-heading">Simple, honest pricing.</h2>
+  <p style="font-size:0.85rem;color:var(--muted);max-width:480px;margin:0 auto;">One subscription. All 17 accounting topics. Every track from beginner to expert.</p>
+  <div class="pricing-cards">
+    <div class="pricing-card">
+      <div class="pc-name">Free</div>
+      <div class="pc-price">$0 <span>forever</span></div>
+      <div class="pc-desc">Try before you commit. Sample lessons across all pillars.</div>
+      <div class="pc-features">
+        <div class="pc-feat">3 free lessons per topic</div>
+        <div class="pc-feat">Read community opinions</div>
+        <div class="pc-feat">Daily insight</div>
+        <div class="pc-feat no">Quiz & pip rewards</div>
+        <div class="pc-feat no">Post opinions</div>
+      </div>
+      <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Get Started Free</button>
+    </div>
+    <div class="pricing-card featured">
+      <div class="pc-name">Professional</div>
+      <div class="pc-price">$5 <span>/ month</span></div>
+      <div class="pc-desc">Full access to every accounting topic, beginner to advanced.</div>
+      <div class="pc-features">
+        <div class="pc-feat">All 17 accounting topics</div>
+        <div class="pc-feat">Full lessons beginner to expert</div>
+        <div class="pc-feat">Quizzes, flashcards & pip rewards</div>
+        <div class="pc-feat">Post & vote on opinions</div>
+        <div class="pc-feat">Leaderboard & certificates</div>
+      </div>
+      <button class="btn btn-gold btn-full" onclick="openPayment('Professional','$5/month',5)">Subscribe — $5/mo</button>
+    </div>
+    <div class="pricing-card">
+      <div class="pc-name">Annual</div>
+      <div class="pc-price">$48 <span>/ year</span></div>
+      <div class="pc-desc">Save 20% vs monthly. Best value for committed learners.</div>
+      <div class="pc-features">
+        <div class="pc-feat">Everything in Professional</div>
+        <div class="pc-feat">Save $12 vs monthly</div>
+        <div class="pc-feat">Priority new content access</div>
+        <div class="pc-feat">Annual completion certificate</div>
+        <div class="pc-feat">Early access to new features</div>
+      </div>
+      <button class="btn btn-outline btn-full" onclick="openPayment('Annual','$48/year',48)">Subscribe — $48/yr</button>
+    </div>
+  </div>
+</section>
+
+<!-- NEWSLETTER -->
+<section id="newsletter">
+  <div class="nl-inner">
+    <h2>Stay Sharp Every Week</h2>
+    <p>One insight, one opinion and one community highlight — every week. Free, no spam.</p>
+    <div class="nl-form">
+      <input class="nl-input" type="email" placeholder="Enter your email address" id="nlEmail"/>
+      <button class="btn btn-gold" onclick="nlSubmit()">Subscribe</button>
+    </div>
+    <p class="nl-note" id="nlNote">Join 4,200+ subscribers. Unsubscribe anytime.</p>
+  </div>
+</section>
+
+<footer>
+  <span class="footer-logo">Think1st · FinQuest</span>
+  <div class="footer-links">
+    <button class="footer-link">Privacy Policy</button>
+    <button class="footer-link">Terms of Service</button>
+    <button class="footer-link" onclick="openCommunity()">Community Guidelines</button>
+  </div>
+  <span class="footer-copy">© 2025 Think1st. All rights reserved.</span>
+</footer>
+</div>
+<!-- /HOME PAGE -->
+
+<!-- HOW IT WORKS PAGE -->
+<div id="howPage" class="page">
+  <div style="max-width:900px;margin:0 auto;padding:40px 32px;">
+    <button class="track-sb-back" onclick="showPage('homePage')" style="margin-bottom:32px;">← Back to Home</button>
     <p class="section-eyebrow">How It Works</p>
-    <h2 class="section-heading">Learning finance has never been this simple.</h2>
+    <h2 class="section-heading">Professional learning, reimagined.</h2>
     <div class="steps">
-      <div class="step"><div class="step-num">Step 01</div><div class="step-icon">🎯</div><h3>Pick Your Flavor</h3><p>Choose the topic that interests you most and jump straight into a free lesson.</p><div class="step-arrow">→</div></div>
+      <div class="step"><div class="step-num">Step 01</div><div class="step-icon">🎯</div><h3>Pick Your Topic</h3><p>Choose from 17 accounting topics and jump straight into a free lesson — no commitment needed.</p><div class="step-arrow">→</div></div>
       <div class="step"><div class="step-num">Step 02</div><div class="step-icon">⚡</div><h3>Earn Pips</h3><p>Every correct answer moves your pip score up — like a live trade going in your favour.</p><div class="step-arrow">→</div></div>
-      <div class="step"><div class="step-num">Step 03</div><div class="step-icon">💬</div><h3>Join the Discussion</h3><p>Share opinions, vote on posts and grow with a community of finance-minded learners.</p></div>
+      <div class="step"><div class="step-num">Step 03</div><div class="step-icon">💬</div><h3>Join the Community</h3><p>Post opinions, vote on ideas and learn from a global community of curious professionals.</p></div>
     </div>
-  </section>
-
-  <section id="discuss">
-    <div class="discuss-head">
-      <div><p class="section-eyebrow">Community</p><h2 class="section-heading" style="margin-bottom:0">Trending Discussions</h2></div>
-      <div class="topic-filter">
-        <button class="tf active" onclick="filterPosts('all',this)">All</button>
-        <button class="tf" onclick="filterPosts('acc',this)">Accounting</button>
-        <button class="tf" onclick="filterPosts('fin',this)">Finance</button>
-        <button class="tf" onclick="filterPosts('trd',this)">Trading</button>
-      </div>
-    </div>
-    <div class="posts" id="postList"></div>
-    <div class="discuss-cta">
-      <button class="btn btn-outline" onclick="openAuth('signup')">View All Discussions</button>
-      <p class="lock-note">Join free to post, vote and reply</p>
-    </div>
-  </section>
-
-  <section id="tip">
-    <div class="tip-inner">
-      <div><div class="tip-date-badge" id="tipDate">Today</div></div>
-      <div>
-        <p class="tip-eyebrow">Daily Insight</p>
-        <p class="tip-text" id="tipText"></p>
-        <p class="tip-source" id="tipSource"></p>
-      </div>
-    </div>
-  </section>
-
-  <section id="newsletter">
-    <div class="nl-inner">
-      <h2>Stay Sharp Every Week</h2>
-      <p>One finance insight, one trading tip and one community highlight — every week. Free, no spam.</p>
-      <div class="nl-form">
-        <input class="nl-input" type="email" placeholder="Enter your email address" id="nlEmail"/>
-        <button class="btn btn-gold" onclick="nlSubmit()">Subscribe</button>
-      </div>
-      <p class="nl-note" id="nlNote">Join 4,200+ subscribers. Unsubscribe anytime.</p>
-    </div>
-  </section>
-
-  <footer>
-    <span class="footer-logo">Butterfly Dynamix LLC · FinQuest</span>
-    <span class="footer-copy">© 2025 Butterfly Dynamix LLC. All rights reserved.</span>
-  </footer>
-</div>
-
-<!-- SERVICES PAGE -->
-<div id="servicesPage" class="page">
-  <div style="max-width:1000px;margin:0 auto;padding:60px 40px;">
-    <div class="services-hero">
-      <p class="section-eyebrow">Butterfly Dynamix LLC</p>
-      <h1>Our Services</h1>
-      <p>Professional financial services designed to help individuals and businesses grow, manage and protect their money.</p>
-    </div>
-    <div class="services-grid">
-
-      <div class="svc-card featured">
-        <span class="svc-badge badge-green">Professional Service</span>
-        <div class="svc-icon">📒</div>
-        <h3>Bookkeeping & Accounting</h3>
-        <p>Let our certified accountants manage your books so you can focus on growing your business. Monthly reports, tax-ready financials and real-time oversight.</p>
-        <div class="svc-pricing">
-          <div class="price-row"><span class="price-tier">Starter — up to 50 transactions</span><span class="price-amount">₦25,000/mo</span></div>
-          <div class="price-row"><span class="price-tier">Growth — up to 200 transactions</span><span class="price-amount">₦65,000/mo</span></div>
-          <div class="price-row"><span class="price-tier">Enterprise</span><span class="price-amount">Custom</span></div>
-        </div>
-        <div class="svc-features">
-          <div class="svc-feat">Monthly financial reports</div>
-          <div class="svc-feat">Tax-ready statements</div>
-          <div class="svc-feat">Dedicated account manager</div>
-          <div class="svc-feat">Payroll processing available</div>
-        </div>
-        <div class="svc-actions">
-          <button class="btn btn-gold" onclick="openBooking('Bookkeeping & Accounting','call')">Book a Call</button>
-          <button class="btn btn-outline" onclick="openBooking('Bookkeeping & Accounting','request')">Send Request</button>
-        </div>
-      </div>
-
-      <div class="svc-card">
-        <span class="svc-badge badge-blue">App Access</span>
-        <div class="svc-icon">📱</div>
-        <h3>Bookkeeping App</h3>
-        <p>Manage your own books with our intuitive self-serve application. Perfect for freelancers, sole traders and small business owners.</p>
-        <div class="svc-pricing">
-          <div class="price-row"><span class="price-tier">Free Trial</span><span class="price-amount">14 days free</span></div>
-          <div class="price-row"><span class="price-tier">Basic — single user</span><span class="price-amount">₦5,000/mo</span></div>
-          <div class="price-row"><span class="price-tier">Pro — multi-user + reports</span><span class="price-amount">₦12,000/mo</span></div>
-        </div>
-        <div class="svc-features">
-          <div class="svc-feat">Invoicing & expense tracking</div>
-          <div class="svc-feat">Automated bank reconciliation</div>
-          <div class="svc-feat">P&L and balance sheet reports</div>
-          <div class="svc-feat">Mobile app included</div>
-        </div>
-        <div class="svc-actions">
-          <button class="btn btn-green" onclick="openBooking('Bookkeeping App','trial')">Start Free Trial</button>
-          <button class="btn btn-outline" onclick="openBooking('Bookkeeping App','request')">Send Request</button>
-        </div>
-      </div>
-
-      <div class="svc-card">
-        <span class="svc-badge badge-gold">Trading</span>
-        <div class="svc-icon">📈</div>
-        <h3>Trading Platform</h3>
-        <p>Open a live trading account with Butterfly Dynamix. Access forex, commodities, indices and crypto markets with competitive spreads.</p>
-        <div class="svc-pricing">
-          <div class="price-row"><span class="price-tier">Standard Account</span><span class="price-amount">$100 min deposit</span></div>
-          <div class="price-row"><span class="price-tier">Pro Account</span><span class="price-amount">$500 min deposit</span></div>
-          <div class="price-row"><span class="price-tier">Spreads from</span><span class="price-amount">0.1 pips</span></div>
-        </div>
-        <div class="svc-features">
-          <div class="svc-feat">Forex, crypto & commodities</div>
-          <div class="svc-feat">Leverage up to 1:500</div>
-          <div class="svc-feat">MT4/MT5 platform access</div>
-          <div class="svc-feat">24/5 customer support</div>
-        </div>
-        <div class="svc-actions">
-          <button class="btn btn-gold" onclick="openBooking('Trading Platform','account')">Open Account</button>
-          <button class="btn btn-outline" onclick="openBooking('Trading Platform','call')">Book a Call</button>
-        </div>
-      </div>
-
-      <div class="svc-card">
-        <span class="svc-badge badge-white">Banking</span>
-        <div class="svc-icon">🏦</div>
-        <h3>Open a Bank Account</h3>
-        <p>Simple, digital-first banking with Butterfly Dynamix. Open an account in minutes, no paperwork, no stress.</p>
-        <div class="svc-pricing">
-          <div class="price-row"><span class="price-tier">Account Opening Fee</span><span class="price-amount">Free</span></div>
-          <div class="price-row"><span class="price-tier">Minimum Balance</span><span class="price-amount">₦1,000</span></div>
-          <div class="price-row"><span class="price-tier">Monthly Maintenance</span><span class="price-amount">₦500/mo</span></div>
-        </div>
-        <div class="svc-features">
-          <div class="svc-feat">Instant account number</div>
-          <div class="svc-feat">Free transfers within platform</div>
-          <div class="svc-feat">Debit card issuance</div>
-          <div class="svc-feat">USSD & mobile banking</div>
-        </div>
-        <div class="svc-actions">
-          <button class="btn btn-white" onclick="openBooking('Bank Account','account')">Open Account</button>
-          <button class="btn btn-outline" onclick="openBooking('Bank Account','request')">Send Request</button>
-        </div>
-      </div>
-
-      <div class="svc-card">
-        <span class="svc-badge badge-blue">Data & Analytics</span>
-        <div class="svc-icon">📊</div>
-        <h3>Data Science Services</h3>
-        <p>Turn your raw business data into actionable insights. We build dashboards, predictive models and automated reporting systems.</p>
-        <div class="svc-pricing">
-          <div class="price-row"><span class="price-tier">Starter Project</span><span class="price-amount">From ₦150,000</span></div>
-          <div class="price-row"><span class="price-tier">Full Analysis & Dashboard</span><span class="price-amount">From ₦350,000</span></div>
-          <div class="price-row"><span class="price-tier">Ongoing Retainer</span><span class="price-amount">From ₦100,000/mo</span></div>
-        </div>
-        <div class="svc-features">
-          <div class="svc-feat">Custom dashboards & reports</div>
-          <div class="svc-feat">Predictive modelling</div>
-          <div class="svc-feat">Excel, Power BI & Python</div>
-          <div class="svc-feat">Business intelligence consulting</div>
-        </div>
-        <div class="svc-actions">
-          <button class="btn btn-gold" onclick="openBooking('Data Science','call')">Book a Call</button>
-          <button class="btn btn-outline" onclick="openBooking('Data Science','request')">Send Request</button>
-        </div>
-      </div>
-
-      <div class="svc-card featured">
-        <span class="svc-badge badge-gold">Investment</span>
-        <div class="svc-icon">💼</div>
-        <h3>Investment Services</h3>
-        <p>Grow your wealth with Butterfly Dynamix's managed and guided investment offerings. Our team allocates across equities, bonds and alternative assets.</p>
-        <div class="svc-pricing">
-          <div class="price-row"><span class="price-tier">Minimum Investment</span><span class="price-amount">₦100,000</span></div>
-          <div class="price-row"><span class="price-tier">Management Fee</span><span class="price-amount">2% per annum</span></div>
-          <div class="price-row"><span class="price-tier">Projected Returns</span><span class="price-amount">12–18% p.a.</span></div>
-        </div>
-        <div class="svc-features">
-          <div class="svc-feat">Diversified portfolio management</div>
-          <div class="svc-feat">Quarterly performance reports</div>
-          <div class="svc-feat">Risk-rated investment plans</div>
-          <div class="svc-feat">Personal investment advisor</div>
-        </div>
-        <div class="svc-actions">
-          <button class="btn btn-gold" onclick="openBooking('Investment Services','call')">Book a Call</button>
-          <button class="btn btn-outline" onclick="openBooking('Investment Services','request')">Send Request</button>
-        </div>
-      </div>
-
+    <div style="margin-top:48px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
+      <button class="btn btn-gold" onclick="showPage('homePage');openAccounting();" style="padding:14px 32px;">Start Learning →</button>
+      <button class="btn btn-outline" onclick="showPage('pricingPage')" style="padding:14px 32px;">View Pricing</button>
     </div>
   </div>
-  <footer style="border-top:1px solid var(--border);padding:24px 40px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-    <span class="footer-logo">Butterfly Dynamix LLC</span>
-    <span class="footer-copy">© 2025 Butterfly Dynamix LLC. All rights reserved.</span>
-  </footer>
 </div>
 
-<!-- BOOKING MODAL -->
-<div class="overlay" id="bookingOverlay">
-  <div class="modal">
-    <button class="modal-close-btn" onclick="closeBooking()">✕</button>
-    <div class="modal-inner">
-      <p class="modal-eyebrow" id="bookingEyebrow">Butterfly Dynamix</p>
-      <h2 class="modal-title" id="bookingTitle">Book a Service</h2>
-      <p class="modal-sub" id="bookingSub">Choose how you'd like to proceed.</p>
-      <div class="modal-tabs" id="bookingTabs">
-        <button class="m-tab active" id="callTab" onclick="switchBookingTab('call')">📞 Book a Call</button>
-        <button class="m-tab" id="requestTab" onclick="switchBookingTab('request')">📝 Send Request</button>
+<!-- PRICING PAGE -->
+<div id="pricingPage" class="page">
+  <div style="max-width:1000px;margin:0 auto;padding:40px 32px;">
+    <button class="track-sb-back" onclick="showPage('homePage')" style="margin-bottom:32px;">← Back to Home</button>
+    <p class="section-eyebrow">Pricing</p>
+    <h2 class="section-heading">Simple, honest pricing.</h2>
+    <p style="font-size:0.85rem;color:var(--muted);max-width:480px;margin:0 auto 40px;">One subscription. All 17 accounting topics. Every track from beginner to expert.</p>
+    <div class="pricing-cards">
+      <div class="pricing-card">
+        <div class="pc-name">Free</div>
+        <div class="pc-price">$0 <span>forever</span></div>
+        <div class="pc-desc">Try before you commit. Sample lessons across all pillars.</div>
+        <div class="pc-features">
+          <div class="pc-feat">3 free lessons per topic</div>
+          <div class="pc-feat">Read community opinions</div>
+          <div class="pc-feat">Daily insight</div>
+          <div class="pc-feat no">Quiz &amp; pip rewards</div>
+          <div class="pc-feat no">Post opinions</div>
+        </div>
+        <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Get Started Free</button>
       </div>
-
-      <!-- CALL PANEL -->
-      <div class="m-panel active" id="callPanel">
-        <div class="field"><label>Full Name</label><input type="text" id="bkName" placeholder="Your full name"/></div>
-        <div class="field"><label>Email</label><input type="email" id="bkEmail" placeholder="you@email.com"/></div>
-        <div class="field"><label>Phone Number</label><input type="tel" id="bkPhone" placeholder="+234 800 000 0000"/></div>
-        <div class="field"><label>Preferred Date</label><input type="date" id="bkDate"/></div>
-        <div class="field"><label>Preferred Time</label>
-          <div class="time-slots">
-            <div class="time-slot" onclick="selectTime(this)">9:00 AM</div>
-            <div class="time-slot" onclick="selectTime(this)">10:00 AM</div>
-            <div class="time-slot" onclick="selectTime(this)">11:00 AM</div>
-            <div class="time-slot" onclick="selectTime(this)">1:00 PM</div>
-            <div class="time-slot" onclick="selectTime(this)">2:00 PM</div>
-            <div class="time-slot" onclick="selectTime(this)">3:00 PM</div>
-          </div>
+      <div class="pricing-card featured">
+        <div class="pc-name">Professional</div>
+        <div class="pc-price">$5 <span>/ month</span></div>
+        <div class="pc-desc">Full access to every accounting topic, beginner to advanced.</div>
+        <div class="pc-features">
+          <div class="pc-feat">All 17 accounting topics</div>
+          <div class="pc-feat">Full lessons beginner to expert</div>
+          <div class="pc-feat">Quizzes, flashcards &amp; pip rewards</div>
+          <div class="pc-feat">Post &amp; vote on opinions</div>
+          <div class="pc-feat">Leaderboard &amp; certificates</div>
         </div>
-        <div class="field"><label>Brief Note (optional)</label><textarea id="bkNote" placeholder="Tell us a little about what you need..."></textarea></div>
-        <button class="btn btn-gold btn-full" onclick="submitBooking('call')">Confirm Booking →</button>
+        <button class="btn btn-gold btn-full" onclick="openPayment('Professional','$5/month',5)">Subscribe — $5/mo</button>
       </div>
-
-      <!-- REQUEST PANEL -->
-      <div class="m-panel" id="requestPanel">
-        <div class="field-row">
-          <div class="field"><label>First Name</label><input type="text" id="rqFirst" placeholder="First name"/></div>
-          <div class="field"><label>Last Name</label><input type="text" id="rqLast" placeholder="Last name"/></div>
+      <div class="pricing-card">
+        <div class="pc-name">Annual</div>
+        <div class="pc-price">$48 <span>/ year</span></div>
+        <div class="pc-desc">Save 20% vs monthly. Best value for committed learners.</div>
+        <div class="pc-features">
+          <div class="pc-feat">Everything in Professional</div>
+          <div class="pc-feat">Save $12 vs monthly</div>
+          <div class="pc-feat">Priority new content access</div>
+          <div class="pc-feat">Annual completion certificate</div>
+          <div class="pc-feat">Early access to new features</div>
         </div>
-        <div class="field"><label>Email</label><input type="email" id="rqEmail" placeholder="you@email.com"/></div>
-        <div class="field"><label>Company / Business Name (optional)</label><input type="text" id="rqCompany" placeholder="Your business name"/></div>
-        <div class="field"><label>Service Interested In</label>
-          <select id="rqService">
-            <option>Bookkeeping & Accounting</option>
-            <option>Bookkeeping App</option>
-            <option>Trading Platform</option>
-            <option>Bank Account</option>
-            <option>Data Science Services</option>
-            <option>Investment Services</option>
-          </select>
-        </div>
-        <div class="field"><label>Budget Range</label>
-          <select id="rqBudget">
-            <option>Under ₦50,000</option>
-            <option>₦50,000 – ₦150,000</option>
-            <option>₦150,000 – ₦500,000</option>
-            <option>₦500,000+</option>
-            <option>Prefer not to say</option>
-          </select>
-        </div>
-        <div class="field"><label>Tell Us What You Need</label><textarea id="rqMessage" placeholder="Describe your requirements in as much detail as you like..."></textarea></div>
-        <button class="btn btn-gold btn-full" onclick="submitBooking('request')">Submit Request →</button>
-      </div>
-
-      <!-- SUCCESS -->
-      <div class="success-msg" id="bookingSuccess">
-        <div class="success-icon">✅</div>
-        <h3>Request Received!</h3>
-        <p>Thank you! The Butterfly Dynamix team will be in touch within 24 hours.</p>
-        <button class="btn btn-outline" style="margin-top:16px" onclick="closeBooking()">Close</button>
+        <button class="btn btn-outline btn-full" onclick="openPayment('Annual','$48/year',48)">Subscribe — $48/yr</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- AUTH OVERLAY -->
+<!-- TRACK PAGE -->
+<div id="trackPage" class="page">
+  <div class="track-app" id="trackApp">
+    <aside class="track-sidebar" id="trackSidebar">
+      <div class="track-sb-header">
+        <button class="track-sb-back" onclick="closeTrack()">← Back to Home</button>
+        <div class="track-sb-title" id="trackTitle">Track Title</div>
+        <div class="track-sb-sub" id="trackSub">Beginner Track · 10 Lessons</div>
+        <div class="track-sb-pip-row">
+          <div class="track-sb-pip"><div><div class="track-sb-pip-label">Pip Score</div><div class="track-sb-pip-val" id="trackPip">1.00000</div></div></div>
+          <button class="track-sb-settings-btn" onclick="openFeatureSettings()" title="Lesson display settings">⚙</button>
+        </div>
+      </div>
+      <div class="track-stage-tabs" id="trackStageTabs"></div>
+      <div class="track-sb-progress" id="trackSbProgress">
+        <div class="track-sb-prog-label"><span>Progress</span><span id="trackProgText">0 / 10</span></div>
+        <div class="track-sb-prog-bar"><div class="track-sb-prog-fill" id="trackProgFill" style="width:0%"></div></div>
+      </div>
+      <div class="track-sb-lessons" id="trackSbLessons"></div>
+    </aside>
+    <button class="track-sb-toggle" id="trackSbToggle" onclick="toggleTrackSidebar()" title="Hide sidebar">‹</button>
+    <main class="track-main" id="trackMainContent"></main>
+  </div>
+</div>
+
+<!-- COMMUNITY PAGE -->
+<div id="communityPage" class="page">
+  <div class="community-app">
+    <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="closeCommunity()">← Back to Home</button>
+
+    <section class="community-hero">
+      <h1 class="hero-heading" style="font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:0;">What's Your <span id="flavorWordForum">Flavor?</span></h1>
+    </section>
+
+    <!-- DISCUSSION FORUM -->
+    <section class="community-section" style="border-top:none;">
+      <div class="opinions-header">
+        <div></div>
+        <div class="op-filter">
+          <button class="pf active" onclick="filterForumPosts('all',this)">All</button>
+          <button class="pf" onclick="filterForumPosts('acc',this)">Accounting</button>
+        </div>
+      </div>
+
+      <div class="forum-composer" style="position:relative;">
+        <textarea id="forumComposerText" maxlength="280" placeholder="Share a quick take or question with the community..." oninput="updateForumCharCount()" onfocus="onComposerFocus()" onblur="syncComposerOverlay()"></textarea>
+        <div id="forumComposerClickLayer" onclick="onComposerOverlayClick()" style="position:absolute;top:0;left:0;right:0;height:60px;cursor:pointer;"></div>
+        <div class="forum-composer-row">
+          <span class="forum-char-count" id="forumCharCount">280 characters left</span>
+          <button class="btn btn-gold" onclick="submitForumPost()">Post</button>
+        </div>
+      </div>
+
+      <div class="forum-feed" id="forumFeed"></div>
+    </section>
+  </div>
+</div>
+
+<!-- FORUM THREAD (single post + its reply thread) -->
+<div id="forumThreadPage" class="page">
+  <div class="community-app">
+    <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="closeForumThread()">← Back to Forum</button>
+    <section class="community-section" style="max-width:680px;">
+      <div id="forumThreadPost"></div>
+      <div class="forum-reply-composer">
+        <textarea id="forumReplyText" maxlength="280" placeholder="Write a reply..." oninput="updateForumReplyCharCount()"></textarea>
+        <div class="forum-composer-row">
+          <span class="forum-char-count" id="forumReplyCharCount">280 characters left</span>
+          <button class="btn btn-gold" onclick="submitForumReply()">Reply</button>
+        </div>
+      </div>
+      <div id="forumThreadReplies"></div>
+    </section>
+  </div>
+</div>
+
+<!-- USER PROFILE -->
+<div id="profilePage" class="page">
+  <div class="community-app">
+    <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="closeProfile()">← Back</button>
+    <section class="community-section" style="max-width:680px;">
+      <div id="profileHeader"></div>
+      <div class="profile-tabs">
+        <button class="track-stage-tab active" id="profileTabPosts" onclick="setProfileTab('posts')">Posts</button>
+        <button class="track-stage-tab" id="profileTabReplies" onclick="setProfileTab('replies')">Replies</button>
+      </div>
+      <div id="profileFeed"></div>
+    </section>
+  </div>
+</div>
+
+
 <div class="overlay" id="authOverlay">
-  <div class="modal" style="max-width:460px;">
+  <div class="modal">
     <button class="modal-close-btn" onclick="closeAuth()">✕</button>
     <div class="auth-tabs">
       <button class="auth-tab active" id="tabSignup" onclick="switchAuthTab('signup')">Create Account</button>
@@ -729,9 +1061,9 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     </div>
     <div id="signupFlow">
       <div class="auth-step active" id="sStep1">
-        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot"></div><div class="si-dot"></div><span class="si-label">Step 1 of 3</span></div>
+        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot"></div><span class="si-label">Step 1 of 2</span></div>
         <h2 class="auth-heading">Create your account</h2>
-        <p class="auth-sub">Start your FinQuest learning journey.</p>
+        <p class="auth-sub">Join 4,200+ professionals on FinQuest.</p>
         <div class="field-row">
           <div class="field"><label>First Name</label><input type="text" id="sfirst" placeholder="e.g. Alex"/><div class="field-err" id="eFirst">Required</div></div>
           <div class="field"><label>Last Name</label><input type="text" id="slast" placeholder="e.g. Johnson"/><div class="field-err" id="eLast">Required</div></div>
@@ -745,34 +1077,20 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
         <div class="step-nav"><button class="btn btn-gold btn-full" onclick="goStep1()">Continue →</button></div>
         <div class="switch-mode">Already have an account? <button onclick="switchAuthTab('login')">Log in</button></div>
       </div>
-      <div class="auth-step" id="sStep2">
-        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot done"></div><div class="si-dot"></div><span class="si-label">Step 2 of 3</span></div>
-        <h2 class="auth-heading">Pick your flavors</h2>
-        <p class="auth-sub">Select topics you want to learn. Add more anytime.</p>
-        <div class="flavor-mini" id="flavorMini">
-          <div class="fm-chip" data-topic="acc" onclick="toggleFlavor(this)">📊 Accounting</div>
-          <div class="fm-chip" data-topic="trd" onclick="toggleFlavor(this)">📈 Trading</div>
-          <div class="fm-chip" data-topic="fin" onclick="toggleFlavor(this)">💰 Finance</div>
-          <div class="fm-chip" data-topic="psy" onclick="toggleFlavor(this)">🧠 Psychology</div>
-          <div class="fm-chip" data-topic="risk" onclick="toggleFlavor(this)">🛡️ Risk Mgmt</div>
-        </div>
-        <div class="field-err" id="eFlavor" style="margin-bottom:10px;">Pick at least one topic</div>
-        <div class="step-nav"><button class="btn btn-ghost" onclick="showStep(1)">← Back</button><button class="btn btn-gold" style="flex:1" onclick="goStep2()">Continue →</button></div>
-      </div>
       <div class="auth-step" id="sStep3">
-        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot done"></div><div class="si-dot done"></div><span class="si-label">Step 3 of 3</span></div>
+        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot done"></div><span class="si-label">Step 2 of 2</span></div>
         <h2 class="auth-heading">Set up your profile</h2>
         <p class="auth-sub">How other learners will see you in the community.</p>
         <div class="field"><label>Username</label><input type="text" id="suname" placeholder="e.g. finwiz_alex"/><div class="field-err" id="eUname">Required</div></div>
-        <div class="field"><label>Short Bio</label><textarea id="sbio" placeholder="Passionate about markets and finance..."></textarea></div>
+        <div class="field"><label>Short Bio</label><textarea id="sbio" placeholder="Passionate about learning and growth..."></textarea></div>
         <div class="field"><label>Choose Your Avatar</label><div class="avatar-grid" id="avatarGrid"></div></div>
-        <div class="step-nav"><button class="btn btn-ghost" onclick="showStep(2)">← Back</button><button class="btn btn-gold" style="flex:1" onclick="completeSignup()">Create Account →</button></div>
+        <div class="step-nav"><button class="btn btn-ghost" onclick="showStep(1)">← Back</button><button class="btn btn-gold" style="flex:1" id="signupSubmitBtn" onclick="completeSignup()">Create Account →</button></div>
       </div>
       <div class="auth-step" id="sWelcome">
         <div class="welcome-screen">
           <div class="welcome-avatar" id="wAvatar">😎</div>
           <h2 class="welcome-name">Welcome, <span id="wName">Alex</span>!</h2>
-          <p class="welcome-sub">Your account is live. Your pip score starts at <strong>1.00000</strong> — every correct answer moves it forward.</p>
+          <p class="welcome-sub">Your pip score starts at <strong>1.00000</strong> — every correct answer moves it forward.</p>
           <div class="welcome-flavors" id="wFlavors"></div>
           <button class="btn btn-gold btn-full" style="margin-bottom:8px" onclick="enterApp()">Start Learning →</button>
           <button class="btn btn-ghost btn-full" onclick="closeAuth()">Explore first</button>
@@ -788,8 +1106,8 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
           <div class="pw-wrap"><input type="password" id="lpw" placeholder="Your password"/><button class="pw-toggle" onclick="togglePW('lpw',this)">👁</button></div>
           <div class="field-err" id="lEPW">Incorrect email or password</div>
         </div>
-        <button class="forgot-link" onclick="alert('Password reset link sent!')">Forgot password?</button>
-        <div class="step-nav" style="margin-top:14px;"><button class="btn btn-gold btn-full" onclick="doLogin()">Log In →</button></div>
+        <button class="forgot-link">Forgot password?</button>
+        <div class="step-nav" style="margin-top:14px;"><button class="btn btn-gold btn-full" id="loginSubmitBtn" onclick="doLogin()">Log In →</button></div>
         <div class="switch-mode">No account yet? <button onclick="switchAuthTab('signup')">Join free</button></div>
       </div>
     </div>
@@ -798,7 +1116,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
 <!-- LESSON OVERLAY -->
 <div class="overlay" id="lessonOverlay">
-  <div class="modal" style="max-width:560px;">
+  <div class="modal lesson-modal">
     <div class="modal-head">
       <h2 id="modalTitle">Sample Lesson</h2>
       <button class="modal-close-btn" onclick="closeLessonOverlay()">✕</button>
@@ -809,285 +1127,81 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   </div>
 </div>
 
+<!-- POST OPINION OVERLAY -->
+<div class="overlay" id="postOpinionOverlay">
+  <div class="modal">
+    <button class="modal-close-btn" onclick="closePostOpinion()">✕</button>
+    <div class="post-opinion-modal">
+      <p style="font-size:0.62rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Community</p>
+      <h2 style="font-size:1rem;font-weight:800;color:var(--white);margin-bottom:4px">Post Your Opinion</h2>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:20px">Share your professional take. Max 280 characters.</p>
+      <div class="field"><label>Topic</label>
+        <div class="poi-topics">
+          <div class="poi-topic" data-topic="acc" onclick="selectOpinionTopic('acc',this)">📊 Accounting</div>
+          <div class="poi-topic" data-topic="fin" onclick="selectOpinionTopic('fin',this)">💰 Finance</div>
+          <div class="poi-topic" data-topic="econ" onclick="selectOpinionTopic('econ',this)">🌍 Economics</div>
+          <div class="poi-topic" data-topic="trd" onclick="selectOpinionTopic('trd',this)">📈 Trading</div>
+        </div>
+        <div class="field-err" id="eOpTopic">Select a topic</div>
+      </div>
+      <div class="field"><label>Opinion Title</label><input type="text" id="opTitle" placeholder="Your headline opinion..."/><div class="field-err" id="eOpTitle">Required</div></div>
+      <div class="field"><label>Your Opinion</label><textarea id="opBody" placeholder="Share your perspective... (max 280 characters)" maxlength="280" oninput="document.getElementById('charCount').textContent=this.value.length"></textarea>
+        <div class="char-count"><span id="charCount">0</span> / 280</div>
+        <div class="field-err" id="eOpBody">Required</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-gold" style="flex:1" onclick="submitOpinion()">Post Opinion →</button>
+        <button class="btn btn-ghost" onclick="closePostOpinion()">Cancel</button>
+      </div>
+      <p style="font-size:0.65rem;color:var(--muted2);margin-top:12px;text-align:center">Opinions are personal views and do not constitute professional advice.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT OVERLAY -->
+<div class="overlay" id="paymentOverlay">
+  <div class="modal">
+    <button class="modal-close-btn" onclick="closePayment()">✕</button>
+    <div class="payment-modal" id="paymentContent">
+      <p style="font-size:0.62rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Secure Checkout</p>
+      <div class="payment-plan-name" id="payPlanName">Professional</div>
+      <div class="payment-plan-price" id="payPlanPrice">$5 <span>/ month</span></div>
+      <div class="field"><label>Full Name</label><input type="text" id="payName" placeholder="Your full name"/></div>
+      <div class="field"><label>Email Address</label><input type="email" id="payEmail" placeholder="you@email.com"/></div>
+      <button class="btn btn-gold btn-full" style="margin-top:8px" id="payStripeBtn" onclick="initiateStripeCheckout()">Continue to Payment →</button>
+      <div class="flw-note">🔒 Secured by <strong style="color:var(--gold)">Stripe</strong> · You'll be redirected to complete payment</div>
+    </div>
+    <div class="payment-success" id="paymentSuccess">
+      <div class="ps-icon">🎉</div>
+      <h3>Payment Successful!</h3>
+      <p>Welcome to FinQuest Professional. All content is now unlocked.</p>
+      <button class="btn btn-gold" style="margin-top:20px;width:100%" onclick="closePayment();enterApp()">Start Learning →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EXTERNAL SCRIPTS (load order matters) ───────────────── -->
+
+<!-- 1. Supabase JS client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<!-- 2. Paystack inline payment -->
+<script src="https://js.paystack.co/v1/inline.js"></script>
+
+<!-- 3. App files -->
+<script src="supabase-config.js"></script>
+<script src="data.js"></script>
+<script src="auth.js"></script>
+<script src="app.js"></script>
+<script src="track.js"></script>
+
+<!-- 4. Boot: restore session + handle payment redirect -->
 <script>
-// ── STATE ──
-let currentUser = null;
-let selectedFlavors = [];
-let selectedAvatar = '😎';
-let preselectedFlavor = null;
-let currentLesson = null;
-let lessonAnswered = false;
-let votedPosts = {};
-let filterTopic = 'all';
-let correctStreak = 0;
-
-// PIP state — stored as integer units (1 unit = 0.00001)
-let pipUnits = 100000; // = 1.00000
-
-const avatars = ['😎','🦁','🦊','🐯','🦅','🐸','🦉','🐺','🦋','🐉','🌟','💎'];
-const flavorLabels = {acc:'📊 Accounting',trd:'📈 Trading',fin:'💰 Finance',psy:'🧠 Psychology',risk:'🛡️ Risk Mgmt'};
-
-function pipToString(units){ return (units/100000).toFixed(5); }
-
-function awardPip(isCorrect){
-  if(!isCorrect){ correctStreak=0; return; }
-  correctStreak++;
-  const gain = correctStreak >= 3 ? 2 : 1; // surge on 3+ streak
-  pipUnits += gain * 10; // each pip = 0.00010
-  if(currentUser) currentUser.pip = pipUnits;
-  updatePipDisplays(gain >= 2);
-}
-
-function updatePipDisplays(surge){
-  const val = pipToString(pipUnits);
-  // nav pip
-  const navEl = document.getElementById('navPip');
-  if(navEl){ navEl.textContent = val; navEl.classList.add('pip-flash'); setTimeout(()=>navEl.classList.remove('pip-flash'),400); }
-  // dashboard pip
-  const dashEl = document.getElementById('dashPip');
-  if(dashEl){
-    dashEl.textContent = val;
-    if(surge){ dashEl.classList.add('surge','pip-surge-anim'); setTimeout(()=>dashEl.classList.remove('surge','pip-surge-anim'),600); }
-    else { dashEl.classList.add('pip-flash'); setTimeout(()=>dashEl.classList.remove('pip-flash'),400); }
-  }
-  // progress bar — scale 1.00000–2.00000 as 0–100%
-  const pct = Math.min(((pipUnits - 100000)/100000)*100, 100);
-  const barEl = document.getElementById('pipBarFill');
-  if(barEl) barEl.style.width = pct + '%';
-  const subEl = document.getElementById('dashPipSub');
-  if(subEl) subEl.textContent = surge ? `🔥 Pip Surge! Streak of ${correctStreak} correct answers!` : `+0.00010 pips earned · Streak: ${correctStreak}`;
-}
-
-// ── PAGES ──
-function showPage(page){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById(page==='home'?'homePage':'servicesPage').classList.add('active');
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-// ── POSTS ──
-const posts=[
-  {id:1,topic:'trd',topicLabel:'Trading',topicClass:'pt-trd',author:'James O.',time:'2h ago',title:'Is technical analysis still relevant in an era of algo trading?',preview:'Algos react to the same support/resistance levels millions of retail traders watch. The levels matter precisely because everyone watches them...',votes:84,comments:22},
-  {id:2,topic:'fin',topicLabel:'Finance',topicClass:'pt-fin',author:'Sara K.',time:'5h ago',title:'Why most people misread the P/E ratio — and what to do instead',preview:'A P/E of 30 in isolation tells you nothing. Compare it to the industry average, the historical P/E and expected growth rate...',votes:61,comments:17},
-  {id:3,topic:'acc',topicLabel:'Accounting',topicClass:'pt-acc',author:'Temi A.',time:'1d ago',title:'The difference between profit and cash flow — and why it matters',preview:'A business can be profitable on paper and still run out of cash. Understanding this gap separates good analysis from surface-level reading...',votes:49,comments:31},
-  {id:4,topic:'trd',topicLabel:'Trading',topicClass:'pt-trd',author:'Kola M.',time:'1d ago',title:'Stop-losses: protective tool or a way to get shaken out of good trades?',preview:'Tight stop-losses on volatile assets almost guarantee you get stopped out before the move happens...',votes:37,comments:14},
-];
-
-function renderPosts(){
-  const filtered=filterTopic==='all'?posts:posts.filter(p=>p.topic===filterTopic);
-  document.getElementById('postList').innerHTML=filtered.map(p=>{
-    const v=votedPosts[p.id]||0,total=p.votes+v;
-    return `<div class="post"><div class="vote-col"><button class="vote-btn up ${v===1?'voted':''}" onclick="vote(${p.id},1)">▲</button><span class="vote-count">${total}</span><button class="vote-btn dn ${v===-1?'voted':''}" onclick="vote(${p.id},-1)">▼</button></div><div class="post-body"><div class="post-meta"><span class="post-topic ${p.topicClass}">${p.topicLabel}</span><span class="post-author">${p.author}</span><span class="post-time">${p.time}</span></div><div class="post-title">${p.title}</div><div class="post-preview">${p.preview}</div><div class="post-footer"><span class="post-stat">💬 ${p.comments} replies</span></div></div></div>`;
-  }).join('');
-}
-
-function vote(id,dir){ if(!currentUser){openAuth('signup');return;} const prev=votedPosts[id]||0; votedPosts[id]=prev===dir?0:dir; renderPosts(); }
-function filterPosts(topic,el){ filterTopic=topic; document.querySelectorAll('.tf').forEach(t=>t.classList.remove('active')); el.classList.add('active'); renderPosts(); }
-
-// ── DAILY TIP ──
-const tips=[
-  {text:'"The market is a device for transferring money from the impatient to the patient."',source:'Warren Buffett · Risk Management'},
-  {text:'"An investment in knowledge pays the best interest."',source:'Benjamin Franklin · Fundamental Analysis'},
-  {text:'"Risk comes from not knowing what you are doing."',source:'Warren Buffett · Risk Management'},
-  {text:'"The four most dangerous words in investing are: this time it\'s different."',source:'Sir John Templeton · Trading Psychology'},
-  {text:'"In investing, what is comfortable is rarely profitable."',source:'Robert Arnott · Technical Analysis'},
-  {text:'"Price is what you pay. Value is what you get."',source:'Warren Buffett · Fundamental Analysis'},
-  {text:'"The goal of a successful trader is to make the best trades. Money is secondary."',source:'Alexander Elder · Trading Psychology'},
-];
-const today=new Date(),tip=tips[today.getDay()%tips.length];
-document.getElementById('tipText').textContent=tip.text;
-document.getElementById('tipSource').textContent='— '+tip.source;
-document.getElementById('tipDate').textContent=today.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-
-// ── SAMPLE LESSONS ──
-const sampleLessons={
-  acc:{tag:'Financial Accounting · Free Lesson',title:'The Accounting Equation',body:`<p>Every financial statement traces back to one idea: <strong>Assets = Liabilities + Equity.</strong></p><p>Everything a business <em>owns</em> was funded either by borrowing (liabilities) or by owners (equity). This equation always balances.</p><p><strong>Example:</strong> A business buys a ₦500,000 laptop on credit. Assets up ₦500K. Liabilities up ₦500K. Balanced.</p>`,q:'A business has ₦2M assets and ₦800K liabilities. What is equity?',opts:['₦800,000','₦1,200,000','₦2,800,000','₦400,000'],ans:1,exp:'Equity = Assets − Liabilities = ₦2,000,000 − ₦800,000 = ₦1,200,000.'},
-  trd:{tag:'Technical Analysis · Free Lesson',title:'Reading a Candlestick Chart',body:`<p>Each candle shows <strong>open, close, high and low</strong> within a time period.</p><p>A <strong>green candle</strong> = buyers won. A <strong>red candle</strong> = sellers pushed price down. Wicks show how far price moved before reversing.</p>`,q:'What does a long upper wick indicate?',opts:['Strong buying pressure','Price was rejected at higher levels','The market is crashing','Low volume'],ans:1,exp:'A long upper wick means price pushed high but sellers rejected it — signalling selling pressure at that level.'},
-  fin:{tag:'Fundamental Analysis · Free Lesson',title:'The P/E Ratio',body:`<p>The <strong>P/E ratio</strong> = Share Price ÷ Earnings Per Share (EPS). A P/E of 20 means investors pay ₦20 per ₦1 of earnings.</p><p>Always compare within the same industry for meaningful context.</p>`,q:'A stock at ₦500 with EPS of ₦25 has what P/E?',opts:['5','10','20','25'],ans:2,exp:'P/E = ₦500 ÷ ₦25 = 20.'},
-  psy:{tag:'Trading Psychology · Free Lesson',title:'Loss Aversion',body:`<p>Losing ₦10,000 feels roughly <strong>twice as painful</strong> as gaining ₦10,000 feels good. This is <em>loss aversion</em>.</p><p>It causes traders to cut winners early and hold losers too long. Pre-defined exit rules fix this.</p>`,q:'Best way to manage loss aversion?',opts:['Avoid trading','Set exit rules before entering','Only trade when confident','Watch more news'],ans:1,exp:'Defining exits before entry removes emotional decision-making — the core fix for loss aversion.'},
-  risk:{tag:'Risk Management · Free Lesson',title:'The 1% Rule',body:`<p>Never risk more than <strong>1% of capital</strong> on one trade. ₦500,000 account = max ₦5,000 risk per trade.</p><p>20 consecutive losses still leaves 80% of capital intact. Stay in the game.</p>`,q:'With ₦1,000,000 account, 1% rule = max risk per trade?',opts:['₦5,000','₦10,000','₦50,000','₦100,000'],ans:1,exp:'1% of ₦1,000,000 = ₦10,000.'}
-};
-
-function pickFlavor(topic,el){
-  document.querySelectorAll('.flavor-card').forEach(c=>c.classList.remove('selected'));
-  el.classList.add('selected');
-  preselectedFlavor=topic;
-  currentLesson=topic;
-  lessonAnswered=false;
-  const l=sampleLessons[topic];
-  document.getElementById('modalTitle').textContent=l.title;
-  document.getElementById('modalTag').textContent=l.tag;
-  document.getElementById('modalBody').innerHTML=l.body;
-  document.getElementById('modalQuiz').innerHTML=`<h3>Quick Check — Earn a Pip!</h3><div class="modal-q">${l.q}</div><div class="modal-opts">${l.opts.map((o,i)=>`<button class="modal-opt" onclick="answerQ(${i})">${String.fromCharCode(65+i)}. ${o}</button>`).join('')}</div><div class="modal-fb" id="mfb"></div><div class="pip-reward" id="pipReward"><div class="pip-reward-val" id="pipRewardVal">1.00010</div><div class="pip-reward-label">Your pip moved up! ▲ +0.00010</div></div><div class="signup-prompt" id="signupPrompt"><h3>Keep your pips growing 📈</h3><p>Create a free account to track your pip score, unlock all lessons and join the community.</p><button class="btn btn-gold" onclick="closeLessonAndSignup()" style="width:100%;margin-bottom:8px">Join Free — Start Earning Pips</button><button class="btn btn-ghost" onclick="closeLessonOverlay()" style="width:100%">Maybe later</button></div>`;
-  document.getElementById('lessonOverlay').classList.add('open');
-  document.body.style.overflow='hidden';
-}
-
-function answerQ(i){
-  if(lessonAnswered)return;
-  lessonAnswered=true;
-  const l=sampleLessons[currentLesson];
-  document.querySelectorAll('.modal-opt').forEach(o=>o.classList.add('disabled'));
-  const fb=document.getElementById('mfb');
-  const isCorrect=i===l.ans;
-  if(isCorrect){
-    document.querySelectorAll('.modal-opt')[i].classList.add('correct');
-    awardPip(true);
-    fb.className='modal-fb cfb show';
-    fb.innerHTML=`✅ <strong>Correct!</strong> ${l.exp}`;
-    const pr=document.getElementById('pipReward');
-    const pv=document.getElementById('pipRewardVal');
-    if(pr&&pv){ pv.textContent=pipToString(pipUnits); setTimeout(()=>pr.classList.add('show'),600); }
-  } else {
-    document.querySelectorAll('.modal-opt')[i].classList.add('wrong');
-    document.querySelectorAll('.modal-opt')[l.ans].classList.add('correct');
-    awardPip(false);
-    fb.className='modal-fb wfb show';
-    fb.innerHTML=`❌ <strong>Not quite.</strong> ${l.exp}`;
-  }
-  if(currentUser && isCorrect){ currentUser.correct=(currentUser.correct||0)+1; document.getElementById('liCorrect').textContent=currentUser.correct; }
-  setTimeout(()=>{ document.getElementById('signupPrompt').classList.add('show'); },1400);
-}
-
-function closeLessonOverlay(){ document.getElementById('lessonOverlay').classList.remove('open'); document.body.style.overflow=''; }
-function closeLessonAndSignup(){ closeLessonOverlay(); setTimeout(()=>openAuth('signup'),200); }
-
-// ── BOOKING ──
-let bookingService='';
-function openBooking(service,defaultTab){
-  bookingService=service;
-  document.getElementById('bookingEyebrow').textContent='Butterfly Dynamix · '+service;
-  document.getElementById('bookingTitle').textContent=defaultTab==='trial'?'Start Free Trial':defaultTab==='account'?'Open Account':'Book '+service;
-  document.getElementById('bookingSuccess').classList.remove('show');
-  document.querySelectorAll('.m-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.m-tab').forEach(t=>t.classList.remove('active'));
-  if(defaultTab==='request'){
-    document.getElementById('requestPanel').classList.add('active');
-    document.getElementById('requestTab').classList.add('active');
-    document.getElementById('rqService').value=service;
-  } else {
-    document.getElementById('callPanel').classList.add('active');
-    document.getElementById('callTab').classList.add('active');
-  }
-  document.getElementById('bookingOverlay').classList.add('open');
-  document.body.style.overflow='hidden';
-}
-function closeBooking(){ document.getElementById('bookingOverlay').classList.remove('open'); document.body.style.overflow=''; }
-function switchBookingTab(tab){
-  document.querySelectorAll('.m-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.m-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(tab+'Panel').classList.add('active');
-  document.getElementById(tab+'Tab').classList.add('active');
-}
-function selectTime(el){ document.querySelectorAll('.time-slot').forEach(t=>t.classList.remove('selected')); el.classList.add('selected'); }
-function submitBooking(type){
-  document.querySelectorAll('.m-panel').forEach(p=>p.style.display='none');
-  document.querySelectorAll('.m-tab').forEach(t=>t.style.display='none');
-  document.getElementById('bookingSuccess').classList.add('show');
-}
-
-// ── AUTH ──
-function openAuth(mode){
-  switchAuthTab(mode);
-  document.getElementById('authOverlay').classList.add('open');
-  document.body.style.overflow='hidden';
-  if(preselectedFlavor&&mode==='signup'){
-    setTimeout(()=>{
-      document.querySelectorAll('.fm-chip').forEach(c=>{ if(c.dataset.topic===preselectedFlavor){c.classList.add('selected');if(!selectedFlavors.includes(preselectedFlavor))selectedFlavors.push(preselectedFlavor);}});
-    },60);
-  }
-}
-function closeAuth(){ document.getElementById('authOverlay').classList.remove('open'); document.body.style.overflow=''; }
-function switchAuthTab(mode){
-  document.getElementById('signupFlow').style.display=mode==='signup'?'block':'none';
-  document.getElementById('loginFlow').style.display=mode==='login'?'block':'none';
-  document.getElementById('tabSignup').classList.toggle('active',mode==='signup');
-  document.getElementById('tabLogin').classList.toggle('active',mode==='login');
-}
-function showStep(n){
-  document.querySelectorAll('#signupFlow .auth-step').forEach(s=>s.classList.remove('active'));
-  const el=document.getElementById(n==='W'?'sWelcome':'sStep'+n);
-  if(el)el.classList.add('active');
-}
-function goStep1(){
-  const first=document.getElementById('sfirst').value.trim(),last=document.getElementById('slast').value.trim(),email=document.getElementById('semail').value.trim(),pw=document.getElementById('spw').value;
-  let ok=true;
-  const show=(id,v)=>{document.getElementById(id).classList.toggle('show',!v);return v;};
-  ok=show('eFirst',first.length>0)&&ok; ok=show('eLast',last.length>0)&&ok;
-  ok=show('eEmail',/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))&&ok; ok=show('ePW',pw.length>=8)&&ok;
-  if(ok){showStep(2);buildAvatarGrid();}
-}
-function goStep2(){
-  if(selectedFlavors.length===0){document.getElementById('eFlavor').classList.add('show');return;}
-  document.getElementById('eFlavor').classList.remove('show'); showStep(3);
-}
-function completeSignup(){
-  const uname=document.getElementById('suname').value.trim();
-  if(!uname){document.getElementById('eUname').classList.add('show');return;}
-  document.getElementById('eUname').classList.remove('show');
-  const first=document.getElementById('sfirst').value.trim();
-  currentUser={name:first,username:uname,bio:document.getElementById('sbio').value.trim(),avatar:selectedAvatar,flavors:[...selectedFlavors],pip:pipUnits,streak:1,lessons:0,correct:0};
-  document.getElementById('wAvatar').textContent=selectedAvatar;
-  document.getElementById('wName').textContent=first;
-  document.getElementById('wFlavors').innerHTML=selectedFlavors.map(f=>`<div class="wf-chip">${flavorLabels[f]}</div>`).join('');
-  showStep('W');
-}
-function enterApp(){ closeAuth(); updateLoggedInUI(); }
-function doLogin(){
-  const email=document.getElementById('lemail').value.trim(),pw=document.getElementById('lpw').value;
-  let ok=true;
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){document.getElementById('lEEmail').classList.add('show');ok=false;}else document.getElementById('lEEmail').classList.remove('show');
-  if(pw.length<8){document.getElementById('lEPW').classList.add('show');ok=false;}else document.getElementById('lEPW').classList.remove('show');
-  if(!ok)return;
-  pipUnits=101240; // demo user has some pips
-  currentUser={name:'Alex',username:'finwiz_alex',avatar:'😎',flavors:['acc','trd','fin'],pip:pipUnits,streak:7,lessons:16,correct:42};
-  closeAuth(); updateLoggedInUI();
-}
-function updateLoggedInUI(){
-  if(!currentUser)return;
-  document.getElementById('guestNav').style.display='none';
-  document.getElementById('userNav').classList.add('show');
-  document.getElementById('navAvatar').textContent=currentUser.avatar;
-  document.getElementById('navStreak').textContent=`🔥 ${currentUser.streak}`;
-  document.getElementById('navPip').textContent=pipToString(currentUser.pip||pipUnits);
-  document.getElementById('heroSection').style.display='none';
-  document.getElementById('liHero').classList.add('show');
-  document.getElementById('liName').textContent=currentUser.name;
-  document.getElementById('liStreak').textContent=currentUser.streak;
-  document.getElementById('liLessons').textContent=currentUser.lessons;
-  document.getElementById('liCorrect').textContent=currentUser.correct||0;
-  document.getElementById('dashPip').textContent=pipToString(currentUser.pip||pipUnits);
-  document.getElementById('liTracks').innerHTML=currentUser.flavors.map(f=>`<div class="li-track">${flavorLabels[f]}</div>`).join('');
-  const pct=Math.min(((pipUnits-100000)/100000)*100,100);
-  document.getElementById('pipBarFill').style.width=pct+'%';
-}
-function logout(){
-  currentUser=null; pipUnits=100000; correctStreak=0; selectedFlavors=[];
-  document.getElementById('guestNav').style.display='flex';
-  document.getElementById('userNav').classList.remove('show');
-  document.getElementById('heroSection').style.display='';
-  document.getElementById('liHero').classList.remove('show');
-  showStep(1); selectedAvatar='😎';
-  ['sfirst','slast','semail','spw','suname','sbio','lemail','lpw'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-}
-
-// ── AVATAR & FLAVOR ──
-function buildAvatarGrid(){ document.getElementById('avatarGrid').innerHTML=avatars.map(a=>`<div class="av-opt ${a===selectedAvatar?'selected':''}" onclick="selectAvatar('${a}',this)">${a}</div>`).join(''); }
-function selectAvatar(av,el){ selectedAvatar=av; document.querySelectorAll('.av-opt').forEach(e=>e.classList.remove('selected')); el.classList.add('selected'); }
-function toggleFlavor(el){ el.classList.toggle('selected'); const t=el.dataset.topic; if(el.classList.contains('selected')){if(!selectedFlavors.includes(t))selectedFlavors.push(t);}else{selectedFlavors=selectedFlavors.filter(f=>f!==t);} }
-
-// ── PW ──
-function checkPW(inp){ const v=inp.value; const fill=document.getElementById('pwFill'); if(!v.length){fill.style.width='0%';return;} let s=0; if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++; const l=[['25%','#e05555'],['50%','#e09955'],['75%','#c9a84c'],['100%','#4caf7d']][Math.min(s-1,3)]; fill.style.width=l[0];fill.style.background=l[1]; }
-function togglePW(id,btn){ const inp=document.getElementById(id); inp.type=inp.type==='password'?'text':'password'; btn.textContent=inp.type==='password'?'👁':'🙈'; }
-
-// ── NEWSLETTER ──
-function nlSubmit(){ const v=document.getElementById('nlEmail').value.trim(),note=document.getElementById('nlNote'); if(!v||!v.includes('@')){note.textContent='Please enter a valid email.';note.style.color='var(--red)';return;} note.textContent='✓ Subscribed! Check your inbox.';note.style.color='var(--green)';document.getElementById('nlEmail').value=''; }
-
-function smoothScroll(sel){ document.querySelector(sel)?.scrollIntoView({behavior:'smooth'}); }
-
-// ── INIT ──
-buildAvatarGrid();
-renderPosts();
+  document.addEventListener('DOMContentLoaded', function () {
+    checkStripeRedirect(); // handles Paystack/payment success redirect
+    restoreSession();      // re-hydrates logged-in user from Supabase session
+  });
 </script>
+
 </body>
 </html>
