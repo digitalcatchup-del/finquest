@@ -708,6 +708,7 @@ function initiateStripeCheckout() {
   const NGN_RATE = 1600;
   const amountKobo = plan.amount * NGN_RATE * 100;
 
+  if (typeof PaystackPop === "undefined") { alert("Payment system loading — please try again."); return; }
   const handler = PaystackPop.setup({
     key:       PAYSTACK_PUBLIC_KEY,
     email,
