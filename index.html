@@ -89,10 +89,11 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .search-icon{font-size:1rem;color:var(--muted);flex-shrink:0;}
 .search-input{flex:1;background:none;border:none;outline:none;color:var(--white);font-size:0.9rem;padding:10px 0;font-family:inherit;min-width:0;}
 .search-input::placeholder{color:transparent;}
-.search-fake-placeholder{position:absolute;left:42px;right:96px;top:50%;transform:translateY(-50%);overflow:hidden;pointer-events:none;height:1.4em;display:flex;align-items:center;}
+.search-fake-placeholder{position:absolute;left:42px;right:8px;top:50%;transform:translateY(-50%);overflow:hidden;pointer-events:none;height:1.4em;display:flex;align-items:center;z-index:1;}
 .search-fake-placeholder span{display:inline-block;white-space:nowrap;color:var(--muted2);font-size:0.9rem;font-family:inherit;transition:none;}
-.search-fake-placeholder.scroll-out span{}
-.search-btn{background:var(--gold);color:var(--accent-on);border:none;border-radius:4px;padding:10px 20px;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;flex-shrink:0;}
+.composer-fake-placeholder{position:absolute;left:18px;right:18px;top:16px;overflow:hidden;pointer-events:none;height:1.4em;display:flex;align-items:center;}
+.composer-fake-placeholder span{display:inline-block;white-space:nowrap;color:var(--muted2);font-size:0.88rem;font-family:inherit;transition:none;}
+.search-btn{background:var(--gold);color:var(--accent-on);border:none;border-radius:4px;padding:10px 20px;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;flex-shrink:0;position:relative;z-index:2;}
 .search-btn:hover{opacity:0.88;}
 .search-suggestions{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:6px;overflow:hidden;z-index:200;display:none;box-shadow:0 16px 40px rgba(201,168,76,0.18);}
 .search-suggestions.open{display:block;}
@@ -549,8 +550,8 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .track-key-term{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:12px 14px;}
 .track-kt-term{font-size:0.75rem;font-weight:800;color:var(--gold);margin-bottom:4px;}
 .track-kt-def{font-size:0.72rem;color:var(--muted);line-height:1.5;}
-.track-divider{height:1px;background:var(--border);margin:32px 0;}
-.track-quiz-section{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px;margin-bottom:32px;}
+.track-divider{height:1px;background:var(--border2);margin:0 0 24px;}
+.track-quiz-section{padding:0;margin-bottom:0;}
 .track-quiz-header{margin-bottom:20px;}
 .track-quiz-eyebrow{font-size:0.6rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
 .track-quiz-title{font-size:0.95rem;font-weight:800;color:var(--white);}
@@ -568,6 +569,8 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .track-q-feedback.show{display:block;}
 .track-q-feedback.cfb{border-left:3px solid var(--green);background:var(--green-dim);color:var(--off);}
 .track-q-feedback.wfb{border-left:3px solid var(--red);background:var(--red-dim);color:var(--off);}
+.fb-correct{color:var(--green);font-weight:800;display:block;margin-bottom:3px;}
+.fb-wrong{color:var(--red);font-weight:800;display:block;margin-bottom:3px;}
 .track-quiz-result{display:none;text-align:center;padding:28px 20px;border-top:1px solid var(--border);margin-top:24px;}
 .track-quiz-result.show{display:block;}
 .track-qr-pip{font-size:2rem;font-weight:900;color:var(--green);font-variant-numeric:tabular-nums;margin-bottom:4px;}
@@ -579,7 +582,10 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .track-complete-screen.show{display:block;}
 
 /* ── KNOWLEDGE NUGGET LESSON LAYOUT (definition → scenario → question) ── */
-.nugget-def-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px 32px;margin-bottom:20px;}
+/* All three live inside one unified .lesson-widget card now — these are
+   inner sections divided by borders rather than separate floating cards. */
+.lesson-widget{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:32px 36px;margin-bottom:24px;}
+.nugget-def-card{padding-bottom:24px;margin-bottom:24px;border-bottom:1px solid var(--border2);}
 .nugget-def-label{font-size:0.62rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;}
 .nugget-def-text{font-size:1rem;color:var(--off);line-height:1.75;margin-bottom:16px;}
 .nugget-votes-toggle{font-size:0.72rem;font-weight:700;color:var(--muted);cursor:pointer;display:inline-block;transition:color 0.15s;}
@@ -591,7 +597,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .nugget-vote-btn.up:hover{border-color:var(--green);color:var(--green);}
 .nugget-vote-btn.down:hover{border-color:var(--red);color:var(--red);}
 .nugget-votes-note{font-size:0.72rem;color:var(--muted);line-height:1.6;}
-.nugget-scenario-card{background:var(--surface2);border:1px solid var(--border2);border-left:3px solid var(--gold);border-radius:6px;padding:24px 28px;margin-bottom:20px;}
+.nugget-scenario-card{background:var(--surface2);border-left:3px solid var(--gold);border-radius:6px;padding:20px 24px;margin-bottom:24px;}
 .nugget-scenario-label{font-size:0.62rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
 .nugget-scenario-text{font-size:0.92rem;color:var(--off);line-height:1.75;}
 .nugget-suggest-btn{margin-top:14px;background:none;border:1px solid var(--border2);border-radius:6px;padding:8px 14px;font-size:0.76rem;font-weight:700;color:var(--off);cursor:pointer;transition:border-color 0.15s,color 0.15s;}
@@ -646,6 +652,8 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   .track-sb-toggle{left:0px;transform:translate(0,-50%);}
   .track-app.sidebar-open .track-sb-toggle{left:240px;}
   .track-main{display:block;padding:24px 20px;width:100%;max-width:100%;box-sizing:border-box;}
+  .lesson-widget{padding:22px 18px;}
+  .nugget-scenario-card{padding:16px 18px;}
   .track-key-terms{grid-template-columns:1fr;}
   .community-hero{padding:20px 20px 28px;}
   .community-section{padding:28px 20px;}
@@ -731,7 +739,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <div class="hero-bg"></div>
   <p class="hero-eyebrow">Find Meaning</p>
   <h1 class="hero-heading">What's Your <span id="flavorWord">Flavor?</span></h1>
-  <p class="hero-sub">Search any topic or pick a category and jump straight into your lesson. We're starting with Accounting — more categories are on the way.</p>
+  <p class="hero-sub">Search any topic related to money or jump straight into a lesson.</p>
 
   <!-- SEARCH BAR -->
   <div class="search-wrap">
@@ -1140,20 +1148,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
     <section class="community-hero">
       <h1 class="hero-heading" style="font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:0;">What's Your <span id="flavorWordForum">Flavor?</span></h1>
-
-      <!-- SEARCH BAR -->
-      <div class="search-wrap" style="margin:24px auto 0;">
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input class="search-input" type="text" id="communitySearchInput" placeholder=" " autocomplete="off"
-            oninput="onCommunitySearch(this.value);updateFakePlaceholder(this.value,'communityFakePlaceholder');"
-            onkeydown="onCommunitySearchKey(event)"
-            onfocus="hideFakePlaceholder('communityFakePlaceholder')"
-            onblur="showFakePlaceholder('communityFakePlaceholder','communitySearchInput')"/>
-          <div class="search-fake-placeholder" id="communityFakePlaceholder"><span id="communityFakePlaceholderText">Search accounting topics, e.g. depreciation, VAT, IFRS...</span></div>
-          <button class="search-btn" onclick="doCommunitySearch()">Search</button>
-        </div>
-      </div>
     </section>
 
     <!-- DISCUSSION FORUM -->
@@ -1166,7 +1160,8 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       </div>
 
       <div class="forum-composer" style="position:relative;">
-        <textarea id="forumComposerText" maxlength="280" placeholder="Share a quick take or question with the community..." oninput="updateForumCharCount()" onfocus="onComposerFocus()" onblur="syncComposerOverlay()"></textarea>
+        <textarea id="forumComposerText" maxlength="280" placeholder=" " oninput="updateForumCharCount();updateFakePlaceholder(this.value,'composerFakePlaceholder');" onfocus="onComposerFocus();hideFakePlaceholder('composerFakePlaceholder');" onblur="syncComposerOverlay();showFakePlaceholder('composerFakePlaceholder','forumComposerText');"></textarea>
+        <div class="composer-fake-placeholder" id="composerFakePlaceholder"><span id="composerFakePlaceholderText">Share a quick take or question with the community...</span></div>
         <div id="forumComposerClickLayer" onclick="onComposerOverlayClick()" style="position:absolute;top:0;left:0;right:0;height:60px;cursor:pointer;"></div>
         <div class="forum-composer-row">
           <span class="forum-char-count" id="forumCharCount">280 characters left</span>
@@ -1183,7 +1178,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <div id="forumThreadPage" class="page">
   <div class="community-app">
     <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="closeForumThread()">← Back to Forum</button>
-    <section class="community-section" style="max-width:680px;">
+    <section class="community-section" style="max-width:680px;margin-left:auto;margin-right:auto;">
       <div id="forumThreadPost"></div>
       <div class="forum-reply-composer">
         <textarea id="forumReplyText" maxlength="280" placeholder="Write a reply..." oninput="updateForumReplyCharCount()"></textarea>
@@ -1201,7 +1196,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <div id="profilePage" class="page">
   <div class="community-app">
     <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="closeProfile()">← Back</button>
-    <section class="community-section" style="max-width:680px;">
+    <section class="community-section" style="max-width:680px;margin-left:auto;margin-right:auto;">
       <div id="profileHeader"></div>
       <div class="profile-tabs">
         <button class="track-stage-tab active" id="profileTabPosts" onclick="setProfileTab('posts')">Posts</button>
