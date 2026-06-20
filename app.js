@@ -716,10 +716,11 @@ function initiateStripeCheckout() {
 
   FlutterwaveCheckout({
     public_key: FLUTTERWAVE_PUBLIC_KEY,
-    tx_ref:     'FQ_' + Date.now(),
+    tx_ref:     'FQ_' + plan.name + '_' + Date.now(),
     amount:     amountNGN,
     currency:   'NGN',
     payment_options: 'card, banktransfer, ussd',
+    redirect_url: window.location.origin + window.location.pathname,
     customer: {
       email,
       name: name || 'FinQuest User',
@@ -734,11 +735,10 @@ function initiateStripeCheckout() {
       user_id: currentUser?.id || '',
     },
     callback: function (response) {
-      // Flutterwave requires explicitly closing its own checkout iframe —
-      // otherwise it just sits on its built-in "Thanks for your payment" screen
-      // instead of returning control to our site.
+      // Kept as a fallback in case the modal closes via callback before the
+      // redirect fires. The redirect_url above is now the primary,
+      // more reliable path for confirming payment.
       if (typeof closePaymentModal === 'function') closePaymentModal();
-      handleFlutterwaveSuccess(plan, response);
     },
     onclose: function () {
       // User closed payment modal — do nothing
