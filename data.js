@@ -1,7 +1,7 @@
 // ============================================================
 // data.js — All static content: lessons, topics, tips,
 // opinions, search index, trending, sample nuggets
-// Think1st · FinQuest Learning Platform
+// Butterfly Dynamix Learning Platform
 // ============================================================
 
 // ── TRENDING ITEMS ───────────────────────────────────────────
