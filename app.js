@@ -293,11 +293,31 @@ function answerNugget(idx, correct, btn) {
 // ── COMMUNITY ────────────────────────────────────────────────
 let forumTopicFilter = 'all';
 let currentForumPosts = [];
-let currentThreadPost = null;
 
 function openCommunity() {
   showPage('communityPage');
   loadAndRenderForum();
+}
+
+function goToNewsletter() {
+  showPage('homePage');
+  setTimeout(() => {
+    document.getElementById('newsletter')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 250);
+}
+
+// Used by the homepage's "+ Post Your Opinion" button — takes the person
+// straight to the real composer on the community page instead of a
+// separate modal, so there's one place to post, not two.
+function goToComposeOpinion() {
+  openCommunity();
+  setTimeout(() => {
+    const ta = document.getElementById('forumComposerText');
+    if (ta) {
+      ta.focus();
+      if (typeof onComposerFocus === 'function') onComposerFocus();
+    }
+  }, 250);
 }
 
 function closeCommunity() {
@@ -314,11 +334,14 @@ async function loadAndRenderForum() {
     let query = db
       .from('posts')
       .select('id, user_id, topic, title, body, upvotes, downvotes, reply_count, is_opinion, created_at')
-      .eq('is_opinion', false)
-      .order('created_at', { ascending: false })
-      .limit(20);
+      .eq('is_opinion', false);
 
-    if (forumTopicFilter !== 'all') query = query.eq('topic', forumTopicFilter);
+    if (forumTopicFilter === 'trending') {
+      query = query.order('upvotes', { ascending: false }).limit(20);
+    } else {
+      query = query.order('created_at', { ascending: false }).limit(20);
+      if (forumTopicFilter !== 'all') query = query.eq('topic', forumTopicFilter);
+    }
     const { data: posts, error } = await query;
 
     if (error) {
@@ -370,7 +393,7 @@ function renderForumPost(p) {
   const ups     = p.upvotes || 0;
   const replies = p.reply_count || 0;
   return `
-    <div class="forum-post-card" onclick="openForumThread('${p.id}')">
+    <div class="forum-post-card" id="forumPost_${p.id}" onclick="toggleInlineReplies('${p.id}')">
       <div class="forum-post-avatar">${avatar}</div>
       <div class="forum-post-body">
         <div class="forum-post-meta">
@@ -386,10 +409,21 @@ function renderForumPost(p) {
             onclick="event.stopPropagation();handlePostVote('${p.id}',1)">
             ▲ ${ups}
           </button>
-          <button class="forum-action-btn"
-            onclick="event.stopPropagation();openForumThread('${p.id}')">
-            💬 ${replies} ${replies === 1 ? 'reply' : 'replies'}
+          <button class="forum-action-btn" id="forumReplyToggle_${p.id}"
+            onclick="event.stopPropagation();toggleInlineReplies('${p.id}')">
+            💬 <span id="forumReplyCount_${p.id}">${replies}</span> <span id="forumReplyWord_${p.id}">${replies === 1 ? 'reply' : 'replies'}</span>
           </button>
+        </div>
+
+        <div class="forum-inline-replies" id="forumInlineReplies_${p.id}" style="display:none;" onclick="event.stopPropagation();">
+          <div class="forum-reply-composer">
+            <textarea id="forumReplyText_${p.id}" maxlength="280" placeholder="Write a reply..." oninput="updateForumReplyCharCount('${p.id}')"></textarea>
+            <div class="forum-composer-row">
+              <span class="forum-char-count" id="forumReplyCharCount_${p.id}">280 characters left</span>
+              <button class="btn btn-gold" onclick="submitForumReply('${p.id}')">Reply</button>
+            </div>
+          </div>
+          <div id="forumRepliesList_${p.id}"></div>
         </div>
       </div>
     </div>`;
@@ -446,33 +480,51 @@ async function submitForumPost() {
 }
 
 // ── FORUM THREAD ─────────────────────────────────────────────
-async function openForumThread(postId) {
-  // First try to find in cached posts
-  let post = currentForumPosts.find(p => p.id === postId);
+// ── INLINE REPLIES (expand within the feed, no page navigation) ──
+async function toggleInlineReplies(postId) {
+  const panel = document.getElementById(`forumInlineReplies_${postId}`);
+  if (!panel) return;
 
-  // If not found, fetch from DB
-  if (!post) {
-    const { data } = await db
-      .from('posts')
-      .select('*, profiles(username, avatar)')
-      .eq('id', postId)
-      .single();
-    post = data;
+  const isOpen = panel.style.display !== 'none';
+  if (isOpen) {
+    panel.style.display = 'none';
+    return;
   }
 
-  if (!post) return;
-  currentThreadPost = post;
-  document.getElementById('forumThreadPost').innerHTML = renderForumPost(post);
-  showPage('forumThreadPage');
-  loadAndRenderReplies(postId);
+  panel.style.display = 'block';
+  if (!panel.dataset.loaded) {
+    panel.dataset.loaded = '1';
+    await loadAndRenderReplies(postId);
+  }
 }
 
-function closeForumThread() {
-  showPage('communityPage');
+function openInlineReplies(postId) {
+  const panel = document.getElementById(`forumInlineReplies_${postId}`);
+  if (!panel) return;
+  panel.style.display = 'block';
+  if (!panel.dataset.loaded) {
+    panel.dataset.loaded = '1';
+    loadAndRenderReplies(postId);
+  }
+}
+
+// Used when arriving at a specific post from elsewhere (trending chips,
+// a reply on the profile page, etc.) — scrolls to it and expands replies.
+function goToForumPost(postId) {
+  openCommunity();
+  setTimeout(() => {
+    const card = document.getElementById(`forumPost_${postId}`);
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('forum-post-highlight');
+      setTimeout(() => card.classList.remove('forum-post-highlight'), 2200);
+    }
+    openInlineReplies(postId);
+  }, 350);
 }
 
 async function loadAndRenderReplies(postId) {
-  const el = document.getElementById('forumThreadReplies');
+  const el = document.getElementById(`forumRepliesList_${postId}`);
   if (!el) return;
   el.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">Loading replies…</p>';
 
@@ -512,22 +564,30 @@ async function loadAndRenderReplies(postId) {
   }).join('');
 }
 
-function updateForumReplyCharCount() {
-  const ta = document.getElementById('forumReplyText');
-  const el = document.getElementById('forumReplyCharCount');
+function updateForumReplyCharCount(postId) {
+  const ta = document.getElementById(`forumReplyText_${postId}`);
+  const el = document.getElementById(`forumReplyCharCount_${postId}`);
   if (el) el.textContent = (280 - ta.value.length) + ' characters left';
 }
 
-async function submitForumReply() {
+async function submitForumReply(postId) {
   if (!currentUser) { openAuth('signup'); return; }
-  if (!currentThreadPost) return;
-  const ta   = document.getElementById('forumReplyText');
+  const ta   = document.getElementById(`forumReplyText_${postId}`);
   const body = ta.value.trim();
   if (!body) return;
-  await createReply(currentThreadPost.id, body);
+  await createReply(postId, body);
   ta.value = '';
-  updateForumReplyCharCount();
-  loadAndRenderReplies(currentThreadPost.id);
+  updateForumReplyCharCount(postId);
+  loadAndRenderReplies(postId);
+
+  // Bump the visible reply count + label right away
+  const countEl = document.getElementById(`forumReplyCount_${postId}`);
+  const wordEl  = document.getElementById(`forumReplyWord_${postId}`);
+  if (countEl) {
+    const next = (parseInt(countEl.textContent, 10) || 0) + 1;
+    countEl.textContent = next;
+    if (wordEl) wordEl.textContent = next === 1 ? 'reply' : 'replies';
+  }
 }
 
 // ── OPINIONS (home page) ─────────────────────────────────────
@@ -711,7 +771,7 @@ function renderProfileReplies(replies) {
     return;
   }
   el.innerHTML = replies.map(r => `
-    <div class="forum-post-card" onclick="openForumThread('${r.post_id}')">
+    <div class="forum-post-card" onclick="goToForumPost('${r.post_id}')">
       <div class="forum-post-avatar">${viewingProfileData.profile.avatar}</div>
       <div class="forum-post-body">
         <div class="forum-post-meta">
@@ -933,7 +993,7 @@ const searchPlaceholderInstances = {};
 
 const PLACEHOLDER_TYPE_SPEED   = 38;  // ms per character, typing in
 const PLACEHOLDER_DELETE_SPEED = 22;  // ms per character, typing out
-const PLACEHOLDER_HOLD_MS      = 1100; // pause once fully visible
+const PLACEHOLDER_HOLD_MS      = 5000; // pause once fully visible
 const PLACEHOLDER_SCROLL_SPEED = 90;   // px / second, reveal-scroll
 
 function startSearchPlaceholderRotation(wrapId, textId, inputId, questions) {
@@ -1062,7 +1122,14 @@ function doSearch() {
 }
 
 function scrollToOpinion(opinionId) {
-  document.getElementById('opinionsSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Trending topics on the homepage are curated highlights rather than
+  // links to one exact live post, so this takes the person to the
+  // community page's Trending view — the real, live version of "what's hot".
+  openCommunity();
+  setTimeout(() => {
+    const trendBtn = document.getElementById('forumTrendingFilterBtn');
+    if (trendBtn) filterForumPosts('trending', trendBtn);
+  }, 250);
 }
 
 // ── TOPIC LABEL HELPER ───────────────────────────────────────
