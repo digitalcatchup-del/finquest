@@ -734,7 +734,10 @@ function initiateStripeCheckout() {
       user_id: currentUser?.id || '',
     },
     callback: function (response) {
-      // Regular function reference — avoids any async-callback validation issues
+      // Flutterwave requires explicitly closing its own checkout iframe —
+      // otherwise it just sits on its built-in "Thanks for your payment" screen
+      // instead of returning control to our site.
+      if (typeof closePaymentModal === 'function') closePaymentModal();
       handleFlutterwaveSuccess(plan, response);
     },
     onclose: function () {
