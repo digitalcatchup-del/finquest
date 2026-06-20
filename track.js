@@ -87,6 +87,46 @@ function toggleTrackSidebar() {
   btn.textContent     = isCollapsed ? '‹' : '›';
 }
 
+// Tap the backdrop (the dimmed area behind the sidebar) to close it
+function closeTrackSidebar() {
+  const app = document.getElementById('trackApp');
+  const btn = document.getElementById('trackSbToggle');
+  if (!app.classList.contains('sidebar-open')) return;
+  app.classList.remove('sidebar-open');
+  if (btn) btn.textContent = '☰';
+}
+
+// ── SWIPE GESTURE (mobile) ───────────────────────────────────
+// Swipe left anywhere on the open sidebar to close it.
+(function initTrackSidebarSwipe() {
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let tracking = false;
+
+  document.addEventListener('touchstart', (e) => {
+    const app = document.getElementById('trackApp');
+    if (!app || !app.classList.contains('sidebar-open')) return;
+    const sidebar = document.getElementById('trackSidebar');
+    if (!sidebar || !sidebar.contains(e.target)) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    tracking = true;
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (!tracking) return;
+    tracking = false;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const dx = touchEndX - touchStartX;
+    const dy = touchEndY - touchStartY;
+    // Swipe left: horizontal movement dominant, leftward, and far enough
+    if (dx < -50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      closeTrackSidebar();
+    }
+  }, { passive: true });
+})();
+
 // ── STAGE TABS ───────────────────────────────────────────────
 function setTrackStage(stage) {
   trackStage = stage;
@@ -182,6 +222,11 @@ function loadTrackLesson(idx) {
   renderTrackSidebar();
   renderLessonContent(idx);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  // On mobile, tapping a lesson should close the sidebar so the
+  // content is immediately visible, rather than overlapping it.
+  if (window.matchMedia('(max-width:700px)').matches) {
+    closeTrackSidebar();
+  }
 }
 
 // ── RENDER LESSON CONTENT ────────────────────────────────────
