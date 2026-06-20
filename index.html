@@ -486,6 +486,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .track-sidebar{background:var(--surface);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;overflow-x:hidden;transition:opacity 0.2s ease;}
 .track-app.sidebar-collapsed .track-sidebar{opacity:0;pointer-events:none;}
 .track-sb-toggle{position:absolute;top:50%;left:280px;transform:translate(-1px,-50%);width:24px;height:44px;border-radius:0 6px 6px 0;background:var(--surface);border:1px solid var(--border);border-left:none;color:var(--muted);font-size:1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:50;transition:color 0.15s,border-color 0.15s,left 0.25s ease;overflow:hidden;}
+.track-sb-backdrop{display:none;}
 .track-app.sidebar-collapsed .track-sb-toggle{left:0px;border-radius:6px;border-left:1px solid var(--border);}
 .track-sb-toggle:hover{color:var(--gold);border-color:var(--border2);}
 .track-sb-header{padding:0 20px 20px;border-bottom:1px solid var(--border);}
@@ -631,8 +632,10 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
      its parent's width, which is far more predictable than trying to get
      a grid `1fr` track to cooperate with a hidden 0-width sibling. */
   .track-app{display:block;}
-  .track-sidebar{position:fixed;top:57px;left:0;height:calc(100vh - 57px);width:240px;z-index:80;opacity:0;pointer-events:none;transition:opacity 0.2s ease;}
-  .track-app.sidebar-open .track-sidebar{opacity:1;pointer-events:auto;box-shadow:4px 0 16px rgba(53,102,214,0.18);}
+  .track-sb-backdrop{display:none;position:fixed;top:57px;left:0;right:0;bottom:0;background:rgba(10,13,20,0.6);z-index:70;opacity:0;transition:opacity 0.2s ease;pointer-events:none;}
+  .track-app.sidebar-open .track-sb-backdrop{display:block;opacity:1;pointer-events:auto;}
+  .track-sidebar{position:fixed;top:57px;left:0;height:calc(100vh - 57px);width:240px;z-index:80;opacity:0;pointer-events:none;transition:opacity 0.2s ease,transform 0.25s ease;transform:translateX(-12px);}
+  .track-app.sidebar-open .track-sidebar{opacity:1;pointer-events:auto;transform:translateX(0);box-shadow:4px 0 16px rgba(53,102,214,0.18);}
   .track-app.sidebar-collapsed .track-sidebar{opacity:0;pointer-events:none;}
   .track-sb-toggle{left:0px;transform:translate(0,-50%);}
   .track-app.sidebar-open .track-sb-toggle{left:240px;}
@@ -1105,6 +1108,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <!-- TRACK PAGE -->
 <div id="trackPage" class="page">
   <div class="track-app" id="trackApp">
+    <div class="track-sb-backdrop" id="trackSbBackdrop" onclick="closeTrackSidebar()"></div>
     <aside class="track-sidebar" id="trackSidebar">
       <div class="track-sb-header">
         <button class="track-sb-back" onclick="closeTrack()">← Back to Home</button>
