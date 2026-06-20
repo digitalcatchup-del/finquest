@@ -199,6 +199,14 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 #how{padding:80px 40px;max-width:900px;margin:0 auto;}
 .section-eyebrow{font-size:0.62rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
 .section-heading{font-size:clamp(1.4rem,3vw,2rem);font-weight:900;letter-spacing:-0.02em;color:var(--white);margin-bottom:40px;}
+
+/* LEGAL PAGES (Privacy / Terms) */
+.legal-body{font-size:0.84rem;line-height:1.75;color:var(--off);}
+.legal-body h3{font-size:0.92rem;font-weight:800;color:var(--white);margin:28px 0 10px;}
+.legal-body h3:first-child{margin-top:0;}
+.legal-body p{margin-bottom:12px;}
+.legal-body ul{margin:0 0 12px;padding-left:20px;}
+.legal-body li{margin-bottom:6px;}
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
 .step{background:var(--surface);border:1px solid var(--border);padding:28px;position:relative;}
 .step:first-child{border-radius:6px 0 0 6px;}
@@ -886,8 +894,8 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <footer>
   <span class="footer-logo">Think1st · FinQuest</span>
   <div class="footer-links">
-    <button class="footer-link">Privacy Policy</button>
-    <button class="footer-link">Terms of Service</button>
+    <button class="footer-link" onclick="showPage('privacyPage')">Privacy Policy</button>
+    <button class="footer-link" onclick="showPage('termsPage')">Terms of Service</button>
     <button class="footer-link" onclick="openCommunity()">Community Guidelines</button>
   </div>
   <span class="footer-copy">© 2025 Think1st. All rights reserved.</span>
@@ -960,6 +968,136 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
         </div>
         <button class="btn btn-outline btn-full" onclick="openPayment('Annual','$48/year',48)">Subscribe — $48/yr</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRIVACY POLICY PAGE -->
+<div id="privacyPage" class="page">
+  <div style="max-width:760px;margin:0 auto;padding:40px 32px 80px;">
+    <button class="track-sb-back" onclick="showPage('homePage')" style="margin-bottom:32px;">← Back to Home</button>
+    <p class="section-eyebrow">Legal</p>
+    <h2 class="section-heading" style="text-align:left;margin-bottom:6px;">Privacy Policy</h2>
+    <p style="font-size:0.75rem;color:var(--muted);margin-bottom:32px;">Last updated: 20 June 2026</p>
+
+    <div class="legal-body">
+      <h3>1. Who We Are</h3>
+      <p>FinQuest is operated by Think1st ("we", "us", "our"). This Privacy Policy explains how we collect, use, and protect your personal information when you use our website and services at this domain (the "Platform").</p>
+
+      <h3>2. Information We Collect</h3>
+      <p>We collect information you provide directly, including:</p>
+      <ul>
+        <li>Account details — name, username, email address, and password when you sign up</li>
+        <li>Profile information — avatar selection, bio, and learning progress</li>
+        <li>Content you post — community discussions, replies, and votes</li>
+        <li>Payment information — processed securely by our payment partner; we do not store your full card details</li>
+        <li>Communications — newsletter subscriptions and any messages you send us</li>
+      </ul>
+      <p>We also automatically collect limited technical information such as browser type, device information, and usage data (e.g. lessons completed, search queries) to improve the Platform.</p>
+
+      <h3>3. How We Use Your Information</h3>
+      <p>We use your information to:</p>
+      <ul>
+        <li>Create and manage your account</li>
+        <li>Deliver lessons, track progress, and calculate your pip score</li>
+        <li>Operate community features such as posts, replies, and votes</li>
+        <li>Process subscription payments</li>
+        <li>Send you the daily tip, newsletter, or service updates (you can unsubscribe at any time)</li>
+        <li>Improve and secure the Platform</li>
+      </ul>
+
+      <h3>4. How We Share Your Information</h3>
+      <p>We do not sell your personal information. We share data only with:</p>
+      <ul>
+        <li>Service providers who help us operate the Platform — including our database provider (Supabase) and payment processor (Flutterwave) — solely to perform their function for us</li>
+        <li>Other users — your username, avatar, and any content you post publicly (such as community posts) are visible to other users</li>
+        <li>Authorities — where required by law</li>
+      </ul>
+
+      <h3>5. Data Storage and Security</h3>
+      <p>Your data is stored securely with industry-standard encryption both in transit and at rest. While we take reasonable steps to protect your information, no method of transmission or storage is 100% secure.</p>
+
+      <h3>6. Your Rights</h3>
+      <p>You may request access to, correction of, or deletion of your personal data at any time by contacting us. You can also update most of your profile information directly from your account settings.</p>
+
+      <h3>7. Cookies</h3>
+      <p>We use minimal cookies and local session storage necessary to keep you logged in and remember your preferences. We do not use third-party advertising trackers.</p>
+
+      <h3>8. Children's Privacy</h3>
+      <p>FinQuest is not directed at children under 13, and we do not knowingly collect personal information from children under 13.</p>
+
+      <h3>9. Changes to This Policy</h3>
+      <p>We may update this Privacy Policy from time to time. Material changes will be communicated via the Platform or email.</p>
+
+      <h3>10. Contact Us</h3>
+      <p>For questions about this Privacy Policy or your data, contact us through the support details provided on the Platform.</p>
+    </div>
+  </div>
+</div>
+
+<!-- TERMS OF SERVICE PAGE -->
+<div id="termsPage" class="page">
+  <div style="max-width:760px;margin:0 auto;padding:40px 32px 80px;">
+    <button class="track-sb-back" onclick="showPage('homePage')" style="margin-bottom:32px;">← Back to Home</button>
+    <p class="section-eyebrow">Legal</p>
+    <h2 class="section-heading" style="text-align:left;margin-bottom:6px;">Terms of Service</h2>
+    <p style="font-size:0.75rem;color:var(--muted);margin-bottom:32px;">Last updated: 20 June 2026</p>
+
+    <div class="legal-body">
+      <h3>1. Acceptance of Terms</h3>
+      <p>By creating an account or using FinQuest ("the Platform"), operated by Think1st, you agree to these Terms of Service. If you do not agree, please do not use the Platform.</p>
+
+      <h3>2. Eligibility</h3>
+      <p>You must be at least 13 years old to use FinQuest. By using the Platform, you confirm that you meet this requirement.</p>
+
+      <h3>3. Your Account</h3>
+      <p>You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. Notify us immediately of any unauthorised use.</p>
+
+      <h3>4. Subscriptions and Payments</h3>
+      <ul>
+        <li>FinQuest offers a free tier with limited access, and paid subscription tiers ("Professional" and "Annual") that unlock full access to all content.</li>
+        <li>Payments are processed by our third-party payment partner. By subscribing, you authorise recurring charges as applicable to your selected plan.</li>
+        <li>Subscriptions can be cancelled at any time; access continues until the end of the current billing period.</li>
+        <li>Fees are non-refundable except where required by law.</li>
+      </ul>
+
+      <h3>5. Acceptable Use</h3>
+      <p>You agree not to:</p>
+      <ul>
+        <li>Post content that is unlawful, abusive, hateful, or infringes on others' rights</li>
+        <li>Impersonate any person or entity</li>
+        <li>Attempt to gain unauthorised access to the Platform or other users' accounts</li>
+        <li>Use automated means (bots, scrapers) to access the Platform without our consent</li>
+        <li>Share your account credentials with others</li>
+      </ul>
+      <p>We reserve the right to remove content or suspend accounts that violate these Terms.</p>
+
+      <h3>6. User-Generated Content</h3>
+      <p>You retain ownership of content you post (such as community discussions and replies). By posting, you grant FinQuest a non-exclusive, royalty-free licence to display and distribute that content on the Platform. You are solely responsible for the content you post.</p>
+
+      <h3>7. Intellectual Property</h3>
+      <p>All lesson content, branding, and Platform design are owned by Think1st and protected by intellectual property laws. You may not copy, reproduce, or redistribute Platform content without permission.</p>
+
+      <h3>8. Pip Scores and Rewards</h3>
+      <p>Pip scores are a gamified progress metric within FinQuest and hold no monetary value. They cannot be exchanged, transferred, or redeemed for cash.</p>
+
+      <h3>9. Disclaimer</h3>
+      <p>FinQuest provides educational content for general learning purposes only. It does not constitute professional financial, accounting, investment, or legal advice. You should consult a qualified professional before making financial decisions.</p>
+
+      <h3>10. Limitation of Liability</h3>
+      <p>To the fullest extent permitted by law, Think1st shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Platform.</p>
+
+      <h3>11. Termination</h3>
+      <p>We may suspend or terminate your account for violation of these Terms. You may delete your account at any time by contacting us.</p>
+
+      <h3>12. Changes to These Terms</h3>
+      <p>We may update these Terms from time to time. Continued use of the Platform after changes constitutes acceptance of the updated Terms.</p>
+
+      <h3>13. Governing Law</h3>
+      <p>These Terms are governed by the laws of the Federal Republic of Nigeria, without regard to conflict of law principles.</p>
+
+      <h3>14. Contact Us</h3>
+      <p>For questions about these Terms, contact us through the support details provided on the Platform.</p>
     </div>
   </div>
 </div>
@@ -1088,6 +1226,12 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
         <div class="field"><label>Username</label><input type="text" id="suname" placeholder="e.g. finwiz_alex"/><div class="field-err" id="eUname">Required</div></div>
         <div class="field"><label>Short Bio</label><textarea id="sbio" placeholder="Passionate about learning and growth..."></textarea></div>
         <div class="field"><label>Choose Your Avatar</label><div class="avatar-grid" id="avatarGrid"></div></div>
+        <p style="font-size:0.68rem;color:var(--muted);line-height:1.5;margin:4px 0 14px;">
+          By creating an account, you agree to our
+          <a href="#" onclick="event.preventDefault();closeAuth();showPage('termsPage')" style="color:var(--gold);text-decoration:underline;">Terms of Service</a>
+          and
+          <a href="#" onclick="event.preventDefault();closeAuth();showPage('privacyPage')" style="color:var(--gold);text-decoration:underline;">Privacy Policy</a>.
+        </p>
         <div class="step-nav"><button class="btn btn-ghost" onclick="showStep(1)">← Back</button><button class="btn btn-gold" style="flex:1" id="signupSubmitBtn" onclick="completeSignup()">Create Account →</button></div>
       </div>
       <div class="auth-step" id="sWelcome">
