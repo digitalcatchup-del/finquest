@@ -1,6 +1,6 @@
 // ============================================================
 // auth.js — Authentication & session management
-// Think1st · FinQuest Learning Platform
+// Butterfly Dynamix Learning Platform
 // Depends on: supabase-config.js (db)
 // ============================================================
 
@@ -463,7 +463,7 @@ async function nlSubmit() {
     noteEl.style.color = 'var(--red, #e05)';
   } else {
     emailEl.value = '';
-    noteEl.textContent = "You're in! Welcome to the FinQuest community.";
+    noteEl.textContent = "You're in! Welcome to the Butterfly Dynamix Learning community.";
     noteEl.style.color = 'var(--green, #4caf50)';
   }
 }
