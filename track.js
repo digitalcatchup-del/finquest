@@ -192,23 +192,12 @@ function renderTrackSidebar() {
           </div>
         </div>
       </div>`;
-  }).join('') + `
-    <div class="track-sb-extra-group">
-      <div class="track-sb-extra ${trackStage === 'novel' ? 'active' : ''}" onclick="setTrackStage('novel')">
-        <div class="track-sb-extra-icon">📖</div>
-        <div class="track-sb-lesson-info">
-          <div class="track-sb-lesson-name">Novel</div>
-          <div class="track-sb-lesson-meta">Long-form reading</div>
-        </div>
-      </div>
-      <div class="track-sb-extra ${trackStage === 'film' ? 'active' : ''}" onclick="setTrackStage('film')">
-        <div class="track-sb-extra-icon">🎬</div>
-        <div class="track-sb-lesson-info">
-          <div class="track-sb-lesson-name">Short Film</div>
-          <div class="track-sb-lesson-meta">Watch + gamified check</div>
-        </div>
-      </div>
-    </div>`;
+  }).join('');
+  // NOTE: Novel + Short Film sidebar entries are temporarily hidden — see
+  // renderNovelComingSoon() / renderFilmComingSoon() below, both still
+  // intact and ready to re-enable. To bring them back, re-add a
+  // `.track-sb-extra-group` block here (see git history / prior version)
+  // linking to setTrackStage('novel') and setTrackStage('film').
 }
 
 // ── COURSE START GATE ────────────────────────────────────────
