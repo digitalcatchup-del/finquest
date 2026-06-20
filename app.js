@@ -374,7 +374,7 @@ function renderForumPost(p) {
       <div class="forum-post-avatar">${avatar}</div>
       <div class="forum-post-body">
         <div class="forum-post-meta">
-          <span class="forum-post-name">@${uname}</span>
+          <span class="forum-post-name" onclick="event.stopPropagation();openProfileByUsername('${uname}','communityPage')" style="cursor:pointer;">@${uname}</span>
           <span class="forum-post-dot">·</span>
           <span class="forum-post-time">${ago}</span>
           <span class="forum-post-dot">·</span>
@@ -503,7 +503,7 @@ async function loadAndRenderReplies(postId) {
         <div class="forum-post-avatar forum-reply-avatar">${profile.avatar}</div>
         <div class="forum-post-body">
           <div class="forum-post-meta">
-            <span class="forum-post-name">@${profile.username}</span>
+          <span class="forum-post-name" onclick="event.stopPropagation();openProfileByUsername('${profile.username}','communityPage')" style="cursor:pointer;">@${profile.username}</span>
             <span class="forum-post-dot">·</span>
             <span class="forum-post-time">${timeAgo(r.created_at)}</span>
           </div>
@@ -626,43 +626,168 @@ async function submitOpinion() {
 }
 
 // ── USER PROFILE PAGE ────────────────────────────────────────
-let profileTab = 'posts';
+let profileTab          = 'posts';
+let viewingProfileData  = null;
+let viewingIsOwnProfile = false;
+let profileReturnPage   = 'communityPage';
 
-async function openProfileByUsername(username) {
+async function openProfileByUsername(username, returnPage) {
+  profileReturnPage = returnPage || 'communityPage';
   showPage('profilePage');
+  document.getElementById('profileHeader').innerHTML =
+    '<p style="color:var(--muted);font-size:0.82rem;text-align:center;padding:40px 0;">Loading profile…</p>';
+
   const data = await loadUserProfile(username);
-  if (!data) return;
-  const { profile, posts } = data;
-  document.getElementById('profileHeader').innerHTML = `
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
-      <div style="font-size:2.4rem;">${profile.avatar}</div>
-      <div>
-        <div style="font-size:1.1rem;font-weight:800;color:var(--white);">@${profile.username}</div>
-        <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">${profile.bio || ''}</div>
-        <div style="display:flex;gap:16px;margin-top:8px;">
-          <span style="font-size:0.72rem;color:var(--gold);">⚡ ${parseFloat(profile.pip_score).toFixed(5)} pip</span>
-          <span style="font-size:0.72rem;color:var(--muted);">🔥 ${profile.day_streak} day streak</span>
-          <span style="font-size:0.72rem;color:var(--muted);">${profile.total_lessons} lessons</span>
-        </div>
-      </div>
-    </div>`;
-  renderProfileFeed(posts);
+  if (!data) {
+    document.getElementById('profileHeader').innerHTML =
+      '<p style="color:var(--muted);font-size:0.82rem;text-align:center;padding:40px 0;">Profile not found.</p>';
+    return;
+  }
+
+  viewingProfileData  = data;
+  viewingIsOwnProfile = currentUser?.username === data.profile.username;
+  profileTab = 'posts';
+  renderProfileHeader(data.profile);
+  setProfileTab('posts');
 }
 
-function setProfileTab(tab) {
+function openMyProfile() {
+  if (!currentUser) { openAuth('login'); return; }
+  // Opening from the nav avatar should return to wherever we already were —
+  // simplest reliable default is home, since the nav is visible everywhere.
+  openProfileByUsername(currentUser.username, 'homePage');
+}
+
+function renderProfileHeader(profile) {
+  const joined = new Date(profile.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  document.getElementById('profileHeader').innerHTML = `
+    <div class="profile-header-card">
+      <div class="profile-avatar-large">${profile.avatar}</div>
+      <div class="profile-name-large">@${profile.username}</div>
+      ${profile.bio ? `<div class="profile-bio-text">${profile.bio}</div>` : ''}
+      <div class="profile-joined">Joined ${joined}</div>
+      <div class="profile-stats-row">
+        <div><div class="profile-stat-val">${parseFloat(profile.pip_score).toFixed(5)}</div><div class="profile-stat-label">Pip Score</div></div>
+        <div><div class="profile-stat-val">🔥 ${profile.day_streak}</div><div class="profile-stat-label">Day Streak</div></div>
+        <div><div class="profile-stat-val">${profile.total_lessons}</div><div class="profile-stat-label">Lessons</div></div>
+        <div><div class="profile-stat-val">${profile.total_correct}</div><div class="profile-stat-label">Correct</div></div>
+      </div>
+      ${viewingIsOwnProfile ? `<button class="profile-edit-btn" onclick="openEditProfile()">Edit Profile</button>` : ''}
+    </div>`;
+}
+
+async function setProfileTab(tab) {
   profileTab = tab;
   document.getElementById('profileTabPosts').classList.toggle('active', tab === 'posts');
   document.getElementById('profileTabReplies').classList.toggle('active', tab === 'replies');
+
+  const el = document.getElementById('profileFeed');
+  el.innerHTML = '<p class="profile-empty">Loading…</p>';
+
+  if (tab === 'posts') {
+    const posts = viewingProfileData?.posts || [];
+    renderProfileFeed(posts);
+  } else {
+    const replies = await loadUserReplies(viewingProfileData.profile.id);
+    renderProfileReplies(replies);
+  }
 }
 
 function renderProfileFeed(posts) {
   const el = document.getElementById('profileFeed');
-  if (!posts.length) { el.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">No posts yet.</p>'; return; }
-  el.innerHTML = posts.map(p => renderForumPost(p)).join('');
+  if (!posts.length) {
+    el.innerHTML = '<p class="profile-empty">No posts yet.</p>';
+    return;
+  }
+  el.innerHTML = posts.map(p => renderForumPost({
+    ...p,
+    profiles: viewingProfileData.profile
+  })).join('');
+}
+
+function renderProfileReplies(replies) {
+  const el = document.getElementById('profileFeed');
+  if (!replies.length) {
+    el.innerHTML = '<p class="profile-empty">No replies yet.</p>';
+    return;
+  }
+  el.innerHTML = replies.map(r => `
+    <div class="forum-post-card" onclick="openForumThread('${r.post_id}')">
+      <div class="forum-post-avatar">${viewingProfileData.profile.avatar}</div>
+      <div class="forum-post-body">
+        <div class="forum-post-meta">
+          <span class="forum-post-name">@${viewingProfileData.profile.username}</span>
+          <span class="forum-post-dot">·</span>
+          <span class="forum-post-time">${timeAgo(r.created_at)}</span>
+        </div>
+        <div class="forum-post-text">${r.body}</div>
+      </div>
+    </div>`).join('');
 }
 
 function closeProfile() {
-  showPage('communityPage');
+  showPage(profileReturnPage);
+}
+
+// ── EDIT PROFILE ──────────────────────────────────────────────
+function openEditProfile() {
+  if (!currentUser) return;
+  window._editSelectedAvatar = currentUser.avatar;
+  buildEditAvatarGrid();
+  document.getElementById('editBio').value = currentUser.bio || '';
+  document.getElementById('editProfileOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEditProfile() {
+  document.getElementById('editProfileOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function buildEditAvatarGrid() {
+  const grid = document.getElementById('editAvatarGrid');
+  if (!grid) return;
+  grid.innerHTML = avatars.map(a =>
+    `<div class="avatar-opt ${a === currentUser.avatar ? 'selected' : ''}" onclick="selectEditAvatar('${a}',this)">${a}</div>`
+  ).join('');
+}
+
+function selectEditAvatar(avatar, el) {
+  window._editSelectedAvatar = avatar;
+  document.querySelectorAll('#editAvatarGrid .avatar-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function saveProfileEdits() {
+  if (!currentUser) return;
+  const btn    = document.getElementById('editProfileSaveBtn');
+  const bio    = document.getElementById('editBio').value.trim();
+  const avatar = window._editSelectedAvatar || currentUser.avatar;
+
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+
+  const { error } = await db.from('profiles').update({ bio, avatar }).eq('id', currentUser.id);
+
+  btn.textContent = 'Save Changes →';
+  btn.disabled = false;
+
+  if (error) {
+    alert('Could not save changes: ' + error.message);
+    return;
+  }
+
+  currentUser.bio    = bio;
+  currentUser.avatar = avatar;
+  document.getElementById('navAvatar').textContent = avatar;
+  closeEditProfile();
+
+  // Refresh the profile view if we're looking at our own profile right now
+  if (viewingIsOwnProfile && viewingProfileData) {
+    viewingProfileData.profile.bio    = bio;
+    viewingProfileData.profile.avatar = avatar;
+    renderProfileHeader(viewingProfileData.profile);
+  }
 }
 
 // ── LEADERBOARD ──────────────────────────────────────────────
