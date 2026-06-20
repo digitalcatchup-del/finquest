@@ -300,14 +300,19 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .forum-reply-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;gap:10px;margin-bottom:8px;}
 
 /* ── USER PROFILE PAGE ── */
-.profile-header-card{text-align:center;padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.profile-header-card{text-align:center;padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:20px;position:relative;}
 .profile-avatar-large{width:80px;height:80px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:2.4rem;margin:0 auto 14px;}
 .profile-name-large{font-size:1.2rem;font-weight:900;color:var(--white);}
-.profile-username-large{font-size:0.84rem;color:var(--muted);margin-bottom:18px;}
-.profile-stats-row{display:flex;justify-content:center;gap:32px;}
+.profile-username-large{font-size:0.84rem;color:var(--muted);margin-bottom:10px;}
+.profile-bio-text{font-size:0.82rem;color:var(--off);line-height:1.6;max-width:420px;margin:0 auto 16px;}
+.profile-joined{font-size:0.68rem;color:var(--muted2);margin-bottom:18px;}
+.profile-stats-row{display:flex;justify-content:center;gap:32px;margin-bottom:18px;}
 .profile-stat-val{font-size:1.05rem;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;}
 .profile-stat-label{font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.profile-edit-btn{background:none;border:1px solid var(--border2);color:var(--off);font-size:0.7rem;font-weight:700;letter-spacing:0.04em;padding:8px 18px;border-radius:4px;cursor:pointer;transition:border-color 0.15s,color 0.15s;}
+.profile-edit-btn:hover{border-color:var(--gold);color:var(--gold);}
 .profile-tabs{display:flex;gap:8px;margin-bottom:16px;}
+.profile-empty{color:var(--muted);font-size:0.82rem;padding:24px 0;text-align:center;}
 
 /* COMMUNITY PAGE */
 .community-app{max-width:1000px;margin:0 auto;padding-bottom:60px;}
@@ -715,7 +720,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
         <span class="pip-arrow">▲</span>
       </div>
       <span class="nav-streak" id="navStreak">🔥 0</span>
-      <div class="nav-avatar" id="navAvatar">😎</div>
+      <div class="nav-avatar" id="navAvatar" onclick="openMyProfile()" style="cursor:pointer;">😎</div>
       <button class="nav-logout" onclick="logout()">Out</button>
     </div>
   </div>
@@ -1194,6 +1199,20 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       </div>
       <div id="profileFeed"></div>
     </section>
+  </div>
+</div>
+
+<!-- EDIT PROFILE OVERLAY -->
+<div class="overlay" id="editProfileOverlay">
+  <div class="modal">
+    <button class="modal-close-btn" onclick="closeEditProfile()">✕</button>
+    <div style="padding:28px;">
+      <h2 class="auth-heading" style="margin-bottom:4px;">Edit Profile</h2>
+      <p class="auth-sub" style="margin-bottom:20px;">Update how other learners see you.</p>
+      <div class="field"><label>Choose Your Avatar</label><div class="avatar-grid" id="editAvatarGrid"></div></div>
+      <div class="field"><label>Short Bio</label><textarea id="editBio" maxlength="160" placeholder="Passionate about learning and growth..."></textarea></div>
+      <button class="btn btn-gold btn-full" style="margin-top:8px" id="editProfileSaveBtn" onclick="saveProfileEdits()">Save Changes →</button>
+    </div>
   </div>
 </div>
 
