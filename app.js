@@ -4,10 +4,10 @@
 // Depends on: supabase-config.js, auth.js, data.js
 // ============================================================
 
-// ── PAYSTACK CONFIG ──────────────────────────────────────────
-// TEST MODE — switch back to live key once Paystack business
-// verification is complete. Live key was: pk_live_9e68498fda5d5641968e2ff258f0f5c9cd54d9e1
-const PAYSTACK_PUBLIC_KEY = 'pk_test_7a76a974c8b60497254d86fb9645bcbe71fa60c7';
+// ── FLUTTERWAVE CONFIG ───────────────────────────────────────
+// TEST MODE — switch to live public key once Flutterwave business
+// verification (RC/BN number) is complete.
+const FLUTTERWAVE_PUBLIC_KEY = 'FLWPUBK_TEST-d7a81c18068d8b0323e75325c070f81b-X';
 
 const PLANS = {
   Professional: { amount: 500000, label: '$5/month', currency: 'USD' },  // in kobo (NGN) or cents
@@ -697,46 +697,53 @@ function closePayment() {
 }
 
 function initiateStripeCheckout() {
-  // Using Paystack (despite the function name kept for compatibility)
-  const email  = currentUser?.email || document.getElementById('payEmail')?.value?.trim();
-  const name   = currentUser
+  // Using Flutterwave (function name kept for compatibility with HTML onclick)
+  const email = currentUser?.email || document.getElementById('payEmail')?.value?.trim();
+  const name  = currentUser
     ? `${currentUser.firstName} ${currentUser.lastName}`.trim()
     : document.getElementById('payName')?.value?.trim();
 
   if (!email) { alert('Please enter your email address.'); return; }
 
-  const plan   = window._payPlan || { name: 'Professional', amount: 5 };
-  // Convert USD to NGN roughly (update this with a live rate before launch)
-  const NGN_RATE = 1600;
-  const amountKobo = plan.amount * NGN_RATE * 100;
+  const plan     = window._payPlan || { name: 'Professional', amount: 5 };
+  const NGN_RATE = 1600; // approximate USD→NGN rate — update before live launch
+  const amountNGN = plan.amount * NGN_RATE;
 
-  if (typeof PaystackPop === "undefined") { alert("Payment system loading — please try again."); return; }
-  const handler = PaystackPop.setup({
-    key:       PAYSTACK_PUBLIC_KEY,
-    email:     email,
-    amount:    amountKobo,
-    currency:  'NGN',
-    ref:       'FQ_' + Date.now(),
-    metadata:  {
-      custom_fields: [
-        { display_name: 'Name', variable_name: 'name', value: name || '' },
-        { display_name: 'Plan', variable_name: 'plan', value: plan.name },
-        { display_name: 'User ID', variable_name: 'user_id', value: currentUser?.id || '' },
-      ]
+  if (typeof FlutterwaveCheckout === "undefined") {
+    alert("Payment system loading — please try again.");
+    return;
+  }
+
+  FlutterwaveCheckout({
+    public_key: FLUTTERWAVE_PUBLIC_KEY,
+    tx_ref:     'FQ_' + Date.now(),
+    amount:     amountNGN,
+    currency:   'NGN',
+    payment_options: 'card, banktransfer, ussd',
+    customer: {
+      email,
+      name: name || 'FinQuest User',
     },
-    callback: function(response) {
-      // Regular function wrapper — Paystack requires a plain function reference,
-      // not an async function, for its internal validation.
-      handlePaystackSuccess(plan);
+    customizations: {
+      title:       'FinQuest · Think1st',
+      description: `${plan.name} Subscription`,
+      logo:        '',
     },
-    onClose: function() {
+    meta: {
+      plan:    plan.name,
+      user_id: currentUser?.id || '',
+    },
+    callback: function (response) {
+      // Regular function reference — avoids any async-callback validation issues
+      handleFlutterwaveSuccess(plan, response);
+    },
+    onclose: function () {
       // User closed payment modal — do nothing
-    }
+    },
   });
-  handler.openIframe();
 }
 
-async function handlePaystackSuccess(plan) {
+async function handleFlutterwaveSuccess(plan, response) {
   if (currentUser?.id) {
     await db.from('profiles').update({
       is_subscribed:     true,
