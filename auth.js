@@ -436,6 +436,15 @@ async function loadUserProfile(username) {
   return { profile, posts: posts || [] };
 }
 
+async function loadUserReplies(userId) {
+  const { data: replies, error } = await db
+    .from('replies')
+    .select('id, post_id, body, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  return error ? [] : (replies || []);
+}
+
 // ── NEWSLETTER SUBSCRIBE ─────────────────────────────────────
 async function nlSubmit() {
   const emailEl = document.getElementById('nlEmail');
