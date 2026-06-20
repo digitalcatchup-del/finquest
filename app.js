@@ -5,7 +5,9 @@
 // ============================================================
 
 // ── PAYSTACK CONFIG ──────────────────────────────────────────
-const PAYSTACK_PUBLIC_KEY = 'pk_live_9e68498fda5d5641968e2ff258f0f5c9cd54d9e1';
+// TEST MODE — switch back to live key once Paystack business
+// verification is complete. Live key was: pk_live_9e68498fda5d5641968e2ff258f0f5c9cd54d9e1
+const PAYSTACK_PUBLIC_KEY = 'pk_test_7a76a974c8b60497254d86fb9645bcbe71fa60c7';
 
 const PLANS = {
   Professional: { amount: 500000, label: '$5/month', currency: 'USD' },  // in kobo (NGN) or cents
