@@ -176,6 +176,35 @@ async function restoreSession() {
 // ── STRIPE REDIRECT HANDLER ──────────────────────────────────
 async function checkStripeRedirect() {
   const params = new URLSearchParams(window.location.search);
+
+  // ── Flutterwave redirect params ──
+  const fwStatus = params.get('status');
+  const fwTxRef  = params.get('tx_ref');
+
+  if (fwStatus && fwTxRef) {
+    window.history.replaceState({}, '', window.location.pathname);
+
+    if (fwStatus === 'successful' || fwStatus === 'completed') {
+      const plan = (fwTxRef.includes('Annual')) ? 'annual' : 'professional';
+      if (currentUser?.id) {
+        await db.from('profiles').update({
+          is_subscribed: true,
+          subscription_tier: plan
+        }).eq('id', currentUser.id);
+        currentUser.isSubscribed = true;
+        currentUser.tier = plan;
+      }
+      document.getElementById('paymentContent').style.display = 'none';
+      document.getElementById('paymentSuccess').classList.add('show');
+      document.getElementById('paymentOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    } else {
+      alert('Payment was not completed. Please try again.');
+    }
+    return;
+  }
+
+  // ── Stripe-style redirect params (legacy / fallback) ──
   const sessionId = params.get('session_id');
   const success   = params.get('success');
 
