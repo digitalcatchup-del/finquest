@@ -6,11 +6,16 @@
 
 // ── TRENDING ITEMS ───────────────────────────────────────────
 const trendingItems = [
-  {num:'#1',text:'Accruals concept',tag:'Accounting',cls:'tt-acc',opinionId:2},
-  {num:'#2',text:'IFRS adoption',tag:'Accounting',cls:'tt-acc',opinionId:1},
-  {num:'#3',text:'Working capital',tag:'Accounting',cls:'tt-acc',opinionId:9},
-  {num:'#4',text:'Doubtful debts',tag:'Accounting',cls:'tt-acc',opinionId:3},
-  {num:'#5',text:'Double entry',tag:'Accounting',cls:'tt-acc',opinionId:4},
+  {num:'#1',text:'Accruals concept',cls:'tt-acc',opinionId:2},
+  {num:'#2',text:'IFRS adoption',cls:'tt-acc',opinionId:1},
+  {num:'#3',text:'Working capital',cls:'tt-acc',opinionId:3},
+  {num:'#4',text:'Doubtful debts',cls:'tt-acc',opinionId:3},
+  {num:'#5',text:'Double entry',cls:'tt-acc',opinionId:4},
+  {num:'#6',text:'Depreciation methods',cls:'tt-acc',opinionId:5},
+  {num:'#7',text:'Going concern',cls:'tt-acc',opinionId:6},
+  {num:'#8',text:'Trial balance',cls:'tt-acc',opinionId:1},
+  {num:'#9',text:'Bad debt provisions',cls:'tt-acc',opinionId:3},
+  {num:'#10',text:'Prudence concept',cls:'tt-acc',opinionId:2},
 ];
 
 // ── ACCOUNTING TOPICS ────────────────────────────────────────
