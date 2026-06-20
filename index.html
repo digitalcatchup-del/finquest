@@ -292,6 +292,12 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .forum-post-text{font-size:0.88rem;color:var(--off);line-height:1.55;margin-bottom:10px;word-wrap:break-word;}
 .forum-post-text-full{font-size:0.92rem;color:var(--off);line-height:1.65;margin-bottom:12px;word-wrap:break-word;white-space:pre-wrap;}
 .forum-post-actions{display:flex;gap:18px;align-items:center;}
+.forum-inline-replies{margin-top:14px;padding-top:14px;border-top:1px solid var(--border2);cursor:default;}
+.forum-inline-replies .forum-reply-composer{margin:0 0 14px;}
+.forum-inline-replies .forum-post-card{background:var(--surface2);border-radius:6px;padding:12px 14px;margin-bottom:8px;border-bottom:none;}
+.forum-inline-replies .forum-post-card:hover{background:var(--surface2);}
+@keyframes forumPostHighlight{0%{background:var(--gold-dim);}100%{background:transparent;}}
+.forum-post-highlight{animation:forumPostHighlight 2.2s ease-out;}
 .forum-action-btn{background:none;border:none;cursor:pointer;font-size:0.78rem;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:4px;transition:background 0.15s,color 0.15s;}
 .forum-action-btn:hover{background:var(--gold-dim);color:var(--gold);}
 .forum-vote-btn:hover{color:var(--green);background:var(--green-dim);}
@@ -705,6 +711,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <button class="nav-link" onclick="openCommunity()">Community</button>
     <button class="nav-link" onclick="showPage('howPage')">How It Works</button>
     <button class="nav-link" onclick="showPage('pricingPage')">Pricing</button>
+    <button class="nav-link" onclick="showPage('blogPage')">Blog</button>
   </div>
   <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileNav()" aria-label="Menu">
     <span></span><span></span><span></span>
@@ -713,6 +720,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <button class="mobile-nav-link" onclick="openCommunity();closeMobileNav();">Community</button>
     <button class="mobile-nav-link" onclick="showPage('howPage');closeMobileNav();">How It Works</button>
     <button class="mobile-nav-link" onclick="showPage('pricingPage');closeMobileNav();">Pricing</button>
+    <button class="mobile-nav-link" onclick="showPage('blogPage');closeMobileNav();">Blog</button>
   </div>
   <div class="nav-right">
     <div id="guestNav" style="display:flex;align-items:center;gap:8px;">
@@ -796,10 +804,10 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
 <!-- TRUST BAR -->
 <section id="trust">
-  <div class="trust-stat"><div class="trust-val">4,200+</div><div class="trust-lbl">Active Learners</div></div>
-  <div class="trust-stat"><div class="trust-val">90+</div><div class="trust-lbl">Topic Tracks</div></div>
-  <div class="trust-stat"><div class="trust-val">1,800+</div><div class="trust-lbl">Community Posts</div></div>
-  <div class="trust-stat"><div class="trust-val">17</div><div class="trust-lbl">Accounting Topics</div></div>
+  <div class="trust-stat"><div class="trust-val">63</div><div class="trust-lbl">Bite-Sized Lessons</div></div>
+  <div class="trust-stat"><div class="trust-val">2 min</div><div class="trust-lbl">Per Lesson</div></div>
+  <div class="trust-stat"><div class="trust-val">100%</div><div class="trust-lbl">Free to Start</div></div>
+  <div class="trust-stat"><div class="trust-val">24/7</div><div class="trust-lbl">Learn Anytime</div></div>
 </section>
 
 <!-- HOW IT WORKS -->
@@ -807,7 +815,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <p class="section-eyebrow">How It Works</p>
   <h2 class="section-heading">Professional learning, reimagined.</h2>
   <div class="steps">
-    <div class="step"><div class="step-num">Step 01</div><div class="step-icon">🎯</div><h3>Pick Your Topic</h3><p>Choose from 17 accounting topics and jump straight into a free lesson — no commitment needed.</p><div class="step-arrow">→</div></div>
+    <div class="step"><div class="step-num">Step 01</div><div class="step-icon">🎯</div><h3>Pick Your Topic</h3><p>Choose your flavor and jump straight into a lesson.</p><div class="step-arrow">→</div></div>
     <div class="step"><div class="step-num">Step 02</div><div class="step-icon">⚡</div><h3>Earn Pips</h3><p>Every correct answer moves your pip score up — like a live trade going in your favour.</p><div class="step-arrow">→</div></div>
     <div class="step"><div class="step-num">Step 03</div><div class="step-icon">💬</div><h3>Join the Community</h3><p>Post opinions, vote on ideas and learn from a global community of curious professionals.</p></div>
   </div>
@@ -826,7 +834,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   </div>
   <div class="opinions-grid" id="opinionsGrid"></div>
   <div class="opinions-cta">
-    <button class="btn btn-outline" onclick="openPostOpinion()">+ Post Your Opinion</button>
+    <button class="btn btn-outline" onclick="goToComposeOpinion()">+ Post Your Opinion</button>
     <p class="opinions-cta-note">Join free to post and vote on community opinions</p>
   </div>
 </section>
@@ -900,7 +908,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <input class="nl-input" type="email" placeholder="Enter your email address" id="nlEmail"/>
       <button class="btn btn-gold" onclick="nlSubmit()">Subscribe</button>
     </div>
-    <p class="nl-note" id="nlNote">Join 4,200+ subscribers. Unsubscribe anytime.</p>
+    <p class="nl-note" id="nlNote">Be among the first to join. Unsubscribe anytime.</p>
   </div>
 </section>
 
@@ -923,13 +931,29 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <p class="section-eyebrow">How It Works</p>
     <h2 class="section-heading">Professional learning, reimagined.</h2>
     <div class="steps">
-      <div class="step"><div class="step-num">Step 01</div><div class="step-icon">🎯</div><h3>Pick Your Topic</h3><p>Choose from 17 accounting topics and jump straight into a free lesson — no commitment needed.</p><div class="step-arrow">→</div></div>
+      <div class="step"><div class="step-num">Step 01</div><div class="step-icon">🎯</div><h3>Pick Your Topic</h3><p>Choose your flavor and jump straight into a lesson.</p><div class="step-arrow">→</div></div>
       <div class="step"><div class="step-num">Step 02</div><div class="step-icon">⚡</div><h3>Earn Pips</h3><p>Every correct answer moves your pip score up — like a live trade going in your favour.</p><div class="step-arrow">→</div></div>
       <div class="step"><div class="step-num">Step 03</div><div class="step-icon">💬</div><h3>Join the Community</h3><p>Post opinions, vote on ideas and learn from a global community of curious professionals.</p></div>
     </div>
     <div style="margin-top:48px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
       <button class="btn btn-gold" onclick="showPage('homePage');openAccounting();" style="padding:14px 32px;">Start Learning →</button>
       <button class="btn btn-outline" onclick="showPage('pricingPage')" style="padding:14px 32px;">View Pricing</button>
+    </div>
+  </div>
+</div>
+
+<!-- BLOG PAGE -->
+<div id="blogPage" class="page">
+  <div style="max-width:700px;margin:0 auto;padding:40px 32px;text-align:center;">
+    <button class="track-sb-back" onclick="showPage('homePage')" style="margin-bottom:32px;">← Back to Home</button>
+    <p class="section-eyebrow">Blog</p>
+    <h2 class="section-heading" style="margin-bottom:16px;">We're just getting started.</h2>
+    <p style="color:var(--muted);font-size:0.92rem;line-height:1.7;max-width:480px;margin:0 auto 32px;">
+      The Butterfly Dynamix Learning blog is on its way — practical accounting breakdowns, study tips, and notes on what we're building next. Nothing here yet, but it's coming soon.
+    </p>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px 24px;max-width:420px;margin:0 auto;">
+      <p style="font-size:0.84rem;color:var(--off);margin-bottom:14px;font-weight:700;">Want to know when it launches?</p>
+      <button class="btn btn-gold" onclick="goToNewsletter()">Get Notified →</button>
     </div>
   </div>
 </div>
@@ -1146,16 +1170,13 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <div class="community-app">
     <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="closeCommunity()">← Back to Home</button>
 
-    <section class="community-hero">
-      <h1 class="hero-heading" style="font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:0;">What's Your <span id="flavorWordForum">Flavor?</span></h1>
-    </section>
-
     <!-- DISCUSSION FORUM -->
-    <section class="community-section" style="border-top:none;">
+    <section class="community-section" style="border-top:none;padding-top:24px;">
       <div class="opinions-header">
         <div></div>
         <div class="op-filter">
           <button class="pf active" onclick="filterForumPosts('all',this)">All</button>
+          <button class="pf" id="forumTrendingFilterBtn" onclick="filterForumPosts('trending',this)">🔥 Trending</button>
         </div>
       </div>
 
@@ -1170,24 +1191,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       </div>
 
       <div class="forum-feed" id="forumFeed"></div>
-    </section>
-  </div>
-</div>
-
-<!-- FORUM THREAD (single post + its reply thread) -->
-<div id="forumThreadPage" class="page">
-  <div class="community-app">
-    <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="closeForumThread()">← Back to Forum</button>
-    <section class="community-section" style="max-width:680px;margin-left:auto;margin-right:auto;">
-      <div id="forumThreadPost"></div>
-      <div class="forum-reply-composer">
-        <textarea id="forumReplyText" maxlength="280" placeholder="Write a reply..." oninput="updateForumReplyCharCount()"></textarea>
-        <div class="forum-composer-row">
-          <span class="forum-char-count" id="forumReplyCharCount">280 characters left</span>
-          <button class="btn btn-gold" onclick="submitForumReply()">Reply</button>
-        </div>
-      </div>
-      <div id="forumThreadReplies"></div>
     </section>
   </div>
 </div>
@@ -1233,7 +1236,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <div class="auth-step active" id="sStep1">
         <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot"></div><span class="si-label">Step 1 of 2</span></div>
         <h2 class="auth-heading">Create your account</h2>
-        <p class="auth-sub">Join 4,200+ professionals on Butterfly Dynamix Learning.</p>
+        <p class="auth-sub">Join professionals building their edge on Butterfly Dynamix Learning.</p>
         <div class="field-row">
           <div class="field"><label>First Name</label><input type="text" id="sfirst" placeholder="e.g. Alex"/><div class="field-err" id="eFirst">Required</div></div>
           <div class="field"><label>Last Name</label><input type="text" id="slast" placeholder="e.g. Johnson"/><div class="field-err" id="eLast">Required</div></div>
