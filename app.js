@@ -354,10 +354,10 @@ async function loadAndRenderForum() {
   }
 }
 
-function renderForumFeed(posts) {
+function renderForumFeed(posts, emptyMsg) {
   const feed = document.getElementById('forumFeed');
   if (!posts.length) {
-    feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;padding:20px 0;">No posts yet — be the first to share your take.</p>';
+    feed.innerHTML = `<p style="color:var(--muted);font-size:0.82rem;padding:20px 0;">${emptyMsg || 'No posts yet — be the first to share your take.'}</p>`;
     return;
   }
   feed.innerHTML = posts.map(p => renderForumPost(p)).join('');
@@ -377,8 +377,7 @@ function renderForumPost(p) {
           <span class="forum-post-name" onclick="event.stopPropagation();openProfileByUsername('${uname}','communityPage')" style="cursor:pointer;">@${uname}</span>
           <span class="forum-post-dot">·</span>
           <span class="forum-post-time">${ago}</span>
-          <span class="forum-post-dot">·</span>
-          <span class="op-topic tt-${p.topic}">${topicLabel(p.topic)}</span>
+          ${topicLabel(p.topic) ? `<span class="forum-post-dot">·</span><span class="op-topic tt-${p.topic}">${topicLabel(p.topic)}</span>` : ''}
         </div>
         ${p.title ? `<div class="forum-post-text" style="font-weight:700;color:var(--white);margin-bottom:4px;">${p.title}</div>` : ''}
         <div class="forum-post-text">${p.body}</div>
@@ -559,7 +558,7 @@ async function renderOpinions() {
         <div class="op-meta">
           <span class="op-avatar">${op.profiles?.avatar || '😎'}</span>
           <span class="op-username">@${op.profiles?.username || 'anonymous'}</span>
-          <span class="op-topic tt-${op.topic}">${topicLabel(op.topic)}</span>
+          ${topicLabel(op.topic) ? `<span class="op-topic tt-${op.topic}">${topicLabel(op.topic)}</span>` : ''}
         </div>
         <div class="op-text">"${op.body}"</div>
       </div>
@@ -922,6 +921,66 @@ function selectSuggestion(text) {
   doSearch();
 }
 
+// ── ROTATING SEARCH PLACEHOLDER (with overflow auto-scroll) ──
+// Reusable engine: each search bar instance gets its own rotation
+// state so the home page and community page bars cycle independently.
+const allSearchQuestions = searchQuestionBatches.flat();
+const searchPlaceholderInstances = {};
+
+function startSearchPlaceholderRotation(wrapId, textId, inputId) {
+  if (searchPlaceholderInstances[wrapId]) {
+    clearInterval(searchPlaceholderInstances[wrapId].timer);
+  }
+  const state = { index: Math.floor(Math.random() * allSearchQuestions.length), timer: null, scrollTimeout: null };
+  searchPlaceholderInstances[wrapId] = state;
+
+  const tick = () => showNextSearchPlaceholder(wrapId, textId, inputId, state);
+  tick();
+  state.timer = setInterval(tick, 3800);
+}
+
+function showNextSearchPlaceholder(wrapId, textId, inputId, state) {
+  const input = document.getElementById(inputId);
+  if (input && input.value) return; // don't disturb real typing
+
+  const el   = document.getElementById(textId);
+  const wrap = document.getElementById(wrapId);
+  if (!el || !wrap) return;
+
+  if (state.scrollTimeout) { clearTimeout(state.scrollTimeout); state.scrollTimeout = null; }
+
+  el.style.transition = 'none';
+  el.style.transform  = 'translateX(0)';
+  el.textContent = allSearchQuestions[state.index % allSearchQuestions.length];
+  state.index++;
+
+  requestAnimationFrame(() => {
+    const overflow = el.scrollWidth - wrap.clientWidth;
+    if (overflow > 0) {
+      state.scrollTimeout = setTimeout(() => {
+        el.style.transition = `transform ${Math.max(1.4, overflow / 40)}s linear`;
+        el.style.transform  = `translateX(-${overflow + 6}px)`;
+      }, 1100);
+    }
+  });
+}
+
+function updateFakePlaceholder(val, wrapId) {
+  const wrap = document.getElementById(wrapId || 'searchFakePlaceholder');
+  if (wrap) wrap.style.display = val ? 'none' : 'flex';
+}
+
+function hideFakePlaceholder(wrapId) {
+  const wrap = document.getElementById(wrapId || 'searchFakePlaceholder');
+  if (wrap) wrap.style.display = 'none';
+}
+
+function showFakePlaceholder(wrapId, inputId) {
+  const input = document.getElementById(inputId || 'searchInput');
+  const wrap  = document.getElementById(wrapId || 'searchFakePlaceholder');
+  if (wrap && input && !input.value) wrap.style.display = 'flex';
+}
+
 function doSearch() {
   const val = document.getElementById('searchInput').value.trim();
   document.getElementById('searchSuggestions').classList.remove('open');
@@ -933,14 +992,41 @@ function doSearch() {
   openAccounting();
 }
 
+// ── COMMUNITY SEARCH ─────────────────────────────────────────
+function onCommunitySearch(val) {
+  if (!val.trim()) {
+    // Empty search — restore the full feed
+    renderForumFeed(currentForumPosts);
+    return;
+  }
+  const q = val.toLowerCase();
+  const hits = currentForumPosts.filter(p =>
+    (p.body && p.body.toLowerCase().includes(q)) ||
+    (p.title && p.title.toLowerCase().includes(q))
+  );
+  renderForumFeed(hits, 'No posts match your search.');
+}
+
+function onCommunitySearchKey(e) {
+  if (e.key === 'Enter') doCommunitySearch();
+}
+
+function doCommunitySearch() {
+  const val = document.getElementById('communitySearchInput').value.trim();
+  onCommunitySearch(val);
+}
+
 function scrollToOpinion(opinionId) {
   document.getElementById('opinionsSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ── TOPIC LABEL HELPER ───────────────────────────────────────
+// 'acc' returns empty for now since Accounting is the only topic —
+// showing the badge on every single post is just noise. Once other
+// topics exist, this automatically starts showing labels again.
 function topicLabel(topic) {
-  const map = { acc: '📊 Accounting', fin: '💰 Finance', econ: '🌍 Economics', trd: '📈 Trading' };
-  return map[topic] || topic;
+  const map = { acc: '', fin: '💰 Finance', econ: '🌍 Economics', trd: '📈 Trading' };
+  return map[topic] ?? topic;
 }
 
 // ── TIME AGO HELPER ──────────────────────────────────────────
@@ -963,7 +1049,6 @@ function buildTrending() {
     `<div class="trend-chip" onclick="scrollToOpinion(${t.opinionId})" style="cursor:pointer;">
       <span class="trend-num">${t.num}</span>
       <span class="trend-text">${t.text}</span>
-      <span class="trend-tag ${t.cls}">${t.tag}</span>
     </div>`
   ).join('');
   requestAnimationFrame(() => {
@@ -995,7 +1080,7 @@ function renderStaticOpinions() {
         <div class="op-meta">
           <span class="op-avatar">${op.avatar}</span>
           <span class="op-username">@${op.username}</span>
-          <span class="op-topic tt-${op.topic}">${topicLabel(op.topic)}</span>
+          ${topicLabel(op.topic) ? `<span class="op-topic tt-${op.topic}">${topicLabel(op.topic)}</span>` : ''}
         </div>
         <div class="op-text">"${op.body}"</div>
       </div>
@@ -1017,7 +1102,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // Small delay to ensure data.js searchQuestionBatches is available
   setTimeout(() => {
     if (typeof startSearchPlaceholderRotation === 'function') {
-      startSearchPlaceholderRotation();
+      startSearchPlaceholderRotation('searchFakePlaceholder', 'searchFakePlaceholderText', 'searchInput');
+      startSearchPlaceholderRotation('communityFakePlaceholder', 'communityFakePlaceholderText', 'communitySearchInput');
     }
   }, 300);
 });
