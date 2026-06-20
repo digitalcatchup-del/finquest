@@ -247,56 +247,58 @@ function renderLessonContent(idx) {
       <span class="track-meta-tag">⚡ +${l.pips} pips on completion</span>
     </div>
 
-    <div class="nugget-def-card">
-      <div class="nugget-def-label">Definition</div>
-      <div class="nugget-def-text">${renderKeywordLinks(l.definition, idx)}</div>
-      ${nuggetVotesFeatureEnabled ? `
-        <div class="nugget-votes-toggle"
-          onclick="toggleNuggetVotes(${idx})">
-          <span id="nuggetVotesToggleLabel_${idx}">
-            Show community votes on this definition ▾
-          </span>
-        </div>
-        <div class="nugget-votes-panel" id="nuggetVotesPanel_${idx}" style="display:none;">
-          <div class="nugget-votes-row">
-            <button class="nugget-vote-btn up"
-              onclick="voteOnDefinition(${idx},1)">
-              👍 <span id="nuggetUp_${idx}">${votes.up}</span>
-            </button>
-            <button class="nugget-vote-btn down"
-              onclick="voteOnDefinition(${idx},-1)">
-              👎 <span id="nuggetDown_${idx}">${votes.down}</span>
-            </button>
+    <div class="lesson-widget">
+      <div class="nugget-def-card">
+        <div class="nugget-def-label">Definition</div>
+        <div class="nugget-def-text">${renderKeywordLinks(l.definition, idx)}</div>
+        ${nuggetVotesFeatureEnabled ? `
+          <div class="nugget-votes-toggle"
+            onclick="toggleNuggetVotes(${idx})">
+            <span id="nuggetVotesToggleLabel_${idx}">
+              Show community votes on this definition ▾
+            </span>
           </div>
-        </div>` : ''}
-      <button class="nugget-suggest-btn"
-        onclick="openSuggestDefinition(${idx})">
-        ✏️ Suggest your own definition
-      </button>
-    </div>
-
-    <div class="nugget-scenario-card">
-      <div class="nugget-scenario-label">Scenario</div>
-      <div class="nugget-scenario-text">
-        ${renderKeywordLinks(l.scenario, idx)}
+          <div class="nugget-votes-panel" id="nuggetVotesPanel_${idx}" style="display:none;">
+            <div class="nugget-votes-row">
+              <button class="nugget-vote-btn up"
+                onclick="voteOnDefinition(${idx},1)">
+                👍 <span id="nuggetUp_${idx}">${votes.up}</span>
+              </button>
+              <button class="nugget-vote-btn down"
+                onclick="voteOnDefinition(${idx},-1)">
+                👎 <span id="nuggetDown_${idx}">${votes.down}</span>
+              </button>
+            </div>
+          </div>` : ''}
+        <button class="nugget-suggest-btn"
+          onclick="openSuggestDefinition(${idx})">
+          ✏️ Suggest your own definition
+        </button>
       </div>
-    </div>
 
-    ${l.content ? `<div class="track-lesson-content">${l.content}</div>` : ''}
-
-    <div class="track-divider"></div>
-    <div class="track-quiz-section">
-      <div class="track-quiz-header">
-        <div class="track-quiz-eyebrow">Knowledge Check</div>
-        <div class="track-quiz-title">Test Your Understanding</div>
-        <div class="track-quiz-pip-info">
-          Answer correctly to earn +${l.pips} pips
+      <div class="nugget-scenario-card">
+        <div class="nugget-scenario-label">Scenario</div>
+        <div class="nugget-scenario-text">
+          ${renderKeywordLinks(l.scenario, idx)}
         </div>
       </div>
-      ${renderQuizQuestions(l, idx)}
-    </div>
 
-    <div class="track-quiz-result" id="trackQuizResult"></div>
+      ${l.content ? `<div class="track-lesson-content">${l.content}</div>` : ''}
+
+      <div class="track-divider"></div>
+      <div class="track-quiz-section">
+        <div class="track-quiz-header">
+          <div class="track-quiz-eyebrow">Knowledge Check</div>
+          <div class="track-quiz-title">Test Your Understanding</div>
+          <div class="track-quiz-pip-info">
+            Answer correctly to earn +${l.pips} pips
+          </div>
+        </div>
+        ${renderQuizQuestions(l, idx)}
+      </div>
+
+      <div class="track-quiz-result" id="trackQuizResult"></div>
+    </div>
 
     <div class="track-lesson-nav">
       ${idx > 0
@@ -359,7 +361,7 @@ function answerTrackQ(qi, oi, correct, explanation, lessonIdx) {
          <span class="fb-exp">${explanation}</span>`
       : `<span class="fb-wrong">✗ Not quite.</span>
          <span class="fb-exp">${explanation}</span>`;
-    fb.classList.add('show');
+    fb.classList.add('show', isCorrect ? 'cfb' : 'wfb');
   }
 
   if (isCorrect) {
