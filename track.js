@@ -140,6 +140,10 @@ function setTrackStage(stage) {
     }
   } else if (stage === 'exam') {
     loadTrackExam();
+  } else if (stage === 'novel') {
+    renderNovelComingSoon();
+  } else if (stage === 'film') {
+    renderFilmComingSoon();
   }
 }
 
@@ -188,7 +192,23 @@ function renderTrackSidebar() {
           </div>
         </div>
       </div>`;
-  }).join('');
+  }).join('') + `
+    <div class="track-sb-extra-group">
+      <div class="track-sb-extra ${trackStage === 'novel' ? 'active' : ''}" onclick="setTrackStage('novel')">
+        <div class="track-sb-extra-icon">📖</div>
+        <div class="track-sb-lesson-info">
+          <div class="track-sb-lesson-name">Novel</div>
+          <div class="track-sb-lesson-meta">Long-form reading</div>
+        </div>
+      </div>
+      <div class="track-sb-extra ${trackStage === 'film' ? 'active' : ''}" onclick="setTrackStage('film')">
+        <div class="track-sb-extra-icon">🎬</div>
+        <div class="track-sb-lesson-info">
+          <div class="track-sb-lesson-name">Short Film</div>
+          <div class="track-sb-lesson-meta">Watch + gamified check</div>
+        </div>
+      </div>
+    </div>`;
 }
 
 // ── COURSE START GATE ────────────────────────────────────────
@@ -212,6 +232,47 @@ function renderCourseStartGate() {
 function startCourse() {
   trackCourseStarted = true;
   renderLessonContent(0);
+}
+
+// ── NOVEL (long-form reading) — honest placeholder until real content exists ──
+function renderNovelComingSoon() {
+  const track = trackData[activeTrackKey];
+  document.getElementById('trackMainContent').innerHTML = `
+    <div class="lesson-gate">
+      <div style="font-size:2rem;">📖</div>
+      <h1 class="track-lesson-title" style="margin-top:12px;">Novel — Coming Soon</h1>
+      <p class="lesson-gate-sub">
+        Everything in ${track.title} works as a short, bite-sized lesson today.
+        We're building a long-form "novel" version of the same material — the
+        full story behind the concepts, for when you want to go deeper than a
+        2-minute lesson allows.
+      </p>
+      <button class="btn btn-gold" onclick="setTrackStage('lessons')"
+        style="font-size:1rem;padding:14px 40px;">
+        Back to Lessons →
+      </button>
+    </div>`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── SHORT FILM (watch + gamified check) — honest placeholder ────────────
+function renderFilmComingSoon() {
+  const track = trackData[activeTrackKey];
+  document.getElementById('trackMainContent').innerHTML = `
+    <div class="lesson-gate">
+      <div style="font-size:2rem;">🎬</div>
+      <h1 class="track-lesson-title" style="margin-top:12px;">Short Film — Coming Soon</h1>
+      <p class="lesson-gate-sub">
+        Soon you'll be able to watch a short film built around ${track.title},
+        then jump straight into a gamified knowledge check tied to what you
+        just watched — earning pips the same way you do with lessons today.
+      </p>
+      <button class="btn btn-gold" onclick="setTrackStage('exam')"
+        style="font-size:1rem;padding:14px 40px;">
+        Back to Exam →
+      </button>
+    </div>`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── LOAD LESSON ──────────────────────────────────────────────
