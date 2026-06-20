@@ -1173,7 +1173,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <div class="field"><label>Full Name</label><input type="text" id="payName" placeholder="Your full name"/></div>
       <div class="field"><label>Email Address</label><input type="email" id="payEmail" placeholder="you@email.com"/></div>
       <button class="btn btn-gold btn-full" style="margin-top:8px" id="payStripeBtn" onclick="initiateStripeCheckout()">Continue to Payment →</button>
-      <div class="flw-note">🔒 Secured by <strong style="color:var(--gold)">Paystack</strong> · Pay securely with card or bank transfer</div>
+      <div class="flw-note">🔒 Secured by <strong style="color:var(--gold)">Flutterwave</strong> · Pay securely with card, bank transfer or USSD</div>
     </div>
     <div class="payment-success" id="paymentSuccess">
       <div class="ps-icon">🎉</div>
@@ -1189,8 +1189,8 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <!-- 1. Supabase JS client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
-<!-- 2. Paystack inline payment -->
-<script src="https://js.paystack.co/v1/inline.js"></script>
+<!-- 2. Flutterwave inline payment -->
+<script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
 <script src="supabase-config.js"></script>
@@ -1202,7 +1202,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    checkStripeRedirect(); // handles Paystack/payment success redirect
+    checkStripeRedirect(); // handles Flutterwave/payment success redirect
     restoreSession();      // re-hydrates logged-in user from Supabase session
   });
 </script>
