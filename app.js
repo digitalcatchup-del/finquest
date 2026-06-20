@@ -921,48 +921,117 @@ function selectSuggestion(text) {
   doSearch();
 }
 
-// ── ROTATING SEARCH PLACEHOLDER (with overflow auto-scroll) ──
-// Reusable engine: each search bar instance gets its own rotation
-// state so the home page and community page bars cycle independently.
+// ── ROTATING PLACEHOLDER ENGINE (type in / type out) ──────────
+// Reusable engine: each instance (home search, composer, etc.)
+// gets its own rotation state so they cycle independently.
+// Text types in character by character. If the fully-typed text
+// is too long for the box (it would underlap the search button,
+// or run past the textarea edge), it scrolls left afterward to
+// reveal the full text, holds, then types back out from the end.
 const allSearchQuestions = searchQuestionBatches.flat();
 const searchPlaceholderInstances = {};
 
-function startSearchPlaceholderRotation(wrapId, textId, inputId) {
-  if (searchPlaceholderInstances[wrapId]) {
-    clearInterval(searchPlaceholderInstances[wrapId].timer);
-  }
-  const state = { index: Math.floor(Math.random() * allSearchQuestions.length), timer: null, scrollTimeout: null };
-  searchPlaceholderInstances[wrapId] = state;
+const PLACEHOLDER_TYPE_SPEED   = 38;  // ms per character, typing in
+const PLACEHOLDER_DELETE_SPEED = 22;  // ms per character, typing out
+const PLACEHOLDER_HOLD_MS      = 1100; // pause once fully visible
+const PLACEHOLDER_SCROLL_SPEED = 90;   // px / second, reveal-scroll
 
-  const tick = () => showNextSearchPlaceholder(wrapId, textId, inputId, state);
-  tick();
-  state.timer = setInterval(tick, 3800);
+function startSearchPlaceholderRotation(wrapId, textId, inputId, questions) {
+  if (searchPlaceholderInstances[wrapId]) {
+    clearTimeout(searchPlaceholderInstances[wrapId].timer);
+  }
+  const pool = questions || allSearchQuestions;
+  const state = { index: Math.floor(Math.random() * pool.length), timer: null, pool };
+  searchPlaceholderInstances[wrapId] = state;
+  runPlaceholderCycle(wrapId, textId, inputId, state);
 }
 
-function showNextSearchPlaceholder(wrapId, textId, inputId, state) {
+function runPlaceholderCycle(wrapId, textId, inputId, state) {
   const input = document.getElementById(inputId);
-  if (input && input.value) return; // don't disturb real typing
+  const el    = document.getElementById(textId);
+  const wrap  = document.getElementById(wrapId);
+  if (!el || !wrap) return;
 
+  if (input && input.value) {
+    state.timer = setTimeout(() => runPlaceholderCycle(wrapId, textId, inputId, state), 600);
+    return;
+  }
+
+  const text = state.pool[state.index % state.pool.length];
+  state.index++;
+
+  el.style.transition = 'none';
+  el.style.transform  = 'translateX(0)';
+  el.textContent = '';
+
+  typeInStep(wrapId, textId, inputId, state, text, 0);
+}
+
+function typeInStep(wrapId, textId, inputId, state, text, count) {
+  const input = document.getElementById(inputId);
+  const el    = document.getElementById(textId);
+  if (!el) return;
+
+  if (input && input.value) {
+    state.timer = setTimeout(() => runPlaceholderCycle(wrapId, textId, inputId, state), 600);
+    return;
+  }
+
+  count++;
+  el.textContent = text.slice(0, count);
+
+  if (count < text.length) {
+    state.timer = setTimeout(() => typeInStep(wrapId, textId, inputId, state, text, count), PLACEHOLDER_TYPE_SPEED);
+  } else {
+    afterTypeIn(wrapId, textId, inputId, state, text);
+  }
+}
+
+function afterTypeIn(wrapId, textId, inputId, state, text) {
   const el   = document.getElementById(textId);
   const wrap = document.getElementById(wrapId);
   if (!el || !wrap) return;
 
-  if (state.scrollTimeout) { clearTimeout(state.scrollTimeout); state.scrollTimeout = null; }
+  // If the fully-typed text underlaps the button / runs past the box,
+  // scroll left afterward so the full text becomes readable.
+  const overflow = el.scrollWidth - wrap.clientWidth;
+  if (overflow > 0) {
+    const scrollDuration = Math.max(0.4, overflow / PLACEHOLDER_SCROLL_SPEED);
+    state.timer = setTimeout(() => {
+      el.style.transition = `transform ${scrollDuration}s linear`;
+      el.style.transform  = `translateX(-${overflow + 4}px)`;
+      state.timer = setTimeout(() => {
+        typeOutStep(wrapId, textId, inputId, state, text, text.length);
+      }, scrollDuration * 1000 + PLACEHOLDER_HOLD_MS);
+    }, 350);
+  } else {
+    state.timer = setTimeout(() => {
+      typeOutStep(wrapId, textId, inputId, state, text, text.length);
+    }, PLACEHOLDER_HOLD_MS);
+  }
+}
 
-  el.style.transition = 'none';
-  el.style.transform  = 'translateX(0)';
-  el.textContent = allSearchQuestions[state.index % allSearchQuestions.length];
-  state.index++;
+function typeOutStep(wrapId, textId, inputId, state, text, count) {
+  const input = document.getElementById(inputId);
+  const el    = document.getElementById(textId);
+  if (!el) return;
 
-  requestAnimationFrame(() => {
-    const overflow = el.scrollWidth - wrap.clientWidth;
-    if (overflow > 0) {
-      state.scrollTimeout = setTimeout(() => {
-        el.style.transition = `transform ${Math.max(1.4, overflow / 40)}s linear`;
-        el.style.transform  = `translateX(-${overflow + 6}px)`;
-      }, 1100);
-    }
-  });
+  if (input && input.value) {
+    el.style.transition = 'none';
+    el.style.transform  = 'translateX(0)';
+    el.textContent = '';
+    state.timer = setTimeout(() => runPlaceholderCycle(wrapId, textId, inputId, state), 600);
+    return;
+  }
+
+  count--;
+  el.textContent = text.slice(0, Math.max(0, count));
+
+  if (count > 0) {
+    state.timer = setTimeout(() => typeOutStep(wrapId, textId, inputId, state, text, count), PLACEHOLDER_DELETE_SPEED);
+  } else {
+    state.timer = setTimeout(() => runPlaceholderCycle(wrapId, textId, inputId, state), 250);
+  }
 }
 
 function updateFakePlaceholder(val, wrapId) {
@@ -990,30 +1059,6 @@ function doSearch() {
     db.from('search_log').insert({ user_id: currentUser.id, query: val });
   }
   openAccounting();
-}
-
-// ── COMMUNITY SEARCH ─────────────────────────────────────────
-function onCommunitySearch(val) {
-  if (!val.trim()) {
-    // Empty search — restore the full feed
-    renderForumFeed(currentForumPosts);
-    return;
-  }
-  const q = val.toLowerCase();
-  const hits = currentForumPosts.filter(p =>
-    (p.body && p.body.toLowerCase().includes(q)) ||
-    (p.title && p.title.toLowerCase().includes(q))
-  );
-  renderForumFeed(hits, 'No posts match your search.');
-}
-
-function onCommunitySearchKey(e) {
-  if (e.key === 'Enter') doCommunitySearch();
-}
-
-function doCommunitySearch() {
-  const val = document.getElementById('communitySearchInput').value.trim();
-  onCommunitySearch(val);
 }
 
 function scrollToOpinion(opinionId) {
@@ -1055,10 +1100,15 @@ function buildTrending() {
     const wrapWidth = ticker.parentElement.offsetWidth;
     const chips = ticker.querySelectorAll('.trend-chip');
     let used = 0;
+    let stop = false;
     chips.forEach(chip => {
-      const chipW = chip.offsetWidth + 10;
-      if (used + chipW > wrapWidth) chip.remove();
-      else used += chipW;
+      const chipW = chip.offsetWidth + 10; // include the row gap
+      if (stop || used + chipW > wrapWidth) {
+        stop = true;
+        chip.remove();
+      } else {
+        used += chipW;
+      }
     });
   });
 }
@@ -1103,7 +1153,14 @@ document.addEventListener('DOMContentLoaded', function () {
   setTimeout(() => {
     if (typeof startSearchPlaceholderRotation === 'function') {
       startSearchPlaceholderRotation('searchFakePlaceholder', 'searchFakePlaceholderText', 'searchInput');
-      startSearchPlaceholderRotation('communityFakePlaceholder', 'communityFakePlaceholderText', 'communitySearchInput');
+      startSearchPlaceholderRotation('composerFakePlaceholder', 'composerFakePlaceholderText', 'forumComposerText');
     }
   }, 300);
+});
+
+// Re-fit trending chips on resize/orientation change (debounced)
+let trendingResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(trendingResizeTimer);
+  trendingResizeTimer = setTimeout(buildTrending, 200);
 });
