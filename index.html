@@ -36,7 +36,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .logo-wrap{display:flex;align-items:center;gap:10px;cursor:pointer;}
 .logo-svg{width:50px;height:25.5px;}
 .logo-text{display:flex;flex-direction:column;line-height:1;}
-.logo-main{font-size:0.82rem;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:var(--white);}
+.logo-main{font-size:0.8rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--off);}
 .logo-sub{font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
 .nav-center{display:flex;align-items:center;gap:4px;}
 .nav-link{font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;padding:7px 12px;transition:color 0.15s;border-radius:3px;}
@@ -688,10 +688,12 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <nav>
   <div class="logo-wrap" onclick="showPage('homePage')" style="cursor:pointer;">
     <div class="logo-text">
-      <span class="logo-main">Butterfly Dynamix Learning</span>
+      <span class="logo-main">Butterfly Dynamix</span>
+      <span class="logo-sub">Learning</span>
     </div>
   </div>
   <div class="nav-center">
+    <button class="nav-link" onclick="showPage('homePage')">Home</button>
     <button class="nav-link" onclick="openCommunity()">Community</button>
     <button class="nav-link" onclick="showPage('howPage')">How It Works</button>
     <button class="nav-link" onclick="showPage('pricingPage')">Pricing</button>
@@ -735,7 +737,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <div class="search-wrap">
     <div class="search-box">
       <span class="search-icon">🔍</span>
-      <input class="search-input" type="text" id="searchInput" placeholder=" " autocomplete="off" oninput="onSearch(this.value);updateFakePlaceholder(this.value);" onkeydown="onSearchKey(event)" onfocus="hideFakePlaceholder()" onblur="showFakePlaceholder()"/>
+      <input class="search-input" type="text" id="searchInput" placeholder=" " autocomplete="off" oninput="onSearch(this.value);updateFakePlaceholder(this.value,'searchFakePlaceholder');" onkeydown="onSearchKey(event)" onfocus="hideFakePlaceholder('searchFakePlaceholder')" onblur="showFakePlaceholder('searchFakePlaceholder','searchInput')"/>
       <div class="search-fake-placeholder" id="searchFakePlaceholder"><span id="searchFakePlaceholderText">Search accounting topics, e.g. depreciation, VAT, IFRS...</span></div>
       <button class="search-btn" onclick="doSearch()">Search</button>
     </div>
@@ -745,7 +747,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <!-- ACCOUNTING ENTRY — plain button, no card/widget -->
   <div class="flavor-section">
     <div style="text-align:center;">
-      <button class="btn btn-gold" onclick="openAccounting()" style="font-size:0.95rem;padding:14px 36px;">📊 Accounting</button>
+      <button class="btn btn-gold" onclick="openAccounting()" style="font-size:0.95rem;padding:14px 36px;">📊 Lessons</button>
     </div>
     <div style="text-align:center;margin-top:14px;">
       <button class="link-btn" onclick="openSampleNugget()" style="background:none;border:none;color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;text-decoration:underline;">Try a free 1-minute knowledge nugget →</button>
@@ -812,7 +814,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     </div>
     <div class="op-filter">
       <button class="pf active" onclick="filterOpinions('all',this)">All</button>
-      <button class="pf" onclick="filterOpinions('acc',this)">Accounting</button>
     </div>
   </div>
   <div class="opinions-grid" id="opinionsGrid"></div>
@@ -1139,6 +1140,20 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
     <section class="community-hero">
       <h1 class="hero-heading" style="font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:0;">What's Your <span id="flavorWordForum">Flavor?</span></h1>
+
+      <!-- SEARCH BAR -->
+      <div class="search-wrap" style="margin:24px auto 0;">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" type="text" id="communitySearchInput" placeholder=" " autocomplete="off"
+            oninput="onCommunitySearch(this.value);updateFakePlaceholder(this.value,'communityFakePlaceholder');"
+            onkeydown="onCommunitySearchKey(event)"
+            onfocus="hideFakePlaceholder('communityFakePlaceholder')"
+            onblur="showFakePlaceholder('communityFakePlaceholder','communitySearchInput')"/>
+          <div class="search-fake-placeholder" id="communityFakePlaceholder"><span id="communityFakePlaceholderText">Search accounting topics, e.g. depreciation, VAT, IFRS...</span></div>
+          <button class="search-btn" onclick="doCommunitySearch()">Search</button>
+        </div>
+      </div>
     </section>
 
     <!-- DISCUSSION FORUM -->
@@ -1147,7 +1162,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
         <div></div>
         <div class="op-filter">
           <button class="pf active" onclick="filterForumPosts('all',this)">All</button>
-          <button class="pf" onclick="filterForumPosts('acc',this)">Accounting</button>
         </div>
       </div>
 
