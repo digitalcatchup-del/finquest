@@ -460,7 +460,7 @@ function openSuggestDefinition(idx) {
           Suggest a definition for: <em>${l.term}</em>
         </h3>
         <p style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">
-          Your suggestion will be reviewed by the FinQuest team.
+          Your suggestion will be reviewed by the Butterfly Dynamix Learning team.
         </p>
         <textarea id="suggestDefText" rows="5"
           style="width:100%;background:var(--surface2);border:1px solid var(--border2);
