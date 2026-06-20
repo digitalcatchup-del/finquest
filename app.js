@@ -1,6 +1,6 @@
 // ============================================================
 // app.js — Core application logic
-// Think1st · FinQuest Learning Platform
+// Butterfly Dynamix Learning Platform
 // Depends on: supabase-config.js, auth.js, data.js
 // ============================================================
 
@@ -841,17 +841,17 @@ function initiateStripeCheckout() {
 
   FlutterwaveCheckout({
     public_key: FLUTTERWAVE_PUBLIC_KEY,
-    tx_ref:     'FQ_' + plan.name + '_' + Date.now(),
+    tx_ref:     'BDL_' + plan.name + '_' + Date.now(),
     amount:     amountNGN,
     currency:   'NGN',
     payment_options: 'card, banktransfer, ussd',
     redirect_url: window.location.origin + window.location.pathname,
     customer: {
       email,
-      name: name || 'FinQuest User',
+      name: name || 'Butterfly Dynamix Learner',
     },
     customizations: {
-      title:       'FinQuest · Think1st',
+      title:       'Butterfly Dynamix Learning',
       description: `${plan.name} Subscription`,
       logo:        '',
     },
