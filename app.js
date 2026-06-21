@@ -1456,15 +1456,6 @@ function buildTrending() {
   });
 }
 
-// Explicit, deterministic left/right navigation for the trending ticker —
-// works via scrollBy regardless of touch-swipe gesture support, so #1 and
-// #10 are always reachable even if swipe alone doesn't get there.
-function scrollTrending(direction) {
-  const wrap = document.getElementById('trendingTickerWrap');
-  if (!wrap) return;
-  wrap.scrollBy({ left: direction * 180, behavior: 'smooth' });
-}
-
 // ── STATIC OPINIONS FALLBACK ─────────────────────────────────
 function renderStaticOpinions() {
   const grid = document.getElementById('opinionsGrid');
