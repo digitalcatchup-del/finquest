@@ -293,6 +293,7 @@ function answerNugget(idx, correct, btn) {
 // ── COMMUNITY ────────────────────────────────────────────────
 let forumTopicFilter = 'all';
 let currentForumPosts = [];
+let votedPostIds = new Set();
 
 function openCommunity() {
   showPage('communityPage');
@@ -371,6 +372,19 @@ async function loadAndRenderForum() {
       profiles: profileMap[p.user_id] || { username: 'anonymous', avatar: '😎' }
     }));
 
+    // Step 4: Know which of these posts the current user has already
+    // upvoted, so the thumbs-up state is correct on load, not just after a click.
+    votedPostIds = new Set();
+    if (currentUser) {
+      const { data: votes } = await db
+        .from('post_votes')
+        .select('post_id')
+        .eq('user_id', currentUser.id)
+        .eq('direction', 1)
+        .in('post_id', posts.map(p => p.id));
+      votedPostIds = new Set((votes || []).map(v => v.post_id));
+    }
+
     currentForumPosts = enriched;
     renderForumFeed(enriched);
 
@@ -389,13 +403,14 @@ function renderForumFeed(posts, emptyMsg) {
 }
 
 function renderForumPost(p) {
-  const ago     = timeAgo(p.created_at);
-  const avatar  = p.profiles?.avatar || '😎';
-  const uname   = p.profiles?.username || 'anonymous';
-  const ups     = p.upvotes || 0;
-  const replies = p.reply_count || 0;
+  const ago      = timeAgo(p.created_at);
+  const avatar   = p.profiles?.avatar || '😎';
+  const uname    = p.profiles?.username || 'anonymous';
+  const ups      = p.upvotes || 0;
+  const replies  = p.reply_count || 0;
+  const hasVoted = votedPostIds.has(p.id);
   return `
-    <div class="forum-post-card" id="forumPost_${p.id}" onclick="toggleInlineReplies('${p.id}')">
+    <div class="forum-post-card" id="forumPost_${p.id}" onclick="openDiscussionInPlace('${p.id}')">
       <div class="forum-post-avatar">${avatar}</div>
       <div class="forum-post-body">
         <div class="forum-post-meta">
@@ -407,13 +422,17 @@ function renderForumPost(p) {
         ${p.title ? `<div class="forum-post-text" style="font-weight:700;color:var(--white);margin-bottom:4px;">${p.title}</div>` : ''}
         <div class="forum-post-text">${p.body}</div>
         <div class="forum-post-actions">
-          <button class="forum-action-btn"
+          <button class="forum-action-btn" id="forumVoteBtn_${p.id}"
             onclick="event.stopPropagation();handlePostVote('${p.id}',1)">
-            ▲ ${ups}
+            <span id="forumVoteIcon_${p.id}">${hasVoted ? '👍' : '▲'}</span> <span id="forumVoteCount_${p.id}">${ups}</span>
           </button>
           <button class="forum-action-btn" id="forumReplyToggle_${p.id}"
             onclick="event.stopPropagation();toggleInlineReplies('${p.id}')">
             💬 <span id="forumReplyCount_${p.id}">${replies}</span> <span id="forumReplyWord_${p.id}">${replies === 1 ? 'reply' : 'replies'}</span>
+          </button>
+          <button class="forum-action-btn"
+            onclick="event.stopPropagation();openInlineRepliesAndFocusComposer('${p.id}')">
+            ✏️ Comment
           </button>
         </div>
 
@@ -431,9 +450,51 @@ function renderForumPost(p) {
     </div>`;
 }
 
+// Toggling the vote updates just this button locally — count and icon —
+// rather than re-rendering the whole feed, so any reply panel a person
+// has open elsewhere in the list stays open.
 async function handlePostVote(postId, direction) {
+  if (!currentUser) { openAuth('signup'); return; }
+  const wasVoted = votedPostIds.has(postId);
   await votePost(postId, direction);
-  loadAndRenderForum();
+
+  const iconEl  = document.getElementById(`forumVoteIcon_${postId}`);
+  const countEl = document.getElementById(`forumVoteCount_${postId}`);
+  if (!iconEl || !countEl) return;
+
+  let count = parseInt(countEl.textContent, 10) || 0;
+  if (wasVoted) {
+    votedPostIds.delete(postId);
+    iconEl.textContent = '▲';
+    countEl.textContent = Math.max(0, count - 1);
+  } else {
+    votedPostIds.add(postId);
+    iconEl.textContent = '👍';
+    countEl.textContent = count + 1;
+  }
+}
+
+// Clicking the discussion itself (not a specific button) opens its replies
+// AND scrolls/highlights it into clear view — landing you on the exact
+// spot in the page where that discussion lives.
+function openDiscussionInPlace(postId) {
+  toggleInlineReplies(postId);
+  const card = document.getElementById(`forumPost_${postId}`);
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('forum-post-highlight');
+    setTimeout(() => card.classList.remove('forum-post-highlight'), 5000);
+  }
+}
+
+// The dedicated Comment button — opens the same inline panel as Replies,
+// but also focuses the composer, since its whole purpose is writing one.
+function openInlineRepliesAndFocusComposer(postId) {
+  openInlineReplies(postId);
+  setTimeout(() => {
+    const ta = document.getElementById(`forumReplyText_${postId}`);
+    if (ta) ta.focus();
+  }, 100);
 }
 
 function filterForumPosts(topic, btn) {
