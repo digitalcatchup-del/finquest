@@ -1441,24 +1441,23 @@ function buildTrending() {
   // to reach it. Using the same width check as the CSS keeps both in sync.
   const isScrollable = window.innerWidth <= 1024;
 
+  if (wrap) wrap.scrollLeft = 0;
+
   if (isScrollable) {
-    // Mobile/tablet: scroll handles overflow, so every item must be
-    // reachable. Don't trust width:max-content alone to size the row
-    // correctly across browsers — measure each chip directly and set
-    // an explicit pixel width, so the scrollable range is exactly right.
-    requestAnimationFrame(() => {
-      const chips = ticker.querySelectorAll('.trend-chip');
-      const gap = 10;
-      let total = 16; // small trailing buffer so the last chip isn't flush against the edge
-      chips.forEach(chip => { total += chip.getBoundingClientRect().width + gap; });
-      ticker.style.width = Math.ceil(total) + 'px';
-      if (wrap) wrap.scrollLeft = 0;
-    });
+    // Phones + tablets: every chip has flex-shrink:0 and the row uses
+    // flex-wrap:nowrap, so the browser's own overflow/scrollWidth
+    // calculation already covers the full #1–#10 range — no need to
+    // calculate and set a pixel width by hand. (A previous version did
+    // that by hand and any small error in the measurement capped the
+    // scrollable range short of one end, which is what was cutting off
+    // #1 and #10.) Just make sure we land on #1 at rest, and re-check
+    // once more on the next frame in case layout shifts slightly after
+    // the chips are inserted.
+    requestAnimationFrame(() => { if (wrap) wrap.scrollLeft = 0; });
     return;
   }
 
   // Desktop: show only what fully fits, never cut a chip off mid-text.
-  if (wrap) wrap.scrollLeft = 0;
   requestAnimationFrame(() => {
     const wrapWidth = ticker.parentElement.offsetWidth;
     const chips = ticker.querySelectorAll('.trend-chip');
@@ -1542,3 +1541,10 @@ window.addEventListener('resize', () => {
 // loaded, in case anything shifted the layout after the initial
 // DOMContentLoaded measurement.
 window.addEventListener('load', buildTrending);
+
+// Safety net: if the browser restores this page from back-forward cache
+// (e.g. tapping the phone's back button after visiting a lesson) instead
+// of doing a real reload, neither DOMContentLoaded nor load fire again —
+// so without this, the ticker would stay wherever it was scrolled to
+// before you navigated away.
+window.addEventListener('pageshow', (e) => { if (e.persisted) buildTrending(); });
