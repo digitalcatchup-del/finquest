@@ -5,6 +5,14 @@
 // ============================================================
 
 // ── TRENDING ITEMS ───────────────────────────────────────────
+// opinionId must be a real id from the `posts` table in Supabase for the
+// click-to-highlight behavior (see scrollToOpinion/goToTrendingPost in
+// app.js) to find and highlight anything on the Community page. The
+// placeholder values below (1–6) are NOT real post ids — clicking a chip
+// will currently navigate to Community → Trending but find no matching
+// post to scroll to or highlight, since nothing with that id exists in
+// the posts table. Replace opinionId with the actual UUID of a real post
+// once one exists for that topic.
 const trendingItems = [
   {num:'#1',text:'Accruals concept',cls:'tt-acc',opinionId:2},
   {num:'#2',text:'IFRS adoption',cls:'tt-acc',opinionId:1},
