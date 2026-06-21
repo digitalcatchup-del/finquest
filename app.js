@@ -333,13 +333,15 @@ async function loadAndRenderForum() {
     // Step 1: Get posts
     let query = db
       .from('posts')
-      .select('id, user_id, topic, title, body, upvotes, downvotes, reply_count, is_opinion, created_at')
-      .eq('is_opinion', false);
+      .select('id, user_id, topic, title, body, upvotes, downvotes, reply_count, is_opinion, created_at');
 
     if (forumTopicFilter === 'trending') {
+      // Trending pulls from everything (discussions AND opinions) sorted by
+      // upvotes — this is what lets a "Top Opinion" clicked on the homepage
+      // actually be found here.
       query = query.order('upvotes', { ascending: false }).limit(20);
     } else {
-      query = query.order('created_at', { ascending: false }).limit(20);
+      query = query.eq('is_opinion', false).order('created_at', { ascending: false }).limit(20);
       if (forumTopicFilter !== 'all') query = query.eq('topic', forumTopicFilter);
     }
     const { data: posts, error } = await query;
@@ -438,7 +440,7 @@ function filterForumPosts(topic, btn) {
   forumTopicFilter = topic;
   document.querySelectorAll('.op-filter .pf').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  loadAndRenderForum();
+  return loadAndRenderForum();
 }
 
 // ── FORUM COMPOSER ───────────────────────────────────────────
@@ -517,10 +519,28 @@ function goToForumPost(postId) {
     if (card) {
       card.scrollIntoView({ behavior: 'smooth', block: 'center' });
       card.classList.add('forum-post-highlight');
-      setTimeout(() => card.classList.remove('forum-post-highlight'), 2200);
+      setTimeout(() => card.classList.remove('forum-post-highlight'), 5000);
     }
     openInlineReplies(postId);
   }, 350);
+}
+
+// Used by the homepage's "Top Opinions This Week" cards — takes the person
+// to the community page's Trending view specifically (where the opinion
+// will actually appear, since Trending includes opinions), scrolls to the
+// exact post, and highlights it for ~5 seconds.
+async function goToTrendingPost(postId) {
+  openCommunity();
+  await new Promise(r => setTimeout(r, 300));
+  const trendBtn = document.getElementById('forumTrendingFilterBtn');
+  if (trendBtn) await filterForumPosts('trending', trendBtn);
+
+  const card = document.getElementById(`forumPost_${postId}`);
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('forum-post-highlight');
+    setTimeout(() => card.classList.remove('forum-post-highlight'), 5000);
+  }
 }
 
 async function loadAndRenderReplies(postId) {
@@ -610,7 +630,7 @@ async function renderOpinions() {
   }
   grid.innerHTML = ops.map((op, i) => `
     <div class="opinion-card ${i === 0 ? 'rank-1' : ''}" data-opinion-id="${op.id}"
-         onclick="openCommunity()">
+         onclick="goToTrendingPost('${op.id}')">
       <div class="op-rank">
         <span class="op-rank-num">#${i + 1}</span>
       </div>
@@ -1333,6 +1353,13 @@ function buildTrending() {
       <span class="trend-text">${t.text}</span>
     </div>`
   ).join('');
+
+  // On mobile/tablet the ticker scrolls horizontally, so every item can be
+  // reached by swiping — no need to trim. Trimming (show-only-what-fits,
+  // never cut a chip off mid-text) is a desktop-only concern, since there's
+  // no scroll affordance there.
+  if (window.innerWidth <= 1024) return;
+
   requestAnimationFrame(() => {
     const wrapWidth = ticker.parentElement.offsetWidth;
     const chips = ticker.querySelectorAll('.trend-chip');
