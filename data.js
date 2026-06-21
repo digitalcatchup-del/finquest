@@ -776,3 +776,160 @@ const trackData = {
   }
 },
 };
+
+// ── NOVEL: LONG-FORM NARRATIVE (foundation arc) ──────────────
+// A 3-chapter story-driven alternative to the bite-sized lessons, for
+// learners who want to absorb the same foundational ideas through one
+// continuous narrative instead of discrete cards. Stars Amaka, the same
+// trader used throughout the lesson scenarios above, so the two reading
+// modes reinforce each other rather than introducing a new world. Future
+// chapters/arcs (ACCA/ICAN-level material, new topics) can be appended
+// to this array as the content library grows.
+const novelChapters = [
+  {
+    chapter: 1,
+    title: 'The Kiosk',
+    dek: 'In which a phone-accessories stall on Allen Avenue becomes an education.',
+    body: `The kiosk was four feet wide and painted the green of an old Sprite bottle, wedged between a shoe repairer and a woman who sold roasted plantain so fragrant it made customers linger even when they'd only come for a phone case. Amaka had saved for eight months to rent it &mdash; eight months of typing reports for a logistics company by day and re-counting her savings by candlelight at night, the way you check a wound to see if it's healing.
+
+<br><br>On her first morning, she arranged the screen protectors in a fan across the little table, hung the phone cases on a wire she'd bent into hooks herself, and sat down to wait. By noon she had sold eleven thousand naira of stock and felt, for the first time in her adult life, entirely awake.
+
+<br><br>She kept the money in a biscuit tin under the table. At the end of each day she counted it, watched it grow, and felt the particular, uncomplicated joy of a number getting bigger. It did not occur to her, in those first weeks, that a number getting bigger and a business doing well were not always the same thing.
+
+<br><br>The trouble announced itself quietly. Three weeks in, she needed to restock &mdash; chargers, mostly, the fast-charging kind everyone wanted now &mdash; and when she went to the tin, there was less in it than she expected. Not gone, exactly. Spent. On stock, on the danfo fare to the market in Computer Village, on a new umbrella when the old one's rib snapped in a downpour, on jollof from the bukka two stalls down when she was too tired to cook. All reasonable. All, individually, defensible. And yet she could not say, with any confidence, whether the kiosk owed her money, or she owed it.
+
+<br><br>&ldquo;You are frowning at your tin like it owes you an apology,&rdquo; said a voice.
+
+<br><br>It was Aunty Florence, from the provisions stall across the walkway &mdash; a woman somewhere past fifty with reading glasses pushed up into grey-flecked hair and a thick exercise book always open beside her cash box. Twenty-two years she'd been trading there, people said. She owned the building two stalls down from her own stall now, rented it out, and never seemed to hurry.
+
+<br><br>&ldquo;I don't even know what it owes me, Aunty,&rdquo; Amaka admitted. &ldquo;I'm selling things. People are buying. But I look in here and I can't tell if I'm &mdash; winning.&rdquo;
+
+<br><br>Aunty Florence pulled a stool over without being asked, which Amaka would come to learn was how she did most things &mdash; without being asked, and entirely correctly.
+
+<br><br>&ldquo;Selling is not the same as knowing,&rdquo; she said. &ldquo;You are doing the first part. Nobody taught you the second.&rdquo; She tapped her exercise book. &ldquo;This is not magic, you know. People think accounting is for big companies with computers. It is the same thing you are trying to do in your head right now, except written down properly, so that it cannot lie to you &mdash; and so that you cannot lie to yourself either.&rdquo;
+
+<br><br>She made Amaka walk through it with her, that afternoon, in plain language. Every time money or goods changed hands in a way that mattered to the business &mdash; that was something worth <em>identifying</em>. Once you knew what happened, you put a number on it &mdash; that was <em>measuring</em>. Write it down, properly, so it survives past your memory &mdash; that was <em>recording</em>. Later, you'd sort similar things together, add them into totals, lay them out clearly, and finally &mdash; the part Amaka was missing entirely &mdash; <em>interpret</em> what they actually meant.
+
+<br><br>&ldquo;You have been doing the first three since day one,&rdquo; Aunty Florence said. &ldquo;Badly, but you've been doing them. It's the last part you're skipping. You count your tin and you stop. You never ask the tin what it's telling you.&rdquo;
+
+<br><br>She had Amaka list out, then and there, everything the kiosk actually had. Not just the cash &mdash; though that counted too. The display stand, bought outright. Forty thousand naira of unsold stock still hanging on the wire. And &mdash; Amaka hesitated over this one &mdash; eight thousand naira that Tunde, a regular from the GTBank building across the road, still owed her for two phone cases he'd taken &ldquo;till Friday&rdquo; three Fridays ago.
+
+<br><br>&ldquo;That is yours too,&rdquo; Aunty Florence said, when Amaka explained, half-apologetic, as though admitting to a mistake. &ldquo;Anything you own, or anything someone owes you that you genuinely expect to collect &mdash; that is an asset. The cash in your tin, your stock on the wire, even what Tunde owes you. Write them all down. An asset is not just what's already in your hand. It's what you have, full stop &mdash; including what's coming to you.&rdquo;
+
+<br><br>That night, for the first time, Amaka did not put the biscuit tin away unexamined. She bought a notebook from the stationery stall on her way home &mdash; pink cover, the kind schoolchildren used &mdash; and on the first page, by candlelight, she wrote a date, and beneath it, slowly, the first real list of what her kiosk actually owned.
+
+<br><br>She was still writing when her phone buzzed. A message from Mr. Eze, the wholesaler in Computer Village: <em>Sister Amaka, if you want, I fit give you stock on credit this time. Pay me end of month.</em>
+
+<br><br>She stared at the message for a long moment. Eight thousand naira was owed <em>to</em> her. Now, if she said yes, she would owe money <em>to</em> someone else. She had no idea, yet, what to call that, or what it would do to the careful little list she'd just made.
+
+<br><br>She wrote <em>yes</em> back to Mr. Eze, closed the notebook, and went to sleep not knowing that she had just stepped into the second half of a lesson Aunty Florence hadn't taught her yet.`
+  },
+  {
+    chapter: 2,
+    title: 'What Moves Must Balance',
+    dek: 'Credit, double entry, and the cost of pretending family isn\u2019t business.',
+    body: `Mr. Eze's stock arrived on a Tuesday &mdash; cartons of chargers and earphones, sixty thousand naira's worth, with a handwritten invoice and a promise wedged into one corner: <em>Payment due 30th.</em>
+
+<br><br>Amaka unpacked it with the particular nervous energy of someone who has just acquired more than they've paid for. She told Aunty Florence about it over roasted plantain that evening, expecting praise for the growth. Instead, Aunty Florence asked a question that made Amaka go quiet.
+
+<br><br>&ldquo;So tell me. Before that stock arrived, what did your kiosk own, and who did it owe?&rdquo;
+
+<br><br>Amaka counted on her fingers. Stock, cash, the display stand, what Tunde owed her &mdash; those were assets, she remembered that part now. And before Tuesday, she'd owed nobody.
+
+<br><br>&ldquo;And now?&rdquo;
+
+<br><br>&ldquo;Now I have sixty thousand more in stock. And I owe Mr. Eze sixty thousand.&rdquo;
+
+<br><br>&ldquo;Good. Now you understand something most people pay for a whole semester to learn.&rdquo; Aunty Florence drew three words in the dust on the table with her finger &mdash; <em>Assets. Liabilities. Capital.</em> &ldquo;Assets is everything the business has. Liabilities is what it owes to outsiders &mdash; Mr. Eze, for instance. Capital is what's actually yours &mdash; your own stake, after you take away what's owed. Every single time something happens in this business, these three must still balance. Assets must always equal liabilities plus capital. Always. If they don't, somebody &mdash; usually you &mdash; has made a mistake.&rdquo;
+
+<br><br>&ldquo;That sounds like something that should be hard.&rdquo;
+
+<br><br>&ldquo;It is hard, until you've done it a hundred times, and then it's just breathing.&rdquo; Aunty Florence smiled, the particular smile of someone who remembered being twenty-six and certain that ledgers were beyond her. &ldquo;Here is the trick nobody tells beginners: nothing happens to only one side. Every kobo that moves, moves <em>from</em> somewhere <em>to</em> somewhere. Your stock went up by sixty thousand. Where did that sixty thousand come from? Not your pocket. It came from Mr. Eze's generosity, which is really just a debt with a deadline. So your liabilities go up by exactly the same amount your assets went up. Two sides, every time. That is the whole secret of what they call double entry. People make it sound like wizardry. It is just honesty, written twice.&rdquo;
+
+<br><br>Amaka began, that week, to write every transaction as two lines instead of one &mdash; what came in, and where it came from; what went out, and where it went. It was slower. It also, for the first time, felt like the truth.
+
+<br><br>The trouble came on a Thursday in the third week &mdash; the kind of trouble that doesn't announce itself as trouble. Amaka's younger brother, Chidi, called from the hostel: his school fees had been miscalculated, a shortfall of fifteen thousand naira, due by Friday morning or he'd be sent home. Amaka did not think. She opened the tin, took fifteen thousand naira, sent it by transfer, and went back to selling chargers.
+
+<br><br>She did not write it down. Not because she meant to hide it &mdash; she simply didn't think of it as a <em>business</em> transaction at all. It was family. It felt separate.
+
+<br><br>It was not separate, as it turned out, and the kiosk would not let her forget it.
+
+<br><br>By the following week her cash balance refused to match her notebook. She had recorded sales correctly, recorded what she'd paid Mr. Eze against his invoice, recorded everything &mdash; and still, fifteen thousand naira had simply vanished from the world as far as her books were concerned. She searched the notebook three times before Aunty Florence found her hunched over it after closing, close to tears over a sum that, on its own, was not even that large.
+
+<br><br>&ldquo;What did you spend that you didn't write down?&rdquo; Aunty Florence asked, not unkindly, the moment Amaka explained.
+
+<br><br>Amaka told her about Chidi.
+
+<br><br>&ldquo;Ah.&rdquo; Aunty Florence nodded slowly. &ldquo;Your business and you are not the same person, you know. Even though you are the only person here. The kiosk is its own small thing, with its own life, separate from your family, your fees at home, your rent &mdash; everything. That money you took out wasn't a business expense. It also wasn't nothing. It is what we call <em>drawings</em> &mdash; you, the owner, taking something out of the business for yourself. It still has to be written down. Otherwise your books will always be hunting for a ghost.&rdquo;
+
+<br><br>&ldquo;So I did something wrong by helping my brother?&rdquo;
+
+<br><br>&ldquo;No, my dear. You did something wrong by pretending it didn't happen.&rdquo; Aunty Florence's voice softened. &ldquo;Write it next time &mdash; <em>Drawings, fifteen thousand.</em> Now your cash makes sense again, and you can still sleep at night knowing exactly what you actually have left, instead of guessing.&rdquo;
+
+<br><br>There was a smaller, quieter lesson that same month, one that took Amaka longer to notice on her own. NEPA's light bill for the kiosk arrived in the second week of the following month, for electricity she had used the month before. She nearly recorded it against the new month's profit, until Aunty Florence stopped her.
+
+<br><br>&ldquo;When did you actually use that light?&rdquo;
+
+<br><br>&ldquo;Last month.&rdquo;
+
+<br><br>&ldquo;Then it belongs to last month's expenses, whenever the bill happens to arrive. Money doesn't decide which month a cost belongs to. The using of it does. We call that the accruals idea &mdash; match the cost to when it actually happened, not to when the paper finally catches up to you.&rdquo;
+
+<br><br>By the end of that second month, Amaka's notebook had become something she was, quietly, a little proud of &mdash; neat columns, no ghosts, every kobo accounted for both in where it came from and where it went. She still did not know, precisely, whether the kiosk was <em>profitable</em>. She knew, for the first time, that she finally had everything she needed to find out.`
+  },
+  {
+    chapter: 3,
+    title: 'What the Numbers Said',
+    dek: 'A loan application, a missing eight thousand naira, and the question every set of accounts must eventually answer.',
+    body: `The opportunity arrived the way most real ones do &mdash; sideways, attached to a deadline. A women's trade cooperative was offering small expansion loans, enough for Amaka to rent the empty stall beside hers and finally stock phones outright instead of only accessories. Applications closed in nine days. The form asked, in its third section, for something Amaka had never produced in her life: a trading account, a profit and loss account, and a balance sheet, for the past six months of trading.
+
+<br><br>&ldquo;Six months,&rdquo; Amaka said, staring at the form on Aunty Florence's small television-stand desk. &ldquo;I have six months of notebook. I don't have six months of &mdash; whatever this is.&rdquo;
+
+<br><br>&ldquo;You have everything you need,&rdquo; Aunty Florence said. &ldquo;You've been recording properly since the second month. We just have to make your notebook speak. Bring it tomorrow evening. We start with something called a trial balance.&rdquo;
+
+<br><br>A trial balance, Aunty Florence explained the next evening, was simply every single balance in Amaka's books, listed out &mdash; everything she owned on one side, everything she owed and everything that was truly hers on the other &mdash; added up to see if the two sides agreed. If they did, it meant, with reasonable confidence, that her double entry had been done correctly all along. If they didn't &mdash;
+
+<br><br>They didn't.
+
+<br><br>The first time Amaka added her columns, one side came to four hundred and twelve thousand naira, and the other to four hundred and four thousand. Eight thousand naira, sitting nowhere, refusing to be accounted for. Amaka felt something close to panic &mdash; the particular dread of being caught having lied, even though she was almost certain she hadn't.
+
+<br><br>It took an hour of Aunty Florence's patient, unhurried tracing &mdash; finger moving down each line of the notebook &mdash; to find it. A sale to a customer, recorded correctly as cash received, but never removed from the stock figure it had come from. A single missed line, months old, sitting quietly wrong the entire time.
+
+<br><br>&ldquo;This is why we check,&rdquo; Aunty Florence said, once the columns finally agreed, both sides settling at exactly four hundred and twelve thousand. &ldquo;Not because you are careless. Because everyone is, eventually, somewhere. The trial balance doesn't tell you where the mistake is. It only tells you that one exists, and lets you go hunting before it costs you something real.&rdquo;
+
+<br><br>From the trial balance, the rest came almost gently, like a story finally being allowed to finish. The trading account first &mdash; Amaka's total sales for the six months, minus what those goods had actually cost her to buy, leaving a gross profit that made her sit back in her chair: three hundred and ten thousand naira, from trading alone. Then the profit and loss account, where rent, transport, the new umbrella, NEPA's bills, all stepped forward to be subtracted &mdash; leaving, at the very bottom, a net profit of one hundred and ninety-four thousand naira across six months. Real money. Earned, not guessed at.
+
+<br><br>&ldquo;You see now why the tin always lied to you,&rdquo; Aunty Florence said. &ldquo;The tin only ever showed you cash. It never showed you what you'd genuinely earned underneath all that movement.&rdquo;
+
+<br><br>The balance sheet came last, and felt, to Amaka, like a photograph &mdash; her business, exactly as it stood on that one evening. Assets: her stock, her cash, the new equipment she'd bought, and Tunde's debt, still sitting there from the very first week.
+
+<br><br>It was Aunty Florence who brought Tunde up, gently, the way you raise something you've been waiting for the right moment to say.
+
+<br><br>&ldquo;That eight thousand from your friend at GTBank. How many months now?&rdquo;
+
+<br><br>&ldquo;Five.&rdquo;
+
+<br><br>&ldquo;Have you seen him?&rdquo;
+
+<br><br>Amaka hadn't. He'd stopped coming by entirely after the third month, and a part of her &mdash; the part that still wanted the number to be true &mdash; had kept it sitting on her asset list anyway, exactly as it had been on day one.
+
+<br><br>&ldquo;You cannot let your accounts be more hopeful than your life is,&rdquo; Aunty Florence said. &ldquo;This is called prudence. If money looks unlikely to come, you don't pretend otherwise just because pretending feels better. You write it off. Better a smaller, honest profit than a bigger, false one. The bank will trust honest numbers. They will smell false ones from across the room, even if they can't say exactly how.&rdquo;
+
+<br><br>Amaka crossed Tunde's eight thousand out of her assets that night, and felt, oddly, lighter rather than poorer &mdash; as though she'd finally put down something she'd been quietly carrying for months without admitting its weight.
+
+<br><br>The cooperative's loan officer, a soft-spoken man named Mr. Adigwe, asked her only one real question after reading through her papers &mdash; the trial balance, the trading account, the balance sheet, all of it copied out clean in her own handwriting.
+
+<br><br>&ldquo;This business,&rdquo; he said. &ldquo;If nothing changes &mdash; no loan, nothing extra &mdash; does it survive next year? Or does it only exist because you're propping it up some other way?&rdquo;
+
+<br><br>It was, Amaka would later learn, the most important question anyone could ask of a set of accounts &mdash; whether the thing being described was actually built to last, or merely surviving on borrowed time and good luck. She thought of six months of honest columns, of profit that had finally stopped hiding from her, of Mr. Eze's invoices always paid by the thirtieth.
+
+<br><br>&ldquo;It survives,&rdquo; she said. &ldquo;I built it to.&rdquo;
+
+<br><br>She got the loan. But that was, in the end, the smaller part of what had happened. The larger part was a pink notebook, now nearly full, that no longer lied to her &mdash; and a quiet new ambition, one she mentioned to Aunty Florence on her last evening at the old stall size, before the renovation began.
+
+<br><br>&ldquo;One day,&rdquo; Amaka said, &ldquo;I want to actually qualify properly. ACCA, or ICAN. Not just learn enough to survive. Learn enough to be the one people like me come to.&rdquo;
+
+<br><br>Aunty Florence didn't smile this time. She simply nodded, the way one trader nods at another who has finally understood the thing worth understanding.
+
+<br><br>&ldquo;Then you already know the hardest part,&rdquo; she said. &ldquo;The rest is just more pages.&rdquo;`
+  },
+];
