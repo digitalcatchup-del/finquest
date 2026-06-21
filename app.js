@@ -721,7 +721,7 @@ async function renderOpinions() {
       <div class="op-votes">
         <button class="op-vote-btn up"
           onclick="event.stopPropagation();votePost('${op.id}',1);renderOpinions()">
-          ▲
+          👍
         </button>
         <span class="op-vote-count">${op.upvotes || 0}</span>
       </div>
@@ -1388,14 +1388,12 @@ function answerSearchQuiz(btn, selectedIdx, correctIdx, explanation) {
 }
 
 function scrollToOpinion(opinionId) {
-  // Trending topics on the homepage are curated highlights rather than
-  // links to one exact live post, so this takes the person to the
-  // community page's Trending view — the real, live version of "what's hot".
-  openCommunity();
-  setTimeout(() => {
-    const trendBtn = document.getElementById('forumTrendingFilterBtn');
-    if (trendBtn) filterForumPosts('trending', trendBtn);
-  }, 250);
+  // Same behavior as goToTrendingPost: navigate to the Community page's
+  // Trending view, scroll the matching post into view, and highlight it
+  // for ~5 seconds. This only has something to find and highlight once
+  // opinionId is a real post id from the posts table — see the README
+  // note in data.js next to trendingItems for what that requires.
+  goToTrendingPost(opinionId);
 }
 
 // ── TOPIC LABEL HELPER ───────────────────────────────────────
@@ -1498,7 +1496,7 @@ function renderStaticOpinions() {
       </div>
       <div class="op-votes">
         <button class="op-vote-btn up"
-          onclick="event.stopPropagation();openAuth('signup')">▲</button>
+          onclick="event.stopPropagation();openAuth('signup')">👍</button>
         <span class="op-vote-count">${op.upvotes}</span>
       </div>
     </div>`).join('');
