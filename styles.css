@@ -140,11 +140,10 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .trending-label-row{display:flex;align-items:center;gap:16px;margin-bottom:12px;}
 .trending-label{font-size:0.68rem;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:var(--white);white-space:nowrap;flex-shrink:0;}
 .trending-line{flex:1;height:1px;background:var(--border);}
-.trending-ticker-wrap{position:relative;}
-.trending-ticker{display:flex;gap:10px;flex-wrap:nowrap;overflow:hidden;}
-.trending-ticker:hover{animation-play-state:paused;}
-@keyframes trendScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.trend-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
+.trending-ticker-wrap{position:relative;width:100%;overflow:hidden;}
+.trending-ticker{display:flex;flex-wrap:nowrap;padding:0 2px;}
+.trend-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;margin-right:10px;scroll-snap-align:start;}
+.trend-chip:last-child{margin-right:2px;}
 .trend-chip:hover{border-color:var(--border2);background:var(--surface2);}
 .trend-num{font-size:0.6rem;font-weight:800;color:var(--gold);}
 .trend-text{font-size:0.72rem;color:var(--off);}
@@ -624,13 +623,22 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 }
 
 
+/* Trending ticker: scrollable on phones AND tablets (701–1024px), not just phones */
+@media(min-width:701px) and (max-width:1024px){
+  .trending-ticker-wrap{overflow-x:auto;overflow-y:hidden;width:100%;min-width:0;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;scroll-snap-type:x proximity;}
+  .trending-ticker-wrap::-webkit-scrollbar{display:none;}
+  .trend-chip{flex-shrink:0;}
+  .trend-text{white-space:nowrap;}
+}
+
 @media(max-width:700px){
   nav{padding:12px 16px;flex-wrap:wrap;gap:8px;position:relative;}
   .nav-center{display:none;}
   .nav-hamburger{display:flex;}
-  .trending-ticker-wrap{overflow:hidden;}
-  .trend-chip{max-width:calc(100vw - 64px);overflow:hidden;text-overflow:ellipsis;}
-  .trend-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;display:inline-block;}
+  .trending-ticker-wrap{overflow-x:auto;overflow-y:hidden;width:100%;min-width:0;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;scroll-snap-type:x proximity;}
+  .trending-ticker-wrap::-webkit-scrollbar{display:none;}
+  .trend-chip{flex-shrink:0;}
+  .trend-text{white-space:nowrap;}
   .search-box{padding:6px 6px 6px 14px;border-radius:8px;}
   .search-input{font-size:0.85rem;min-width:0;}
   .search-btn{padding:12px 16px;min-height:40px;font-size:0.66rem;}
