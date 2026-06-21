@@ -9,10 +9,84 @@
 // verification (RC/BN number) is complete.
 const FLUTTERWAVE_PUBLIC_KEY = 'FLWPUBK_TEST-d7a81c18068d8b0323e75325c070f81b-X';
 
-const PLANS = {
-  Professional: { amount: 500000, label: '$5/month', currency: 'USD' },  // in kobo (NGN) or cents
-  Annual:       { amount: 4800000, label: '$48/year', currency: 'USD' },
+// ── PRICING CONFIG ───────────────────────────────────────────
+// Founding Member window: a discounted rate for the first cohort, used
+// to validate willingness to pay before committing to a standard price.
+// FOUNDING_MEMBER_END is a hard cutoff (90 days). The placeholder below
+// is just today + 90 days so everything works out of the box — SET THE
+// REAL DATE the day you actually flip FLUTTERWAVE_PUBLIC_KEY to a live
+// key, since the 90-day window should start from real launch, not from
+// whenever this code happened to be written.
+const FOUNDING_MEMBER_END = new Date('2026-09-19T00:00:00Z'); // ← SET ON REAL LAUNCH DAY
+
+const PRICING = {
+  founding: { monthly: 3, annual: 29 },
+  standard: { monthly: 5, annual: 48 },
 };
+
+const TRIAL_DAYS = 7;
+
+function isFoundingWindowOpen() {
+  return Date.now() < FOUNDING_MEMBER_END.getTime();
+}
+
+function currentPriceTier() {
+  return isFoundingWindowOpen() ? PRICING.founding : PRICING.standard;
+}
+
+// Returns { status: 'guest' | 'paid' | 'trial' | 'expired', daysLeft }
+function getAccessStatus() {
+  if (!currentUser) return { status: 'guest', daysLeft: 0 };
+  if (currentUser.isSubscribed) return { status: 'paid', daysLeft: 0 };
+  if (!currentUser.createdAt) return { status: 'trial', daysLeft: TRIAL_DAYS }; // safe fallback
+  const signedUpAt   = new Date(currentUser.createdAt).getTime();
+  const daysElapsed  = (Date.now() - signedUpAt) / (1000 * 60 * 60 * 24);
+  const daysLeft      = Math.ceil(TRIAL_DAYS - daysElapsed);
+  return daysLeft > 0 ? { status: 'trial', daysLeft } : { status: 'expired', daysLeft: 0 };
+}
+
+// True if the person should see full Professional-level access right now —
+// either an active paid subscription, or still inside their 7-day trial.
+// NOTE: this helper exists and is accurate, but is not yet wired into
+// track.js to actually restrict lessons/quizzes for 'expired' users —
+// nothing in the app currently enforces tier limits at the content level.
+function hasFullAccess() {
+  const s = getAccessStatus().status;
+  return s === 'paid' || s === 'trial';
+}
+
+// Updates every pricing card (homepage preview + dedicated pricing page)
+// to show Founding Member pricing while the window is open, or standard
+// pricing once it closes — including the "then $X after" note and the
+// recalculated annual savings line. Call on page load.
+function renderPricingDisplay() {
+  const founding = isFoundingWindowOpen();
+  const live   = founding ? PRICING.founding : PRICING.standard;
+  const std    = PRICING.standard; // always the "after the window" reference
+
+  const setText = (selector, text) => {
+    document.querySelectorAll(selector).forEach(el => el.textContent = text);
+  };
+  const setDisplay = (selector, display) => {
+    document.querySelectorAll(selector).forEach(el => el.style.display = display);
+  };
+
+  setText('.js-price-pro-monthly',          `$${live.monthly}`);
+  setText('.js-price-pro-monthly-btn',      `$${live.monthly}`);
+  setText('.js-price-pro-monthly-standard', `$${std.monthly}`);
+  setText('.js-price-pro-annual',           `$${live.annual}`);
+  setText('.js-price-pro-annual-btn',       `$${live.annual}`);
+  setText('.js-price-pro-annual-standard',  `$${std.annual}`);
+
+  const annualSavings = (live.monthly * 12) - live.annual;
+  const annualPct     = Math.round((annualSavings / (live.monthly * 12)) * 100);
+  setText('.js-annual-save-feat', `Save $${annualSavings} vs monthly`);
+  setText('.js-annual-save-desc', `Save ${annualPct}% vs monthly. Best value for committed learners.`);
+
+  setDisplay('.js-founding-banner',        founding ? 'block' : 'none');
+  setDisplay('.js-founding-note-monthly',  founding ? 'block' : 'none');
+  setDisplay('.js-founding-note-annual',   founding ? 'block' : 'none');
+}
 
 // ── PIP UTILITIES ────────────────────────────────────────────
 const pipUnits = 0.00010;
@@ -961,7 +1035,14 @@ async function renderLeaderboard() {
 }
 
 // ── PAYMENT (Paystack) ───────────────────────────────────────
-function openPayment(planName, priceLabel, amount) {
+function openPayment(planKey) {
+  // planKey: 'professional' or 'annual'
+  const tier = currentPriceTier();
+  const isAnnual = planKey === 'annual';
+  const amount = isAnnual ? tier.annual : tier.monthly;
+  const planName  = isAnnual ? 'Annual' : 'Professional';
+  const priceLabel = isAnnual ? `$${amount}/year` : `$${amount}/month`;
+
   document.getElementById('payPlanName').textContent  = planName;
   document.getElementById('payPlanPrice').innerHTML   = priceLabel.replace('/', ' <span>/</span> ');
   document.getElementById('paymentContent').style.display = 'block';
@@ -985,8 +1066,10 @@ function initiateStripeCheckout() {
 
   if (!email) { alert('Please enter your email address.'); return; }
 
-  const plan     = window._payPlan || { name: 'Professional', amount: 5 };
-  const NGN_RATE = 1600; // approximate USD→NGN rate — update before live launch
+  const plan     = window._payPlan || { name: 'Professional', amount: currentPriceTier().monthly };
+  const NGN_RATE = 1360; // approximate USD→NGN rate as of June 2026 — naira is volatile,
+                          // recheck this periodically (e.g. quarterly) before live launch
+                          // and afterward, rather than letting it go stale for years.
   const amountNGN = plan.amount * NGN_RATE;
 
   if (typeof FlutterwaveCheckout === "undefined") {
