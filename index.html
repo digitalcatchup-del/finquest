@@ -155,9 +155,10 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .trending-label{font-size:0.68rem;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:var(--white);white-space:nowrap;flex-shrink:0;}
 .trending-line{flex:1;height:1px;background:var(--border);}
 .trending-ticker-wrap{position:relative;width:100%;overflow:hidden;}
-.trending-ticker{display:flex;gap:10px;flex-wrap:nowrap;width:max-content;}
+.trending-ticker{display:flex;flex-wrap:nowrap;width:max-content;padding:0 2px;}
 @keyframes trendScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.trend-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
+.trend-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;margin-right:10px;}
+.trend-chip:last-child{margin-right:2px;}
 .trend-chip:hover{border-color:var(--border2);background:var(--surface2);}
 .trend-num{font-size:0.6rem;font-weight:800;color:var(--gold);}
 .trend-text{font-size:0.72rem;color:var(--off);}
