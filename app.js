@@ -1118,68 +1118,60 @@ function doSearch() {
   if (currentUser) {
     db.from('search_log').insert({ user_id: currentUser.id, query: val });
   }
-  runSearch(val);
+  runHomeSearch(val);
 }
 
-// ── SEARCH RESULTS PAGE ───────────────────────────────────────
-// Lesson search is just filtering data already loaded in the browser
-// (trackData) — no extra storage or requests. Forum search is one
-// lightweight query against the posts table that already exists.
-function searchLessons(query) {
+// ── INLINE SEARCH RESULTS (homepage) ──────────────────────────
+// Reads only from searchDatabase — deliberately decoupled from
+// trackData, so results never link into lesson content. Results
+// render directly under the search bar; everything else on the
+// homepage (Lessons button, Trending) is hidden while a search is
+// active, and restored when the search is cleared.
+function searchTermDatabase(query) {
   const q = query.toLowerCase();
-  const hits = [];
-  Object.keys(trackData).forEach(trackKey => {
-    const track = trackData[trackKey];
-    track.lessons.forEach((l, idx) => {
-      const term = l.term || '';
-      const def  = l.definition || '';
-      const scen = l.scenario || '';
-      if (term.toLowerCase().includes(q) || def.toLowerCase().includes(q) || scen.toLowerCase().includes(q)) {
-        const snippetSource = term.toLowerCase().includes(q) ? def : (def.toLowerCase().includes(q) ? def : scen);
-        hits.push({ trackKey, trackTitle: track.title, idx, term, snippet: snippetSource });
-      }
-    });
-  });
-  return hits;
+  return searchDatabase.filter(e => e.term.toLowerCase().includes(q) || e.answer.toLowerCase().includes(q));
 }
 
-async function searchForumPosts(query) {
+async function searchForumPostsReadOnly(query) {
   const { data: posts } = await db
     .from('posts')
-    .select('id, topic, title, body, created_at')
+    .select('id, title, body, created_at')
     .eq('is_opinion', false)
     .or(`body.ilike.%${query}%,title.ilike.%${query}%`)
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(6);
   return posts || [];
 }
 
-async function runSearch(query) {
-  showPage('searchResultsPage');
-  document.getElementById('searchResultsHeading').textContent = `Results for "${query}"`;
-  const body = document.getElementById('searchResultsBody');
-  body.innerHTML = '<div class="sr-loading">Searching…</div>';
+async function runHomeSearch(query) {
+  document.getElementById('homeDefaultContent').style.display = 'none';
+  const panel = document.getElementById('homeSearchResults');
+  panel.style.display = 'block';
+  panel.innerHTML = '<div class="sr-loading">Searching…</div>';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  const lessonHits = searchLessons(query);
-  const postHits   = await searchForumPosts(query);
+  const termHits = searchTermDatabase(query);
+  const postHits = await searchForumPostsReadOnly(query);
 
-  if (!lessonHits.length && !postHits.length) {
-    body.innerHTML = `<div class="sr-empty">No results for "${query}" yet. Try a different term, or browse Lessons directly.</div>`;
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+    <h2 class="section-heading" style="font-size:1.1rem;margin:0;">Results for "${query}"</h2>
+    <button class="link-btn" onclick="clearHomeSearch()" style="background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;">✕ Clear</button>
+  </div>`;
+
+  if (!termHits.length && !postHits.length) {
+    html += `<div class="sr-empty">No results for "${query}" yet — that content is on its way.</div>`;
+    panel.innerHTML = html;
     return;
   }
 
-  let html = '';
-
-  if (lessonHits.length) {
+  if (termHits.length) {
     html += `<div class="sr-section">
-      <div class="sr-section-label">📖 Lessons (${lessonHits.length})</div>
-      ${lessonHits.map(h => `
-        <div class="sr-row" onclick="goToSearchResultLesson('${h.trackKey}',${h.idx})">
-          <div class="sr-row-icon">📖</div>
+      ${termHits.map(h => `
+        <div class="sr-row" style="cursor:default;">
+          <div class="sr-row-icon">📘</div>
           <div class="sr-row-body">
             <div class="sr-row-title">${h.term}</div>
-            <div class="sr-row-snippet">${h.snippet}</div>
-            <div class="sr-row-meta">${h.trackTitle}</div>
+            <div class="sr-row-snippet" style="-webkit-line-clamp:4;">${h.answer}</div>
           </div>
         </div>`).join('')}
     </div>`;
@@ -1187,9 +1179,9 @@ async function runSearch(query) {
 
   if (postHits.length) {
     html += `<div class="sr-section">
-      <div class="sr-section-label">💬 Community Posts (${postHits.length})</div>
+      <div class="sr-section-label">💬 From the Community</div>
       ${postHits.map(p => `
-        <div class="sr-row" onclick="goToForumPost('${p.id}')">
+        <div class="sr-row" style="cursor:default;">
           <div class="sr-row-icon">💬</div>
           <div class="sr-row-body">
             ${p.title ? `<div class="sr-row-title">${p.title}</div>` : ''}
@@ -1200,13 +1192,15 @@ async function runSearch(query) {
     </div>`;
   }
 
-  body.innerHTML = html;
+  panel.innerHTML = html;
 }
 
-function goToSearchResultLesson(trackKey, lessonIdx) {
-  launchTrack(trackKey).then(() => {
-    loadTrackLesson(lessonIdx);
-  });
+function clearHomeSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('homeSearchResults').style.display = 'none';
+  document.getElementById('homeSearchResults').innerHTML = '';
+  document.getElementById('homeDefaultContent').style.display = '';
+  showFakePlaceholder('searchFakePlaceholder', 'searchInput');
 }
 
 function scrollToOpinion(opinionId) {
