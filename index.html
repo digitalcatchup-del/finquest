@@ -831,46 +831,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <div class="trending-ticker-wrap" id="trendingTickerWrap">
       <div class="trending-ticker" id="trendingTicker"></div>
     </div>
-    <!-- TEMP DEBUG — remove once the trending scroll issue is found -->
-    <button id="tdbgBtn" style="margin-top:10px;background:var(--gold);color:#14171f;border:none;border-radius:4px;padding:8px 14px;font-weight:700;font-size:0.72rem;">Check Trending Range</button>
-    <div id="tdbgOut" style="font-size:0.68rem;color:var(--gold);margin-top:8px;font-family:monospace;white-space:pre-wrap;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;display:none;"></div>
-    <script>
-      window._tdbgCount = 0;
-      document.getElementById('tdbgBtn').addEventListener('click', function () {
-        const wrap = document.getElementById('trendingTickerWrap');
-        const ticker = document.getElementById('trendingTicker');
-        const chips = [...ticker.querySelectorAll('.trend-chip')];
-        const wrapLeft = wrap.getBoundingClientRect().left;
-        const wrapRight = wrap.getBoundingClientRect().right;
-        let firstVisible = null, lastVisible = null;
-        chips.forEach((chip, i) => {
-          const r = chip.getBoundingClientRect();
-          const visible = r.right > wrapLeft + 2 && r.left < wrapRight - 2;
-          if (visible) { if (firstVisible === null) firstVisible = i + 1; lastVisible = i + 1; }
-        });
-        const out = document.getElementById('tdbgOut');
-        out.style.display = 'block';
-        const heroSection = document.getElementById('heroSection');
-        const homePage = document.getElementById('homePage');
-        const trendingSection = wrap.closest('.trending-section');
-        out.textContent =
-          'innerWidth: ' + window.innerWidth +
-          '\nhtml.clientWidth: ' + document.documentElement.clientWidth +
-          '\nbody.clientWidth: ' + document.body.clientWidth +
-          '\nhomePage.clientWidth: ' + (homePage ? homePage.clientWidth : 'n/a') +
-          '\nheroSection.clientWidth: ' + (heroSection ? heroSection.clientWidth : 'n/a') +
-          '\ntrendingSection.clientWidth: ' + (trendingSection ? trendingSection.clientWidth : 'n/a') +
-          '\nrebuild count: ' + (window._tdbgRebuildCount || 0) +
-          '\nscrollLeft: ' + Math.round(wrap.scrollLeft) +
-          '\nscrollWidth: ' + wrap.scrollWidth +
-          '\nclientWidth: ' + wrap.clientWidth +
-          '\nmax possible scrollLeft: ' + (wrap.scrollWidth - wrap.clientWidth) +
-          '\nticker.style.width: "' + ticker.style.width + '"' +
-          '\nchip count: ' + chips.length +
-          '\nvisible chips: #' + firstVisible + ' to #' + lastVisible;
-      });
-    </script>
-    <!-- /TEMP DEBUG -->
   </div>
   </div>
 </section>
@@ -1463,11 +1423,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=9"></script>
-<script src="data.js?v=9"></script>
-<script src="auth.js?v=9"></script>
-<script src="app.js?v=9"></script>
-<script src="track.js?v=9"></script>
+<script src="supabase-config.js?v=10"></script>
+<script src="data.js?v=10"></script>
+<script src="auth.js?v=10"></script>
+<script src="app.js?v=10"></script>
+<script src="track.js?v=10"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
