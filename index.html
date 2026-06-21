@@ -493,6 +493,19 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .signup-prompt h3{font-size:0.95rem;font-weight:800;color:var(--white);margin-bottom:6px;}
 .signup-prompt p{font-size:0.78rem;color:var(--muted);margin-bottom:16px;}
 
+/* Sample nugget knowledge check — was entirely unstyled before */
+.modal-quiz-q{font-size:0.88rem;font-weight:700;color:var(--white);margin-bottom:14px;line-height:1.5;}
+.modal-quiz-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.modal-quiz-opt{display:flex;align-items:center;gap:12px;width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 14px;cursor:pointer;font-size:0.84rem;color:var(--off);text-align:left;transition:all 0.15s;font-family:inherit;}
+.modal-quiz-opt:hover:not(:disabled){border-color:var(--border2);}
+.modal-quiz-opt:disabled{cursor:default;}
+.modal-quiz-opt-letter{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:800;color:var(--muted);}
+.modal-quiz-opt-text{flex:1;}
+.modal-quiz-opt.correct{border-color:var(--green);background:var(--green-dim);}
+.modal-quiz-opt.correct .modal-quiz-opt-letter{background:var(--green);color:var(--bg);}
+.modal-quiz-opt.wrong{border-color:var(--red);background:var(--red-dim);}
+.modal-quiz-opt.wrong .modal-quiz-opt-letter{background:var(--red);color:var(--bg);}
+
 /* PAYMENT */
 .payment-modal{padding:28px;}
 .payment-plan-name{font-size:1.1rem;font-weight:900;color:var(--white);margin-bottom:4px;}
@@ -675,7 +688,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   .track-sidebar{position:fixed;top:57px;left:0;height:calc(100vh - 57px);width:240px;z-index:80;opacity:0;pointer-events:none;transition:opacity 0.2s ease,transform 0.25s ease;transform:translateX(-12px);}
   .track-app.sidebar-open .track-sidebar{opacity:1;pointer-events:auto;transform:translateX(0);box-shadow:4px 0 16px rgba(201,168,76,0.18);}
   .track-app.sidebar-collapsed .track-sidebar{opacity:0;pointer-events:none;}
-  .track-sb-toggle{left:0px;transform:translate(0,-50%);}
+  .track-sb-toggle{position:fixed;top:80px;left:0px;transform:translate(0,0);z-index:85;}
   .track-app.sidebar-open .track-sb-toggle{left:240px;}
   .track-main{display:block;padding:24px 20px;width:100%;max-width:100%;box-sizing:border-box;}
   .lesson-widget{padding:22px 18px;}
@@ -746,6 +759,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <span></span><span></span><span></span>
   </button>
   <div class="mobile-nav-dropdown" id="mobileNavDropdown">
+    <button class="mobile-nav-link" onclick="showPage('homePage');closeMobileNav();">Home</button>
     <button class="mobile-nav-link" onclick="openCommunity();closeMobileNav();">Community</button>
     <button class="mobile-nav-link" onclick="showPage('howPage');closeMobileNav();">How It Works</button>
     <button class="mobile-nav-link" onclick="showPage('pricingPage');closeMobileNav();">Pricing</button>
