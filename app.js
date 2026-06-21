@@ -330,6 +330,11 @@ async function loadAndRenderForum() {
   if (!feed) return;
   feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;padding:20px 0;">Loading discussions…</p>';
 
+  // The composer is for starting new discussions — it doesn't belong on
+  // the Trending view, which is just a read of what's already popular.
+  const composerWrap = document.getElementById('forumComposerWrap');
+  if (composerWrap) composerWrap.style.display = (forumTopicFilter === 'trending') ? 'none' : '';
+
   try {
     // Step 1: Get posts
     let query = db
@@ -408,7 +413,6 @@ function renderForumPost(p) {
   const uname    = p.profiles?.username || 'anonymous';
   const ups      = p.upvotes || 0;
   const replies  = p.reply_count || 0;
-  const hasVoted = votedPostIds.has(p.id);
   return `
     <div class="forum-post-card" id="forumPost_${p.id}" onclick="openDiscussionInPlace('${p.id}')">
       <div class="forum-post-avatar">${avatar}</div>
@@ -424,7 +428,7 @@ function renderForumPost(p) {
         <div class="forum-post-actions">
           <button class="forum-action-btn" id="forumVoteBtn_${p.id}"
             onclick="event.stopPropagation();handlePostVote('${p.id}',1)">
-            <span id="forumVoteIcon_${p.id}">${hasVoted ? '👍' : '▲'}</span> <span id="forumVoteCount_${p.id}">${ups}</span>
+            <span id="forumVoteIcon_${p.id}">👍</span> <span id="forumVoteCount_${p.id}">${ups}</span>
           </button>
           <button class="forum-action-btn" id="forumReplyToggle_${p.id}"
             onclick="event.stopPropagation();toggleInlineReplies('${p.id}')">
@@ -437,7 +441,7 @@ function renderForumPost(p) {
         </div>
 
         <div class="forum-inline-replies" id="forumInlineReplies_${p.id}" style="display:none;" onclick="event.stopPropagation();">
-          <div class="forum-reply-composer">
+          <div class="forum-reply-composer" id="forumReplyComposer_${p.id}" style="display:none;">
             <textarea id="forumReplyText_${p.id}" maxlength="280" placeholder="Write a reply..." oninput="updateForumReplyCharCount('${p.id}')"></textarea>
             <div class="forum-composer-row">
               <span class="forum-char-count" id="forumReplyCharCount_${p.id}">280 characters left</span>
@@ -458,18 +462,15 @@ async function handlePostVote(postId, direction) {
   const wasVoted = votedPostIds.has(postId);
   await votePost(postId, direction);
 
-  const iconEl  = document.getElementById(`forumVoteIcon_${postId}`);
   const countEl = document.getElementById(`forumVoteCount_${postId}`);
-  if (!iconEl || !countEl) return;
+  if (!countEl) return;
 
   let count = parseInt(countEl.textContent, 10) || 0;
   if (wasVoted) {
     votedPostIds.delete(postId);
-    iconEl.textContent = '▲';
     countEl.textContent = Math.max(0, count - 1);
   } else {
     votedPostIds.add(postId);
-    iconEl.textContent = '👍';
     countEl.textContent = count + 1;
   }
 }
@@ -491,6 +492,8 @@ function openDiscussionInPlace(postId) {
 // but also focuses the composer, since its whole purpose is writing one.
 function openInlineRepliesAndFocusComposer(postId) {
   openInlineReplies(postId);
+  const composer = document.getElementById(`forumReplyComposer_${postId}`);
+  if (composer) composer.style.display = 'block';
   setTimeout(() => {
     const ta = document.getElementById(`forumReplyText_${postId}`);
     if (ta) ta.focus();
@@ -1478,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', function () {
   setTimeout(() => {
     if (typeof startSearchPlaceholderRotation === 'function') {
       startSearchPlaceholderRotation('searchFakePlaceholder', 'searchFakePlaceholderText', 'searchInput');
-      startSearchPlaceholderRotation('composerFakePlaceholder', 'composerFakePlaceholderText', 'forumComposerText');
+      startSearchPlaceholderRotation('composerFakePlaceholder', 'composerFakePlaceholderText', 'forumComposerText', ['What is on your mind?']);
     }
   }, 300);
 });
