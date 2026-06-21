@@ -141,7 +141,7 @@ function setTrackStage(stage) {
   } else if (stage === 'exam') {
     loadTrackExam();
   } else if (stage === 'novel') {
-    renderNovelComingSoon();
+    renderNovel();
   } else if (stage === 'film') {
     renderFilmComingSoon();
   }
@@ -150,10 +150,12 @@ function setTrackStage(stage) {
 function renderStageTabs() {
   const el = document.getElementById('trackStageTabs');
   if (!el) return;
-  el.innerHTML = ['lessons', 'exam'].map(s => `
+  // Film stays hidden until there's actual capacity to produce it — see
+  // renderFilmComingSoon() below, still intact and ready when that day comes.
+  el.innerHTML = ['lessons', 'exam', 'novel'].map(s => `
     <button class="track-stage-tab ${trackStage === s ? 'active' : ''}"
       onclick="setTrackStage('${s}')">
-      ${s === 'lessons' ? '📖 Lessons' : '📝 Exam'}
+      ${s === 'lessons' ? '📖 Lessons' : s === 'exam' ? '📝 Exam' : '📚 Novel'}
     </button>`).join('');
 }
 
@@ -193,11 +195,10 @@ function renderTrackSidebar() {
         </div>
       </div>`;
   }).join('');
-  // NOTE: Novel + Short Film sidebar entries are temporarily hidden — see
-  // renderNovelComingSoon() / renderFilmComingSoon() below, both still
-  // intact and ready to re-enable. To bring them back, re-add a
-  // `.track-sb-extra-group` block here (see git history / prior version)
-  // linking to setTrackStage('novel') and setTrackStage('film').
+  // NOTE: the Short Film sidebar entry is temporarily hidden — see
+  // renderFilmComingSoon() below, still intact and ready to re-enable
+  // once there's capacity to actually produce film content. Novel is
+  // live and reachable via the stage tabs above (see renderStageTabs).
 }
 
 // ── COURSE START GATE ────────────────────────────────────────
@@ -223,23 +224,36 @@ function startCourse() {
   renderLessonContent(0);
 }
 
-// ── NOVEL (long-form reading) — honest placeholder until real content exists ──
-function renderNovelComingSoon() {
-  const track = trackData[activeTrackKey];
+// ── NOVEL (long-form reading) ───────────────────────────────
+function renderNovel() {
+  const chaptersHtml = novelChapters.map(c => `
+    <div class="novel-chapter" id="novelCh${c.chapter}">
+      <div class="novel-chapter-num">Chapter ${c.chapter}</div>
+      <h2 class="novel-chapter-title">${c.title}</h2>
+      <p class="novel-chapter-dek">${c.dek}</p>
+      <div class="novel-body">${c.body}</div>
+    </div>`).join('<div class="novel-divider">&#10070;</div>');
+
+  const jumpLinks = novelChapters.map(c =>
+    `<a href="#novelCh${c.chapter}" class="novel-jump-link">Ch. ${c.chapter}</a>`).join('');
+
   document.getElementById('trackMainContent').innerHTML = `
-    <div class="lesson-gate">
-      <div style="font-size:2rem;">📖</div>
-      <h1 class="track-lesson-title" style="margin-top:12px;">Novel — Coming Soon</h1>
-      <p class="lesson-gate-sub">
-        Everything in ${track.title} works as a short, bite-sized lesson today.
-        We're building a long-form "novel" version of the same material — the
-        full story behind the concepts, for when you want to go deeper than a
-        2-minute lesson allows.
+    <div class="novel-wrap">
+      <div class="novel-eyebrow">Business Accounting · The Novel</div>
+      <h1 class="novel-title">A Kiosk on Allen Avenue</h1>
+      <p class="novel-intro">
+        The same foundations from the lessons — told as one continuous story,
+        for whenever you'd rather read than tap through cards.
       </p>
-      <button class="btn btn-gold" onclick="setTrackStage('lessons')"
-        style="font-size:1rem;padding:14px 40px;">
-        Back to Lessons →
-      </button>
+      <div class="novel-jump-nav">${jumpLinks}</div>
+      ${chaptersHtml}
+      <div class="novel-end">
+        <div class="novel-end-mark">&#8718;</div>
+        <p>More chapters arrive as the library grows — including material for ACCA and ICAN learners.</p>
+        <button class="btn btn-gold" onclick="setTrackStage('lessons')" style="font-size:1rem;padding:14px 40px;">
+          Back to Lessons →
+        </button>
+      </div>
     </div>`;
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
