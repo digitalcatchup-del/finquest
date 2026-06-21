@@ -1432,10 +1432,16 @@ function buildTrending() {
   ).join('');
 
   const wrap = document.getElementById('trendingTickerWrap');
-  const isTouchOrNarrow = window.innerWidth <= 1024 ||
-    ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  // Match the same breakpoint the CSS uses to turn on horizontal scrolling
+  // (≤1024px = phones + tablets). The previous check also treated any
+  // touch-capable screen as "scrollable," which caught wide touchscreen
+  // laptops/desktops (>1024px) too — JS would size the row to overflow,
+  // but the CSS at that width still has overflow:hidden with no scroll
+  // enabled, so the last chip just sat there clipped in half with no way
+  // to reach it. Using the same width check as the CSS keeps both in sync.
+  const isScrollable = window.innerWidth <= 1024;
 
-  if (isTouchOrNarrow) {
+  if (isScrollable) {
     // Mobile/tablet: scroll handles overflow, so every item must be
     // reachable. Don't trust width:max-content alone to size the row
     // correctly across browsers — measure each chip directly and set
@@ -1531,3 +1537,8 @@ window.addEventListener('resize', () => {
     }
   }, 200);
 });
+
+// Safety net: re-measure once everything (images, fonts) has fully
+// loaded, in case anything shifted the layout after the initial
+// DOMContentLoaded measurement.
+window.addEventListener('load', buildTrending);
