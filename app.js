@@ -47,6 +47,16 @@ function closeMobileNav() {
   document.getElementById('mobileNavDropdown').classList.remove('open');
 }
 
+// Click anywhere outside the open mobile menu (or its hamburger button) to
+// close it, in addition to clicking the hamburger again.
+document.addEventListener('click', (e) => {
+  const dropdown  = document.getElementById('mobileNavDropdown');
+  const hamburger = document.getElementById('navHamburger');
+  if (!dropdown || !dropdown.classList.contains('open')) return;
+  if (dropdown.contains(e.target) || (hamburger && hamburger.contains(e.target))) return;
+  closeMobileNav();
+});
+
 // ── AUTH MODAL ───────────────────────────────────────────────
 function openAuth(tab = 'signup') {
   switchAuthTab(tab);
@@ -240,12 +250,14 @@ function renderSampleNugget() {
 function renderNuggetQuiz(n) {
   if (!n.quiz) return;
   const q = n.quiz;
+  const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
   document.getElementById('modalQuiz').innerHTML = `
     <div class="modal-quiz-q">${q.question}</div>
     <div class="modal-quiz-opts">
       ${q.options.map((o, i) => `
         <button class="modal-quiz-opt" onclick="answerNugget(${i},${q.correct},this)">
-          ${o}
+          <span class="modal-quiz-opt-letter">${letters[i]}</span>
+          <span class="modal-quiz-opt-text">${o}</span>
         </button>`).join('')}
     </div>
     <div class="modal-fb" id="modalFb"></div>
@@ -269,13 +281,13 @@ function answerNugget(idx, correct, btn) {
 
   if (idx === correct) {
     fb.textContent = '✓ Correct!';
-    fb.classList.add('show', 'correct');
+    fb.classList.add('show', 'cfb');
     pr.innerHTML = '⚡ +0.00010 pips awarded';
     pr.classList.add('show');
     if (currentUser) awardPips(0.00010, 'quiz_correct');
   } else {
     fb.textContent = '✗ Not quite — review the definition above.';
-    fb.classList.add('show', 'wrong');
+    fb.classList.add('show', 'wfb');
   }
 
   if (!currentUser) {
@@ -1420,8 +1432,10 @@ function buildTrending() {
   ).join('');
 
   const wrap = document.getElementById('trendingTickerWrap');
+  const isTouchOrNarrow = window.innerWidth <= 1024 ||
+    ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-  if (window.innerWidth <= 1024) {
+  if (isTouchOrNarrow) {
     // Mobile/tablet: scroll handles overflow, so every item must be
     // reachable. Don't trust width:max-content alone to size the row
     // correctly across browsers — measure each chip directly and set
@@ -1501,9 +1515,19 @@ document.addEventListener('DOMContentLoaded', function () {
   }, 300);
 });
 
-// Re-fit trending chips on resize/orientation change (debounced)
+// Re-fit trending chips on resize/orientation change (debounced).
+// Only rebuild when WIDTH actually changes — on mobile, the address bar
+// showing/hiding as you scroll fires resize events for HEIGHT changes
+// only, and rebuilding on those was wiping the ticker's scroll position
+// mid-scroll, making chip #1 appear to "flash" then vanish.
 let trendingResizeTimer = null;
+let lastTrendingWidth = window.innerWidth;
 window.addEventListener('resize', () => {
   clearTimeout(trendingResizeTimer);
-  trendingResizeTimer = setTimeout(buildTrending, 200);
+  trendingResizeTimer = setTimeout(() => {
+    if (window.innerWidth !== lastTrendingWidth) {
+      lastTrendingWidth = window.innerWidth;
+      buildTrending();
+    }
+  }, 200);
 });
