@@ -847,8 +847,16 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
         });
         const out = document.getElementById('tdbgOut');
         out.style.display = 'block';
+        const heroSection = document.getElementById('heroSection');
+        const homePage = document.getElementById('homePage');
+        const trendingSection = wrap.closest('.trending-section');
         out.textContent =
           'innerWidth: ' + window.innerWidth +
+          '\nhtml.clientWidth: ' + document.documentElement.clientWidth +
+          '\nbody.clientWidth: ' + document.body.clientWidth +
+          '\nhomePage.clientWidth: ' + (homePage ? homePage.clientWidth : 'n/a') +
+          '\nheroSection.clientWidth: ' + (heroSection ? heroSection.clientWidth : 'n/a') +
+          '\ntrendingSection.clientWidth: ' + (trendingSection ? trendingSection.clientWidth : 'n/a') +
           '\nrebuild count: ' + (window._tdbgRebuildCount || 0) +
           '\nscrollLeft: ' + Math.round(wrap.scrollLeft) +
           '\nscrollWidth: ' + wrap.scrollWidth +
@@ -1452,11 +1460,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=5"></script>
-<script src="data.js?v=5"></script>
-<script src="auth.js?v=5"></script>
-<script src="app.js?v=5"></script>
-<script src="track.js?v=5"></script>
+<script src="supabase-config.js?v=6"></script>
+<script src="data.js?v=6"></script>
+<script src="auth.js?v=6"></script>
+<script src="app.js?v=6"></script>
+<script src="track.js?v=6"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
