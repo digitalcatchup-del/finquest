@@ -83,7 +83,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .hero-sub{font-size:0.95rem;color:var(--muted);max-width:480px;line-height:1.7;margin-bottom:32px;z-index:1;position:relative;}
 
 /* ── SEARCH BAR ── */
-.search-wrap{width:100%;max-width:620px;z-index:1;position:relative;margin-bottom:48px;}
+.search-wrap{width:100%;max-width:620px;z-index:50;position:relative;margin-bottom:48px;}
 .search-box{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:4px 4px 4px 18px;transition:border-color 0.2s,box-shadow 0.2s;gap:8px;position:relative;}
 .search-box:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.08);}
 .search-icon{font-size:1rem;color:var(--muted);flex-shrink:0;}
@@ -778,6 +778,10 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <div class="search-suggestions" id="searchSuggestions"></div>
   </div>
 
+  <!-- INLINE SEARCH RESULTS — shown instead of everything below, only while a search is active -->
+  <div id="homeSearchResults" style="display:none;width:100%;max-width:760px;position:relative;z-index:1;"></div>
+
+  <div id="homeDefaultContent">
   <!-- ACCOUNTING ENTRY — plain button, no card/widget -->
   <div class="flavor-section">
     <div style="text-align:center;">
@@ -797,6 +801,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <div class="trending-ticker-wrap">
       <div class="trending-ticker" id="trendingTicker"></div>
     </div>
+  </div>
   </div>
 </section>
 
@@ -957,16 +962,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <button class="btn btn-gold" onclick="showPage('homePage');openAccounting();" style="padding:14px 32px;">Start Learning →</button>
       <button class="btn btn-outline" onclick="showPage('pricingPage')" style="padding:14px 32px;">View Pricing</button>
     </div>
-  </div>
-</div>
-
-<!-- SEARCH RESULTS (only reached via an actual search — no nav link) -->
-<div id="searchResultsPage" class="page">
-  <div style="max-width:760px;margin:0 auto;padding:40px 32px;">
-    <button class="track-sb-back" onclick="showPage('homePage')" style="margin-bottom:24px;">← Back to Home</button>
-    <p class="section-eyebrow">Search Results</p>
-    <h2 class="section-heading" id="searchResultsHeading" style="margin-bottom:28px;">Results for "..."</h2>
-    <div id="searchResultsBody"></div>
   </div>
 </div>
 
