@@ -66,6 +66,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 /* USER NAV */
 .nav-user{display:none;align-items:center;gap:8px;}
 .nav-user.show{display:flex;}
+.nav-trial-badge{font-size:0.62rem;font-weight:800;letter-spacing:0.04em;color:var(--gold);background:rgba(212,175,55,0.12);border:1px solid var(--gold);border-radius:4px;padding:5px 10px;white-space:nowrap;}
 .pip-ticker{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:5px 10px;}
 .pip-label{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);}
 .pip-value{font-size:0.85rem;font-weight:900;font-variant-numeric:tabular-nums;color:var(--green);letter-spacing:0.02em;}
@@ -384,6 +385,8 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 /* ── PRICING ── */
 #pricing{padding:80px 40px;max-width:900px;margin:0 auto;text-align:center;}
 .pricing-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px;}
+.founding-banner{max-width:560px;margin:24px auto 0;background:rgba(212,175,55,0.12);border:1px solid var(--gold);color:var(--gold);font-size:0.78rem;font-weight:700;text-align:center;padding:10px 18px;border-radius:8px;}
+.pc-founding-note{font-size:0.68rem;color:var(--gold);font-weight:600;margin-top:-8px;margin-bottom:12px;line-height:1.4;}
 .pricing-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px;text-align:left;transition:border-color 0.2s;}
 .pricing-card.featured{border-color:var(--gold);position:relative;}
 .pricing-card.featured::before{content:'Most Popular';position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--accent-on);font-size:0.6rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;padding:4px 12px;border-radius:20px;white-space:nowrap;}
@@ -649,6 +652,27 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
 /* ── LESSON START GATE — focuses the screen on one topic before content reveals ── */
 .lesson-gate{width:100%;text-align:center;min-height:calc(100vh - 57px - 80px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;box-sizing:border-box;}
+.novel-wrap{max-width:680px;margin:0 auto;padding:8px 4px 40px;}
+.novel-eyebrow{font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+.novel-title{font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;font-size:clamp(1.6rem,4vw,2.3rem);font-weight:700;color:var(--white);line-height:1.2;margin-bottom:10px;}
+.novel-intro{font-size:0.85rem;color:var(--muted);line-height:1.6;margin-bottom:20px;}
+.novel-jump-nav{display:flex;gap:8px;margin-bottom:36px;}
+.novel-jump-link{font-size:0.66rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:6px 14px;text-decoration:none;transition:all 0.15s;}
+.novel-jump-link:hover{color:var(--gold);border-color:var(--gold);}
+.novel-chapter{margin-bottom:8px;}
+.novel-chapter-num{font-size:0.66rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+.novel-chapter-title{font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;font-size:clamp(1.3rem,3vw,1.7rem);font-weight:700;color:var(--white);margin-bottom:6px;line-height:1.25;}
+.novel-chapter-dek{font-size:0.8rem;font-style:italic;color:var(--muted);margin-bottom:22px;line-height:1.6;}
+.novel-body{font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;font-size:1.02rem;line-height:1.85;color:var(--off);}
+.novel-body em{color:var(--white);font-style:italic;}
+.novel-divider{text-align:center;color:var(--gold);font-size:0.8rem;margin:44px 0;letter-spacing:0.3em;opacity:0.7;}
+.novel-end{text-align:center;margin-top:48px;padding-top:32px;border-top:1px solid var(--border);}
+.novel-end-mark{font-size:1.4rem;color:var(--gold);margin-bottom:14px;}
+.novel-end p{font-size:0.82rem;color:var(--muted);margin-bottom:22px;line-height:1.6;}
+@media(max-width:700px){
+  .novel-wrap{padding:8px 2px 32px;}
+  .novel-body{font-size:0.96rem;line-height:1.75;}
+}
 .lesson-gate-icon{font-size:2.6rem;margin-bottom:12px;}
 .lesson-gate-sub{font-size:0.88rem;color:var(--muted);line-height:1.7;margin:18px 0 26px;}
 
@@ -778,6 +802,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <button class="btn btn-gold nav-auth-btn" onclick="openAuth('signup')" style="padding:7px 14px;font-size:0.68rem;">Join Free</button>
     </div>
     <div class="nav-user" id="userNav">
+      <span class="nav-trial-badge" id="navTrialBadge" style="display:none;"></span>
       <div class="pip-ticker">
         <span class="pip-label">PIP</span>
         <span class="pip-value" id="navPip">1.00000</span>
@@ -911,23 +936,24 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <p class="section-eyebrow">Pricing</p>
   <h2 class="section-heading">Simple, honest pricing.</h2>
   <p style="font-size:0.85rem;color:var(--muted);max-width:480px;margin:0 auto;">All lessons from beginner to expert.</p>
+  <div class="founding-banner js-founding-banner" style="display:none;">🎉 Founding Member pricing is live — lock in your rate before it ends.</div>
   <div class="pricing-cards">
     <div class="pricing-card">
-      <div class="pc-name">Free</div>
-      <div class="pc-price">$0 <span>forever</span></div>
-      <div class="pc-desc">Try before you commit. Sample lessons across all pillars.</div>
+      <div class="pc-name">Free Trial</div>
+      <div class="pc-price">$0 <span>for 7 days</span></div>
+      <div class="pc-desc">Full access, no card required. See everything before you decide.</div>
       <div class="pc-features">
-        <div class="pc-feat">3 free lessons per topic</div>
-        <div class="pc-feat">Read community opinions</div>
-        <div class="pc-feat">Daily insight</div>
-        <div class="pc-feat no">Quiz & pip rewards</div>
-        <div class="pc-feat no">Post opinions</div>
+        <div class="pc-feat">All lessons, beginner to expert</div>
+        <div class="pc-feat">Quizzes, flashcards &amp; pip rewards</div>
+        <div class="pc-feat">Post &amp; vote on opinions</div>
+        <div class="pc-feat no">After 7 days: 3 lessons/topic only</div>
       </div>
-      <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Get Started Free</button>
+      <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Start Free Trial</button>
     </div>
     <div class="pricing-card featured">
       <div class="pc-name">Professional</div>
-      <div class="pc-price">$5 <span>/ month</span></div>
+      <div class="pc-price"><span class="js-price-pro-monthly">$5</span> <span>/ month</span></div>
+      <div class="pc-founding-note js-founding-note-monthly" style="display:none;">Founding Member rate — then <span class="js-price-pro-monthly-standard">$5</span>/mo after the window closes</div>
       <div class="pc-desc">Full access to beginner to advanced lessons.</div>
       <div class="pc-features">
         <div class="pc-feat">All lessons Beginner to advanced</div>
@@ -936,20 +962,21 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
         <div class="pc-feat">Post & vote on opinions</div>
         <div class="pc-feat">Leaderboard & certificates</div>
       </div>
-      <button class="btn btn-gold btn-full" onclick="openPayment('Professional','$5/month',5)">Subscribe — $5/mo</button>
+      <button class="btn btn-gold btn-full" onclick="openPayment('professional')">Subscribe — <span class="js-price-pro-monthly-btn">$5</span>/mo</button>
     </div>
     <div class="pricing-card">
       <div class="pc-name">Annual</div>
-      <div class="pc-price">$48 <span>/ year</span></div>
-      <div class="pc-desc">Save 20% vs monthly. Best value for committed learners.</div>
+      <div class="pc-price"><span class="js-price-pro-annual">$48</span> <span>/ year</span></div>
+      <div class="pc-founding-note js-founding-note-annual" style="display:none;">Founding Member rate — then <span class="js-price-pro-annual-standard">$48</span>/yr after the window closes</div>
+      <div class="pc-desc js-annual-save-desc">Save 20% vs monthly. Best value for committed learners.</div>
       <div class="pc-features">
         <div class="pc-feat">Everything in Professional</div>
-        <div class="pc-feat">Save $12 vs monthly</div>
+        <div class="pc-feat js-annual-save-feat">Save $12 vs monthly</div>
         <div class="pc-feat">Priority new content access</div>
         <div class="pc-feat">Annual completion certificate</div>
         <div class="pc-feat">Early access to new features</div>
       </div>
-      <button class="btn btn-outline btn-full" onclick="openPayment('Annual','$48/year',48)">Subscribe — $48/yr</button>
+      <button class="btn btn-outline btn-full" onclick="openPayment('annual')">Subscribe — <span class="js-price-pro-annual-btn">$48</span>/yr</button>
     </div>
   </div>
 </section>
@@ -1020,23 +1047,24 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <p class="section-eyebrow">Pricing</p>
     <h2 class="section-heading">Simple, honest pricing.</h2>
     <p style="font-size:0.85rem;color:var(--muted);max-width:480px;margin:0 auto 40px;">All lessons from beginner to expert.</p>
+    <div class="founding-banner js-founding-banner" style="display:none;">🎉 Founding Member pricing is live — lock in your rate before it ends.</div>
     <div class="pricing-cards">
       <div class="pricing-card">
-        <div class="pc-name">Free</div>
-        <div class="pc-price">$0 <span>forever</span></div>
-        <div class="pc-desc">Try before you commit. Sample lessons across all pillars.</div>
+        <div class="pc-name">Free Trial</div>
+        <div class="pc-price">$0 <span>for 7 days</span></div>
+        <div class="pc-desc">Full access, no card required. See everything before you decide.</div>
         <div class="pc-features">
-          <div class="pc-feat">3 free lessons per topic</div>
-          <div class="pc-feat">Read community opinions</div>
-          <div class="pc-feat">Daily insight</div>
-          <div class="pc-feat no">Quiz &amp; pip rewards</div>
-          <div class="pc-feat no">Post opinions</div>
+          <div class="pc-feat">All lessons, beginner to expert</div>
+          <div class="pc-feat">Quizzes, flashcards &amp; pip rewards</div>
+          <div class="pc-feat">Post &amp; vote on opinions</div>
+          <div class="pc-feat no">After 7 days: 3 lessons/topic only</div>
         </div>
-        <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Get Started Free</button>
+        <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Start Free Trial</button>
       </div>
       <div class="pricing-card featured">
         <div class="pc-name">Professional</div>
-        <div class="pc-price">$5 <span>/ month</span></div>
+        <div class="pc-price"><span class="js-price-pro-monthly">$5</span> <span>/ month</span></div>
+        <div class="pc-founding-note js-founding-note-monthly" style="display:none;">Founding Member rate — then <span class="js-price-pro-monthly-standard">$5</span>/mo after the window closes</div>
         <div class="pc-desc">Full access to beginner to advanced lessons.</div>
         <div class="pc-features">
           <div class="pc-feat">All lessons Beginner to advanced</div>
@@ -1045,20 +1073,21 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
           <div class="pc-feat">Post &amp; vote on opinions</div>
           <div class="pc-feat">Leaderboard &amp; certificates</div>
         </div>
-        <button class="btn btn-gold btn-full" onclick="openPayment('Professional','$5/month',5)">Subscribe — $5/mo</button>
+        <button class="btn btn-gold btn-full" onclick="openPayment('professional')">Subscribe — <span class="js-price-pro-monthly-btn">$5</span>/mo</button>
       </div>
       <div class="pricing-card">
         <div class="pc-name">Annual</div>
-        <div class="pc-price">$48 <span>/ year</span></div>
-        <div class="pc-desc">Save 20% vs monthly. Best value for committed learners.</div>
+        <div class="pc-price"><span class="js-price-pro-annual">$48</span> <span>/ year</span></div>
+        <div class="pc-founding-note js-founding-note-annual" style="display:none;">Founding Member rate — then <span class="js-price-pro-annual-standard">$48</span>/yr after the window closes</div>
+        <div class="pc-desc js-annual-save-desc">Save 20% vs monthly. Best value for committed learners.</div>
         <div class="pc-features">
           <div class="pc-feat">Everything in Professional</div>
-          <div class="pc-feat">Save $12 vs monthly</div>
+          <div class="pc-feat js-annual-save-feat">Save $12 vs monthly</div>
           <div class="pc-feat">Priority new content access</div>
           <div class="pc-feat">Annual completion certificate</div>
           <div class="pc-feat">Early access to new features</div>
         </div>
-        <button class="btn btn-outline btn-full" onclick="openPayment('Annual','$48/year',48)">Subscribe — $48/yr</button>
+        <button class="btn btn-outline btn-full" onclick="openPayment('annual')">Subscribe — <span class="js-price-pro-annual-btn">$48</span>/yr</button>
       </div>
     </div>
   </div>
@@ -1147,7 +1176,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
       <h3>4. Subscriptions and Payments</h3>
       <ul>
-        <li>Butterfly Dynamix Learning offers a free tier with limited access, and paid subscription tiers ("Professional" and "Annual") that unlock full access to all content.</li>
+        <li>Butterfly Dynamix Learning offers a 7-day full-access free trial with no card required, after which a limited free tier applies, and paid subscription tiers ("Professional" and "Annual") that unlock full access to all content.</li>
         <li>Payments are processed by our third-party payment partner. By subscribing, you authorise recurring charges as applicable to your selected plan.</li>
         <li>Subscriptions can be cancelled at any time; access continues until the end of the current billing period.</li>
         <li>Fees are non-refundable except where required by law.</li>
@@ -1425,17 +1454,18 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=12"></script>
-<script src="data.js?v=12"></script>
-<script src="auth.js?v=12"></script>
-<script src="app.js?v=12"></script>
-<script src="track.js?v=12"></script>
+<script src="supabase-config.js?v=14"></script>
+<script src="data.js?v=14"></script>
+<script src="auth.js?v=14"></script>
+<script src="app.js?v=14"></script>
+<script src="track.js?v=14"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    checkStripeRedirect(); // handles Flutterwave/payment success redirect
-    restoreSession();      // re-hydrates logged-in user from Supabase session
+    checkStripeRedirect();   // handles Flutterwave/payment success redirect
+    restoreSession();        // re-hydrates logged-in user from Supabase session
+    renderPricingDisplay();  // shows founding-member or standard pricing
   });
 </script>
 
