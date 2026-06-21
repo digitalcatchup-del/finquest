@@ -1421,7 +1421,6 @@ function timeAgo(dateStr) {
 
 // ── TRENDING ─────────────────────────────────────────────────
 function buildTrending() {
-  window._tdbgRebuildCount = (window._tdbgRebuildCount || 0) + 1; // TEMP DEBUG
   const ticker = document.getElementById('trendingTicker');
   if (!ticker || !trendingItems) return;
   ticker.style.width = '';
