@@ -1411,6 +1411,7 @@ function timeAgo(dateStr) {
 function buildTrending() {
   const ticker = document.getElementById('trendingTicker');
   if (!ticker || !trendingItems) return;
+  ticker.style.width = '';
   ticker.innerHTML = trendingItems.map(t =>
     `<div class="trend-chip" onclick="scrollToOpinion(${t.opinionId})" style="cursor:pointer;">
       <span class="trend-num">${t.num}</span>
@@ -1418,17 +1419,26 @@ function buildTrending() {
     </div>`
   ).join('');
 
-  // Always start scrolled fully to the left after a rebuild, so chip #1
-  // is never accidentally hidden behind a stale scroll position.
   const wrap = document.getElementById('trendingTickerWrap');
+
+  if (window.innerWidth <= 1024) {
+    // Mobile/tablet: scroll handles overflow, so every item must be
+    // reachable. Don't trust width:max-content alone to size the row
+    // correctly across browsers — measure each chip directly and set
+    // an explicit pixel width, so the scrollable range is exactly right.
+    requestAnimationFrame(() => {
+      const chips = ticker.querySelectorAll('.trend-chip');
+      const gap = 10;
+      let total = 16; // small trailing buffer so the last chip isn't flush against the edge
+      chips.forEach(chip => { total += chip.getBoundingClientRect().width + gap; });
+      ticker.style.width = Math.ceil(total) + 'px';
+      if (wrap) wrap.scrollLeft = 0;
+    });
+    return;
+  }
+
+  // Desktop: show only what fully fits, never cut a chip off mid-text.
   if (wrap) wrap.scrollLeft = 0;
-
-  // On mobile/tablet the ticker scrolls horizontally, so every item can be
-  // reached by swiping — no need to trim. Trimming (show-only-what-fits,
-  // never cut a chip off mid-text) is a desktop-only concern, since there's
-  // no scroll affordance there.
-  if (window.innerWidth <= 1024) return;
-
   requestAnimationFrame(() => {
     const wrapWidth = ticker.parentElement.offsetWidth;
     const chips = ticker.querySelectorAll('.trend-chip');
