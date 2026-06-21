@@ -1118,7 +1118,95 @@ function doSearch() {
   if (currentUser) {
     db.from('search_log').insert({ user_id: currentUser.id, query: val });
   }
-  openAccounting();
+  runSearch(val);
+}
+
+// ── SEARCH RESULTS PAGE ───────────────────────────────────────
+// Lesson search is just filtering data already loaded in the browser
+// (trackData) — no extra storage or requests. Forum search is one
+// lightweight query against the posts table that already exists.
+function searchLessons(query) {
+  const q = query.toLowerCase();
+  const hits = [];
+  Object.keys(trackData).forEach(trackKey => {
+    const track = trackData[trackKey];
+    track.lessons.forEach((l, idx) => {
+      const term = l.term || '';
+      const def  = l.definition || '';
+      const scen = l.scenario || '';
+      if (term.toLowerCase().includes(q) || def.toLowerCase().includes(q) || scen.toLowerCase().includes(q)) {
+        const snippetSource = term.toLowerCase().includes(q) ? def : (def.toLowerCase().includes(q) ? def : scen);
+        hits.push({ trackKey, trackTitle: track.title, idx, term, snippet: snippetSource });
+      }
+    });
+  });
+  return hits;
+}
+
+async function searchForumPosts(query) {
+  const { data: posts } = await db
+    .from('posts')
+    .select('id, topic, title, body, created_at')
+    .eq('is_opinion', false)
+    .or(`body.ilike.%${query}%,title.ilike.%${query}%`)
+    .order('created_at', { ascending: false })
+    .limit(10);
+  return posts || [];
+}
+
+async function runSearch(query) {
+  showPage('searchResultsPage');
+  document.getElementById('searchResultsHeading').textContent = `Results for "${query}"`;
+  const body = document.getElementById('searchResultsBody');
+  body.innerHTML = '<div class="sr-loading">Searching…</div>';
+
+  const lessonHits = searchLessons(query);
+  const postHits   = await searchForumPosts(query);
+
+  if (!lessonHits.length && !postHits.length) {
+    body.innerHTML = `<div class="sr-empty">No results for "${query}" yet. Try a different term, or browse Lessons directly.</div>`;
+    return;
+  }
+
+  let html = '';
+
+  if (lessonHits.length) {
+    html += `<div class="sr-section">
+      <div class="sr-section-label">📖 Lessons (${lessonHits.length})</div>
+      ${lessonHits.map(h => `
+        <div class="sr-row" onclick="goToSearchResultLesson('${h.trackKey}',${h.idx})">
+          <div class="sr-row-icon">📖</div>
+          <div class="sr-row-body">
+            <div class="sr-row-title">${h.term}</div>
+            <div class="sr-row-snippet">${h.snippet}</div>
+            <div class="sr-row-meta">${h.trackTitle}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  if (postHits.length) {
+    html += `<div class="sr-section">
+      <div class="sr-section-label">💬 Community Posts (${postHits.length})</div>
+      ${postHits.map(p => `
+        <div class="sr-row" onclick="goToForumPost('${p.id}')">
+          <div class="sr-row-icon">💬</div>
+          <div class="sr-row-body">
+            ${p.title ? `<div class="sr-row-title">${p.title}</div>` : ''}
+            <div class="sr-row-snippet">${p.body}</div>
+            <div class="sr-row-meta">${timeAgo(p.created_at)}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+function goToSearchResultLesson(trackKey, lessonIdx) {
+  launchTrack(trackKey).then(() => {
+    loadTrackLesson(lessonIdx);
+  });
 }
 
 function scrollToOpinion(opinionId) {
