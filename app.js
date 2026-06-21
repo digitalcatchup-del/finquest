@@ -1418,6 +1418,11 @@ function buildTrending() {
     </div>`
   ).join('');
 
+  // Always start scrolled fully to the left after a rebuild, so chip #1
+  // is never accidentally hidden behind a stale scroll position.
+  const wrap = document.getElementById('trendingTickerWrap');
+  if (wrap) wrap.scrollLeft = 0;
+
   // On mobile/tablet the ticker scrolls horizontally, so every item can be
   // reached by swiping — no need to trim. Trimming (show-only-what-fits,
   // never cut a chip off mid-text) is a desktop-only concern, since there's
@@ -1439,6 +1444,15 @@ function buildTrending() {
       }
     });
   });
+}
+
+// Explicit, deterministic left/right navigation for the trending ticker —
+// works via scrollBy regardless of touch-swipe gesture support, so #1 and
+// #10 are always reachable even if swipe alone doesn't get there.
+function scrollTrending(direction) {
+  const wrap = document.getElementById('trendingTickerWrap');
+  if (!wrap) return;
+  wrap.scrollBy({ left: direction * 180, behavior: 'smooth' });
 }
 
 // ── STATIC OPINIONS FALLBACK ─────────────────────────────────
