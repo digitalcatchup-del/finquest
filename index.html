@@ -94,8 +94,8 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 #searchFakePlaceholderText{pointer-events:auto;cursor:pointer;}
 .composer-fake-placeholder{position:absolute;left:18px;right:18px;top:16px;overflow:hidden;pointer-events:none;height:1.4em;display:flex;align-items:center;}
 .composer-fake-placeholder span{display:inline-block;white-space:nowrap;color:var(--muted2);font-size:0.88rem;font-family:inherit;transition:none;}
-.search-btn{background:var(--gold);color:var(--accent-on);border:none;border-radius:50%;width:36px;height:36px;flex-shrink:0;font-size:1.2rem;line-height:1;font-weight:700;cursor:pointer;transition:opacity 0.15s;position:relative;z-index:2;display:flex;align-items:center;justify-content:center;padding:0;}
-.search-btn:hover{opacity:0.88;}
+.search-btn{background:none;color:var(--gold);border:none;width:auto;height:auto;flex-shrink:0;font-size:1.6rem;line-height:1;font-weight:900;cursor:pointer;transition:opacity 0.15s;position:relative;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 10px 0 4px;}
+.search-btn:hover{opacity:0.75;}
 .search-suggestions{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:6px;overflow:hidden;z-index:200;display:none;box-shadow:0 16px 40px rgba(201,168,76,0.18);}
 .search-suggestions.open{display:block;}
 .suggestion-group-label{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px;}
@@ -711,7 +711,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   .search-box{padding:6px 6px 6px 14px;border-radius:8px;}
   .search-fake-placeholder{left:36px;right:80px;}
   .search-input{font-size:0.85rem;min-width:0;}
-  .search-btn{width:34px;height:34px;font-size:1.1rem;}
+  .search-btn{font-size:1.4rem;padding:0 8px 0 4px;}
   .nav-auth-btn{padding:12px 14px !important;font-size:0.7rem !important;min-height:44px;}
   #heroSection,#liHero{padding:48px 20px 32px;min-height:auto;padding-top:80px;}
   #trust{gap:28px;padding:20px;}
@@ -1224,7 +1224,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
       <div class="forum-composer" id="forumComposerWrap" style="position:relative;">
         <textarea id="forumComposerText" maxlength="280" placeholder=" " oninput="updateForumCharCount();updateFakePlaceholder(this.value,'composerFakePlaceholder');" onfocus="onComposerFocus();hideFakePlaceholder('composerFakePlaceholder');" onblur="syncComposerOverlay();showFakePlaceholder('composerFakePlaceholder','forumComposerText');"></textarea>
-        <div class="composer-fake-placeholder" id="composerFakePlaceholder"><span id="composerFakePlaceholderText">What is on your mind?</span></div>
+        <div class="composer-fake-placeholder" id="composerFakePlaceholder"><span id="composerFakePlaceholderText">Related to money and finance? - what's on your mind?</span></div>
         <div id="forumComposerClickLayer" onclick="onComposerOverlayClick()" style="position:absolute;top:0;left:0;right:0;height:60px;cursor:pointer;"></div>
         <div class="forum-composer-row">
           <span class="forum-char-count" id="forumCharCount">280 characters left</span>
