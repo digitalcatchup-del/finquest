@@ -156,6 +156,7 @@ async function loadCurrentUser(authUser) {
     streak:        profile.day_streak || 0,
     totalLessons:  profile.total_lessons || 0,
     totalCorrect:  profile.total_correct || 0,
+    createdAt:     profile.created_at,
   };
 
   // Update streak (if last active was yesterday, increment; if today, keep; else reset)
@@ -267,6 +268,19 @@ function updateNavForLoggedInUser() {
   document.getElementById('navStreak').textContent = `🔥 ${currentUser.streak}`;
   if (document.getElementById('navPip')) {
     document.getElementById('navPip').textContent = currentUser.pipScore.toFixed(5);
+  }
+  const trialBadge = document.getElementById('navTrialBadge');
+  if (trialBadge && typeof getAccessStatus === 'function') {
+    const access = getAccessStatus();
+    if (access.status === 'trial') {
+      trialBadge.style.display = 'inline-block';
+      trialBadge.textContent = access.daysLeft === 1 ? 'Trial: 1 day left' : `Trial: ${access.daysLeft} days left`;
+    } else if (access.status === 'expired') {
+      trialBadge.style.display = 'inline-block';
+      trialBadge.textContent = 'Trial ended';
+    } else {
+      trialBadge.style.display = 'none';
+    }
   }
 }
 
