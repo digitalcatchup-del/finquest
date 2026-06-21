@@ -159,6 +159,9 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 @keyframes trendScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .trend-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
 .trend-chip:hover{border-color:var(--border2);background:var(--surface2);}
+.trending-scroll-row{display:flex;align-items:center;gap:6px;}
+.trending-scroll-btn{display:none;flex-shrink:0;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border2);color:var(--off);font-size:1.1rem;line-height:1;cursor:pointer;align-items:center;justify-content:center;padding:0;}
+.trending-scroll-btn:active{background:var(--surface2);}
 .trend-num{font-size:0.6rem;font-weight:800;color:var(--gold);}
 .trend-text{font-size:0.72rem;color:var(--off);}
 .trend-tag{font-size:0.6rem;font-weight:700;padding:2px 6px;border-radius:2px;letter-spacing:0.08em;text-transform:uppercase;}
@@ -690,6 +693,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 /* Trending ticker: scrollable on phones AND tablets (701–1024px), not just phones */
 @media(min-width:701px) and (max-width:1024px){
   .trending-ticker-wrap{overflow-x:auto;overflow-y:hidden;width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;}
+  .trending-scroll-btn{display:flex;}
   .trending-ticker-wrap::-webkit-scrollbar{display:none;}
   .trend-chip{flex-shrink:0;}
   .trend-text{white-space:nowrap;}
@@ -700,6 +704,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   .nav-center{display:none;}
   .nav-hamburger{display:flex;}
   .trending-ticker-wrap{overflow-x:auto;overflow-y:hidden;width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;}
+  .trending-scroll-btn{display:flex;}
   .trending-ticker-wrap::-webkit-scrollbar{display:none;}
   .trend-chip{flex-shrink:0;}
   .trend-text{white-space:nowrap;}
@@ -808,8 +813,12 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <span class="trending-label">Trending Discussions</span>
       <div class="trending-line"></div>
     </div>
-    <div class="trending-ticker-wrap">
-      <div class="trending-ticker" id="trendingTicker"></div>
+    <div class="trending-scroll-row">
+      <button class="trending-scroll-btn" id="trendingScrollLeft" onclick="scrollTrending(-1)" aria-label="Scroll trending left">‹</button>
+      <div class="trending-ticker-wrap" id="trendingTickerWrap">
+        <div class="trending-ticker" id="trendingTicker"></div>
+      </div>
+      <button class="trending-scroll-btn" id="trendingScrollRight" onclick="scrollTrending(1)" aria-label="Scroll trending right">›</button>
     </div>
   </div>
   </div>
