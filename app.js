@@ -1505,7 +1505,7 @@ document.addEventListener('DOMContentLoaded', function () {
   setTimeout(() => {
     if (typeof startSearchPlaceholderRotation === 'function') {
       startSearchPlaceholderRotation('searchFakePlaceholder', 'searchFakePlaceholderText', 'searchInput');
-      startSearchPlaceholderRotation('composerFakePlaceholder', 'composerFakePlaceholderText', 'forumComposerText', ['What is on your mind?']);
+      startSearchPlaceholderRotation('composerFakePlaceholder', 'composerFakePlaceholderText', 'forumComposerText', ['Related to money and finance? - what\'s on your mind?']);
     }
   }, 300);
 });
