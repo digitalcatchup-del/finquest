@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -753,6 +755,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   </div>
   <div class="nav-center">
     <button class="nav-link" onclick="showPage('homePage')">Home</button>
+    <button class="nav-link" onclick="openAccounting()">Lessons</button>
     <button class="nav-link" onclick="openCommunity()">Community</button>
     <button class="nav-link" onclick="showPage('howPage')">How It Works</button>
     <button class="nav-link" onclick="showPage('pricingPage')">Pricing</button>
@@ -763,6 +766,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   </button>
   <div class="mobile-nav-dropdown" id="mobileNavDropdown">
     <button class="mobile-nav-link" onclick="showPage('homePage');closeMobileNav();">Home</button>
+    <button class="mobile-nav-link" onclick="openAccounting();closeMobileNav();">Lessons</button>
     <button class="mobile-nav-link" onclick="openCommunity();closeMobileNav();">Community</button>
     <button class="mobile-nav-link" onclick="showPage('howPage');closeMobileNav();">How It Works</button>
     <button class="mobile-nav-link" onclick="showPage('pricingPage');closeMobileNav();">Pricing</button>
@@ -1421,11 +1425,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=11"></script>
-<script src="data.js?v=11"></script>
-<script src="auth.js?v=11"></script>
-<script src="app.js?v=11"></script>
-<script src="track.js?v=11"></script>
+<script src="supabase-config.js?v=12"></script>
+<script src="data.js?v=12"></script>
+<script src="auth.js?v=12"></script>
+<script src="app.js?v=12"></script>
+<script src="track.js?v=12"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
