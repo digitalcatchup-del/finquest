@@ -1019,6 +1019,7 @@ function runPlaceholderCycle(wrapId, textId, inputId, state) {
 
   const text = state.pool[state.index % state.pool.length];
   state.index++;
+  state.currentText = text;
 
   el.style.transition = 'none';
   el.style.transform  = 'translateX(0)';
@@ -1201,6 +1202,93 @@ function clearHomeSearch() {
   document.getElementById('homeSearchResults').innerHTML = '';
   document.getElementById('homeDefaultContent').style.display = '';
   showFakePlaceholder('searchFakePlaceholder', 'searchInput');
+}
+
+// ── CLICK-TO-ASK (rotating search bar questions) ──────────────
+// Clicking the question currently typed in the search bar shows its
+// full answer, scenario, and a knowledge check — all sourced from
+// searchQuestionAnswers, completely separate from trackData. None
+// of this links or navigates into actual lesson content.
+function onSearchQuestionClick() {
+  const state = searchPlaceholderInstances['searchFakePlaceholder'];
+  if (!state || !state.currentText) return;
+  askSearchQuestion(state.currentText);
+}
+
+function askSearchQuestion(question) {
+  if (currentUser) {
+    db.from('search_log').insert({ user_id: currentUser.id, query: question });
+  }
+  document.getElementById('searchInput').value = question;
+  hideFakePlaceholder('searchFakePlaceholder');
+  document.getElementById('homeDefaultContent').style.display = 'none';
+  const panel = document.getElementById('homeSearchResults');
+  panel.style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const entry = searchQuestionAnswers[question];
+  if (!entry) {
+    panel.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <h2 class="section-heading" style="font-size:1.1rem;margin:0;">"${question}"</h2>
+        <button class="link-btn" onclick="clearHomeSearch()" style="background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;">✕ Clear</button>
+      </div>
+      <div class="sr-empty">That answer is on its way — check back soon.</div>`;
+    return;
+  }
+
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <h2 class="section-heading" style="font-size:1.1rem;margin:0;">${question}</h2>
+      <button class="link-btn" onclick="clearHomeSearch()" style="background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;">✕ Clear</button>
+    </div>
+    <div class="lesson-widget" style="padding:24px;">
+      <div class="nugget-def-card">
+        <div class="nugget-def-label">Answer</div>
+        <div class="nugget-def-text">${entry.answer}</div>
+      </div>
+      <div class="nugget-scenario-card">
+        <div class="nugget-scenario-label">Scenario</div>
+        <div class="nugget-scenario-text">${entry.scenario}</div>
+      </div>
+      <div class="track-divider"></div>
+      <div class="track-quiz-section">
+        <div class="track-quiz-header">
+          <div class="track-quiz-eyebrow">Knowledge Check</div>
+          <div class="track-quiz-title">Test Your Understanding</div>
+        </div>
+        <div class="track-q-block">
+          <div class="track-q-text">${entry.quiz.q}</div>
+          <div class="track-q-opts">
+            ${entry.quiz.opts.map((o, oi) => `
+              <button class="track-q-opt" onclick="answerSearchQuiz(this, ${oi}, ${entry.quiz.ans}, '${escStr(entry.quiz.exp)}')">
+                ${o}
+              </button>`).join('')}
+          </div>
+          <div class="track-q-feedback" id="searchQuizFeedback"></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// Self-contained — no pip score, no lesson progress, just right/wrong feedback.
+function answerSearchQuiz(btn, selectedIdx, correctIdx, explanation) {
+  const block = btn.closest('.track-q-block');
+  if (block.dataset.answered) return;
+  block.dataset.answered = '1';
+
+  const opts = block.querySelectorAll('.track-q-opt');
+  opts.forEach((o, oi) => {
+    o.classList.add('disabled');
+    if (oi === correctIdx) o.classList.add('correct');
+    else if (oi === selectedIdx) o.classList.add('wrong');
+  });
+
+  const isCorrect = selectedIdx === correctIdx;
+  const fb = block.querySelector('.track-q-feedback');
+  fb.innerHTML = isCorrect
+    ? `<span class="fb-correct">✓ Correct!</span><span class="fb-exp">${explanation}</span>`
+    : `<span class="fb-wrong">✗ Not quite.</span><span class="fb-exp">${explanation}</span>`;
+  fb.classList.add('show', isCorrect ? 'cfb' : 'wfb');
 }
 
 function scrollToOpinion(opinionId) {
