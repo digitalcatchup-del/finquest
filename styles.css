@@ -136,12 +136,13 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .fc-future .flavor-count{color:var(--lime);}
 
 /* ── TRENDING ── */
-.trending-section{width:100%;max-width:920px;z-index:1;position:relative;}
+#homeDefaultContent{width:100%;min-width:0;}
+.trending-section{width:100%;max-width:920px;z-index:1;position:relative;min-width:0;}
 .trending-label-row{display:flex;align-items:center;gap:16px;margin-bottom:12px;}
 .trending-label{font-size:0.68rem;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:var(--white);white-space:nowrap;flex-shrink:0;}
 .trending-line{flex:1;height:1px;background:var(--border);}
-.trending-ticker-wrap{position:relative;width:100%;overflow:hidden;}
-.trending-ticker{display:flex;flex-wrap:nowrap;padding:0 2px;}
+.trending-ticker-wrap{position:relative;width:100%;min-width:0;overflow:hidden;}
+.trending-ticker{display:flex;flex-wrap:nowrap;width:max-content;padding:0 2px;}
 .trend-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;margin-right:10px;scroll-snap-align:start;}
 .trend-chip:last-child{margin-right:2px;}
 .trend-chip:hover{border-color:var(--border2);background:var(--surface2);}
