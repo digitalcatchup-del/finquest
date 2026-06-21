@@ -94,7 +94,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 #searchFakePlaceholderText{pointer-events:auto;cursor:pointer;}
 .composer-fake-placeholder{position:absolute;left:18px;right:18px;top:16px;overflow:hidden;pointer-events:none;height:1.4em;display:flex;align-items:center;}
 .composer-fake-placeholder span{display:inline-block;white-space:nowrap;color:var(--muted2);font-size:0.88rem;font-family:inherit;transition:none;}
-.search-btn{background:var(--gold);color:var(--accent-on);border:none;border-radius:4px;padding:10px 15px;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;flex-shrink:0;position:relative;z-index:2;}
+.search-btn{background:var(--gold);color:var(--accent-on);border:none;border-radius:50%;width:36px;height:36px;flex-shrink:0;font-size:1.2rem;line-height:1;font-weight:700;cursor:pointer;transition:opacity 0.15s;position:relative;z-index:2;display:flex;align-items:center;justify-content:center;padding:0;}
 .search-btn:hover{opacity:0.88;}
 .search-suggestions{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:6px;overflow:hidden;z-index:200;display:none;box-shadow:0 16px 40px rgba(201,168,76,0.18);}
 .search-suggestions.open{display:block;}
@@ -159,7 +159,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 @keyframes trendScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .trend-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
 .trend-chip:hover{border-color:var(--border2);background:var(--surface2);}
-.trending-scroll-row{display:flex;align-items:center;gap:6px;}
+.trending-scroll-row{display:flex;align-items:center;gap:6px;min-width:0;}
 .trending-scroll-btn{display:none;flex-shrink:0;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border2);color:var(--off);font-size:1.1rem;line-height:1;cursor:pointer;align-items:center;justify-content:center;padding:0;}
 .trending-scroll-btn:active{background:var(--surface2);}
 .trend-num{font-size:0.6rem;font-weight:800;color:var(--gold);}
@@ -692,7 +692,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
 /* Trending ticker: scrollable on phones AND tablets (701–1024px), not just phones */
 @media(min-width:701px) and (max-width:1024px){
-  .trending-ticker-wrap{overflow-x:auto;overflow-y:hidden;width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;}
+  .trending-ticker-wrap{overflow-x:auto;overflow-y:hidden;width:100%;min-width:0;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;}
   .trending-scroll-btn{display:flex;}
   .trending-ticker-wrap::-webkit-scrollbar{display:none;}
   .trend-chip{flex-shrink:0;}
@@ -703,7 +703,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   nav{padding:12px 16px;flex-wrap:wrap;gap:8px;position:relative;}
   .nav-center{display:none;}
   .nav-hamburger{display:flex;}
-  .trending-ticker-wrap{overflow-x:auto;overflow-y:hidden;width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;}
+  .trending-ticker-wrap{overflow-x:auto;overflow-y:hidden;width:100%;min-width:0;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;}
   .trending-scroll-btn{display:flex;}
   .trending-ticker-wrap::-webkit-scrollbar{display:none;}
   .trend-chip{flex-shrink:0;}
@@ -711,7 +711,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   .search-box{padding:6px 6px 6px 14px;border-radius:8px;}
   .search-fake-placeholder{left:36px;right:80px;}
   .search-input{font-size:0.85rem;min-width:0;}
-  .search-btn{padding:12px 16px;min-height:40px;font-size:0.66rem;}
+  .search-btn{width:34px;height:34px;font-size:1.1rem;}
   .nav-auth-btn{padding:12px 14px !important;font-size:0.7rem !important;min-height:44px;}
   #heroSection,#liHero{padding:48px 20px 32px;min-height:auto;padding-top:80px;}
   #trust{gap:28px;padding:20px;}
@@ -788,7 +788,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <span class="search-icon" onclick="document.getElementById('searchInput').focus();" style="cursor:pointer;">🔍</span>
       <input class="search-input" type="text" id="searchInput" placeholder=" " autocomplete="off" oninput="onSearch(this.value);updateFakePlaceholder(this.value,'searchFakePlaceholder');" onkeydown="onSearchKey(event)" onfocus="hideFakePlaceholder('searchFakePlaceholder')" onblur="showFakePlaceholder('searchFakePlaceholder','searchInput')"/>
       <div class="search-fake-placeholder" id="searchFakePlaceholder"><span id="searchFakePlaceholderText" onclick="onSearchQuestionClick()">Search accounting topics, e.g. depreciation, VAT, IFRS...</span></div>
-      <button class="search-btn" onclick="doSearch()">Search</button>
+      <button class="search-btn" onclick="doSearch()" aria-label="Search">›</button>
     </div>
     <div class="search-suggestions" id="searchSuggestions"></div>
   </div>
