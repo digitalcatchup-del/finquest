@@ -192,36 +192,6 @@ function selectAvatar(avatar, el) {
 function enterApp() {
   closeAuth();
   showPage('homePage');
-  renderLoggedInHero();
-}
-
-function renderLoggedInHero() {
-  if (!currentUser) return;
-  document.getElementById('heroSection').style.display = 'none';
-  document.getElementById('liHero').style.display = 'block';
-  document.getElementById('liName').textContent = currentUser.firstName || currentUser.username;
-  document.getElementById('liStreak').textContent = currentUser.streak;
-  document.getElementById('liLessons').textContent = currentUser.totalLessons;
-  document.getElementById('liCorrect').textContent = currentUser.totalCorrect;
-  document.getElementById('dashPip').textContent = currentUser.pipScore.toFixed(5);
-
-  const pct = Math.min(((currentUser.pipScore - 1) / 0.01) * 100, 100);
-  document.getElementById('pipBarFill').style.width = pct + '%';
-
-  renderLiTracks();
-}
-
-function renderLiTracks() {
-  const el = document.getElementById('liTracks');
-  if (!el) return;
-  el.innerHTML = `
-    <div class="li-track-card" onclick="openAccounting()" style="cursor:pointer;">
-      <span>📘</span>
-      <div>
-        <div style="font-size:0.78rem;font-weight:700;color:var(--white);">Business Accounting Vol 1</div>
-        <div style="font-size:0.68rem;color:var(--muted);">Continue learning →</div>
-      </div>
-    </div>`;
 }
 
 // ── ACCOUNTING MODAL ─────────────────────────────────────────
