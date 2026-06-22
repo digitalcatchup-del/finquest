@@ -355,16 +355,6 @@ function answerNugget(idx, correct, btn) {
   }
 }
 
-// ── COMMUNITY ────────────────────────────────────────────────
-let forumTopicFilter = 'all';
-let currentForumPosts = [];
-let votedPostIds = new Set();
-
-function openCommunity() {
-  showPage('communityPage');
-  loadAndRenderForum();
-}
-
 function goToNewsletter() {
   showPage('homePage');
   setTimeout(() => {
@@ -372,478 +362,147 @@ function goToNewsletter() {
   }, 250);
 }
 
-// Used by the homepage's "+ Post Your Opinion" button — takes the person
-// straight to the real composer on the community page instead of a
-// separate modal, so there's one place to post, not two.
-function goToComposeOpinion() {
-  openCommunity();
-  setTimeout(() => {
-    const ta = document.getElementById('forumComposerText');
-    if (ta) {
-      ta.focus();
-      if (typeof onComposerFocus === 'function') onComposerFocus();
-    }
-  }, 250);
+// ── ARTICLES ─────────────────────────────────────────────────
+function openArticlesPage() {
+  showPage('articlesPage');
+  renderArticlesGrid();
 }
 
-function closeCommunity() {
-  showPage('homePage');
+// Generated gradient-and-icon cover treatment — no external images, so
+// nothing to license or hotlink. Swap in real photography later by
+// changing this one function.
+function renderArticleCover(article) {
+  return `<div class="article-cover" style="background:${article.cover}">
+    <span class="article-cover-icon">${article.coverIcon}</span>
+  </div>`;
 }
 
-async function loadAndRenderForum() {
-  const feed = document.getElementById('forumFeed');
-  if (!feed) return;
-  feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;padding:20px 0;">Loading discussions…</p>';
-
-  // The composer is for starting new discussions — it doesn't belong on
-  // the Trending view, which is just a read of what's already popular.
-  const composerWrap = document.getElementById('forumComposerWrap');
-  if (composerWrap) composerWrap.style.display = (forumTopicFilter === 'trending') ? 'none' : '';
-
-  try {
-    // Step 1: Get posts
-    let query = db
-      .from('posts')
-      .select('id, user_id, topic, title, body, upvotes, downvotes, reply_count, is_opinion, created_at');
-
-    if (forumTopicFilter === 'trending') {
-      // Trending pulls from everything (discussions AND opinions) sorted by
-      // upvotes — this is what lets a "Top Opinion" clicked on the homepage
-      // actually be found here.
-      query = query.order('upvotes', { ascending: false }).limit(20);
-    } else {
-      query = query.eq('is_opinion', false).order('created_at', { ascending: false }).limit(20);
-      if (forumTopicFilter !== 'all') query = query.eq('topic', forumTopicFilter);
-    }
-    const { data: posts, error } = await query;
-
-    if (error) {
-      feed.innerHTML = `<p style="color:var(--muted);font-size:0.82rem;">Error: ${error.message}</p>`;
-      return;
-    }
-
-    if (!posts || posts.length === 0) {
-      feed.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;padding:20px 0;">No posts yet — be the first to share your take.</p>';
-      return;
-    }
-
-    // Step 2: Get profiles for those user_ids separately
-    const userIds = [...new Set(posts.map(p => p.user_id))];
-    const { data: profilesData } = await db
-      .from('profiles')
-      .select('id, username, avatar')
-      .in('id', userIds);
-
-    // Step 3: Merge profiles into posts
-    const profileMap = {};
-    (profilesData || []).forEach(p => { profileMap[p.id] = p; });
-    const enriched = posts.map(p => ({
-      ...p,
-      profiles: profileMap[p.user_id] || { username: 'anonymous', avatar: '😎' }
-    }));
-
-    // Step 4: Know which of these posts the current user has already
-    // upvoted, so the thumbs-up state is correct on load, not just after a click.
-    votedPostIds = new Set();
-    if (currentUser) {
-      const { data: votes } = await db
-        .from('post_votes')
-        .select('post_id')
-        .eq('user_id', currentUser.id)
-        .eq('direction', 1)
-        .in('post_id', posts.map(p => p.id));
-      votedPostIds = new Set((votes || []).map(v => v.post_id));
-    }
-
-    currentForumPosts = enriched;
-    renderForumFeed(enriched);
-
-  } catch (err) {
-    feed.innerHTML = `<p style="color:var(--muted);font-size:0.82rem;">Error: ${err.message}</p>`;
-  }
-}
-
-function renderForumFeed(posts, emptyMsg) {
-  const feed = document.getElementById('forumFeed');
-  if (!posts.length) {
-    feed.innerHTML = `<p style="color:var(--muted);font-size:0.82rem;padding:20px 0;">${emptyMsg || 'No posts yet — be the first to share your take.'}</p>`;
-    return;
-  }
-  feed.innerHTML = posts.map(p => renderForumPost(p)).join('');
-}
-
-function renderForumPost(p) {
-  const ago      = timeAgo(p.created_at);
-  const avatar   = p.profiles?.avatar || '😎';
-  const uname    = p.profiles?.username || 'anonymous';
-  const ups      = p.upvotes || 0;
-  const replies  = p.reply_count || 0;
-  return `
-    <div class="forum-post-card" id="forumPost_${p.id}" onclick="openDiscussionInPlace('${p.id}')">
-      <div class="forum-post-avatar">${avatar}</div>
-      <div class="forum-post-body">
-        <div class="forum-post-meta">
-          <span class="forum-post-name" onclick="event.stopPropagation();openProfileByUsername('${uname}','communityPage')" style="cursor:pointer;">@${uname}</span>
-          <span class="forum-post-dot">·</span>
-          <span class="forum-post-time">${ago}</span>
-          ${topicLabel(p.topic) ? `<span class="forum-post-dot">·</span><span class="op-topic tt-${p.topic}">${topicLabel(p.topic)}</span>` : ''}
-        </div>
-        ${p.title ? `<div class="forum-post-text" style="font-weight:700;color:var(--white);margin-bottom:4px;">${p.title}</div>` : ''}
-        <div class="forum-post-text">${p.body}</div>
-        <div class="forum-post-actions">
-          <button class="forum-action-btn" id="forumVoteBtn_${p.id}"
-            onclick="event.stopPropagation();handlePostVote('${p.id}',1)">
-            <span id="forumVoteIcon_${p.id}">👍</span> <span id="forumVoteCount_${p.id}">${ups}</span>
-          </button>
-          <button class="forum-action-btn" id="forumReplyToggle_${p.id}"
-            onclick="event.stopPropagation();toggleInlineReplies('${p.id}')">
-            💬 <span id="forumReplyCount_${p.id}">${replies}</span> <span id="forumReplyWord_${p.id}">${replies === 1 ? 'reply' : 'replies'}</span>
-          </button>
-          <button class="forum-action-btn"
-            onclick="event.stopPropagation();openInlineRepliesAndFocusComposer('${p.id}')">
-            ✏️ Comment
-          </button>
-        </div>
-
-        <div class="forum-inline-replies" id="forumInlineReplies_${p.id}" style="display:none;" onclick="event.stopPropagation();">
-          <div class="forum-reply-composer" id="forumReplyComposer_${p.id}" style="display:none;">
-            <textarea id="forumReplyText_${p.id}" maxlength="280" placeholder="Write a reply..." oninput="updateForumReplyCharCount('${p.id}')"></textarea>
-            <div class="forum-composer-row">
-              <span class="forum-char-count" id="forumReplyCharCount_${p.id}">280 characters left</span>
-              <button class="btn btn-gold" onclick="submitForumReply('${p.id}')">Reply</button>
-            </div>
-          </div>
-          <div id="forumRepliesList_${p.id}"></div>
-        </div>
-      </div>
-    </div>`;
-}
-
-// Toggling the vote updates just this button locally — count and icon —
-// rather than re-rendering the whole feed, so any reply panel a person
-// has open elsewhere in the list stays open.
-async function handlePostVote(postId, direction) {
-  if (!currentUser) { openAuth('signup'); return; }
-  const wasVoted = votedPostIds.has(postId);
-  await votePost(postId, direction);
-
-  const countEl = document.getElementById(`forumVoteCount_${postId}`);
-  if (!countEl) return;
-
-  let count = parseInt(countEl.textContent, 10) || 0;
-  if (wasVoted) {
-    votedPostIds.delete(postId);
-    countEl.textContent = Math.max(0, count - 1);
-  } else {
-    votedPostIds.add(postId);
-    countEl.textContent = count + 1;
-  }
-}
-
-// Clicking the discussion itself (not a specific button) opens its replies
-// AND scrolls/highlights it into clear view — landing you on the exact
-// spot in the page where that discussion lives.
-function openDiscussionInPlace(postId) {
-  toggleInlineReplies(postId);
-  const card = document.getElementById(`forumPost_${postId}`);
-  if (card) {
-    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    card.classList.add('forum-post-highlight');
-    setTimeout(() => card.classList.remove('forum-post-highlight'), 5000);
-  }
-}
-
-// The dedicated Comment button — opens the same inline panel as Replies,
-// but also focuses the composer, since its whole purpose is writing one.
-function openInlineRepliesAndFocusComposer(postId) {
-  openInlineReplies(postId);
-  const composer = document.getElementById(`forumReplyComposer_${postId}`);
-  if (composer) composer.style.display = 'block';
-  setTimeout(() => {
-    const ta = document.getElementById(`forumReplyText_${postId}`);
-    if (ta) ta.focus();
-  }, 100);
-}
-
-function filterForumPosts(topic, btn) {
-  forumTopicFilter = topic;
-  document.querySelectorAll('.op-filter .pf').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  return loadAndRenderForum();
-}
-
-// ── FORUM COMPOSER ───────────────────────────────────────────
-let composerTopic = 'acc';
-
-function updateForumCharCount() {
-  const ta  = document.getElementById('forumComposerText');
-  const el  = document.getElementById('forumCharCount');
-  if (el) el.textContent = (280 - ta.value.length) + ' characters left';
-}
-
-function onComposerFocus() {
-  if (!currentUser) openAuth('signup');
-}
-
-function onComposerOverlayClick() {
-  if (!currentUser) { openAuth('signup'); return; }
-  document.getElementById('forumComposerText').focus();
-  document.getElementById('forumComposerClickLayer').style.display = 'none';
-}
-
-function syncComposerOverlay() {
-  if (!currentUser) {
-    document.getElementById('forumComposerClickLayer').style.display = 'block';
-  }
-}
-
-async function submitForumPost() {
-  if (!currentUser) { openAuth('signup'); return; }
-  const ta   = document.getElementById('forumComposerText');
-  const body = ta.value.trim();
-  if (!body) return;
-  const post = await createPost(composerTopic, body);
-  if (post) {
-    ta.value = '';
-    updateForumCharCount();
-    loadAndRenderForum();
-  }
-}
-
-// ── FORUM THREAD ─────────────────────────────────────────────
-// ── INLINE REPLIES (expand within the feed, no page navigation) ──
-async function toggleInlineReplies(postId) {
-  const panel = document.getElementById(`forumInlineReplies_${postId}`);
-  if (!panel) return;
-
-  const isOpen = panel.style.display !== 'none';
-  if (isOpen) {
-    panel.style.display = 'none';
-    return;
-  }
-
-  panel.style.display = 'block';
-  if (!panel.dataset.loaded) {
-    panel.dataset.loaded = '1';
-    await loadAndRenderReplies(postId);
-  }
-}
-
-function openInlineReplies(postId) {
-  const panel = document.getElementById(`forumInlineReplies_${postId}`);
-  if (!panel) return;
-  panel.style.display = 'block';
-  if (!panel.dataset.loaded) {
-    panel.dataset.loaded = '1';
-    loadAndRenderReplies(postId);
-  }
-}
-
-// Used when arriving at a specific post from elsewhere (trending chips,
-// a reply on the profile page, etc.) — scrolls to it and expands replies.
-function goToForumPost(postId) {
-  openCommunity();
-  setTimeout(() => {
-    const card = document.getElementById(`forumPost_${postId}`);
-    if (card) {
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      card.classList.add('forum-post-highlight');
-      setTimeout(() => card.classList.remove('forum-post-highlight'), 5000);
-    }
-    openInlineReplies(postId);
-  }, 350);
-}
-
-// Used by the homepage's "Top Opinions This Week" cards — takes the person
-// to the community page's Trending view specifically (where the opinion
-// will actually appear, since Trending includes opinions), scrolls to the
-// exact post, and highlights it for ~5 seconds.
-async function goToTrendingPost(postId) {
-  openCommunity();
-  await new Promise(r => setTimeout(r, 300));
-  const trendBtn = document.getElementById('forumTrendingFilterBtn');
-  if (trendBtn) await filterForumPosts('trending', trendBtn);
-
-  const card = document.getElementById(`forumPost_${postId}`);
-  if (card) {
-    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    card.classList.add('forum-post-highlight');
-    setTimeout(() => card.classList.remove('forum-post-highlight'), 5000);
-  }
-}
-
-async function loadAndRenderReplies(postId) {
-  const el = document.getElementById(`forumRepliesList_${postId}`);
-  if (!el) return;
-  el.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">Loading replies…</p>';
-
-  // Fetch replies
-  const { data: replies } = await db
-    .from('replies')
-    .select('id, user_id, body, upvotes, created_at')
-    .eq('post_id', postId)
-    .order('created_at', { ascending: true });
-
-  if (!replies || !replies.length) {
-    el.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">No replies yet — share your take.</p>';
-    return;
-  }
-
-  // Fetch profiles for reply authors
-  const userIds = [...new Set(replies.map(r => r.user_id))];
-  const { data: profilesData } = await db
-    .from('profiles').select('id, username, avatar').in('id', userIds);
-  const profileMap = {};
-  (profilesData || []).forEach(p => { profileMap[p.id] = p; });
-
-  el.innerHTML = replies.map(r => {
-    const profile = profileMap[r.user_id] || { username: 'anonymous', avatar: '😎' };
-    return `
-      <div class="forum-post-card" style="cursor:default;">
-        <div class="forum-post-avatar forum-reply-avatar">${profile.avatar}</div>
-        <div class="forum-post-body">
-          <div class="forum-post-meta">
-          <span class="forum-post-name" onclick="event.stopPropagation();openProfileByUsername('${profile.username}','communityPage')" style="cursor:pointer;">@${profile.username}</span>
-            <span class="forum-post-dot">·</span>
-            <span class="forum-post-time">${timeAgo(r.created_at)}</span>
-          </div>
-          <div class="forum-post-text">${r.body}</div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-function updateForumReplyCharCount(postId) {
-  const ta = document.getElementById(`forumReplyText_${postId}`);
-  const el = document.getElementById(`forumReplyCharCount_${postId}`);
-  if (el) el.textContent = (280 - ta.value.length) + ' characters left';
-}
-
-async function submitForumReply(postId) {
-  if (!currentUser) { openAuth('signup'); return; }
-  const ta   = document.getElementById(`forumReplyText_${postId}`);
-  const body = ta.value.trim();
-  if (!body) return;
-  await createReply(postId, body);
-  ta.value = '';
-  updateForumReplyCharCount(postId);
-  loadAndRenderReplies(postId);
-
-  // Bump the visible reply count + label right away
-  const countEl = document.getElementById(`forumReplyCount_${postId}`);
-  const wordEl  = document.getElementById(`forumReplyWord_${postId}`);
-  if (countEl) {
-    const next = (parseInt(countEl.textContent, 10) || 0) + 1;
-    countEl.textContent = next;
-    if (wordEl) wordEl.textContent = next === 1 ? 'reply' : 'replies';
-  }
-}
-
-// ── OPINIONS (home page) ─────────────────────────────────────
-let opinionsFilter = 'all';
-
-async function renderOpinions() {
-  const grid = document.getElementById('opinionsGrid');
+function renderArticlesGrid() {
+  const grid = document.getElementById('articlesGrid');
   if (!grid) return;
-  let query = db.from('posts')
-    .select('*, profiles(username, avatar)')
-    .eq('is_opinion', true)
-    .order('upvotes', { ascending: false })
-    .limit(6);
-  if (opinionsFilter !== 'all') query = query.eq('topic', opinionsFilter);
-  const { data: ops } = await query;
+  grid.innerHTML = articles.map(a => `
+    <div class="article-card">
+      <div class="article-card-link" onclick="openArticle('${a.slug}')">
+        ${renderArticleCover(a)}
+        <h3 class="article-card-title">${a.title}</h3>
+      </div>
+      <p class="article-card-excerpt">${a.excerpt}</p>
+    </div>`).join('');
+}
 
-  if (!ops || !ops.length) {
-    renderStaticOpinions();
+async function openArticle(slug) {
+  showPage('articleDetailPage');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  await renderArticleDetail(slug);
+}
+
+async function renderArticleDetail(slug) {
+  const article = articles.find(a => a.slug === slug);
+  const container = document.getElementById('articleDetailContent');
+  if (!article) {
+    container.innerHTML = '<p style="color:var(--muted);">Article not found.</p>';
     return;
   }
-  grid.innerHTML = ops.map((op, i) => `
-    <div class="opinion-card ${i === 0 ? 'rank-1' : ''}" data-opinion-id="${op.id}"
-         onclick="goToTrendingPost('${op.id}')">
-      <div class="op-rank">
-        <span class="op-rank-num">#${i + 1}</span>
+
+  container.innerHTML = `
+    ${renderArticleCover(article)}
+    <h1 class="article-detail-title">${article.title}</h1>
+    <div class="article-detail-body">${article.body}</div>
+    <div class="article-engage-row">
+      <button class="article-like-btn" id="articleLikeBtn" onclick="handleArticleLikeClick('${slug}')">
+        👍 <span id="articleLikeCount">…</span>
+      </button>
+    </div>
+    <div class="article-comments-section">
+      <h3 class="article-comments-heading">Comments</h3>
+      <div class="article-comment-composer">
+        <textarea id="articleCommentInput" maxlength="500" placeholder="Share your thoughts on this article..."></textarea>
+        <button class="btn btn-gold" onclick="handleSubmitArticleComment('${slug}')">Comment</button>
       </div>
-      <div class="op-body">
-        <div class="op-meta">
-          <span class="op-avatar">${op.profiles?.avatar || '😎'}</span>
-          <span class="op-username">@${op.profiles?.username || 'anonymous'}</span>
-          ${topicLabel(op.topic) ? `<span class="op-topic tt-${op.topic}">${topicLabel(op.topic)}</span>` : ''}
-        </div>
-        <div class="op-text">"${op.body}"</div>
-      </div>
-      <div class="op-votes">
-        <button class="op-vote-btn up"
-          onclick="event.stopPropagation();votePost('${op.id}',1);renderOpinions()">
-          👍
-        </button>
-        <span class="op-vote-count">${op.upvotes || 0}</span>
+      <div id="articleCommentsList"><p style="color:var(--muted);font-size:0.82rem;">Loading comments…</p></div>
+    </div>
+    <div class="further-reading-section">
+      <h3 class="further-reading-heading">Further Reading</h3>
+      <div class="articles-grid" id="furtherReadingGrid"></div>
+    </div>`;
+
+  renderFurtherReading(slug);
+  refreshArticleLikeState(slug);
+  refreshArticleComments(slug);
+}
+
+function renderFurtherReading(currentSlug) {
+  const grid = document.getElementById('furtherReadingGrid');
+  if (!grid) return;
+  const others = articles.filter(a => a.slug !== currentSlug).slice(0, 3);
+  grid.innerHTML = others.map(a => `
+    <div class="article-card">
+      <div class="article-card-link" onclick="openArticle('${a.slug}')">
+        ${renderArticleCover(a)}
+        <h3 class="article-card-title">${a.title}</h3>
       </div>
     </div>`).join('');
 }
 
-function filterOpinions(topic, btn) {
-  opinionsFilter = topic;
-  document.querySelectorAll('.op-filter .pf').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderOpinions();
+async function refreshArticleLikeState(slug) {
+  const { count, likedByMe } = await getArticleLikeState(slug);
+  const btn = document.getElementById('articleLikeBtn');
+  const countEl = document.getElementById('articleLikeCount');
+  if (countEl) countEl.textContent = count;
+  if (btn) btn.classList.toggle('liked', likedByMe);
 }
 
-// ── POST OPINION OVERLAY ─────────────────────────────────────
-let selectedOpinionTopic = '';
-
-function openPostOpinion() {
+async function handleArticleLikeClick(slug) {
   if (!currentUser) { openAuth('signup'); return; }
-  document.getElementById('postOpinionOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
+  await toggleArticleLike(slug);
+  refreshArticleLikeState(slug);
 }
 
-function closePostOpinion() {
-  document.getElementById('postOpinionOverlay').classList.remove('open');
-  document.body.style.overflow = '';
+async function refreshArticleComments(slug) {
+  const comments = await loadArticleComments(slug);
+  const list = document.getElementById('articleCommentsList');
+  if (!list) return;
+  if (!comments.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">No comments yet — be the first to share your thoughts.</p>';
+    return;
+  }
+  list.innerHTML = comments.map(c => `
+    <div class="article-comment-card">
+      <div class="article-comment-avatar">${c.profiles.avatar}</div>
+      <div class="article-comment-body">
+        <div class="article-comment-meta">
+          <span class="article-comment-name" style="cursor:pointer;" onclick="openProfileByUsername('${c.profiles.username}','articleDetailPage')">@${c.profiles.username}</span>
+          <span class="forum-post-dot">·</span>
+          <span class="article-comment-time">${timeAgo(c.created_at)}</span>
+        </div>
+        <div class="article-comment-text">${c.body}</div>
+      </div>
+    </div>`).join('');
 }
 
-function selectOpinionTopic(topic, el) {
-  selectedOpinionTopic = topic;
-  document.querySelectorAll('.poi-topic').forEach(t => t.classList.remove('selected'));
-  el.classList.add('selected');
-  document.getElementById('eOpTopic').classList.remove('show');
-}
-
-async function submitOpinion() {
-  let valid = true;
-  if (!selectedOpinionTopic) { document.getElementById('eOpTopic').classList.add('show'); valid = false; }
-  const title = document.getElementById('opTitle').value.trim();
-  const body  = document.getElementById('opBody').value.trim();
-  if (!title) { document.getElementById('eOpTitle').classList.add('show'); valid = false; }
-  else document.getElementById('eOpTitle').classList.remove('show');
-  if (!body)  { document.getElementById('eOpBody').classList.add('show'); valid = false; }
-  else document.getElementById('eOpBody').classList.remove('show');
-  if (!valid) return;
-
-  const post = await createPost(selectedOpinionTopic, body, title, true);
-  if (post) {
-    closePostOpinion();
-    renderOpinions();
-    // Reset form
-    document.getElementById('opTitle').value = '';
-    document.getElementById('opBody').value  = '';
-    document.getElementById('charCount').textContent = '0';
-    selectedOpinionTopic = '';
-    document.querySelectorAll('.poi-topic').forEach(t => t.classList.remove('selected'));
+async function handleSubmitArticleComment(slug) {
+  const input = document.getElementById('articleCommentInput');
+  if (!input) return;
+  const body = input.value.trim();
+  if (!body) return;
+  const result = await submitArticleComment(slug, body);
+  if (result) {
+    input.value = '';
+    refreshArticleComments(slug);
   }
 }
 
 // ── USER PROFILE PAGE ────────────────────────────────────────
-let profileTab          = 'posts';
 let viewingProfileData  = null;
 let viewingIsOwnProfile = false;
-let profileReturnPage   = 'communityPage';
+let profileReturnPage   = 'articlesPage';
 
 async function openProfileByUsername(username, returnPage) {
-  profileReturnPage = returnPage || 'communityPage';
+  profileReturnPage = returnPage || 'articlesPage';
   showPage('profilePage');
   document.getElementById('profileHeader').innerHTML =
     '<p style="color:var(--muted);font-size:0.82rem;text-align:center;padding:40px 0;">Loading profile…</p>';
+  document.getElementById('profileFeed').innerHTML = '';
 
   const data = await loadUserProfile(username);
   if (!data) {
@@ -854,9 +513,8 @@ async function openProfileByUsername(username, returnPage) {
 
   viewingProfileData  = data;
   viewingIsOwnProfile = currentUser?.username === data.profile.username;
-  profileTab = 'posts';
   renderProfileHeader(data.profile);
-  setProfileTab('posts');
+  renderProfileComments(data.comments);
 }
 
 function openMyProfile() {
@@ -884,53 +542,28 @@ function renderProfileHeader(profile) {
     </div>`;
 }
 
-async function setProfileTab(tab) {
-  profileTab = tab;
-  document.getElementById('profileTabPosts').classList.toggle('active', tab === 'posts');
-  document.getElementById('profileTabReplies').classList.toggle('active', tab === 'replies');
-
+function renderProfileComments(comments) {
   const el = document.getElementById('profileFeed');
-  el.innerHTML = '<p class="profile-empty">Loading…</p>';
-
-  if (tab === 'posts') {
-    const posts = viewingProfileData?.posts || [];
-    renderProfileFeed(posts);
-  } else {
-    const replies = await loadUserReplies(viewingProfileData.profile.id);
-    renderProfileReplies(replies);
-  }
-}
-
-function renderProfileFeed(posts) {
-  const el = document.getElementById('profileFeed');
-  if (!posts.length) {
-    el.innerHTML = '<p class="profile-empty">No posts yet.</p>';
+  if (!comments || !comments.length) {
+    el.innerHTML = '<p class="profile-empty">No comments yet.</p>';
     return;
   }
-  el.innerHTML = posts.map(p => renderForumPost({
-    ...p,
-    profiles: viewingProfileData.profile
-  })).join('');
-}
-
-function renderProfileReplies(replies) {
-  const el = document.getElementById('profileFeed');
-  if (!replies.length) {
-    el.innerHTML = '<p class="profile-empty">No replies yet.</p>';
-    return;
-  }
-  el.innerHTML = replies.map(r => `
-    <div class="forum-post-card" onclick="goToForumPost('${r.post_id}')">
+  el.innerHTML = comments.map(c => {
+    const article = articles.find(a => a.slug === c.article_id);
+    return `
+    <div class="forum-post-card" onclick="openArticle('${c.article_id}')">
       <div class="forum-post-avatar">${viewingProfileData.profile.avatar}</div>
       <div class="forum-post-body">
         <div class="forum-post-meta">
           <span class="forum-post-name">@${viewingProfileData.profile.username}</span>
           <span class="forum-post-dot">·</span>
-          <span class="forum-post-time">${timeAgo(r.created_at)}</span>
+          <span class="forum-post-time">${timeAgo(c.created_at)}</span>
+          ${article ? `<span class="forum-post-dot">·</span><span class="forum-post-time">on “${article.title}”</span>` : ''}
         </div>
-        <div class="forum-post-text">${r.body}</div>
+        <div class="forum-post-text">${c.body}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function closeProfile() {
@@ -1302,15 +935,9 @@ function searchTermDatabase(query) {
   return searchDatabase.filter(e => e.term.toLowerCase().includes(q) || e.answer.toLowerCase().includes(q));
 }
 
-async function searchForumPostsReadOnly(query) {
-  const { data: posts } = await db
-    .from('posts')
-    .select('id, title, body, created_at')
-    .eq('is_opinion', false)
-    .or(`body.ilike.%${query}%,title.ilike.%${query}%`)
-    .order('created_at', { ascending: false })
-    .limit(6);
-  return posts || [];
+function searchArticles(query) {
+  const q = query.toLowerCase();
+  return articles.filter(a => a.title.toLowerCase().includes(q) || a.body.toLowerCase().includes(q)).slice(0, 6);
 }
 
 async function runHomeSearch(query) {
@@ -1321,14 +948,14 @@ async function runHomeSearch(query) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   const termHits = searchTermDatabase(query);
-  const postHits = await searchForumPostsReadOnly(query);
+  const articleHits = searchArticles(query);
 
   let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
     <h2 class="section-heading" style="font-size:1.1rem;margin:0;">Results for "${query}"</h2>
     <button class="link-btn" onclick="clearHomeSearch()" style="background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;">✕ Clear</button>
   </div>`;
 
-  if (!termHits.length && !postHits.length) {
+  if (!termHits.length && !articleHits.length) {
     html += `<div class="sr-empty">No results for "${query}" yet — that content is on its way.</div>`;
     panel.innerHTML = html;
     return;
@@ -1347,16 +974,15 @@ async function runHomeSearch(query) {
     </div>`;
   }
 
-  if (postHits.length) {
+  if (articleHits.length) {
     html += `<div class="sr-section">
-      <div class="sr-section-label">💬 From the Community</div>
-      ${postHits.map(p => `
-        <div class="sr-row" style="cursor:default;">
-          <div class="sr-row-icon">💬</div>
+      <div class="sr-section-label">📰 From Articles</div>
+      ${articleHits.map(a => `
+        <div class="sr-row" onclick="openArticle('${a.slug}')">
+          <div class="sr-row-icon">${a.coverIcon}</div>
           <div class="sr-row-body">
-            ${p.title ? `<div class="sr-row-title">${p.title}</div>` : ''}
-            <div class="sr-row-snippet">${p.body}</div>
-            <div class="sr-row-meta">${timeAgo(p.created_at)}</div>
+            <div class="sr-row-title">${a.title}</div>
+            <div class="sr-row-snippet">${a.excerpt}</div>
           </div>
         </div>`).join('')}
     </div>`;
@@ -1460,15 +1086,6 @@ function answerSearchQuiz(btn, selectedIdx, correctIdx, explanation) {
   fb.classList.add('show', isCorrect ? 'cfb' : 'wfb');
 }
 
-function scrollToOpinion(opinionId) {
-  // Same behavior as goToTrendingPost: navigate to the Community page's
-  // Trending view, scroll the matching post into view, and highlight it
-  // for ~5 seconds. This only has something to find and highlight once
-  // opinionId is a real post id from the posts table — see the README
-  // note in data.js next to trendingItems for what that requires.
-  goToTrendingPost(opinionId);
-}
-
 // ── TOPIC LABEL HELPER ───────────────────────────────────────
 // 'acc' returns empty for now since Accounting is the only topic —
 // showing the badge on every single post is just noise. Once other
@@ -1490,15 +1107,15 @@ function timeAgo(dateStr) {
 // ── FLAVOUR WORD (static) ────────────────────────────────────
 // Kept static per design decision — no cycling
 
-// ── TRENDING ─────────────────────────────────────────────────
-function buildTrending() {
+// ── ARTICLES TICKER (homepage) ────────────────────────────────
+function buildArticlesTicker() {
   const ticker = document.getElementById('trendingTicker');
-  if (!ticker || !trendingItems) return;
+  if (!ticker || !articles) return;
   ticker.style.width = '';
-  ticker.innerHTML = trendingItems.map(t =>
-    `<div class="trend-chip" onclick="scrollToOpinion(${t.opinionId})" style="cursor:pointer;">
-      <span class="trend-num">${t.num}</span>
-      <span class="trend-text">${t.text}</span>
+  ticker.innerHTML = articles.map((a, i) =>
+    `<div class="trend-chip" onclick="openArticle('${a.slug}')" style="cursor:pointer;">
+      <span class="trend-num">#${i + 1}</span>
+      <span class="trend-text">${a.title}</span>
     </div>`
   ).join('');
 
@@ -1546,47 +1163,16 @@ function buildTrending() {
   });
 }
 
-// ── STATIC OPINIONS FALLBACK ─────────────────────────────────
-function renderStaticOpinions() {
-  const grid = document.getElementById('opinionsGrid');
-  if (!grid || !staticOpinions) return;
-  const ops = opinionsFilter === 'all'
-    ? staticOpinions
-    : staticOpinions.filter(o => o.topic === opinionsFilter);
-  grid.innerHTML = ops.slice(0, 6).map((op, i) => `
-    <div class="opinion-card ${i === 0 ? 'rank-1' : ''} rc-${op.topic}"
-         data-opinion-id="${op.id}" onclick="openCommunity()">
-      <div class="op-rank">
-        <span class="op-rank-num">#${i + 1}</span>
-      </div>
-      <div class="op-body">
-        <div class="op-meta">
-          <span class="op-avatar">${op.avatar}</span>
-          <span class="op-username">@${op.username}</span>
-          ${topicLabel(op.topic) ? `<span class="op-topic tt-${op.topic}">${topicLabel(op.topic)}</span>` : ''}
-        </div>
-        <div class="op-text">"${op.body}"</div>
-      </div>
-      <div class="op-votes">
-        <button class="op-vote-btn up"
-          onclick="event.stopPropagation();openAuth('signup')">👍</button>
-        <span class="op-vote-count">${op.upvotes}</span>
-      </div>
-    </div>`).join('');
-}
-
 // ── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('homePage').classList.add('active');
   buildAvatarGrid();
-  buildTrending();
-  renderOpinions();
+  buildArticlesTicker();
   initDailyTip();
   // Small delay to ensure data.js searchQuestionBatches is available
   setTimeout(() => {
     if (typeof startSearchPlaceholderRotation === 'function') {
       startSearchPlaceholderRotation('searchFakePlaceholder', 'searchFakePlaceholderText', 'searchInput');
-      startSearchPlaceholderRotation('composerFakePlaceholder', 'composerFakePlaceholderText', 'forumComposerText', ['Related to money and finance? - what\'s on your mind?']);
     }
   }, 300);
 });
@@ -1603,7 +1189,7 @@ window.addEventListener('resize', () => {
   trendingResizeTimer = setTimeout(() => {
     if (window.innerWidth !== lastTrendingWidth) {
       lastTrendingWidth = window.innerWidth;
-      buildTrending();
+      buildArticlesTicker();
     }
   }, 200);
 });
@@ -1611,11 +1197,11 @@ window.addEventListener('resize', () => {
 // Safety net: re-measure once everything (images, fonts) has fully
 // loaded, in case anything shifted the layout after the initial
 // DOMContentLoaded measurement.
-window.addEventListener('load', buildTrending);
+window.addEventListener('load', buildArticlesTicker);
 
 // Safety net: if the browser restores this page from back-forward cache
 // (e.g. tapping the phone's back button after visiting a lesson) instead
 // of doing a real reload, neither DOMContentLoaded nor load fire again —
 // so without this, the ticker would stay wherever it was scrolled to
 // before you navigated away.
-window.addEventListener('pageshow', (e) => { if (e.persisted) buildTrending(); });
+window.addEventListener('pageshow', (e) => { if (e.persisted) buildArticlesTicker(); });
