@@ -279,11 +279,26 @@ function renderFilmComingSoon() {
 }
 
 // ── LOAD LESSON ──────────────────────────────────────────────
-function loadTrackLesson(idx) {
+async function loadTrackLesson(idx) {
   trackStage            = 'lessons';
   trackCurrentLessonIdx = idx;
   trackQuizAnswers      = {};
   renderTrackSidebar();
+
+  // Free tier (trial ended, not subscribed): capped at 15 distinct
+  // lessons per calendar month. Paid + trial users skip this entirely.
+  if (typeof hasFullAccess === 'function' && !hasFullAccess() && currentUser) {
+    const usage = await getMonthlyUsage();
+    const lessonKey = `${activeTrackKey}:${idx}`;
+    const alreadyViewedThisMonth = usage.viewedLessonKeys.includes(lessonKey);
+    if (!alreadyViewedThisMonth && usage.lessonsUsed >= FREE_MONTHLY_LESSON_CAP) {
+      renderLessonCapGate(usage.lessonsUsed);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (!alreadyViewedThisMonth) recordLessonView(activeTrackKey, idx);
+  }
+
   renderLessonContent(idx);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   // On mobile, tapping a lesson should close the sidebar so the
@@ -291,6 +306,22 @@ function loadTrackLesson(idx) {
   if (window.matchMedia('(max-width:700px)').matches) {
     closeTrackSidebar();
   }
+}
+
+function renderLessonCapGate(lessonsUsed) {
+  document.getElementById('trackMainContent').innerHTML = `
+    <div class="lesson-gate">
+      <div style="font-size:2rem;">🔒</div>
+      <h1 class="track-lesson-title" style="margin-top:12px;">Monthly Free Limit Reached</h1>
+      <p class="lesson-gate-sub">
+        You've opened ${lessonsUsed} of ${FREE_MONTHLY_LESSON_CAP} free lessons available this month.
+        Your count resets next month, or upgrade to Professional for full,
+        unlimited access right now.
+      </p>
+      <button class="btn btn-gold" onclick="showPage('pricingPage')" style="font-size:1rem;padding:14px 40px;">
+        See Professional →
+      </button>
+    </div>`;
 }
 
 // ── RENDER LESSON CONTENT ────────────────────────────────────
@@ -595,7 +626,7 @@ function setVotesFeatureEnabled(on) {
 }
 
 // ── EXAM ─────────────────────────────────────────────────────
-function loadTrackExam() {
+async function loadTrackExam() {
   const track = trackData[activeTrackKey];
   if (!track.exam) {
     document.getElementById('trackMainContent').innerHTML = `
@@ -610,6 +641,29 @@ function loadTrackExam() {
         </button>
       </div>`;
     return;
+  }
+
+  // Free tier (trial ended, not subscribed): capped at 4 mock exam
+  // attempts per calendar month. Paid + trial users skip this entirely.
+  if (typeof hasFullAccess === 'function' && !hasFullAccess() && currentUser) {
+    const usage = await getMonthlyUsage();
+    if (usage.examsUsed >= FREE_MONTHLY_EXAM_CAP) {
+      document.getElementById('trackMainContent').innerHTML = `
+        <div class="lesson-gate">
+          <div style="font-size:2rem;">🔒</div>
+          <h1 class="track-lesson-title" style="margin-top:12px;">Monthly Free Limit Reached</h1>
+          <p class="lesson-gate-sub">
+            You've used ${usage.examsUsed} of ${FREE_MONTHLY_EXAM_CAP} free mock exams available
+            this month. Your count resets next month, or upgrade to Professional
+            for unlimited mock exams right now.
+          </p>
+          <button class="btn btn-gold" onclick="showPage('pricingPage')" style="font-size:1rem;padding:14px 40px;">
+            See Professional →
+          </button>
+        </div>`;
+      return;
+    }
+    recordExamAttempt(activeTrackKey);
   }
 
   trackExamAnswers   = {};
