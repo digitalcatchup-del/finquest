@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -175,22 +177,6 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .tt-future{background:var(--lime-dim);color:var(--lime);}
 
 /* ── LOGGED IN HERO ── */
-#liHero{display:none;min-height:calc(100vh - 57px);flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;text-align:center;position:relative;}
-#liHero.show{display:flex;}
-.li-greeting{font-size:clamp(1.8rem,4vw,3rem);font-weight:900;letter-spacing:-0.03em;color:var(--white);margin-bottom:10px;position:relative;z-index:1;}
-.li-greeting span{color:var(--gold);}
-.li-sub{font-size:0.9rem;color:var(--muted);margin-bottom:32px;position:relative;z-index:1;}
-.pip-dashboard{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 28px;margin-bottom:32px;position:relative;z-index:1;max-width:500px;width:100%;}
-.pip-dash-label{font-size:0.6rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
-.pip-dash-value{font-size:2.5rem;font-weight:900;font-variant-numeric:tabular-nums;color:var(--green);letter-spacing:0.02em;}
-.pip-dash-sub{font-size:0.72rem;color:var(--muted);margin-top:4px;}
-.pip-bar{background:var(--border2);border-radius:2px;height:3px;margin-top:12px;overflow:hidden;}
-.pip-bar-fill{background:linear-gradient(90deg,var(--green),var(--gold));height:100%;border-radius:2px;transition:width 0.5s ease;}
-.li-stats{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:28px;position:relative;z-index:1;}
-.li-stat{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 22px;text-align:center;}
-.li-stat .val{font-size:1.4rem;font-weight:900;color:var(--white);}
-.li-stat .lbl{font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-top:3px;}
-.li-tracks{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;position:relative;z-index:1;}
 .li-track{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:8px 16px;font-size:0.75rem;font-weight:700;color:var(--off);cursor:pointer;transition:all 0.15s;}
 .li-track:hover{border-color:var(--gold);color:var(--gold);}
 
@@ -789,7 +775,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   .search-input{font-size:0.85rem;min-width:0;}
   .search-btn{font-size:1.4rem;padding:0 8px 0 4px;}
   .nav-auth-btn{padding:12px 14px !important;font-size:0.7rem !important;min-height:44px;}
-  #heroSection,#liHero{padding:48px 20px 32px;min-height:auto;padding-top:80px;}
+  #heroSection{padding:48px 20px 32px;min-height:auto;padding-top:80px;}
   #trust{gap:28px;padding:20px;}
   #how,#pricing,#newsletter{padding:48px 20px;}
   #tip{padding:36px 20px;}
@@ -901,25 +887,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 </section>
 
 <!-- LOGGED IN HERO -->
-<section id="liHero">
-  <div class="hero-bg"></div>
-  <p class="hero-eyebrow" style="position:relative;z-index:1">Welcome Back</p>
-  <h1 class="li-greeting">Good to see you, <span id="liName">Alex</span> 👋</h1>
-  <p class="li-sub">Your pip score is live. Every correct answer moves it forward.</p>
-  <div class="pip-dashboard">
-    <div class="pip-dash-label">Your Live Pip Score</div>
-    <div class="pip-dash-value" id="dashPip">1.00000</div>
-    <div class="pip-dash-sub" id="dashPipSub">Keep answering correctly to move your pip upward</div>
-    <div class="pip-bar"><div class="pip-bar-fill" id="pipBarFill" style="width:0%"></div></div>
-  </div>
-  <div class="li-stats">
-    <div class="li-stat"><div class="val" id="liStreak">0</div><div class="lbl">Day Streak 🔥</div></div>
-    <div class="li-stat"><div class="val" id="liLessons">0</div><div class="lbl">Lessons Done</div></div>
-    <div class="li-stat"><div class="val" id="liCorrect">0</div><div class="lbl">Correct Answers</div></div>
-  </div>
-  <div class="li-tracks" id="liTracks"></div>
-</section>
-
 <!-- TRUST BAR -->
 <section id="trust">
   <div class="trust-stat"><div class="trust-val">63</div><div class="trust-lbl">Bite-Sized Lessons</div></div>
@@ -1419,11 +1386,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=16"></script>
-<script src="data.js?v=16"></script>
-<script src="auth.js?v=16"></script>
-<script src="app.js?v=16"></script>
-<script src="track.js?v=16"></script>
+<script src="supabase-config.js?v=17"></script>
+<script src="data.js?v=17"></script>
+<script src="auth.js?v=17"></script>
+<script src="app.js?v=17"></script>
+<script src="track.js?v=17"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
