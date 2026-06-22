@@ -383,9 +383,6 @@ async function awardPips(delta, reason) {
   if (document.getElementById('navPip')) {
     document.getElementById('navPip').textContent = newScore.toFixed(5);
   }
-  if (document.getElementById('dashPip')) {
-    document.getElementById('dashPip').textContent = newScore.toFixed(5);
-  }
 }
 
 // ── SUBMIT QUIZ ANSWER ───────────────────────────────────────
