@@ -284,6 +284,57 @@ function updateNavForLoggedInUser() {
   }
 }
 
+// ── MONTHLY USAGE (Free tier caps) ───────────────────────────
+// Free tier (trial ended, not subscribed) is capped at 15 lessons and 4
+// mock exams per calendar month. Paid subscribers and people still in
+// their 7-day trial bypass this entirely — see hasFullAccess() in app.js.
+const FREE_MONTHLY_LESSON_CAP = 15;
+const FREE_MONTHLY_EXAM_CAP   = 4;
+
+function getMonthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+// Returns { lessonsUsed, viewedLessonKeys, examsUsed } for the current
+// calendar month. viewedLessonKeys lets callers tell "a lesson you've
+// already opened this month" (free, no cap impact) apart from "a new
+// lesson" (counts toward the 15).
+async function getMonthlyUsage() {
+  if (!currentUser) return { lessonsUsed: 0, viewedLessonKeys: [], examsUsed: 0 };
+  const monthKey = getMonthKey();
+  const [lessonsRes, examsRes] = await Promise.all([
+    db.from('monthly_lesson_views').select('lesson_key')
+      .eq('user_id', currentUser.id).eq('month_key', monthKey),
+    db.from('monthly_exam_attempts').select('id', { count: 'exact', head: true })
+      .eq('user_id', currentUser.id).eq('month_key', monthKey),
+  ]);
+  const viewedLessonKeys = (lessonsRes.data || []).map(r => r.lesson_key);
+  return {
+    lessonsUsed: viewedLessonKeys.length,
+    viewedLessonKeys,
+    examsUsed: examsRes.count || 0,
+  };
+}
+
+async function recordLessonView(trackKey, lessonIndex) {
+  if (!currentUser) return;
+  await db.from('monthly_lesson_views').upsert({
+    user_id:    currentUser.id,
+    lesson_key: `${trackKey}:${lessonIndex}`,
+    month_key:  getMonthKey(),
+  }, { onConflict: 'user_id,lesson_key,month_key', ignoreDuplicates: true });
+}
+
+async function recordExamAttempt(trackKey) {
+  if (!currentUser) return;
+  await db.from('monthly_exam_attempts').insert({
+    user_id:   currentUser.id,
+    track_key: trackKey,
+    month_key: getMonthKey(),
+  });
+}
+
 // ── SAVE TRACK PROGRESS ──────────────────────────────────────
 async function saveTrackProgress(trackKey, lessonIndex) {
   if (!currentUser) return;
@@ -353,72 +404,71 @@ async function recordQuizAnswer(trackKey, lessonIndex, questionIndex, isCorrect,
   }
 }
 
-// ── COMMUNITY: LOAD POSTS ────────────────────────────────────
-async function loadPosts(topic = 'all', limit = 20) {
-  let query = db
-    .from('posts')
-    .select(`*, profiles(username, avatar)`)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (topic !== 'all') query = query.eq('topic', topic);
-
-  const { data, error } = await query;
-  return error ? [] : data;
-}
-
-// ── COMMUNITY: CREATE POST ───────────────────────────────────
-async function createPost(topic, body, title = '', isOpinion = false) {
+// ── ARTICLES: LIKE (thumbs up, toggle) ───────────────────────
+async function toggleArticleLike(articleId) {
   if (!currentUser) { openAuth('signup'); return null; }
-  const { data, error } = await db.from('posts').insert({
-    user_id:    currentUser.id,
-    topic,
-    title,
-    body,
-    is_opinion: isOpinion
-  }).select().single();
-  return error ? null : data;
-}
-
-// ── COMMUNITY: VOTE ON POST ──────────────────────────────────
-async function votePost(postId, direction) {
-  if (!currentUser) { openAuth('signup'); return; }
-  // Toggle: if voted same direction, remove vote
   const { data: existing } = await db
-    .from('post_votes')
-    .select('id, direction')
-    .eq('post_id', postId)
+    .from('article_likes')
+    .select('id')
+    .eq('article_id', articleId)
     .eq('user_id', currentUser.id)
     .maybeSingle();
 
   if (existing) {
-    if (existing.direction === direction) {
-      await db.from('post_votes').delete().eq('id', existing.id);
-    } else {
-      await db.from('post_votes').update({ direction }).eq('id', existing.id);
-    }
+    await db.from('article_likes').delete().eq('id', existing.id);
+    return false; // now un-liked
   } else {
-    await db.from('post_votes').insert({ post_id: postId, user_id: currentUser.id, direction });
+    await db.from('article_likes').insert({ article_id: articleId, user_id: currentUser.id });
+    return true; // now liked
   }
 }
 
-// ── COMMUNITY: LOAD REPLIES ──────────────────────────────────
-async function loadReplies(postId) {
-  const { data, error } = await db
-    .from('replies')
-    .select(`*, profiles(username, avatar)`)
-    .eq('post_id', postId)
-    .order('created_at', { ascending: true });
-  return error ? [] : data;
+async function getArticleLikeState(articleId) {
+  const { count } = await db
+    .from('article_likes')
+    .select('id', { count: 'exact', head: true })
+    .eq('article_id', articleId);
+  let likedByMe = false;
+  if (currentUser) {
+    const { data } = await db
+      .from('article_likes')
+      .select('id')
+      .eq('article_id', articleId)
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    likedByMe = !!data;
+  }
+  return { count: count || 0, likedByMe };
 }
 
-// ── COMMUNITY: CREATE REPLY ──────────────────────────────────
-async function createReply(postId, body) {
+// ── ARTICLES: COMMENTS (flat — no replies) ───────────────────
+async function loadArticleComments(articleId) {
+  const { data: comments, error } = await db
+    .from('article_comments')
+    .select('id, user_id, body, created_at')
+    .eq('article_id', articleId)
+    .order('created_at', { ascending: false });
+  if (error || !comments) return [];
+
+  const userIds = [...new Set(comments.map(c => c.user_id))];
+  const { data: profilesData } = await db
+    .from('profiles')
+    .select('id, username, avatar')
+    .in('id', userIds);
+  const profileMap = {};
+  (profilesData || []).forEach(p => { profileMap[p.id] = p; });
+
+  return comments.map(c => ({ ...c, profiles: profileMap[c.user_id] || { username: 'anonymous', avatar: '😎' } }));
+}
+
+async function submitArticleComment(articleId, body) {
   if (!currentUser) { openAuth('signup'); return null; }
-  const { data, error } = await db.from('replies').insert({
-    post_id: postId,
-    user_id: currentUser.id,
-    body
+  const trimmed = body.trim();
+  if (!trimmed) return null;
+  const { data, error } = await db.from('article_comments').insert({
+    article_id: articleId,
+    user_id:    currentUser.id,
+    body:       trimmed.slice(0, 500)
   }).select().single();
   return error ? null : data;
 }
@@ -441,22 +491,13 @@ async function loadUserProfile(username) {
     .single();
   if (error) return null;
 
-  const { data: posts } = await db
-    .from('posts')
-    .select('*')
+  const { data: comments } = await db
+    .from('article_comments')
+    .select('id, article_id, body, created_at')
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false });
 
-  return { profile, posts: posts || [] };
-}
-
-async function loadUserReplies(userId) {
-  const { data: replies, error } = await db
-    .from('replies')
-    .select('id, post_id, body, created_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-  return error ? [] : (replies || []);
+  return { profile, comments: comments || [] };
 }
 
 // ── NEWSLETTER SUBSCRIBE ─────────────────────────────────────
