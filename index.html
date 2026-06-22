@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -225,7 +223,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .step-arrow{position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:1.2rem;z-index:1;}
 
 /* ── OPINIONS ── */
-#opinionsSection{padding:80px 40px;max-width:1000px;margin:0 auto;}
+
 .opinions-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;flex-wrap:wrap;gap:16px;}
 .op-filter{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:3px;}
 .pf{padding:6px 14px;border-radius:3px;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);cursor:pointer;border:none;background:none;transition:all 0.15s;}
@@ -295,6 +293,41 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .forum-post-dot{color:var(--muted2);font-size:0.7rem;}
 .forum-post-time{font-size:0.76rem;color:var(--muted2);}
 .forum-post-text{font-size:0.88rem;color:var(--off);line-height:1.55;margin-bottom:10px;word-wrap:break-word;}
+
+/* ── ARTICLES ── */
+.articles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:8px;}
+.article-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color 0.2s;}
+.article-card:hover{border-color:var(--border3);}
+.article-card-link{cursor:pointer;display:block;}
+.article-cover{aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);}
+.article-cover-icon{font-size:2.6rem;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.3));}
+.article-card-title{font-size:0.92rem;font-weight:800;color:var(--white);line-height:1.35;padding:14px 16px 4px;}
+.article-card-excerpt{font-size:0.78rem;color:var(--muted);line-height:1.5;padding:0 16px 16px;}
+
+.article-detail-title{font-size:1.5rem;font-weight:900;color:var(--white);line-height:1.3;margin:20px 0 18px;}
+.article-detail-body{font-size:0.95rem;color:var(--off);line-height:1.75;margin-bottom:28px;}
+.article-detail-body em{color:var(--gold);font-style:normal;font-weight:700;}
+
+.article-engage-row{display:flex;gap:10px;margin-bottom:32px;padding-bottom:28px;border-bottom:1px solid var(--border);}
+.article-like-btn{background:var(--surface);border:1px solid var(--border2);color:var(--off);font-size:0.85rem;font-weight:700;padding:9px 18px;border-radius:24px;cursor:pointer;transition:all 0.15s;}
+.article-like-btn:hover{border-color:var(--gold);}
+.article-like-btn.liked{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+
+.article-comments-heading,.further-reading-heading{font-size:0.78rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
+.article-comment-composer{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.article-comment-composer textarea{background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:12px 14px;font-size:0.85rem;font-family:inherit;resize:vertical;min-height:64px;}
+.article-comment-composer textarea:focus{outline:none;border-color:var(--gold);}
+.article-comment-composer button{align-self:flex-end;}
+.article-comment-card{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);}
+.article-comment-avatar{flex-shrink:0;width:38px;height:38px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.article-comment-body{flex:1;min-width:0;}
+.article-comment-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;}
+.article-comment-name{font-size:0.82rem;font-weight:800;color:var(--white);}
+.article-comment-time{font-size:0.74rem;color:var(--muted2);}
+.article-comment-text{font-size:0.86rem;color:var(--off);line-height:1.5;word-wrap:break-word;}
+
+.further-reading-section{margin-top:40px;padding-top:32px;border-top:1px solid var(--border);}
+.further-reading-section .article-card-title{padding-bottom:14px;}
 .forum-post-text-full{font-size:0.92rem;color:var(--off);line-height:1.65;margin-bottom:12px;word-wrap:break-word;white-space:pre-wrap;}
 .forum-post-actions{display:flex;gap:18px;align-items:center;}
 .forum-inline-replies{margin-top:14px;padding-top:14px;border-top:1px solid var(--border2);cursor:default;}
@@ -726,6 +759,12 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   .community-section{padding:28px 20px;}
   .forum-action-btn{padding:10px 10px;min-height:40px;}
   .forum-post-actions{flex-wrap:wrap;}
+  .articles-grid{grid-template-columns:repeat(2,1fr);gap:14px;}
+  .article-detail-title{font-size:1.25rem;}
+}
+
+@media(max-width:480px){
+  .articles-grid{grid-template-columns:1fr;}
 }
 
 
@@ -752,7 +791,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   .nav-auth-btn{padding:12px 14px !important;font-size:0.7rem !important;min-height:44px;}
   #heroSection,#liHero{padding:48px 20px 32px;min-height:auto;padding-top:80px;}
   #trust{gap:28px;padding:20px;}
-  #how,#opinionsSection,#pricing,#newsletter{padding:48px 20px;}
+  #how,#pricing,#newsletter{padding:48px 20px;}
   #tip{padding:36px 20px;}
   .steps,.pricing-cards{grid-template-columns:1fr;}
   .step{border-radius:4px !important;}
@@ -779,7 +818,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <div class="nav-center">
     <button class="nav-link" onclick="showPage('homePage')">Home</button>
     <button class="nav-link" onclick="openAccounting()">Lessons</button>
-    <button class="nav-link" onclick="openCommunity()">Community</button>
+    <button class="nav-link" onclick="openArticlesPage()">Articles</button>
     <button class="nav-link" onclick="showPage('howPage')">How It Works</button>
     <button class="nav-link" onclick="showPage('pricingPage')">Pricing</button>
     <button class="nav-link" onclick="showPage('blogPage')">Blog</button>
@@ -790,7 +829,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <div class="mobile-nav-dropdown" id="mobileNavDropdown">
     <button class="mobile-nav-link" onclick="showPage('homePage');closeMobileNav();">Home</button>
     <button class="mobile-nav-link" onclick="openAccounting();closeMobileNav();">Lessons</button>
-    <button class="mobile-nav-link" onclick="openCommunity();closeMobileNav();">Community</button>
+    <button class="mobile-nav-link" onclick="openArticlesPage();closeMobileNav();">Articles</button>
     <button class="mobile-nav-link" onclick="showPage('howPage');closeMobileNav();">How It Works</button>
     <button class="mobile-nav-link" onclick="showPage('pricingPage');closeMobileNav();">Pricing</button>
     <button class="mobile-nav-link" onclick="showPage('blogPage');closeMobileNav();">Blog</button>
@@ -848,10 +887,10 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     </div>
   </div>
 
-  <!-- TRENDING -->
+  <!-- ARTICLES TICKER -->
   <div class="trending-section">
     <div class="trending-label-row">
-      <span class="trending-label">Trending Discussions</span>
+      <span class="trending-label">Articles</span>
       <div class="trending-line"></div>
     </div>
     <div class="trending-ticker-wrap" id="trendingTickerWrap">
@@ -896,25 +935,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <div class="steps">
     <div class="step"><div class="step-num">Step 01</div><div class="step-icon">🎯</div><h3>Pick Your Topic</h3><p>Choose your flavor and jump straight into a lesson.</p><div class="step-arrow">→</div></div>
     <div class="step"><div class="step-num">Step 02</div><div class="step-icon">⚡</div><h3>Earn Pips</h3><p>Every correct answer moves your pip score up — like a live trade going in your favour.</p><div class="step-arrow">→</div></div>
-    <div class="step"><div class="step-num">Step 03</div><div class="step-icon">💬</div><h3>Join the Community</h3><p>Post opinions, vote on ideas and learn from a global community of curious professionals.</p></div>
-  </div>
-</section>
-
-<!-- COMMUNITY OPINIONS -->
-<section id="opinionsSection">
-  <div class="opinions-header">
-    <div>
-      <p class="section-eyebrow" style="cursor:pointer;" onclick="openCommunity()">Community →</p>
-      <h2 class="section-heading" style="margin-bottom:0">Top Opinions This Week</h2>
-    </div>
-    <div class="op-filter">
-      <button class="pf active" onclick="filterOpinions('all',this)">All</button>
-    </div>
-  </div>
-  <div class="opinions-grid" id="opinionsGrid"></div>
-  <div class="opinions-cta">
-    <button class="btn btn-outline" onclick="goToComposeOpinion()">+ Post Your Opinion</button>
-    <p class="opinions-cta-note">Join free to post and vote on community opinions</p>
+    <div class="step"><div class="step-num">Step 03</div><div class="step-icon">💬</div><h3>Read &amp; Discuss</h3><p>Dig into articles on real concepts, then thumbs up and comment on the ones that land.</p></div>
   </div>
 </section>
 
@@ -991,7 +1012,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <div class="footer-links">
     <button class="footer-link" onclick="showPage('privacyPage')">Privacy Policy</button>
     <button class="footer-link" onclick="showPage('termsPage')">Terms of Service</button>
-    <button class="footer-link" onclick="openCommunity()">Community Guidelines</button>
+    <button class="footer-link" onclick="openArticlesPage()">Articles</button>
   </div>
   <span class="footer-copy">© 2025 Butterfly Dynamix LLC. All rights reserved.</span>
 </footer>
@@ -1237,31 +1258,23 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 </div>
 
 <!-- COMMUNITY PAGE -->
-<div id="communityPage" class="page">
+<!-- ARTICLES -->
+<div id="articlesPage" class="page">
   <div class="community-app">
-    <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="closeCommunity()">← Back to Home</button>
+    <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="showPage('homePage')">← Back to Home</button>
+    <section class="community-section" style="border-top:none;padding-top:24px;max-width:1040px;">
+      <p class="section-eyebrow">Articles</p>
+      <h2 class="section-heading" style="margin-bottom:28px;">Read, think, discuss.</h2>
+      <div class="articles-grid" id="articlesGrid"></div>
+    </section>
+  </div>
+</div>
 
-    <!-- DISCUSSION FORUM -->
-    <section class="community-section" style="border-top:none;padding-top:24px;">
-      <div class="opinions-header">
-        <div></div>
-        <div class="op-filter">
-          <button class="pf active" onclick="filterForumPosts('all',this)">All</button>
-          <button class="pf" id="forumTrendingFilterBtn" onclick="filterForumPosts('trending',this)">🔥 Trending</button>
-        </div>
-      </div>
-
-      <div class="forum-composer" id="forumComposerWrap" style="position:relative;">
-        <textarea id="forumComposerText" maxlength="280" placeholder=" " oninput="updateForumCharCount();updateFakePlaceholder(this.value,'composerFakePlaceholder');" onfocus="onComposerFocus();hideFakePlaceholder('composerFakePlaceholder');" onblur="syncComposerOverlay();showFakePlaceholder('composerFakePlaceholder','forumComposerText');"></textarea>
-        <div class="composer-fake-placeholder" id="composerFakePlaceholder"><span id="composerFakePlaceholderText">Related to money and finance? - what's on your mind?</span></div>
-        <div id="forumComposerClickLayer" onclick="onComposerOverlayClick()" style="position:absolute;top:0;left:0;right:0;height:60px;cursor:pointer;"></div>
-        <div class="forum-composer-row">
-          <span class="forum-char-count" id="forumCharCount">280 characters left</span>
-          <button class="btn btn-gold" onclick="submitForumPost()">Post</button>
-        </div>
-      </div>
-
-      <div class="forum-feed" id="forumFeed"></div>
+<!-- SINGLE ARTICLE -->
+<div id="articleDetailPage" class="page">
+  <div class="community-app">
+    <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="openArticlesPage()">← Back to Articles</button>
+    <section class="community-section" style="border-top:none;padding-top:24px;max-width:720px;" id="articleDetailContent">
     </section>
   </div>
 </div>
@@ -1272,10 +1285,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="closeProfile()">← Back</button>
     <section class="community-section" style="max-width:680px;margin-left:auto;margin-right:auto;">
       <div id="profileHeader"></div>
-      <div class="profile-tabs">
-        <button class="track-stage-tab active" id="profileTabPosts" onclick="setProfileTab('posts')">Posts</button>
-        <button class="track-stage-tab" id="profileTabReplies" onclick="setProfileTab('replies')">Replies</button>
-      </div>
+      <h3 style="font-size:0.78rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:24px 0 12px;">Comments</h3>
       <div id="profileFeed"></div>
     </section>
   </div>
@@ -1378,36 +1388,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 </div>
 
 <!-- POST OPINION OVERLAY -->
-<div class="overlay" id="postOpinionOverlay">
-  <div class="modal">
-    <button class="modal-close-btn" onclick="closePostOpinion()">✕</button>
-    <div class="post-opinion-modal">
-      <p style="font-size:0.62rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Community</p>
-      <h2 style="font-size:1rem;font-weight:800;color:var(--white);margin-bottom:4px">Post Your Opinion</h2>
-      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:20px">Share your professional take. Max 280 characters.</p>
-      <div class="field"><label>Topic</label>
-        <div class="poi-topics">
-          <div class="poi-topic" data-topic="acc" onclick="selectOpinionTopic('acc',this)">📊 Accounting</div>
-          <div class="poi-topic" data-topic="fin" onclick="selectOpinionTopic('fin',this)">💰 Finance</div>
-          <div class="poi-topic" data-topic="econ" onclick="selectOpinionTopic('econ',this)">🌍 Economics</div>
-          <div class="poi-topic" data-topic="trd" onclick="selectOpinionTopic('trd',this)">📈 Trading</div>
-        </div>
-        <div class="field-err" id="eOpTopic">Select a topic</div>
-      </div>
-      <div class="field"><label>Opinion Title</label><input type="text" id="opTitle" placeholder="Your headline opinion..."/><div class="field-err" id="eOpTitle">Required</div></div>
-      <div class="field"><label>Your Opinion</label><textarea id="opBody" placeholder="Share your perspective... (max 280 characters)" maxlength="280" oninput="document.getElementById('charCount').textContent=this.value.length"></textarea>
-        <div class="char-count"><span id="charCount">0</span> / 280</div>
-        <div class="field-err" id="eOpBody">Required</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-gold" style="flex:1" onclick="submitOpinion()">Post Opinion →</button>
-        <button class="btn btn-ghost" onclick="closePostOpinion()">Cancel</button>
-      </div>
-      <p style="font-size:0.65rem;color:var(--muted2);margin-top:12px;text-align:center">Opinions are personal views and do not constitute professional advice.</p>
-    </div>
-  </div>
-</div>
-
 <!-- PAYMENT OVERLAY -->
 <div class="overlay" id="paymentOverlay">
   <div class="modal">
@@ -1439,11 +1419,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=15"></script>
-<script src="data.js?v=15"></script>
-<script src="auth.js?v=15"></script>
-<script src="app.js?v=15"></script>
-<script src="track.js?v=15"></script>
+<script src="supabase-config.js?v=16"></script>
+<script src="data.js?v=16"></script>
+<script src="auth.js?v=16"></script>
+<script src="app.js?v=16"></script>
+<script src="track.js?v=16"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
