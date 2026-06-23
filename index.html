@@ -878,7 +878,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
         onfocus="hideFakePlaceholder('searchFakePlaceholder')"
         onblur="showFakePlaceholder('searchFakePlaceholder','searchInput')"/>
       <div class="search-fake-placeholder" id="searchFakePlaceholder">
-        <span id="searchFakePlaceholderText">Ask anything — e.g. explain accruals, what is double entry?</span>
+        <span id="searchFakePlaceholderText" onclick="onSearchQuestionClick()" style="cursor:pointer;">Ask anything — e.g. explain accruals, what is double entry?</span>
       </div>
       <button class="search-btn" onclick="doSearch()" aria-label="Ask AI">›</button>
     </div>
@@ -1411,11 +1411,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=19"></script>
-<script src="data.js?v=19"></script>
-<script src="auth.js?v=19"></script>
-<script src="app.js?v=19"></script>
-<script src="track.js?v=19"></script>
+<script src="supabase-config.js?v=20"></script>
+<script src="data.js?v=20"></script>
+<script src="auth.js?v=20"></script>
+<script src="app.js?v=20"></script>
+<script src="track.js?v=20"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
