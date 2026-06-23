@@ -729,28 +729,11 @@ function initDailyTip() {
   if (sourceEl) sourceEl.textContent = tip.source || '';
 }
 
-// ── SEARCH ───────────────────────────────────────────────────
-function onSearch(val) {
-  const box = document.getElementById('searchSuggestions');
-  if (!val.trim() || !searchIndex) { box.classList.remove('open'); return; }
-  const q   = val.toLowerCase();
-  const hits = searchIndex.filter(s => s.toLowerCase().includes(q)).slice(0, 6);
-  if (!hits.length) { box.classList.remove('open'); return; }
-  box.innerHTML = hits.map(h =>
-    `<div class="search-suggestion" onclick="selectSuggestion('${h}')">${h}</div>`
-  ).join('');
-  box.classList.add('open');
-}
+// ── AI CHAT INPUT HANDLING ────────────────────────────────────
+function onSearch() { /* no-op in AI mode — no live suggestions */ }
 
 function onSearchKey(e) {
   if (e.key === 'Enter') doSearch();
-  if (e.key === 'Escape') document.getElementById('searchSuggestions').classList.remove('open');
-}
-
-function selectSuggestion(text) {
-  document.getElementById('searchInput').value = text;
-  document.getElementById('searchSuggestions').classList.remove('open');
-  doSearch();
 }
 
 // ── ROTATING PLACEHOLDER ENGINE (type in / type out) ──────────
@@ -883,91 +866,194 @@ function showFakePlaceholder(wrapId, inputId) {
   if (wrap && input && !input.value) wrap.style.display = 'flex';
 }
 
+// ── AI CHAT ───────────────────────────────────────────────────
+// The search bar is now an AI accounting tutor. Each conversation is
+// held in memory for the session (aiChatHistory) so follow-up
+// questions work naturally. Calls go to a Supabase Edge Function
+// (ai-chat) which holds the Anthropic API key server-side so it
+// never appears in the page source.
+//
+// TO WIRE UP: deploy the Edge Function from the /supabase/functions/
+// folder (see README), then set ANTHROPIC_API_KEY in Supabase secrets.
+// Until the function is deployed, the chat shows a friendly setup note.
+
+let aiChatHistory = []; // { role: 'user'|'assistant', content: string }[]
+let aiChatActive  = false;
+
+const AI_SYSTEM_PROMPT = `You are an expert financial education tutor for Butterfly Dynamix Learning, a professional education platform. You help students and professionals understand any topic related to money, finance, and business.
+
+Your areas of expertise:
+- Accounting: double entry, accruals, prudence, going concern, depreciation, trial balance, P&L accounts, balance sheets, working capital, bad debts, IFRS, financial statements
+- Personal finance: budgeting, saving, debt management, emergency funds, net worth, financial planning
+- Investment: stocks, bonds, ETFs, mutual funds, portfolio construction, valuation (P/E, DCF, book value), dividends, compounding, risk vs return
+- Trading: technical analysis, chart patterns, candlesticks, support and resistance, moving averages, risk management, position sizing, order types (market, limit, stop-loss)
+- Economics: inflation, interest rates, monetary policy, fiscal policy, GDP, supply and demand, exchange rates, economic cycles
+- Banking and credit: loans, mortgages, interest calculations, credit scores, overdrafts, central banking
+- Business finance: cash flow, fundraising, startup valuation, business models, profit margins, break-even analysis
+- Crypto and digital assets: how blockchain works, Bitcoin, Ethereum, DeFi concepts — explained factually and educationally
+- Tax concepts: VAT, income tax, corporate tax, capital gains tax — general principles (always clarify you are not giving jurisdiction-specific tax advice)
+- Professional exams: ICAN, ACCA, CFA, CPA topics and exam technique
+
+Your personality: warm, encouraging, and precise. You use real-world examples relevant to Nigerian and global business contexts to make abstract ideas concrete. You celebrate curiosity and meet learners at their level — whether they are a complete beginner or an advanced professional.
+
+Keep answers clear and well-structured. Not too short (unhelpful), not an essay (overwhelming). Use paragraph breaks. When it helps clarity, use a simple numbered or bulleted list. Do not use heavy markdown headers. End with a short follow-up invitation if there is a natural next question to explore. If someone asks something outside money, finance, or business, gently redirect them back to those topics.`;
+
 function doSearch() {
   const val = document.getElementById('searchInput').value.trim();
-  document.getElementById('searchSuggestions').classList.remove('open');
   if (!val) return;
-  // Log search
+  askAI(val);
+}
+
+function onSearch() {
+  // No live suggestions in AI mode — input is free-form question
+}
+
+async function askAI(question) {
+  // Log the query (keeps search_log table useful as an analytics signal)
   if (currentUser) {
-    db.from('search_log').insert({ user_id: currentUser.id, query: val });
+    db.from('search_log').insert({ user_id: currentUser.id, query: question }).then(() => {});
   }
-  runHomeSearch(val);
-}
 
-// ── INLINE SEARCH RESULTS (homepage) ──────────────────────────
-// Reads only from searchDatabase — deliberately decoupled from
-// trackData, so results never link into lesson content. Results
-// render directly under the search bar; everything else on the
-// homepage (Lessons button, Trending) is hidden while a search is
-// active, and restored when the search is cleared.
-function searchTermDatabase(query) {
-  const q = query.toLowerCase();
-  return searchDatabase.filter(e => e.term.toLowerCase().includes(q) || e.answer.toLowerCase().includes(q));
-}
-
-function searchArticles(query) {
-  const q = query.toLowerCase();
-  return articles.filter(a => a.title.toLowerCase().includes(q) || a.body.toLowerCase().includes(q)).slice(0, 6);
-}
-
-async function runHomeSearch(query) {
+  // Show the chat panel, hide homepage content
   document.getElementById('homeDefaultContent').style.display = 'none';
   const panel = document.getElementById('homeSearchResults');
   panel.style.display = 'block';
-  panel.innerHTML = '<div class="sr-loading">Searching…</div>';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  aiChatActive = true;
 
-  const termHits = searchTermDatabase(query);
-  const articleHits = searchArticles(query);
+  // Add the user's message to history and render it
+  aiChatHistory.push({ role: 'user', content: question });
+  document.getElementById('searchInput').value = '';
+  showFakePlaceholder('searchFakePlaceholder', 'searchInput');
+  renderChatPanel(true); // true = show typing indicator
 
-  let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-    <h2 class="section-heading" style="font-size:1.1rem;margin:0;">Results for "${query}"</h2>
-    <button class="link-btn" onclick="clearHomeSearch()" style="background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;">✕ Clear</button>
-  </div>`;
+  // Call the Supabase Edge Function
+  let reply = '';
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const res = await fetch(
+      `${SUPABASE_URL}/functions/v1/ai-chat`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: aiChatHistory,
+          system:   AI_SYSTEM_PROMPT,
+        }),
+      }
+    );
 
-  if (!termHits.length && !articleHits.length) {
-    html += `<div class="sr-empty">No results for "${query}" yet — that content is on its way.</div>`;
-    panel.innerHTML = html;
-    return;
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err || res.statusText);
+    }
+
+    const json = await res.json();
+    reply = json.reply || json.content || '';
+  } catch (err) {
+    console.error('AI chat error:', err);
+    // Check if the function simply isn't deployed yet
+    if (err.message?.includes('Failed to fetch') || err.message?.includes('404') || err.message?.includes('Function not found')) {
+      reply = `⚙️ **Almost there!** The AI tutor needs one small setup step — the Edge Function isn't deployed yet. Ask your developer to follow the instructions in \`/supabase/functions/ai-chat/index.ts\` (included in your repo) to get it live. Once deployed, this will answer any accounting question instantly.`;
+    } else {
+      reply = `Sorry, I ran into a problem answering that. Please try again in a moment.`;
+    }
   }
 
-  if (termHits.length) {
-    html += `<div class="sr-section">
-      ${termHits.map(h => `
-        <div class="sr-row" style="cursor:default;">
-          <div class="sr-row-icon">📘</div>
-          <div class="sr-row-body">
-            <div class="sr-row-title">${h.term}</div>
-            <div class="sr-row-snippet" style="-webkit-line-clamp:4;">${h.answer}</div>
-          </div>
-        </div>`).join('')}
-    </div>`;
-  }
-
-  if (articleHits.length) {
-    html += `<div class="sr-section">
-      <div class="sr-section-label">📰 From Articles</div>
-      ${articleHits.map(a => `
-        <div class="sr-row" onclick="openArticle('${a.slug}')">
-          <div class="sr-row-icon">${a.coverIcon}</div>
-          <div class="sr-row-body">
-            <div class="sr-row-title">${a.title}</div>
-            <div class="sr-row-snippet">${a.excerpt}</div>
-          </div>
-        </div>`).join('')}
-    </div>`;
-  }
-
-  panel.innerHTML = html;
+  aiChatHistory.push({ role: 'assistant', content: reply });
+  renderChatPanel(false);
 }
 
-function clearHomeSearch() {
-  document.getElementById('searchInput').value = '';
+function renderChatPanel(isLoading) {
+  const panel = document.getElementById('homeSearchResults');
+
+  const messagesHtml = aiChatHistory.map(msg => {
+    if (msg.role === 'user') {
+      return `<div class="ai-msg ai-msg-user">
+        <div class="ai-msg-bubble ai-msg-bubble-user">${escapeHtml(msg.content)}</div>
+      </div>`;
+    } else {
+      return `<div class="ai-msg ai-msg-assistant">
+        <div class="ai-msg-avatar">✨</div>
+        <div class="ai-msg-bubble ai-msg-bubble-assistant">${formatAIText(msg.content)}</div>
+      </div>`;
+    }
+  }).join('');
+
+  const typingHtml = isLoading ? `
+    <div class="ai-msg ai-msg-assistant">
+      <div class="ai-msg-avatar">✨</div>
+      <div class="ai-msg-bubble ai-msg-bubble-assistant ai-typing">
+        <span></span><span></span><span></span>
+      </div>
+    </div>` : '';
+
+  panel.innerHTML = `
+    <div class="ai-chat-header">
+      <span style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);">✨ AI Tutor</span>
+      <button onclick="clearAIChat()" style="background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;padding:0;">✕ New chat</button>
+    </div>
+    <div class="ai-chat-messages" id="aiMessages">
+      ${messagesHtml}
+      ${typingHtml}
+    </div>
+    <div class="ai-chat-composer">
+      <input class="ai-composer-input" id="aiFollowUpInput" type="text"
+        placeholder="Ask a follow-up…"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFollowUp();}"
+        ${isLoading ? 'disabled' : ''} />
+      <button class="ai-send-btn" onclick="sendFollowUp()" ${isLoading ? 'disabled' : ''}>›</button>
+    </div>`;
+
+  // Scroll to bottom of messages
+  requestAnimationFrame(() => {
+    const msgs = document.getElementById('aiMessages');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    if (!isLoading) {
+      const inp = document.getElementById('aiFollowUpInput');
+      if (inp) inp.focus();
+    }
+  });
+}
+
+function sendFollowUp() {
+  const inp = document.getElementById('aiFollowUpInput');
+  if (!inp) return;
+  const val = inp.value.trim();
+  if (!val) return;
+  inp.value = '';
+  askAI(val);
+}
+
+function clearAIChat() {
+  aiChatHistory = [];
+  aiChatActive  = false;
   document.getElementById('homeSearchResults').style.display = 'none';
   document.getElementById('homeSearchResults').innerHTML = '';
   document.getElementById('homeDefaultContent').style.display = '';
+  document.getElementById('searchInput').value = '';
   showFakePlaceholder('searchFakePlaceholder', 'searchInput');
 }
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Very light formatting: converts **bold** and newlines to HTML.
+// Deliberately avoids a full markdown parser — keeps the bundle tiny
+// and prevents any accidental XSS from AI output.
+function formatAIText(text) {
+  return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>')
+    .replace(/$/, '</p>');
+}
+
+function clearHomeSearch() { clearAIChat(); }
 
 // ── CLICK-TO-ASK (rotating search bar questions) ──────────────
 // Clicking the question currently typed in the search bar shows its
