@@ -343,65 +343,484 @@ const trackData = {
   'biz-acc-vol1': {
   title: 'Business Accounting · Volume 1',
   lessons: [
-    {id:1, term:'What Is Accounting?', duration:'2 min', pips:1,
-      definition:`<em>Accounting: an action.</em><br><br>Accounting is the process of identifying, measuring, recording, classifying, summarising, presenting, and interpreting the financial transactions of a business. It is a numeric language that tells the financial story of a business.`,
-      scenario:`A young trader named Amaka starts selling phone accessories from a small kiosk. At first she just keeps cash in a drawer. Once she starts writing down every sale and every purchase, and later works out whether she made a profit that month, she has begun "doing accounting" — even before she ever uses a formal book or software.`,
+    {id:1, term:'The Accounting Equation', duration:'5 min', pips:2,
+      definition:`Assets = Capital + Liabilities. This equation is the foundation of all accounting. Everything a business owns (assets) was funded by either the owner (capital) or by borrowing (liabilities). The two sides always balance — always.`,
+      scenario:`It was 7:45 on a Monday morning when Amaka Obi unlocked the glass door of her new phone shop for the first time. The shop was small — one room on a busy street in Ikeja, Lagos — but it was hers. She had spent the past three months preparing for this moment. She stood in the middle of the room and looked around at everything she had gathered to start this business. Two shelves of phones along the back wall. A display cabinet she had bought on credit from a furniture supplier. A small cash float in the till. A laptop on the counter. And a knot in her stomach that said: I have no idea how to keep track of any of this. Two doors down, Aunty Florence was already open — the older woman ran a stationery supply business and had been on this street for over twenty years. She appeared in Amaka's doorway with two cups of tea and a calm expression. "You look like you need this," she said. Amaka accepted the cup. "How do I even know what this business is worth right now?" she asked. Aunty Florence looked around the shop slowly. "List everything you own," she said. "Then list everything you owe. The difference is yours. That's accounting."`,
       votes:{up:0, down:0},
-      quiz:{q:'Which of the following best captures what accounting fundamentally is?', opts:['A type of advanced mathematics', 'The process of identifying, measuring, recording, classifying, summarising, presenting and interpreting financial transactions', 'A legal requirement that only large companies need to follow', 'A way of predicting future stock market prices'], ans:1, exp:'Accounting is the full process described — identifying, measuring, recording, classifying, summarising, presenting and interpreting financial transactions — not a branch of mathematics or something only relevant to large companies.'}
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>Aunty Florence sat down on the edge of the counter and handed Amaka a notepad. "Let's do this properly," she said. "Everything in this business falls into one of three categories. Assets — what you own. Liabilities — what you owe. Capital — what's yours."</p>
+  <p>The relationship between them is expressed as the <strong>accounting equation</strong>:</p>
+  <div class="lesson-equation">Assets = Capital + Liabilities</div>
+  <p>It can also be written as:</p>
+  <div class="lesson-equation">Capital = Assets − Liabilities</div>
+  <p>This is the most important equation in accounting. No matter how many transactions a business makes — hundreds, thousands, millions — both sides of this equation will always be equal. If they are not, something has been recorded incorrectly.</p>
+  <p>Think of it this way: everything Amaka's business owns (assets) had to come from somewhere. Either Amaka put it in herself (capital), or she borrowed it or bought it on credit (liabilities). There is no third option. That is why the two sides always balance.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's Opening Day</h3>
+  <p>Aunty Florence helped Amaka write down everything in the shop that morning:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>What Amaka Owns (Assets)</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Phones in stock (20 handsets)</td><td>800,000</td></tr>
+      <tr><td>Display cabinet</td><td>150,000</td></tr>
+      <tr><td>Laptop</td><td>120,000</td></tr>
+      <tr><td>Cash in till (float)</td><td>30,000</td></tr>
+      <tr class="table-total"><td><strong>Total Assets</strong></td><td><strong>1,100,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>Then they listed what Amaka owed:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>What Amaka Owes (Liabilities)</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Display cabinet supplier (60-day credit)</td><td>150,000</td></tr>
+      <tr class="table-total"><td><strong>Total Liabilities</strong></td><td><strong>150,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>Now the equation:</p>
+  <div class="lesson-equation">Capital = Assets − Liabilities<br>Capital = ₦1,100,000 − ₦150,000 = <strong>₦950,000</strong></div>
+  <p>"That ₦950,000," said Aunty Florence, "is your equity in this business. What you actually own, after accounting for what you owe." Amaka stared at the number. She had invested her savings, a small loan from her mother, and everything she had pulled together over the past year. Seeing it as a single figure made it suddenly real.</p>
+  <p>Aunty Florence pointed at the two totals. "Check it the other way too:"</p>
+  <div class="lesson-equation">Assets = Capital + Liabilities<br>₦1,100,000 = ₦950,000 + ₦150,000 ✓</div>
+  <p>"Always check both ways," said Aunty Florence. "If they don't match, you've missed something."</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Every single transaction that happens in Amaka Phones will change the numbers inside the equation — but the equation itself will never stop being true. Buy more stock with cash? Assets go up on one side, assets go down on the other — the equation still balances. Buy on credit? Assets up, liabilities up by the same amount — still balances. This is the logic that makes accounting work.</p>
+</div>`,
+      quiz:{q:'Amaka\'s business has total assets of ₦1,400,000 and owes ₦320,000 to suppliers. What is her capital?', opts:['₦1,720,000','₦1,080,000','₦320,000','₦1,400,000'], ans:1, exp:'Capital = Assets − Liabilities = ₦1,400,000 − ₦320,000 = ₦1,080,000. The equation always holds: what you own minus what you owe equals what is truly yours.'}
     },
-    {id:2, term:'Identifying', duration:'2 min', pips:1,
-      definition:`The first step in accounting: recognising which events occurring in a business are actually financial transactions worth capturing, as distinct from events that have no financial effect worth recording.`,
-      scenario:`When a customer buys a phone case from Amaka, that's a financial transaction worth identifying — money and goods changed hands. When Amaka simply rearranges the display on her shelf, nothing financial has happened, so there's nothing to identify or record.`,
+
+    {id:2, term:'Assets', duration:'5 min', pips:2,
+      definition:`An asset is a resource owned or controlled by a business that is expected to provide future economic benefit. Assets appear on the left side of the accounting equation and on the top section of a balance sheet.`,
+      scenario:`By the end of her first week, Amaka had sold three phones and was feeling more confident. A friend came to visit and asked how the business was going. "Good, I think," said Amaka. "I have a shop full of stock and some cash." Her friend looked around. "So the business is basically worth what's in this room?" Amaka wasn't sure. She called Aunty Florence. "Not exactly," Aunty Florence said, from the doorway. "Come. Let me show you the difference between what you own and what you're owed — and why both of those are your assets."`,
       votes:{up:0, down:0},
-      quiz:{q:'What does \'identifying\' mean as the first step in the accounting process?', opts:['Calculating the exact value of every transaction', 'Recognising which events are financial transactions worth capturing', 'Writing every transaction into a ledger', 'Presenting financial results to managers'], ans:1, exp:'Identifying is about recognising which events actually count as financial transactions in the first place, before any measuring or recording can happen.'}
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>Aunty Florence sat across from Amaka and explained it simply. "An asset is anything your business owns, or is owed, that has value and will bring future economic benefit — money, stock, equipment, or amounts customers owe you."</p>
+  <p>Assets fall into two main categories:</p>
+  <p><strong>Non-Current Assets (Fixed Assets)</strong> — assets held long-term for use in the business, not for resale. They are used over more than one accounting period.</p>
+  <p><strong>Current Assets</strong> — assets expected to be converted into cash, or used up, within twelve months. They are the lifeblood of day-to-day trading.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's Assets</h3>
+  <p>After a week of trading, Amaka's assets looked like this:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Non-Current Assets</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Display cabinet</td><td>150,000</td></tr>
+      <tr><td>Laptop (for records and invoicing)</td><td>120,000</td></tr>
+      <tr class="table-total"><td><strong>Total Non-Current Assets</strong></td><td><strong>270,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Current Assets</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Phones in stock (17 remaining after 3 sold)</td><td>680,000</td></tr>
+      <tr><td>Amount owed by credit customer (Tunde Tech)</td><td>45,000</td></tr>
+      <tr><td>Cash in till</td><td>107,000</td></tr>
+      <tr class="table-total"><td><strong>Total Current Assets</strong></td><td><strong>832,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <tbody>
+      <tr class="table-total"><td><strong>Total Assets</strong></td><td><strong>1,102,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>"See that ₦45,000 from Tunde Tech?" Aunty Florence pointed. "Tunde hasn't paid yet — but it's still an asset. The business is owed that money. Until it arrives, it sits here as a debtor." She paused. "But a debtor that never pays becomes a problem. We'll talk about that later."</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Assets are always presented in order of permanence — non-current assets first (long-term), then current assets (short-term). Within current assets, the least liquid comes first (stock), then debtors, then cash. An asset must be genuinely owned or controlled by the business — Amaka's personal phone is not a business asset, even if she uses it occasionally for business calls.</p>
+</div>`,
+      quiz:{q:'Which of the following is correctly classified as a current asset?', opts:['A display cabinet used for 3 years','The amount a customer still owes for phones purchased on credit','A laptop bought for the business','The owner\'s personal savings account'], ans:1, exp:'An amount owed by a customer (a debtor) is a current asset — expected to be collected within twelve months. The display cabinet and laptop are non-current assets. Personal savings are not business assets at all.'}
     },
-    {id:3, term:'Measuring', duration:'2 min', pips:1,
-      definition:`The step in accounting where a financial transaction, once identified, is expressed in monetary terms — assigning a specific amount of money to what happened.`,
-      scenario:`Once Amaka identifies that a customer bought a phone case, measuring means working out exactly how much money was involved — say, ₦3,500 — so that this specific figure, not just the fact that a sale happened, can be recorded.`,
+
+    {id:3, term:'Liabilities and Capital', duration:'5 min', pips:2,
+      definition:`Liabilities are amounts owed by the business to others — suppliers, banks, lenders. Capital is the owner's financial stake in the business — what remains after all liabilities are deducted from all assets. Together, liabilities and capital explain how every asset in the business was funded.`,
+      scenario:`Ten days after opening, the display cabinet supplier called. "Your sixty days starts now," the man said. "₦150,000, due on the 23rd of next month." Amaka put the phone down and felt a wave of anxiety. She had known about the debt — she'd agreed to it — but hearing the payment date made it suddenly concrete. She went next door. "I knew I owed this money," she told Aunty Florence. "But now I'm nervous." Aunty Florence nodded. "Good. Being nervous about what you owe means you understand it. The mistake would be forgetting it. Let me show you how this fits into your books — and why understanding it is actually reassuring."`,
       votes:{up:0, down:0},
-      quiz:{q:'What does \'measuring\' add to a transaction that has already been identified?', opts:['A summary of all transactions for the month', 'A specific monetary value attached to the transaction', 'A classification of the transaction by type', 'An interpretation of what the transaction means for the business'], ans:1, exp:'Measuring is specifically about attaching a monetary amount to a transaction that\'s already been identified as financially relevant.'}
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>Aunty Florence opened her own ledger to show Amaka an example. "Every asset your business has was paid for somehow. Either you put money in yourself — that's capital. Or someone else is still owed for it — that's a liability."</p>
+  <p><strong>Liabilities</strong> are obligations — amounts the business must pay to outsiders. They divide into:</p>
+  <ul class="lesson-list">
+    <li><strong>Current liabilities</strong> — due within twelve months (supplier credit, bank overdraft)</li>
+    <li><strong>Non-current liabilities</strong> — due beyond twelve months (long-term bank loans)</li>
+  </ul>
+  <p><strong>Capital</strong> (also called owner's equity or net worth) is the residual interest — what belongs to the owner after every liability is settled. It includes the initial investment, plus any profits retained in the business, minus any amounts the owner has withdrawn (drawings).</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's Funding Side</h3>
+  <p>On Day 10, the right-hand side of Amaka's accounting equation looked like this:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Capital</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Amaka's own savings invested</td><td>700,000</td></tr>
+      <tr><td>Loan from mother (interest-free, 12 months)</td><td>250,000</td></tr>
+      <tr class="table-total"><td><strong>Total Capital</strong></td><td><strong>950,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Liabilities</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Display cabinet supplier (due in 50 days)</td><td>150,000</td></tr>
+      <tr class="table-total"><td><strong>Total Liabilities</strong></td><td><strong>150,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <tbody>
+      <tr class="table-total"><td><strong>Capital + Liabilities</strong></td><td><strong>1,100,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>And her total assets were also ₦1,100,000 — the equation balanced.</p>
+  <p>"The ₦150,000 you owe the cabinet supplier," said Aunty Florence, "is not something to panic about. It's simply a liability — money leaving your business at a future date. As long as you know it's there, and you're planning for it, you're in control."</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Liabilities and capital together always equal total assets — this is non-negotiable. Capital increases when the business makes a profit or the owner injects more funds. Capital decreases when the business makes a loss or the owner withdraws money (drawings). Liabilities are not bad — they are a normal way to fund a business — but they must always be tracked and managed carefully.</p>
+</div>`,
+      quiz:{q:'Amaka\'s business has total assets of ₦1,250,000 and capital of ₦900,000. What are her total liabilities?', opts:['₦2,150,000','₦350,000','₦900,000','₦1,250,000'], ans:1, exp:'Liabilities = Assets − Capital = ₦1,250,000 − ₦900,000 = ₦350,000. The accounting equation rearranged: if you know any two values, you can always find the third.'}
     },
-    {id:4, term:'Recording', duration:'2 min', pips:1,
-      definition:`The step in accounting where a measured transaction is written down in the business's books or system, creating a permanent, organised record of what happened.`,
-      scenario:`Once Amaka knows a ₦3,500 sale happened, recording means she actually writes it down — in a notebook, a ledger, or accounting software — rather than just remembering it, which would be too unreliable to rely on later.`,
+
+    {id:4, term:'Creditors', duration:'5 min', pips:2,
+      definition:`A creditor is a person or business to whom money is owed by the business — typically a supplier who has provided goods or services on credit and has not yet been paid. Creditors are a current liability on the balance sheet.`,
+      scenario:`Three weeks in, Amaka had two suppliers: Bright Mobile, who had supplied her opening stock of phones on 45-day credit terms, and KC Furniture, who had sold her the display cabinet on 60-day credit. Both were now calling about upcoming payment dates. Amaka found herself writing both names and amounts on a piece of paper stuck to the wall. "This is getting complicated," she told Aunty Florence. "I need a better way to track this." Aunty Florence looked at the paper on the wall and smiled. "You've just discovered why we keep a creditors ledger. Come, I'll show you."`,
       votes:{up:0, down:0},
-      quiz:{q:'Why does accounting require recording, rather than just remembering transactions?', opts:['Because recording is required by international law for every business, however small', 'Because memory alone is unreliable, and a written record can be checked and relied on later', 'Because recording automatically calculates profit', 'Because recording is the final step in the accounting process'], ans:1, exp:'Recording creates a reliable, permanent record that doesn\'t depend on anyone\'s memory — essential once a business has more than a handful of transactions to keep track of.'}
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>Aunty Florence explained it in plain terms. "Anyone your business owes money to is a creditor. When you buy something on credit — meaning you take the goods now and pay later — the person you owe becomes your creditor until you pay them."</p>
+  <p>Creditors are also called <strong>trade payables</strong> in modern accounting language (particularly under IFRS). They represent amounts owed to suppliers for goods or services received but not yet paid for.</p>
+  <p>Key facts about creditors:</p>
+  <ul class="lesson-list">
+    <li>They are a <strong>current liability</strong> — normally expected to be paid within twelve months</li>
+    <li>They appear on the <strong>right side</strong> of the accounting equation under liabilities</li>
+    <li>Each creditor has their own account in the <strong>purchases ledger</strong> (also called the creditors ledger)</li>
+    <li>When you pay a creditor, the liability decreases and so does your cash or bank balance</li>
+  </ul>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's Creditors</h3>
+  <p>By the end of Week 3, Amaka's creditors looked like this:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Creditor</th><th>Amount Owed (₦)</th><th>Due Date</th></tr></thead>
+    <tbody>
+      <tr><td>Bright Mobile (phone stock supplier)</td><td>480,000</td><td>Week 6</td></tr>
+      <tr><td>KC Furniture (display cabinet)</td><td>150,000</td><td>Week 8</td></tr>
+      <tr class="table-total"><td><strong>Total Creditors</strong></td><td><strong>630,000</strong></td><td></td></tr>
+    </tbody>
+  </table></div>
+  <p>When Amaka pays Bright Mobile their ₦480,000 in Week 6:</p>
+  <ul class="lesson-list">
+    <li>Creditors (liabilities) decrease by ₦480,000</li>
+    <li>Cash at bank (assets) decrease by ₦480,000</li>
+    <li>The accounting equation still balances — both sides went down by the same amount</li>
+  </ul>
+  <p>"The moment you pay them," said Aunty Florence, "they stop being a creditor. They disappear from your books." Amaka nodded slowly. "So the goal is to make them disappear?" Aunty Florence laughed. "Paying your creditors on time is one of the most important things a business can do. It protects your reputation and your credit terms for the future."</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>When goods are bought on credit: debit Purchases (or the specific asset account), credit the Creditor account. When the creditor is paid: debit the Creditor account, credit Cash or Bank. The creditor account balance is always what is still owed — it reduces each time a payment is made.</p>
+</div>`,
+      quiz:{q:'Amaka buys ₦200,000 of phones on credit from Bright Mobile. What happens to her creditors?', opts:['Creditors decrease by ₦200,000','Creditors increase by ₦200,000','Creditors stay the same','Creditors are removed from the books'], ans:1, exp:'Buying on credit creates a new creditor — Bright Mobile is now owed ₦200,000 by Amaka\'s business. Creditors (a liability) increase by ₦200,000, matched by an increase in stock (an asset) of the same amount.'}
     },
-    {id:5, term:'Classifying', duration:'2 min', pips:1,
-      definition:`The step in accounting where recorded transactions are sorted into meaningful categories or groups, so that similar items can be looked at together.`,
-      scenario:`At the end of the month, Amaka's bookkeeper sorts every recorded transaction into groups — all the sales together, all the stock purchases together, all the rent payments together — rather than leaving them as one long, unsorted list.`,
+
+    {id:5, term:'Double Entry Bookkeeping', duration:'6 min', pips:3,
+      definition:`The system by which every financial transaction is recorded in at least two accounts — as a debit in one account and an equal credit in another. The total of all debits always equals the total of all credits. This is the foundation of all modern accounting.`,
+      scenario:`On Friday afternoon of her first week, Amaka counted the cash in the till. She had started with ₦30,000. She had made several sales and one stock purchase. But when she tried to work out where every naira had come and gone, she couldn't make the numbers add up. She was missing ₦18,000 somewhere and had no idea where it had gone. She went to Aunty Florence, who listened patiently. "The problem," said Aunty Florence, "is that you're only writing down one side of each transaction. Someone pays you ₦15,000 for a phone — you write down ₦15,000 received. But you don't write down that you now have one fewer phone. One entry for two things that happened." She poured Amaka more tea. "That's why we use double entry. Every transaction has two sides. You record both. Always."`,
       votes:{up:0, down:0},
-      quiz:{q:'What is the purpose of classifying transactions in accounting?', opts:['To make transactions harder to find', 'To sort recorded transactions into meaningful categories so similar items can be examined together', 'To delete transactions that are no longer relevant', 'To convert transactions into a foreign currency'], ans:1, exp:'Classifying groups similar transactions together — like all sales, or all rent payments — which is what makes it possible to summarise and interpret the data usefully afterward.'}
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>Aunty Florence took a clean page and drew a simple table with two columns — left and right.</p>
+  <p>"In accounting," she said, "the left side of any account is called the <strong>debit</strong> side. The right side is the <strong>credit</strong> side. For every transaction, something gets debited and something gets credited — and the amounts are always equal."</p>
+  <p>The rules of double entry:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Account Type</th><th>Increases with</th><th>Decreases with</th></tr></thead>
+    <tbody>
+      <tr><td>Assets</td><td>Debit</td><td>Credit</td></tr>
+      <tr><td>Liabilities</td><td>Credit</td><td>Debit</td></tr>
+      <tr><td>Capital</td><td>Credit</td><td>Debit</td></tr>
+      <tr><td>Revenue (income)</td><td>Credit</td><td>Debit</td></tr>
+      <tr><td>Expenses</td><td>Debit</td><td>Credit</td></tr>
+    </tbody>
+  </table></div>
+  <p>This system was first described by Italian mathematician Luca Pacioli in 1494 — and it remains, unchanged, the backbone of every set of accounts in the world today.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's First Five Transactions</h3>
+  <p>Aunty Florence walked Amaka through the first five transactions of the week:</p>
+  <p><strong>Transaction 1: Amaka sells a Samsung A05 for ₦95,000 cash</strong></p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Account</th><th>Debit (₦)</th><th>Credit (₦)</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Cash</td><td>95,000</td><td></td><td>Asset increasing</td></tr>
+      <tr><td>Sales</td><td></td><td>95,000</td><td>Revenue increasing</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Transaction 2: Amaka buys 5 phones for ₦200,000 cash</strong></p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Account</th><th>Debit (₦)</th><th>Credit (₦)</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Purchases</td><td>200,000</td><td></td><td>Expense/stock increasing</td></tr>
+      <tr><td>Cash</td><td></td><td>200,000</td><td>Asset decreasing</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Transaction 3: Amaka pays ₦25,000 cash for shop rent</strong></p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Account</th><th>Debit (₦)</th><th>Credit (₦)</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Rent Expense</td><td>25,000</td><td></td><td>Expense increasing</td></tr>
+      <tr><td>Cash</td><td></td><td>25,000</td><td>Asset decreasing</td></tr>
+    </tbody>
+  </table></div>
+  <p>"Notice," said Aunty Florence, "that in every single transaction, the debit equals the credit. This is never optional. The moment they don't match, you have made an error."</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Every transaction: one debit, one credit, equal amounts. Assets and expenses go up on the debit side. Liabilities, capital and revenue go up on the credit side. When an asset decreases — like cash going out — it is credited. When a liability decreases — like paying a creditor — it is debited. These rules never change.</p>
+</div>`,
+      quiz:{q:'Amaka sells a phone for ₦120,000 cash. Which entry is correct?', opts:['Debit Sales ₦120,000, Credit Cash ₦120,000','Debit Cash ₦120,000, Credit Sales ₦120,000','Debit Cash ₦120,000, Credit Purchases ₦120,000','Debit Sales ₦120,000, Debit Cash ₦120,000'], ans:1, exp:'Cash (an asset) is increasing, so it is debited. Sales (revenue) is increasing, so it is credited. Debit Cash ₦120,000, Credit Sales ₦120,000 — equal amounts, opposite accounts.'}
     },
-    {id:6, term:'Summarising', duration:'2 min', pips:1,
-      definition:`The step in accounting where classified transactions are condensed into totals and reports that are far easier to use than looking through every individual transaction.`,
-      scenario:`Instead of reading through 400 individual sales transactions for the month, Amaka's summarised report simply shows: 'Total Sales for June: ₦450,000.' The detail is still there if needed, but the summary is what she actually uses to understand the month at a glance.`,
+
+    {id:6, term:'Debit and Credit', duration:'5 min', pips:2,
+      definition:`Debit is the left-hand side of an account. Credit is the right-hand side. Debits increase assets and expenses. Credits increase liabilities, capital and revenue. For every debit entry there is an equal and opposite credit entry — this is the rule that makes all accounting balance.`,
+      scenario:`"I keep getting confused," Amaka told Aunty Florence, two weeks into trading. "When I receive cash it feels like something good — shouldn't that be a credit? And when I spend money it feels bad — shouldn't that be a debit?" Aunty Florence sat back and folded her hands. "That feeling is exactly what confuses most beginners. Forget good and bad. Debit and credit are simply labels for left and right. What they do depends on the type of account." She took a blank page and drew a large T shape. "This is how we're going to sort this out."`,
       votes:{up:0, down:0},
-      quiz:{q:'What does summarising achieve in the accounting process?', opts:['It deletes the original transaction records', 'It condenses classified transactions into totals and reports that are easier to use', 'It happens before transactions are even identified', 'It replaces the need for a balance sheet'], ans:1, exp:'Summarising takes everything that\'s been classified and condenses it into totals and reports — turning hundreds of individual entries into a handful of useful figures.'}
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>The T-account is the simplest visual way to understand debits and credits. Every account has two sides:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th style="text-align:center">DEBIT (Left)</th><th style="text-align:center">CREDIT (Right)</th></tr></thead>
+    <tbody><tr><td style="text-align:center;padding:12px;">Increases assets<br>Increases expenses<br>Decreases liabilities<br>Decreases capital<br>Decreases revenue</td><td style="text-align:center;padding:12px;">Decreases assets<br>Decreases expenses<br>Increases liabilities<br>Increases capital<br>Increases revenue</td></tr></tbody>
+  </table></div>
+  <p>The key insight: debit and credit do not mean gain or loss. They mean left and right. What they do to a balance depends entirely on the type of account.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's Cash Account</h3>
+  <p>Aunty Florence drew the Cash account for Amaka's second week of trading:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th colspan="2" style="text-align:center">Cash Account</th></tr>
+    <tr><th>DEBIT (money coming in)</th><th>CREDIT (money going out)</th></tr></thead>
+    <tbody>
+      <tr><td>Balance b/d: 30,000</td><td>Purchases: 200,000</td></tr>
+      <tr><td>Sales: 95,000</td><td>Rent: 25,000</td></tr>
+      <tr><td>Sales: 120,000</td><td>Electricity: 8,000</td></tr>
+      <tr><td></td><td>Balance c/d: 12,000</td></tr>
+      <tr class="table-total"><td><strong>245,000</strong></td><td><strong>245,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>"Cash coming in goes on the debit side — it's an asset increasing," Aunty Florence explained. "Cash going out goes on the credit side — the asset is decreasing. The two sides must always add to the same total when we close the account."</p>
+  <p>Amaka stared at the table. "So the ₦12,000 closing balance means that's how much cash I have left?" "Exactly," said Aunty Florence. "That's your balance carried down — which becomes next week's balance brought down."</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>For assets: debit means more, credit means less. For liabilities: credit means more, debit means less. For expenses: debit means more. For revenue: credit means more. Memorise this table and double entry will start to feel automatic — because every transaction is just deciding which account gets debited and which gets credited by the same amount.</p>
+</div>`,
+      quiz:{q:'Amaka pays ₦8,000 cash for electricity. Which entry is correct?', opts:['Debit Cash, Credit Electricity Expense','Debit Electricity Expense, Credit Cash','Debit Electricity Expense, Debit Cash','Credit Electricity Expense, Credit Cash'], ans:1, exp:'Electricity Expense (an expense) is increasing — debit it. Cash (an asset) is decreasing — credit it. Debit Electricity Expense ₦8,000, Credit Cash ₦8,000.'}
     },
-    {id:7, term:'Presenting', duration:'2 min', pips:1,
-      definition:`The step in accounting where summarised financial information is formatted and communicated clearly to the people who need to use it, such as in a financial statement or report.`,
-      scenario:`Amaka's accountant doesn't just hand her a pile of numbers — she presents the information in a clear financial statement, with sales, costs and profit clearly labelled and laid out, so Amaka can actually understand and use it without being an accountant herself.`,
+
+    {id:7, term:'T-Accounts', duration:'5 min', pips:2,
+      definition:`A T-account is a simplified visual representation of a ledger account, shaped like the letter T. The account name appears at the top. Debits are listed on the left. Credits are listed on the right. The balance is the difference between the two sides.`,
+      scenario:`"Draw it for me again," said Amaka one afternoon, after Aunty Florence had explained debits and credits for the third time. She was sitting at the counter with a notepad, genuinely trying to understand. Aunty Florence picked up her pen. "The best way to see it is with T-accounts. It's literally the shape of a T. Everything goes on one side or the other, and the whole point is that both sides must balance." She drew three large T shapes on a fresh page. "Let's build your books from scratch. First week of Amaka Phones. Three accounts. Ready?"`,
       votes:{up:0, down:0},
-      quiz:{q:'Why does presenting matter as a distinct step in accounting, separate from summarising?', opts:['Because presenting and summarising are exactly the same thing', 'Because even well-summarised information needs to be clearly formatted and communicated to be genuinely useful to its audience', 'Because presenting only matters for businesses listed on a stock exchange', 'Because presenting happens before any transactions are recorded'], ans:1, exp:'Presenting is about clear communication — taking summarised figures and laying them out in a way the intended audience (owners, managers, investors) can actually understand and use.'}
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>A ledger account records every transaction that affects it. The T-account is the clearest way to draw one:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th colspan="2" style="text-align:center">Account Name</th></tr>
+    <tr><th>Dr (Debit)</th><th>Cr (Credit)</th></tr></thead>
+    <tbody><tr><td>Increases recorded here</td><td>Decreases recorded here</td></tr>
+    <tr><td>(for assets and expenses)</td><td>(for assets and expenses)</td></tr></tbody>
+  </table></div>
+  <p>Every business needs a separate T-account for each type of asset, liability, capital, revenue and expense. Together, all the T-accounts form the <strong>general ledger</strong> — the master record of every transaction.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's First Week in T-Accounts</h3>
+  <p>Aunty Florence built three T-accounts for Amaka's opening transactions:</p>
+  <p><em>Transaction 1: Amaka opens the business with ₦950,000 capital (cash)</em><br>
+  <em>Transaction 2: Buys 20 phones for ₦800,000 cash from Bright Mobile</em><br>
+  <em>Transaction 3: Buys display cabinet for ₦150,000 on credit from KC Furniture</em></p>
+
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th colspan="2" style="text-align:center">Cash Account</th></tr>
+    <tr><th>Dr</th><th>Cr</th></tr></thead>
+    <tbody>
+      <tr><td>Capital: 950,000</td><td>Purchases: 800,000</td></tr>
+      <tr><td></td><td>Balance c/d: 150,000</td></tr>
+      <tr class="table-total"><td><strong>950,000</strong></td><td><strong>950,000</strong></td></tr>
+      <tr><td>Balance b/d: 150,000</td><td></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th colspan="2" style="text-align:center">Purchases Account (Stock)</th></tr>
+    <tr><th>Dr</th><th>Cr</th></tr></thead>
+    <tbody>
+      <tr><td>Cash: 800,000</td><td></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th colspan="2" style="text-align:center">KC Furniture Account (Creditor)</th></tr>
+    <tr><th>Dr</th><th>Cr</th></tr></thead>
+    <tbody>
+      <tr><td></td><td>Display Cabinet: 150,000</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>"Notice," said Aunty Florence, pointing at the Cash account, "the two sides add up to the same total — 950,000 each. The balance brought down is ₦150,000 — the cash left in the business after buying stock." Amaka ran her finger along the page. "And the cabinet went into the creditor account because I haven't paid for it yet." "Exactly," said Aunty Florence. "The asset exists. The debt exists. Both are recorded."</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>A T-account balance is found by totalling both sides and taking the difference. If the debit side is larger, the account has a debit balance (normal for assets and expenses). If the credit side is larger, it has a credit balance (normal for liabilities, capital and revenue). The closing balance on one period becomes the opening balance — "balance b/d" — of the next.</p>
+</div>`,
+      quiz:{q:'At the end of the month, Amaka\'s Cash account shows ₦340,000 on the debit side and ₦290,000 on the credit side. What is the closing balance?', opts:['₦290,000 credit balance','₦50,000 debit balance','₦630,000 debit balance','₦50,000 credit balance'], ans:1, exp:'Debit total (₦340,000) minus Credit total (₦290,000) = ₦50,000. Since the debit side is larger, the balance is a debit balance — normal for cash, which is an asset.'}
     },
-    {id:8, term:'Interpreting', duration:'2 min', pips:1,
-      definition:`The final step in accounting, where the meaning behind the presented financial information is explained — what the numbers actually indicate about the health and performance of the business.`,
-      scenario:`After seeing her financial statement, Amaka still needs interpretation: her accountant explains that, although sales grew this month, her profit margin actually shrank because costs grew even faster — a conclusion that isn't obvious from the raw figures alone.`,
+
+    {id:8, term:'The Trial Balance', duration:'6 min', pips:3,
+      definition:`A trial balance is a list of all ledger account balances at a given date, with debit balances in one column and credit balances in another. If double entry has been applied correctly, the two columns will total the same amount. It is a check on the arithmetic accuracy of the bookkeeping.`,
+      scenario:`At the end of her first month, Amaka sat down to add everything up. She had kept records — sort of. Transactions in one notebook, cash in another, a pile of receipts rubber-banded together. She spent two hours trying to make sense of it and couldn't. When she showed Aunty Florence the mess, the older woman didn't scold her. She just said: "This is why we balance the books at the end of every period. You list every account and its balance. Debit on one side, credit on the other. If those two columns don't add up to the same total, you've made an error somewhere. That's your signal to find it before it becomes a much bigger problem."`,
       votes:{up:0, down:0},
-      quiz:{q:'What does interpreting add, beyond simply presenting financial figures?', opts:['Nothing — presenting and interpreting are identical steps', 'An explanation of what the figures actually mean for the business\'s health and performance', 'A list of every individual transaction for the year', 'A prediction guaranteed to be accurate about next year\'s results'], ans:1, exp:'Interpreting goes beyond simply showing the numbers — it explains what those numbers actually mean, such as noticing that rising sales don\'t necessarily mean rising profit.'}
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>The trial balance is extracted from the ledger accounts at the end of a period. It lists every account balance in two columns:</p>
+  <ul class="lesson-list">
+    <li><strong>Debit column</strong> — assets, expenses, drawings</li>
+    <li><strong>Credit column</strong> — liabilities, capital, revenue</li>
+  </ul>
+  <p>If the total of the debit column equals the total of the credit column, the trial balance <em>agrees</em> — the arithmetic of double entry is correct. If they don't agree, at least one error exists.</p>
+  <p><strong>Important:</strong> A trial balance that agrees does not guarantee the accounts are error-free. It only confirms that debits equal credits. Errors that do not affect this equality — such as posting to the wrong account, or omitting a transaction entirely — will not be caught by a trial balance. We will cover these errors in a later lesson.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's Month 1 Trial Balance</h3>
+  <p>At the end of Month 1, Aunty Florence helped Amaka extract the following trial balance:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Account</th><th>Dr (₦)</th><th>Cr (₦)</th></tr></thead>
+    <tbody>
+      <tr><td>Capital</td><td></td><td>950,000</td></tr>
+      <tr><td>Purchases (phones)</td><td>800,000</td><td></td></tr>
+      <tr><td>Display Cabinet</td><td>150,000</td><td></td></tr>
+      <tr><td>KC Furniture (creditor)</td><td></td><td>150,000</td></tr>
+      <tr><td>Cash</td><td>239,000</td><td></td></tr>
+      <tr><td>Sales</td><td></td><td>345,000</td></tr>
+      <tr><td>Rent Expense</td><td>25,000</td><td></td></tr>
+      <tr><td>Electricity Expense</td><td>8,000</td><td></td></tr>
+      <tr><td>Tunde Tech (debtor)</td><td>45,000</td><td></td></tr>
+      <tr><td>Laptop</td><td>120,000</td><td></td></tr>
+      <tr><td>Cash Float / Till</td><td>58,000</td><td></td></tr>
+      <tr class="table-total"><td><strong>Total</strong></td><td><strong>1,445,000</strong></td><td><strong>1,445,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>"Both sides: ₦1,445,000," said Aunty Florence. "The books balance. Now we know your double entry is arithmetically correct for the month." Amaka sat back. The relief was visible. "That's it?" "That's the check," said Aunty Florence. "Now the real work — the financial statements — can begin."</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Always prepare a trial balance before preparing financial statements. The rule for which column each account goes in: assets → debit, liabilities → credit, capital → credit, revenue → credit, expenses → debit. If the trial balance doesn't balance, you must find the error before moving forward. Don't guess — trace it.</p>
+</div>`,
+      quiz:{q:'Which of these would NOT be detected by a trial balance?', opts:['A debit entry posted with no matching credit','A transaction posted to the wrong account but with correct debit and credit amounts','A debit total that is ₦50,000 more than the credit total','An account balance added to the wrong column of the trial balance'], ans:1, exp:'A transaction posted to the wrong account — but still as a correct debit and credit of equal amounts — will not affect the trial balance totals. The two columns still agree, so the error is invisible to the trial balance. This is one of several "errors not affecting the trial balance" that we cover in a later lesson.'}
     },
-    {id:9, term:'Accounting Equation', duration:'2 min', pips:1,
-      definition:`The foundational rule of accounting: Assets = Capital + Liabilities. It can also be written as Capital = Assets − Liabilities. Whichever way it is arranged, both sides always total the same amount.`,
-      scenario:`Amaka's kiosk has ₦2,000,000 of assets (stock, cash, a display cabinet) and owes ₦450,000 to a supplier. Using the equation, her capital must be ₦2,000,000 − ₦450,000 = ₦1,550,000 — whatever isn't covered by what she owes is automatically her own stake in the business.`,
+
+    {id:9, term:'Books of Original Entry', duration:'5 min', pips:2,
+      definition:`Books of original entry (also called books of prime entry) are the first place a transaction is recorded before being posted to the ledger. They include the sales day book, purchases day book, cash book, returns day books and the journal. Each captures a specific type of transaction.`,
+      scenario:`By the end of her first month, Amaka had sold phones to nine different customers, purchased stock from two suppliers, returned one faulty handset, and paid various expenses. She had written most of it in a single notebook in no particular order. When Aunty Florence asked her to find how much her biggest customer owed, Amaka flicked through twelve pages before admitting she couldn't find it. "This is the problem with mixing everything together," Aunty Florence said. "Every type of transaction needs its own book. That way you always know where to look — and the ledger stays clean."`,
       votes:{up:0, down:0},
-      quiz:{q:'A business has ₦3,500,000 in assets and ₦900,000 in liabilities. What is its capital?', opts:['₦4,400,000', '₦2,600,000', '₦900,000', '₦3,500,000'], ans:1, exp:'Capital = Assets − Liabilities = ₦3,500,000 − ₦900,000 = ₦2,600,000.'}
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>Rather than posting every transaction directly into the ledger, bookkeeping uses books of original entry as a first stage. Transactions are recorded here as they happen, then posted (transferred) to the relevant ledger accounts periodically.</p>
+  <p>The main books of original entry:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Book</th><th>What it records</th></tr></thead>
+    <tbody>
+      <tr><td>Sales Day Book</td><td>All credit sales to customers</td></tr>
+      <tr><td>Purchases Day Book</td><td>All credit purchases from suppliers</td></tr>
+      <tr><td>Sales Returns Day Book</td><td>Goods returned by customers (returns inwards)</td></tr>
+      <tr><td>Purchases Returns Day Book</td><td>Goods returned to suppliers (returns outwards)</td></tr>
+      <tr><td>Cash Book</td><td>All cash and bank receipts and payments</td></tr>
+      <tr><td>The Journal</td><td>Transactions that don't fit the other books</td></tr>
+    </tbody>
+  </table></div>
+  <p>Cash sales go directly into the cash book. Credit sales go into the sales day book. The journal handles corrections, opening entries, and unusual transactions.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's Sales Day Book</h3>
+  <p>Aunty Florence showed Amaka how to set up the Sales Day Book for her credit customers in Month 1:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Date</th><th>Customer</th><th>Invoice No.</th><th>Amount (₦)</th></tr></thead>
+    <tbody>
+      <tr><td>Day 3</td><td>Tunde Tech</td><td>001</td><td>45,000</td></tr>
+      <tr><td>Day 11</td><td>Grace Stores</td><td>002</td><td>85,000</td></tr>
+      <tr><td>Day 19</td><td>Bright Future Ltd</td><td>003</td><td>120,000</td></tr>
+      <tr><td>Day 26</td><td>Tunde Tech</td><td>004</td><td>60,000</td></tr>
+      <tr class="table-total"><td></td><td></td><td><strong>Total</strong></td><td><strong>310,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>"At the end of the month," Aunty Florence explained, "the total of ₦310,000 is posted as a single entry: debit Debtors Control Account ₦310,000, credit Sales Account ₦310,000. And each customer's individual amount goes into their own account in the sales ledger."</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Books of original entry are not part of the double entry system itself — they are a staging area. The double entry happens when figures are posted from these books into the ledger accounts. The books of original entry are valuable because they keep different types of transactions clearly separated and provide an audit trail — a clear record of where every ledger entry originated.</p>
+</div>`,
+      quiz:{q:'Where would Amaka first record a credit sale of ₦75,000 to a new customer?', opts:['Directly in the ledger','In the Sales Day Book','In the Purchases Day Book','In the Journal'], ans:1, exp:'Credit sales are first recorded in the Sales Day Book — the book of original entry for this type of transaction. From there, the total is posted to the Sales Account and the individual amount to the customer\'s account in the sales ledger.'}
     },
-    {id:10, term:'Accruals Concept', duration:'2 min', pips:1,
-      definition:`The idea that profit is the difference between revenues earned and the expenses incurred in earning them, regardless of when cash is actually received or paid. Income and costs are matched to the period they relate to.`,
-      scenario:`Amaka's electricity bill for December arrives in January. Even though she hasn't paid yet, the accruals concept says that cost belongs to December's accounts — because that's the month she actually used the electricity.`,
+
+    {id:10, term:'The Journal', duration:'5 min', pips:2,
+      definition:`The journal is the book of original entry used for transactions that do not belong in any of the other books — opening entries, correction of errors, purchase and sale of fixed assets on credit, and other non-routine transactions. Each journal entry shows the account to be debited, the account to be credited, and a narrative explaining the transaction.`,
+      scenario:`In Week 3, a customer came back with a ₦95,000 phone she had bought the week before. The screen had cracked internally — a manufacturing fault. Amaka agreed to swap it for a replacement. She stared at her notebook. This wasn't a normal sale and it wasn't exactly a normal return. The phone was going back, but so was the replacement going out. She had no idea where to write it. She called Aunty Florence. "That," said Aunty Florence, "is exactly what the journal is for. The unusual ones. The ones that don't fit anywhere else."`,
       votes:{up:0, down:0},
-      quiz:{q:'A business uses ₦40,000 of electricity in March but doesn\'t pay the bill until April. Under the accruals concept, which month\'s accounts should include this ₦40,000 expense?', opts:['April, since that\'s when it was paid', 'March, since that\'s when it was used', 'Split evenly between both months', 'Neither — only paid expenses are ever recorded'], ans:1, exp:'The accruals concept matches expenses to the period they relate to, not the period they\'re paid in — so the ₦40,000 belongs to March.'}
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>The journal (sometimes called the general journal) is the last resort book of original entry — it handles everything that doesn't belong in the cash book, sales day book, purchases day book or returns books.</p>
+  <p>Typical journal entries include:</p>
+  <ul class="lesson-list">
+    <li>Opening entries when a new set of books is started</li>
+    <li>Purchase or sale of fixed assets on credit</li>
+    <li>Correction of errors</li>
+    <li>Writing off bad debts</li>
+    <li>Adjustments at the end of a period (depreciation, accruals, prepayments)</li>
+    <li>Any non-routine transaction that needs a written explanation</li>
+  </ul>
+  <p>Every journal entry must include: the date, the accounts to be debited and credited, the amounts, and a <strong>narrative</strong> — a short written explanation of why the entry is being made. The narrative is not optional. It is the audit trail.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's Phone Exchange</h3>
+  <p>Aunty Florence wrote the journal entry for the faulty phone swap:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Date</th><th>Account</th><th>Dr (₦)</th><th>Cr (₦)</th></tr></thead>
+    <tbody>
+      <tr><td>Week 3, Day 2</td><td>Returns Inwards</td><td>95,000</td><td></td></tr>
+      <tr><td></td><td>Tunde Tech (Debtor)</td><td></td><td>95,000</td></tr>
+      <tr><td colspan="4" style="font-size:0.8rem;color:var(--muted);font-style:italic;">Being: return of Samsung A05 (Invoice 001) due to manufacturing fault. Replacement issued same date.</td></tr>
+    </tbody>
+  </table></div>
+  <p>"See the narrative at the bottom?" Aunty Florence pointed. "That's the explanation. Six months from now — or if anyone ever queries this transaction — that sentence tells you exactly what happened and why. Without it, a journal entry is just numbers. The narrative gives it meaning."</p>
+  <p>Amaka copied it carefully. "So the journal is basically for things that need explaining?" "Exactly," said Aunty Florence. "If you ever find yourself writing a journal entry and you can't write a clear narrative for it, stop. That usually means you're not sure what you're recording — or you're recording it in the wrong place."</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Journal format: always list the debit entry first, then the credit entry slightly indented. Always include the narrative. The journal is the most powerful book in the system because it can correct any error and record any non-routine transaction — but that power means every entry must be clearly explained and authorised. An unexplained journal entry is a red flag in any audit.</p>
+</div>`,
+      quiz:{q:'Amaka writes off a ₦45,000 bad debt for a customer who has disappeared. Which book of original entry would she use?', opts:['Sales Day Book','Cash Book','Purchases Day Book','The Journal'], ans:3, exp:'Writing off a bad debt is a non-routine adjustment — it doesn\'t fit the cash book (no cash moved), the sales day book (it\'s not a new sale) or the purchases book. It belongs in the journal, with a narrative explaining that the debt has been confirmed as irrecoverable.'}
     },
     {id:11, term:'Assets', duration:'2 min', pips:1,
       definition:`Resources owned by a business or owed to it, such as buildings, equipment, stock, money in the bank, and amounts customers owe. Assets represent what a business has.`,
