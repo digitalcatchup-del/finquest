@@ -280,7 +280,27 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .forum-post-time{font-size:0.76rem;color:var(--muted2);}
 .forum-post-text{font-size:0.88rem;color:var(--off);line-height:1.55;margin-bottom:10px;word-wrap:break-word;}
 
-/* ── ARTICLES ── */
+/* ── AI CHAT ── */
+.ai-chat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.ai-chat-messages{display:flex;flex-direction:column;gap:16px;max-height:480px;overflow-y:auto;padding-bottom:4px;scroll-behavior:smooth;}
+.ai-msg{display:flex;align-items:flex-start;gap:10px;}
+.ai-msg-user{flex-direction:row-reverse;}
+.ai-msg-avatar{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.ai-msg-bubble{max-width:80%;padding:12px 16px;border-radius:12px;font-size:0.88rem;line-height:1.6;}
+.ai-msg-bubble p{margin:0 0 8px;}.ai-msg-bubble p:last-child{margin-bottom:0;}
+.ai-msg-bubble-user{background:var(--gold);color:#000;border-radius:12px 12px 2px 12px;font-weight:600;}
+.ai-msg-bubble-assistant{background:var(--surface);border:1px solid var(--border2);color:var(--off);border-radius:12px 12px 12px 2px;}
+.ai-typing{display:flex;align-items:center;gap:5px;padding:14px 18px;}
+.ai-typing span{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;animation:aiTypingBounce 1.2s infinite ease-in-out;}
+.ai-typing span:nth-child(2){animation-delay:0.2s;}
+.ai-typing span:nth-child(3){animation-delay:0.4s;}
+@keyframes aiTypingBounce{0%,80%,100%{transform:scale(0.7);opacity:0.4;}40%{transform:scale(1);opacity:1;}}
+.ai-chat-composer{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
+.ai-composer-input{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 14px;font-size:0.88rem;font-family:inherit;}
+.ai-composer-input:focus{outline:none;border-color:var(--gold);}
+.ai-composer-input:disabled{opacity:0.5;}
+.ai-send-btn{background:var(--gold);border:none;color:#000;font-size:1.2rem;font-weight:900;width:42px;height:42px;border-radius:8px;cursor:pointer;flex-shrink:0;transition:opacity 0.15s;}
+.ai-send-btn:hover{opacity:0.85;}.ai-send-btn:disabled{opacity:0.4;cursor:default;}
 .articles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:8px;}
 .article-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color 0.2s;}
 .article-card:hover{border-color:var(--border3);}
@@ -848,18 +868,23 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <h1 class="hero-heading">What's Your <span id="flavorWord">Flavor?</span></h1>
   <p class="hero-sub">Search any topic related to money or jump straight into a lesson.</p>
 
-  <!-- SEARCH BAR -->
+  <!-- AI CHAT BAR -->
   <div class="search-wrap">
     <div class="search-box">
-      <span class="search-icon" onclick="document.getElementById('searchInput').focus();" style="cursor:pointer;">🔍</span>
-      <input class="search-input" type="text" id="searchInput" placeholder=" " autocomplete="off" oninput="onSearch(this.value);updateFakePlaceholder(this.value,'searchFakePlaceholder');" onkeydown="onSearchKey(event)" onfocus="hideFakePlaceholder('searchFakePlaceholder')" onblur="showFakePlaceholder('searchFakePlaceholder','searchInput')"/>
-      <div class="search-fake-placeholder" id="searchFakePlaceholder"><span id="searchFakePlaceholderText" onclick="onSearchQuestionClick()">Search accounting topics, e.g. depreciation, VAT, IFRS...</span></div>
-      <button class="search-btn" onclick="doSearch()" aria-label="Search">›</button>
+      <span class="search-icon" onclick="document.getElementById('searchInput').focus();" style="cursor:pointer;">✨</span>
+      <input class="search-input" type="text" id="searchInput" placeholder=" " autocomplete="off"
+        oninput="updateFakePlaceholder(this.value,'searchFakePlaceholder');"
+        onkeydown="onSearchKey(event)"
+        onfocus="hideFakePlaceholder('searchFakePlaceholder')"
+        onblur="showFakePlaceholder('searchFakePlaceholder','searchInput')"/>
+      <div class="search-fake-placeholder" id="searchFakePlaceholder">
+        <span id="searchFakePlaceholderText">Ask anything — e.g. explain accruals, what is double entry?</span>
+      </div>
+      <button class="search-btn" onclick="doSearch()" aria-label="Ask AI">›</button>
     </div>
-    <div class="search-suggestions" id="searchSuggestions"></div>
   </div>
 
-  <!-- INLINE SEARCH RESULTS — shown instead of everything below, only while a search is active -->
+  <!-- AI CHAT PANEL — shown instead of homepage content while active -->
   <div id="homeSearchResults" style="display:none;width:100%;max-width:760px;position:relative;z-index:1;"></div>
 
   <div id="homeDefaultContent">
@@ -1386,11 +1411,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=17"></script>
-<script src="data.js?v=17"></script>
-<script src="auth.js?v=17"></script>
-<script src="app.js?v=17"></script>
-<script src="track.js?v=17"></script>
+<script src="supabase-config.js?v=19"></script>
+<script src="data.js?v=19"></script>
+<script src="auth.js?v=19"></script>
+<script src="app.js?v=19"></script>
+<script src="track.js?v=19"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
