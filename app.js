@@ -1063,7 +1063,7 @@ function clearHomeSearch() { clearAIChat(); }
 function onSearchQuestionClick() {
   const state = searchPlaceholderInstances['searchFakePlaceholder'];
   if (!state || !state.currentText) return;
-  askSearchQuestion(state.currentText);
+  askAI(state.currentText);
 }
 
 function askSearchQuestion(question) {
