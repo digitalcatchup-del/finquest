@@ -194,6 +194,64 @@ function enterApp() {
   showPage('homePage');
 }
 
+// ── SERVICES PAGE ─────────────────────────────────────────────
+function selectService(name) {
+  showPage('servicesPage');
+  const sel = document.getElementById('svcService');
+  if (sel) {
+    // Try to find exact match, fall back to partial
+    const opts = Array.from(sel.options);
+    const match = opts.find(o => o.value === name || o.value.startsWith(name.split('—')[0].trim()));
+    if (match) sel.value = match.value;
+  }
+  setTimeout(() => {
+    document.getElementById('serviceBookingForm')?.scrollIntoView({ behavior: 'smooth' });
+  }, 100);
+}
+
+async function submitServiceBooking() {
+  const name     = document.getElementById('svcName')?.value.trim();
+  const email    = document.getElementById('svcEmail')?.value.trim();
+  const phone    = document.getElementById('svcPhone')?.value.trim();
+  const business = document.getElementById('svcBusiness')?.value.trim();
+  const service  = document.getElementById('svcService')?.value;
+  const message  = document.getElementById('svcMessage')?.value.trim();
+  const msgEl    = document.getElementById('svcFormMsg');
+
+  if (!name || !email || !service) {
+    msgEl.style.display = 'block';
+    msgEl.style.cssText = 'display:block;background:#3b1515;border:1px solid #c0392b;color:#fca5a5;padding:12px 16px;border-radius:8px;font-size:0.82rem;margin-bottom:12px;';
+    msgEl.textContent = 'Please fill in your name, email and the service you need.';
+    return;
+  }
+
+  // Log to Supabase newsletter_subscribers as a service enquiry
+  try {
+    await db.from('newsletter_subscribers').upsert({
+      email,
+      source: 'service_enquiry',
+      name,
+      note: `Service: ${service} | Phone: ${phone || 'not given'} | Business: ${business || 'n/a'} | Message: ${message}`
+    }, { onConflict: 'email', ignoreDuplicates: false });
+  } catch(e) { console.log('enquiry log:', e); }
+
+  msgEl.style.cssText = 'display:block;background:#0d2e1a;border:1px solid #1a7a4a;color:#6ee7b7;padding:12px 16px;border-radius:8px;font-size:0.82rem;margin-bottom:12px;';
+  msgEl.textContent = `Thank you ${name} — we've received your enquiry about "${service}" and will get back to you within 24 hours.`;
+
+  // Clear form
+  ['svcName','svcEmail','svcPhone','svcBusiness','svcMessage'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('svcService').value = '';
+}
+
+function downloadSampleReport() {
+  // Opens the EatFishwife sample report in a new tab
+  // In production, host the PDF on your server/CDN and link to it
+  const url = 'https://butterflydynamixllc.com/assets/sample-bank-statement-analysis.pdf';
+  window.open(url, '_blank');
+}
+
 // ── ACCOUNTING MODAL ─────────────────────────────────────────
 function openAccounting() {
   const topics = accountingTopics || [];
@@ -1062,8 +1120,11 @@ function clearHomeSearch() { clearAIChat(); }
 // of this links or navigates into actual lesson content.
 function onSearchQuestionClick() {
   const state = searchPlaceholderInstances['searchFakePlaceholder'];
-  if (!state || !state.currentText) return;
-  askAI(state.currentText);
+  const question = (state && state.currentText)
+    ? state.currentText
+    : document.getElementById('searchFakePlaceholderText')?.textContent?.trim();
+  if (!question) return;
+  askAI(question);
 }
 
 function askSearchQuestion(question) {
