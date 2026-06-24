@@ -7,7 +7,7 @@
 // ── FLUTTERWAVE CONFIG ───────────────────────────────────────
 // TEST MODE — switch to live public key once Flutterwave business
 // verification (RC/BN number) is complete.
-const FLUTTERWAVE_PUBLIC_KEY = 'FLWPUBK_TEST-d7a81c18068d8b0323e75325c070f81b-X';
+const FLUTTERWAVE_PUBLIC_KEY = 'FLWPUBK-0d0c350953e7392e1abd13258162c6f4-X';
 
 // ── PRICING CONFIG ───────────────────────────────────────────
 // Professional pricing is a fixed journey for every subscriber, counted
@@ -199,7 +199,6 @@ function selectService(name) {
   showPage('servicesPage');
   const sel = document.getElementById('svcService');
   if (sel) {
-    // Try to find exact match, fall back to partial
     const opts = Array.from(sel.options);
     const match = opts.find(o => o.value === name || o.value.startsWith(name.split('—')[0].trim()));
     if (match) sel.value = match.value;
@@ -210,6 +209,12 @@ function selectService(name) {
 }
 
 async function submitServiceBooking() {
+  // Gate: must be logged in to book
+  if (!currentUser) {
+    openAuth('signup');
+    return;
+  }
+
   const name     = document.getElementById('svcName')?.value.trim();
   const email    = document.getElementById('svcEmail')?.value.trim();
   const phone    = document.getElementById('svcPhone')?.value.trim();
@@ -219,35 +224,121 @@ async function submitServiceBooking() {
   const msgEl    = document.getElementById('svcFormMsg');
 
   if (!name || !email || !service) {
-    msgEl.style.display = 'block';
     msgEl.style.cssText = 'display:block;background:#3b1515;border:1px solid #c0392b;color:#fca5a5;padding:12px 16px;border-radius:8px;font-size:0.82rem;margin-bottom:12px;';
     msgEl.textContent = 'Please fill in your name, email and the service you need.';
     return;
   }
 
-  // Log to Supabase newsletter_subscribers as a service enquiry
-  try {
-    await db.from('newsletter_subscribers').upsert({
-      email,
-      source: 'service_enquiry',
-      name,
-      note: `Service: ${service} | Phone: ${phone || 'not given'} | Business: ${business || 'n/a'} | Message: ${message}`
-    }, { onConflict: 'email', ignoreDuplicates: false });
-  } catch(e) { console.log('enquiry log:', e); }
+  // Work out price from selected service
+  const amountUsd = service.includes('$100') ? 100 : null;
 
-  msgEl.style.cssText = 'display:block;background:#0d2e1a;border:1px solid #1a7a4a;color:#6ee7b7;padding:12px 16px;border-radius:8px;font-size:0.82rem;margin-bottom:12px;';
-  msgEl.textContent = `Thank you ${name} — we've received your enquiry about "${service}" and will get back to you within 24 hours.`;
+  // Save enquiry to Supabase
+  msgEl.style.cssText = 'display:block;background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:12px 16px;border-radius:8px;font-size:0.82rem;margin-bottom:12px;';
+  msgEl.textContent = 'Saving your enquiry…';
 
-  // Clear form
+  const result = await submitServiceEnquiry({ name, email, phone, business, service, message, amountUsd });
+
+  if (result.error) {
+    msgEl.style.cssText = 'display:block;background:#3b1515;border:1px solid #c0392b;color:#fca5a5;padding:12px 16px;border-radius:8px;font-size:0.82rem;margin-bottom:12px;';
+    msgEl.textContent = 'Something went wrong — please try again.';
+    return;
+  }
+
+  const enquiryId = result.data.id;
+  window._currentEnquiryId = enquiryId;
+
+  // Success — show confirmation + payment option
+  msgEl.style.cssText = 'display:block;background:#0d2e1a;border:1px solid #1a7a4a;color:#6ee7b7;padding:16px;border-radius:8px;font-size:0.85rem;margin-bottom:12px;';
+  msgEl.innerHTML = `
+    <div style="font-weight:700;margin-bottom:6px;">✓ Enquiry received — reference #${enquiryId.slice(0,8).toUpperCase()}</div>
+    <div style="margin-bottom:12px;font-size:0.8rem;opacity:0.9;">We will be in touch within 24 hours on ${email}${phone ? ' or ' + phone : ''}.</div>
+    ${amountUsd ? `
+    <div style="font-size:0.8rem;margin-bottom:10px;opacity:0.9;">Ready to proceed? Pay now to confirm your booking and move straight to in progress.</div>
+    <button class="btn btn-gold" onclick="payForService('${service}', ${amountUsd}, '${enquiryId}')" style="padding:11px 28px;font-size:0.85rem;">
+      Pay $${amountUsd} to Confirm →
+    </button>
+    ` : `
+    <div style="font-size:0.8rem;opacity:0.9;">We will discuss pricing and payment during your free consultation.</div>
+    `}`;
+
+  // Clear form fields
   ['svcName','svcEmail','svcPhone','svcBusiness','svcMessage'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('svcService').value = '';
+
+  // Notify via Edge Function (fire and forget)
+  notifyNewEnquiry({ name, email, phone, service, message, enquiryId });
+}
+
+function payForService(serviceName, amountUsd, enquiryId) {
+  if (!currentUser) { openAuth('signup'); return; }
+
+  const NGN_RATE  = 1360;
+  const amountNGN = amountUsd * NGN_RATE;
+  const txRef     = 'BD_SVC_' + Date.now();
+
+  if (typeof FlutterwaveCheckout === 'undefined') {
+    alert('Payment system loading — please try again in a moment.');
+    return;
+  }
+
+  FlutterwaveCheckout({
+    public_key: FLUTTERWAVE_PUBLIC_KEY,
+    tx_ref:     txRef,
+    amount:     amountNGN,
+    currency:   'NGN',
+    payment_options: 'card, banktransfer, ussd',
+    customer: {
+      email: currentUser.email,
+      name:  currentUser.username || currentUser.email,
+    },
+    customizations: {
+      title:       'Butterfly Dynamix',
+      description: serviceName,
+      logo:        '',
+    },
+    meta: {
+      service:    serviceName,
+      enquiry_id: enquiryId,
+      user_id:    currentUser.id,
+    },
+    callback: async function (response) {
+      if (response.status === 'successful' || response.status === 'completed') {
+        await markEnquiryPaid(enquiryId, txRef);
+        const msgEl = document.getElementById('svcFormMsg');
+        if (msgEl) {
+          msgEl.innerHTML = `
+            <div style="font-weight:700;margin-bottom:6px;">🎉 Payment confirmed!</div>
+            <div style="font-size:0.8rem;opacity:0.9;">Your booking is confirmed. We will be in touch within 24 hours to get started.</div>`;
+        }
+      }
+    },
+    onclose: function () {
+      // User closed without paying — enquiry is still saved, they can pay later
+    },
+  });
+}
+
+async function notifyNewEnquiry({ name, email, phone, service, message, enquiryId }) {
+  // Calls a Supabase Edge Function that sends you an email notification.
+  // Fires silently — failure does not affect the user experience.
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    await fetch(`${SUPABASE_URL}/functions/v1/notify-enquiry`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ name, email, phone, service, message, enquiryId }),
+    });
+  } catch (e) {
+    console.log('Notification send failed silently:', e);
+  }
 }
 
 function downloadSampleReport() {
-  // Opens the EatFishwife sample report in a new tab
-  // In production, host the PDF on your server/CDN and link to it
   const url = 'https://butterflydynamixllc.com/assets/sample-bank-statement-analysis.pdf';
   window.open(url, '_blank');
 }
@@ -566,7 +657,11 @@ function renderProfileHeader(profile) {
         <div><div class="profile-stat-val">${profile.total_lessons}</div><div class="profile-stat-label">Lessons</div></div>
         <div><div class="profile-stat-val">${profile.total_correct}</div><div class="profile-stat-label">Correct</div></div>
       </div>
-      ${viewingIsOwnProfile ? `<button class="profile-edit-btn" onclick="openEditProfile()">Edit Profile</button>` : ''}
+      ${viewingIsOwnProfile ? `
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px;">
+          <button class="profile-edit-btn" onclick="openEditProfile()">Edit Profile</button>
+          <button class="profile-edit-btn" onclick="window.open('bookkeeping.html','_blank')" style="border-color:var(--gold);color:var(--gold);">📊 Bookkeeping</button>
+        </div>` : ''}
     </div>`;
 }
 
