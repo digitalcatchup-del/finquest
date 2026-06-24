@@ -967,24 +967,20 @@ function onSearch() {
 }
 
 async function askAI(question) {
-  // Log the query (keeps search_log table useful as an analytics signal)
   if (currentUser) {
     db.from('search_log').insert({ user_id: currentUser.id, query: question }).then(() => {});
   }
 
-  // Show the chat panel, hide homepage content
   document.getElementById('homeDefaultContent').style.display = 'none';
   const panel = document.getElementById('homeSearchResults');
   panel.style.display = 'block';
   aiChatActive = true;
 
-  // Add the user's message to history and render it immediately
   aiChatHistory.push({ role: 'user', content: question });
   document.getElementById('searchInput').value = '';
   showFakePlaceholder('searchFakePlaceholder', 'searchInput');
-  renderChatPanel(true); // show typing indicator while waiting
+  renderChatPanel(true);
 
-  // Call the Supabase Edge Function
   let reply = '';
   try {
     const { data: { session } } = await db.auth.getSession();
@@ -1002,12 +998,7 @@ async function askAI(question) {
         }),
       }
     );
-
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || res.statusText);
-    }
-
+    if (!res.ok) throw new Error(await res.text() || res.statusText);
     const json = await res.json();
     reply = json.reply || json.content || '';
   } catch (err) {
@@ -1020,37 +1011,28 @@ async function askAI(question) {
   }
 
   aiChatHistory.push({ role: 'assistant', content: reply });
-  // Render without loading state, then typewrite the last message
-  renderChatPanel(false, true); // second arg = typewrite last message
+  renderChatPanel(false);
 }
 
-function renderChatPanel(isLoading, typewriteLast = false) {
+function renderChatPanel(isLoading) {
   const panel = document.getElementById('homeSearchResults');
 
-  // All messages except the last assistant one (which will be typewritten)
-  const messages = aiChatHistory;
-  const lastIsAssistant = !isLoading && typewriteLast &&
-    messages.length > 0 && messages[messages.length - 1].role === 'assistant';
-
-  const messagesHtml = messages.map((msg, idx) => {
-    const isLast = idx === messages.length - 1;
+  const messagesHtml = aiChatHistory.map((msg, idx) => {
+    const isLastAssistant = !isLoading && idx === aiChatHistory.length - 1 && msg.role === 'assistant';
     if (msg.role === 'user') {
       return `<div class="ai-msg ai-msg-user">
         <div class="ai-msg-bubble ai-msg-bubble-user">${escapeHtml(msg.content)}</div>
       </div>`;
     } else {
-      // If this is the last message and we're typewriting, render empty bubble
-      const content = (isLast && lastIsAssistant) ? '' : formatAIText(msg.content);
-      const id = (isLast && lastIsAssistant) ? ' id="aiTypewriterBubble"' : '';
-      return `<div class="ai-msg ai-msg-assistant">
+      return `<div class="ai-msg ai-msg-assistant"${isLastAssistant ? ' id="aiLatestResponse"' : ''}>
         <div class="ai-msg-avatar">✨</div>
-        <div class="ai-msg-bubble ai-msg-bubble-assistant"${id}>${content}</div>
+        <div class="ai-msg-bubble ai-msg-bubble-assistant">${formatAIText(msg.content)}</div>
       </div>`;
     }
   }).join('');
 
   const typingHtml = isLoading ? `
-    <div class="ai-msg ai-msg-assistant">
+    <div class="ai-msg ai-msg-assistant" id="aiLatestResponse">
       <div class="ai-msg-avatar">✨</div>
       <div class="ai-msg-bubble ai-msg-bubble-assistant ai-typing">
         <span></span><span></span><span></span>
@@ -1075,65 +1057,21 @@ function renderChatPanel(isLoading, typewriteLast = false) {
     </div>`;
 
   requestAnimationFrame(() => {
-    const msgs = document.getElementById('aiMessages');
-    if (msgs) msgs.scrollTop = msgs.scrollHeight;
-
-    if (lastIsAssistant) {
-      const lastMsg = messages[messages.length - 1];
-      typewriteMessage('aiTypewriterBubble', lastMsg.content, msgs);
-    } else if (!isLoading) {
+    if (isLoading) {
+      // While waiting: scroll to show the typing indicator
+      const latest = document.getElementById('aiLatestResponse');
+      if (latest) latest.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      // Response arrived: scroll to the TOP of the new message so
+      // users read from the beginning — not dragged to the bottom
+      const latest = document.getElementById('aiLatestResponse');
+      if (latest) {
+        latest.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
       const inp = document.getElementById('aiFollowUpInput');
       if (inp) inp.focus();
     }
   });
-}
-
-// Typewriter effect — reveals formatted HTML word by word.
-// Scrolls to show the TOP of the response bubble at the start,
-// then stays still so the user reads naturally from top to bottom
-// without being dragged down the page.
-function typewriteMessage(bubbleId, rawText, scrollContainer) {
-  const bubble = document.getElementById(bubbleId);
-  if (!bubble) return;
-
-  const words = rawText.split(' ');
-  let wordIdx  = 0;
-  const SPEED  = 28; // ms per word
-
-  // Scroll to bring the start of this bubble into view — once, at the beginning
-  if (scrollContainer && bubble) {
-    const bubbleTop = bubble.offsetTop;
-    // Small offset so there's breathing room above the bubble
-    scrollContainer.scrollTop = Math.max(0, bubbleTop - 16);
-  }
-
-  const tick = () => {
-    wordIdx++;
-    const slice = words.slice(0, wordIdx).join(' ');
-    bubble.innerHTML = formatAIText(slice);
-    // No scrolling during typing — user reads from where they are
-
-    if (wordIdx < words.length) {
-      setTimeout(tick, SPEED);
-    } else {
-      // Finished — re-enable the follow-up input
-      const inp = document.getElementById('aiFollowUpInput');
-      if (inp) {
-        inp.disabled = false;
-        inp.focus();
-      }
-      const btn = document.querySelector('.ai-send-btn');
-      if (btn) btn.disabled = false;
-    }
-  };
-
-  // Disable follow-up input while typewriting
-  const inp = document.getElementById('aiFollowUpInput');
-  if (inp) inp.disabled = true;
-  const btn = document.querySelector('.ai-send-btn');
-  if (btn) btn.disabled = true;
-
-  setTimeout(tick, 80); // short pause after typing dots disappear
 }
 
 function sendFollowUp() {
