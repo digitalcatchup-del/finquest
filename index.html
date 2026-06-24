@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -301,7 +299,73 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .ai-composer-input:disabled{opacity:0.5;}
 .ai-send-btn{background:var(--gold);border:none;color:#000;font-size:1.2rem;font-weight:900;width:42px;height:42px;border-radius:8px;cursor:pointer;flex-shrink:0;transition:opacity 0.15s;}
 .ai-send-btn:hover{opacity:0.85;}.ai-send-btn:disabled{opacity:0.4;cursor:default;}
-.lesson-content-section{margin-bottom:24px;}
+/* ── SERVICES PAGE ── */
+.services-wrap{max-width:1040px;margin:0 auto;padding:0 32px 80px;}
+.services-hero{text-align:center;padding:60px 20px 48px;border-bottom:1px solid var(--border);}
+.services-hero-title{font-size:2rem;font-weight:900;color:var(--white);line-height:1.2;margin:12px 0 14px;}
+.services-hero-sub{font-size:0.9rem;color:var(--muted);max-width:500px;margin:0 auto 20px;}
+.services-credentials{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.services-cred-badge{font-size:0.72rem;font-weight:700;color:var(--gold);background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);padding:5px 12px;border-radius:20px;}
+.services-section{padding:48px 0;border-bottom:1px solid var(--border);}
+.services-section-label{font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+.services-section-title{font-size:1.4rem;font-weight:900;color:var(--white);margin-bottom:12px;}
+.services-section-desc{font-size:0.88rem;color:var(--muted);line-height:1.65;max-width:620px;margin-bottom:20px;}
+.services-use-cases{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
+.services-tag{font-size:0.72rem;font-weight:600;color:var(--off);background:var(--surface2);border:1px solid var(--border2);padding:4px 10px;border-radius:12px;}
+
+.services-price-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.svc-price-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 16px;text-align:center;}
+.svc-price-card.featured{border-color:var(--gold);background:rgba(212,175,55,0.05);}
+.svc-price-name{font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+.svc-price-amount{font-size:1.5rem;font-weight:900;color:var(--white);margin-bottom:4px;}
+.svc-price-turn{font-size:0.7rem;color:var(--muted2);}
+
+.services-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.svc-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 16px;transition:border-color 0.2s;}
+.svc-card:hover{border-color:var(--border3);}
+.svc-card-icon{font-size:1.4rem;margin-bottom:10px;}
+.svc-card-name{font-size:0.82rem;font-weight:800;color:var(--white);margin-bottom:6px;line-height:1.3;}
+.svc-card-desc{font-size:0.75rem;color:var(--muted);line-height:1.55;margin-bottom:10px;}
+.svc-card-price{font-size:0.88rem;font-weight:700;color:var(--gold);}
+.svc-card-note{font-size:0.68rem;color:var(--muted2);margin-top:2px;}
+
+.services-packages{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:8px;}
+.svc-pkg{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 22px;position:relative;}
+.svc-pkg.featured{border-color:var(--gold);}
+.svc-pkg-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;font-size:0.65rem;font-weight:800;padding:3px 12px;border-radius:10px;white-space:nowrap;letter-spacing:0.05em;}
+.svc-pkg-name{font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.svc-pkg-price{font-size:1.8rem;font-weight:900;color:var(--white);margin-bottom:20px;}
+.svc-pkg-price span{font-size:0.8rem;font-weight:600;color:var(--muted);}
+.svc-pkg-feats{margin-bottom:24px;}
+.svc-pkg-feat{font-size:0.78rem;color:var(--off);padding:5px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;}
+.svc-pkg-feat::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;}
+
+.svc-book-btn{margin-top:8px;}
+.services-sample{text-align:center;background:var(--surface);border-radius:12px;padding:48px 32px !important;border:1px solid var(--border) !important;}
+
+.svc-form{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;}
+.svc-form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.svc-form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.svc-label{font-size:0.75rem;font-weight:700;color:var(--off);}
+.svc-input{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:11px 14px;font-size:0.88rem;font-family:inherit;width:100%;box-sizing:border-box;}
+.svc-input:focus{outline:none;border-color:var(--gold);}
+.svc-textarea{min-height:100px;resize:vertical;}
+.svc-input option{background:var(--surface2);color:var(--white);}
+.services-legal{margin-top:48px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;}
+.services-legal p{font-size:0.72rem;color:var(--muted);line-height:1.6;margin:0;}
+
+@media(max-width:700px){
+  .services-wrap{padding:0 16px 60px;}
+  .services-hero-title{font-size:1.4rem;}
+  .services-price-cards{grid-template-columns:repeat(2,1fr);}
+  .services-grid{grid-template-columns:1fr 1fr;}
+  .services-packages{grid-template-columns:1fr;}
+  .svc-form-row{grid-template-columns:1fr;}
+}
+@media(max-width:480px){
+  .services-price-cards{grid-template-columns:1fr 1fr;}
+  .services-grid{grid-template-columns:1fr;}
+}
 .lesson-content-section p{font-size:0.9rem;color:var(--off);line-height:1.7;margin-bottom:10px;}
 .lesson-content-heading{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;margin-top:0;}
 .lesson-equation{background:var(--surface2);border-left:3px solid var(--gold);border-radius:0 6px 6px 0;padding:12px 16px;font-size:0.92rem;font-weight:700;color:var(--white);margin:12px 0;line-height:1.6;}
@@ -837,6 +901,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <button class="nav-link" onclick="showPage('homePage')">Home</button>
     <button class="nav-link" onclick="openAccounting()">Lessons</button>
     <button class="nav-link" onclick="openArticlesPage()">Articles</button>
+    <button class="nav-link" onclick="showPage('servicesPage')">Services</button>
     <button class="nav-link" onclick="showPage('howPage')">How It Works</button>
     <button class="nav-link" onclick="showPage('pricingPage')">Pricing</button>
     <button class="nav-link" onclick="showPage('blogPage')">Blog</button>
@@ -848,6 +913,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <button class="mobile-nav-link" onclick="showPage('homePage');closeMobileNav();">Home</button>
     <button class="mobile-nav-link" onclick="openAccounting();closeMobileNav();">Lessons</button>
     <button class="mobile-nav-link" onclick="openArticlesPage();closeMobileNav();">Articles</button>
+    <button class="mobile-nav-link" onclick="showPage('servicesPage');closeMobileNav();">Services</button>
     <button class="mobile-nav-link" onclick="showPage('howPage');closeMobileNav();">How It Works</button>
     <button class="mobile-nav-link" onclick="showPage('pricingPage');closeMobileNav();">Pricing</button>
     <button class="mobile-nav-link" onclick="showPage('blogPage');closeMobileNav();">Blog</button>
@@ -959,28 +1025,32 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <section id="pricing">
   <p class="section-eyebrow">Pricing</p>
   <h2 class="section-heading">Simple, honest pricing.</h2>
-  <p style="font-size:0.85rem;color:var(--muted);max-width:480px;margin:0 auto;">All lessons from beginner to expert.</p>
+  <p style="font-size:0.85rem;color:var(--muted);max-width:480px;margin:0 auto 8px;">Accounting and finance education, built around a real story. More content arriving every month.</p>
+  <p style="font-size:0.75rem;color:var(--gold);max-width:480px;margin:0 auto;">🚀 Early Access — join now and grow with us.</p>
   <div class="pricing-cards">
     <div class="pricing-card">
       <div class="pc-name">Free</div>
       <div class="pc-price">$0</div>
-      <div class="pc-desc">Full access to search engine and articles.</div>
+      <div class="pc-desc">Start learning immediately. No card required.</div>
       <div class="pc-features">
+        <div class="pc-feat">Full access to search engine &amp; articles</div>
+        <div class="pc-feat">Ask the AI tutor anything — finance, accounting, trading</div>
         <div class="pc-feat">15 lessons &amp; 4 mock exams monthly</div>
-        <div class="pc-feat">Chapters 1&ndash;3 of the novels</div>
-        <div class="pc-feat">Episode 1 of the Short Film</div>
+        <div class="pc-feat no">Novels &amp; Short Films (coming soon)</div>
+        <div class="pc-feat no">Completion certificate</div>
       </div>
       <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Get Started Free</button>
     </div>
     <div class="pricing-card featured">
       <div class="pc-name">Professional</div>
       <div class="pc-price-text">7 days free, then $3 for 90 days, then $5 monthly</div>
-      <div class="pc-desc">Everything you need to actually learn the material.</div>
+      <div class="pc-desc">Full access to everything available now — and everything as it launches.</div>
       <div class="pc-features">
         <div class="pc-feat">All in Free</div>
-        <div class="pc-feat">Full lessons &amp; mock exams (updated monthly)</div>
-        <div class="pc-feat">3 novels monthly</div>
-        <div class="pc-feat">Season 1 of Short Films</div>
+        <div class="pc-feat">Unlimited lessons &amp; mock exams</div>
+        <div class="pc-feat">Early access to new lessons as they are added</div>
+        <div class="pc-feat">Novel chapters as they are published</div>
+        <div class="pc-feat">Short Film episodes when they launch</div>
         <div class="pc-feat">Completion certificate</div>
       </div>
       <button class="btn btn-gold btn-full" onclick="openPayment('professional')">Start Free Trial</button>
@@ -988,10 +1058,12 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <div class="pricing-card">
       <div class="pc-name">Expert</div>
       <div class="pc-price">$15 <span>/ month</span></div>
-      <div class="pc-desc">For learners who want it all.</div>
+      <div class="pc-desc">For learners who want the full experience.</div>
       <div class="pc-features">
         <div class="pc-feat">All in Professional</div>
-        <div class="pc-feat">Full access to Short Films</div>
+        <div class="pc-feat">Priority access to new content drops</div>
+        <div class="pc-feat">Full Short Film series on launch</div>
+        <div class="pc-feat">Direct Q&amp;A access (launching soon)</div>
       </div>
       <button class="btn btn-outline btn-full" onclick="openPayment('expert')">Subscribe — $15/mo</button>
     </div>
@@ -1017,11 +1089,289 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <button class="footer-link" onclick="showPage('privacyPage')">Privacy Policy</button>
     <button class="footer-link" onclick="showPage('termsPage')">Terms of Service</button>
     <button class="footer-link" onclick="openArticlesPage()">Articles</button>
+    <button class="footer-link" onclick="showPage('servicesPage')">Services</button>
   </div>
   <span class="footer-copy">© 2025 Butterfly Dynamix LLC. All rights reserved.</span>
 </footer>
 </div>
 <!-- /HOME PAGE -->
+
+<!-- SERVICES PAGE -->
+<div id="servicesPage" class="page">
+  <div class="services-wrap">
+    <button class="track-sb-back" onclick="showPage('homePage')" style="margin:24px 0 0 40px;">← Back to Home</button>
+
+    <!-- HERO -->
+    <div class="services-hero">
+      <p class="section-eyebrow">Professional Services</p>
+      <h1 class="services-hero-title">Accounting, Bookkeeping &amp; Tax — done properly.</h1>
+      <p class="services-hero-sub">Delivered by a qualified tax practitioner and ICAN/ACCA candidate. Clear pricing, no surprises.</p>
+      <div class="services-credentials">
+        <span class="services-cred-badge">✓ Associate Member, CITN</span>
+        <span class="services-cred-badge">✓ ICAN Candidate</span>
+        <span class="services-cred-badge">✓ ACCA Candidate</span>
+      </div>
+      <button class="btn btn-gold" style="margin-top:28px;" onclick="document.getElementById('serviceBookingForm').scrollIntoView({behavior:'smooth'})">Book a Free Consultation →</button>
+    </div>
+
+    <!-- BANK STATEMENT ANALYSIS -->
+    <section class="services-section">
+      <div class="services-section-label">Most Popular</div>
+      <h2 class="services-section-title">Bank Statement Analysis</h2>
+      <p class="services-section-desc">Your bank statement contains your entire financial story — but most people can't read it. We analyse every transaction, categorise your income and expenditure, identify patterns and risks, and deliver a clear written report with findings and recommendations.</p>
+      <div class="services-use-cases">
+        <span class="services-tag">Loan applications</span>
+        <span class="services-tag">Investor due diligence</span>
+        <span class="services-tag">Business cash flow review</span>
+        <span class="services-tag">Personal finance clarity</span>
+      </div>
+      <div class="services-price-cards">
+        <div class="svc-price-card">
+          <div class="svc-price-name">Personal (1 month)</div>
+          <div class="svc-price-amount">₦20,000</div>
+          <div class="svc-price-turn">Delivered in 48 hours</div>
+        </div>
+        <div class="svc-price-card featured">
+          <div class="svc-price-name">Business (1 month)</div>
+          <div class="svc-price-amount">₦35,000</div>
+          <div class="svc-price-turn">Delivered in 48 hours</div>
+        </div>
+        <div class="svc-price-card">
+          <div class="svc-price-name">Business (3 months)</div>
+          <div class="svc-price-amount">₦90,000</div>
+          <div class="svc-price-turn">Delivered in 5 business days</div>
+        </div>
+        <div class="svc-price-card">
+          <div class="svc-price-name">Business (12 months)</div>
+          <div class="svc-price-amount">₦280,000</div>
+          <div class="svc-price-turn">Delivered in 10 business days</div>
+        </div>
+      </div>
+      <button class="btn btn-gold svc-book-btn" onclick="selectService('Bank Statement Analysis')">Book This Service →</button>
+    </section>
+
+    <!-- TAX SERVICES -->
+    <section class="services-section">
+      <div class="services-section-label">CITN Qualified</div>
+      <h2 class="services-section-title">Tax Services</h2>
+      <p class="services-section-desc">Registered tax practitioner services covering personal and corporate tax compliance, VAT, withholding tax, and FIRS registration. All returns prepared and filed correctly — on time, every time.</p>
+
+      <div class="services-grid">
+        <div class="svc-card">
+          <div class="svc-card-icon">👤</div>
+          <div class="svc-card-name">Personal Income Tax Return</div>
+          <div class="svc-card-desc">Annual PIT filing for employed individuals, freelancers, self-employed professionals, and landlords. Includes Tax Clearance Certificate follow-up.</div>
+          <div class="svc-card-price">₦25,000 – ₦100,000</div>
+          <div class="svc-card-note">Based on income complexity</div>
+        </div>
+        <div class="svc-card">
+          <div class="svc-card-icon">🏢</div>
+          <div class="svc-card-name">Company Income Tax (CIT)</div>
+          <div class="svc-card-desc">Annual CIT return preparation and filing for limited liability companies. Includes tax computation, capital allowances, and minimum tax review.</div>
+          <div class="svc-card-price">₦80,000 – ₦350,000</div>
+          <div class="svc-card-note">Based on turnover and complexity</div>
+        </div>
+        <div class="svc-card">
+          <div class="svc-card-icon">📋</div>
+          <div class="svc-card-name">Monthly VAT Returns</div>
+          <div class="svc-card-desc">Preparation and filing of monthly VAT Form 002, reconciliation of output and input VAT, and management of FIRS correspondence.</div>
+          <div class="svc-card-price">₦15,000 – ₦60,000</div>
+          <div class="svc-card-note">Per month, based on transaction volume</div>
+        </div>
+        <div class="svc-card">
+          <div class="svc-card-icon">🧾</div>
+          <div class="svc-card-name">Withholding Tax (WHT)</div>
+          <div class="svc-card-desc">Monthly WHT returns on qualifying payments — contractor fees, rent, dividends, interest. Includes WHT credit note follow-up.</div>
+          <div class="svc-card-price">₦20,000 – ₦45,000</div>
+          <div class="svc-card-note">Per month</div>
+        </div>
+        <div class="svc-card">
+          <div class="svc-card-icon">🔍</div>
+          <div class="svc-card-name">Tax Health Check</div>
+          <div class="svc-card-desc">A full review of your tax position — registrations, outstanding returns, liabilities and exposure. Delivered as a written report with prioritised action steps.</div>
+          <div class="svc-card-price">₦40,000 – ₦200,000</div>
+          <div class="svc-card-note">Based on business size</div>
+        </div>
+        <div class="svc-card">
+          <div class="svc-card-icon">📝</div>
+          <div class="svc-card-name">FIRS Registration</div>
+          <div class="svc-card-desc">TIN registration, VAT registration, and full FIRS setup for new businesses and recently incorporated companies.</div>
+          <div class="svc-card-price">₦15,000 – ₦95,000</div>
+          <div class="svc-card-note">Individual TIN to full company registration</div>
+        </div>
+        <div class="svc-card">
+          <div class="svc-card-icon">💡</div>
+          <div class="svc-card-name">Tax Planning Consultation</div>
+          <div class="svc-card-desc">Strategic advice on legally reducing your tax liability — business structure, timing of income and expenditure, capital allowances, and more.</div>
+          <div class="svc-card-price">₦30,000 – ₦180,000</div>
+          <div class="svc-card-note">Hourly or fixed-fee engagement</div>
+        </div>
+        <div class="svc-card">
+          <div class="svc-card-icon">⚖️</div>
+          <div class="svc-card-name">FIRS Dispute &amp; Query Resolution</div>
+          <div class="svc-card-desc">Responding to FIRS assessments, objecting to incorrect tax demands, and negotiating settlements on outstanding tax liabilities.</div>
+          <div class="svc-card-price">From ₦150,000</div>
+          <div class="svc-card-note">Quoted individually based on dispute</div>
+        </div>
+      </div>
+      <button class="btn btn-gold svc-book-btn" onclick="selectService('Tax Services')">Book Tax Services →</button>
+    </section>
+
+    <!-- BOOKKEEPING -->
+    <section class="services-section">
+      <div class="services-section-label">Monthly Retainer</div>
+      <h2 class="services-section-title">Bookkeeping &amp; Accounting</h2>
+      <p class="services-section-desc">Full-service bookkeeping delivered remotely. You send us your documents — receipts, invoices, bank statements — and we maintain your books, reconcile your accounts, and deliver clear monthly management accounts.</p>
+
+      <div class="services-packages">
+        <div class="svc-pkg">
+          <div class="svc-pkg-name">Starter</div>
+          <div class="svc-pkg-price">₦60,000<span>/month</span></div>
+          <div class="svc-pkg-feats">
+            <div class="svc-pkg-feat">Up to 100 transactions/month</div>
+            <div class="svc-pkg-feat">Bank reconciliation</div>
+            <div class="svc-pkg-feat">Monthly P&amp;L statement</div>
+            <div class="svc-pkg-feat">VAT return included</div>
+          </div>
+          <button class="btn btn-outline btn-full" onclick="selectService('Bookkeeping — Starter')">Get Started</button>
+        </div>
+        <div class="svc-pkg featured">
+          <div class="svc-pkg-badge">Most Popular</div>
+          <div class="svc-pkg-name">Business</div>
+          <div class="svc-pkg-price">₦120,000<span>/month</span></div>
+          <div class="svc-pkg-feats">
+            <div class="svc-pkg-feat">Up to 300 transactions/month</div>
+            <div class="svc-pkg-feat">Bank reconciliation</div>
+            <div class="svc-pkg-feat">Monthly management accounts</div>
+            <div class="svc-pkg-feat">VAT &amp; WHT returns included</div>
+            <div class="svc-pkg-feat">Payroll up to 10 staff</div>
+          </div>
+          <button class="btn btn-gold btn-full" onclick="selectService('Bookkeeping — Business')">Get Started</button>
+        </div>
+        <div class="svc-pkg">
+          <div class="svc-pkg-name">Premium</div>
+          <div class="svc-pkg-price">₦250,000<span>/month</span></div>
+          <div class="svc-pkg-feats">
+            <div class="svc-pkg-feat">Unlimited transactions</div>
+            <div class="svc-pkg-feat">Full bank reconciliation</div>
+            <div class="svc-pkg-feat">Monthly &amp; quarterly management accounts</div>
+            <div class="svc-pkg-feat">VAT, WHT &amp; CIT included</div>
+            <div class="svc-pkg-feat">Payroll up to 20 staff</div>
+            <div class="svc-pkg-feat">Annual tax health check</div>
+            <div class="svc-pkg-feat">Unlimited email support</div>
+          </div>
+          <button class="btn btn-outline btn-full" onclick="selectService('Bookkeeping — Premium')">Get Started</button>
+        </div>
+      </div>
+
+      <div class="services-grid" style="margin-top:32px;">
+        <div class="svc-card">
+          <div class="svc-card-icon">⚙️</div>
+          <div class="svc-card-name">Accounting Software Setup</div>
+          <div class="svc-card-desc">QuickBooks, Sage, Wave or Zoho Books — set up correctly with your chart of accounts, opening balances and bank feeds configured.</div>
+          <div class="svc-card-price">₦60,000 – ₦200,000</div>
+          <div class="svc-card-note">One-time, includes 2-hour training</div>
+        </div>
+        <div class="svc-card">
+          <div class="svc-card-icon">💰</div>
+          <div class="svc-card-name">Payroll Processing</div>
+          <div class="svc-card-desc">Monthly payroll computation — gross pay, PAYE, pension, NHF, net pay, payslips, and PAYE remittance schedule.</div>
+          <div class="svc-card-price">₦25,000 – ₦160,000</div>
+          <div class="svc-card-note">Based on number of employees</div>
+        </div>
+        <div class="svc-card">
+          <div class="svc-card-icon">📊</div>
+          <div class="svc-card-name">Financial Statement Preparation</div>
+          <div class="svc-card-desc">Annual or quarterly management accounts — Trading Account, P&amp;L, Balance Sheet, Cash Flow. Clearly labelled as management accounts, not audited statements.</div>
+          <div class="svc-card-price">₦60,000 – ₦250,000</div>
+          <div class="svc-card-note">Annual or quarterly</div>
+        </div>
+        <div class="svc-card">
+          <div class="svc-card-icon">🔄</div>
+          <div class="svc-card-name">Catch-Up Bookkeeping</div>
+          <div class="svc-card-desc">Bringing your books up to date when months or years of transactions are unrecorded. Quoted per month of backlog.</div>
+          <div class="svc-card-price">₦15,000 – ₦25,000</div>
+          <div class="svc-card-note">Per month of backlog</div>
+        </div>
+      </div>
+      <button class="btn btn-gold svc-book-btn" onclick="selectService('Bookkeeping Services')">Book Bookkeeping →</button>
+    </section>
+
+    <!-- SAMPLE REPORT -->
+    <section class="services-section services-sample">
+      <h2 class="services-section-title">See the quality before you commit.</h2>
+      <p class="services-section-desc">Download a sample bank statement analysis report — the same format, depth and insight you will receive as a paying client.</p>
+      <button class="btn btn-gold" onclick="downloadSampleReport()">⬇ Download Sample Report (PDF)</button>
+    </section>
+
+    <!-- BOOKING FORM -->
+    <section class="services-section" id="serviceBookingForm">
+      <h2 class="services-section-title">Book a Free 20-Minute Consultation</h2>
+      <p class="services-section-desc">Tell us what you need and we will get back to you within 24 hours to confirm your booking and discuss the scope.</p>
+      <div class="svc-form">
+        <div class="svc-form-row">
+          <div class="svc-form-group">
+            <label class="svc-label">Your Name *</label>
+            <input class="svc-input" type="text" id="svcName" placeholder="Full name"/>
+          </div>
+          <div class="svc-form-group">
+            <label class="svc-label">Email Address *</label>
+            <input class="svc-input" type="email" id="svcEmail" placeholder="your@email.com"/>
+          </div>
+        </div>
+        <div class="svc-form-row">
+          <div class="svc-form-group">
+            <label class="svc-label">WhatsApp / Phone</label>
+            <input class="svc-input" type="tel" id="svcPhone" placeholder="+234 800 000 0000"/>
+          </div>
+          <div class="svc-form-group">
+            <label class="svc-label">Business Name (if applicable)</label>
+            <input class="svc-input" type="text" id="svcBusiness" placeholder="Your business name"/>
+          </div>
+        </div>
+        <div class="svc-form-group">
+          <label class="svc-label">Service Interested In *</label>
+          <select class="svc-input" id="svcService">
+            <option value="">Select a service…</option>
+            <option value="Bank Statement Analysis — Personal">Bank Statement Analysis — Personal (₦20,000)</option>
+            <option value="Bank Statement Analysis — Business (1 month)">Bank Statement Analysis — Business 1 Month (₦35,000)</option>
+            <option value="Bank Statement Analysis — Business (3 months)">Bank Statement Analysis — Business 3 Months (₦90,000)</option>
+            <option value="Bank Statement Analysis — Business (12 months)">Bank Statement Analysis — Business 12 Months (₦280,000)</option>
+            <option value="Personal Income Tax Return">Personal Income Tax Return</option>
+            <option value="Company Income Tax (CIT)">Company Income Tax (CIT)</option>
+            <option value="Monthly VAT Returns">Monthly VAT Returns</option>
+            <option value="Withholding Tax (WHT)">Withholding Tax (WHT)</option>
+            <option value="Tax Health Check">Tax Health Check</option>
+            <option value="FIRS Registration">FIRS Registration</option>
+            <option value="Tax Planning Consultation">Tax Planning Consultation</option>
+            <option value="FIRS Dispute Resolution">FIRS Dispute &amp; Query Resolution</option>
+            <option value="Bookkeeping — Starter Package">Bookkeeping — Starter (₦60,000/mo)</option>
+            <option value="Bookkeeping — Business Package">Bookkeeping — Business (₦120,000/mo)</option>
+            <option value="Bookkeeping — Premium Package">Bookkeeping — Premium (₦250,000/mo)</option>
+            <option value="Payroll Processing">Payroll Processing</option>
+            <option value="Financial Statement Preparation">Financial Statement Preparation</option>
+            <option value="Accounting Software Setup">Accounting Software Setup &amp; Training</option>
+            <option value="Catch-Up Bookkeeping">Catch-Up Bookkeeping</option>
+            <option value="Not sure — need advice">Not sure — I need advice first</option>
+          </select>
+        </div>
+        <div class="svc-form-group">
+          <label class="svc-label">Tell us about your situation</label>
+          <textarea class="svc-input svc-textarea" id="svcMessage" placeholder="What does your business do? What is your main challenge right now? Any deadlines we should know about?"></textarea>
+        </div>
+        <div id="svcFormMsg" style="display:none;"></div>
+        <button class="btn btn-gold" style="width:100%;padding:16px;font-size:1rem;" onclick="submitServiceBooking()">Send Enquiry →</button>
+        <p style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:12px;">We respond within 24 hours. Your information is kept strictly confidential.</p>
+      </div>
+    </section>
+
+    <!-- LEGAL NOTE -->
+    <div class="services-legal">
+      <p>Services are provided by Edesy Obi, Associate Member, Chartered Institute of Taxation of Nigeria (CITN) and ICAN/ACCA candidate. Management accounts and financial statements produced are for management purposes only and do not constitute audited financial statements unless otherwise stated. All tax services comply with Nigerian tax law as administered by FIRS and relevant State Internal Revenue Services.</p>
+    </div>
+
+  </div>
+</div>
 
 <!-- HOW IT WORKS PAGE -->
 <div id="howPage" class="page">
@@ -1063,28 +1413,32 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <button class="track-sb-back" onclick="showPage('homePage')" style="margin-bottom:32px;">← Back to Home</button>
     <p class="section-eyebrow">Pricing</p>
     <h2 class="section-heading">Simple, honest pricing.</h2>
-    <p style="font-size:0.85rem;color:var(--muted);max-width:480px;margin:0 auto 40px;">All lessons from beginner to expert.</p>
+    <p style="font-size:0.85rem;color:var(--muted);max-width:480px;margin:0 auto 8px;">Accounting and finance education, built around a real story. More content arriving every month.</p>
+    <p style="font-size:0.75rem;color:var(--gold);max-width:480px;margin:0 auto 40px;">🚀 Early Access — join now and grow with us.</p>
     <div class="pricing-cards">
       <div class="pricing-card">
         <div class="pc-name">Free</div>
         <div class="pc-price">$0</div>
-        <div class="pc-desc">Full access to search engine and articles.</div>
+        <div class="pc-desc">Start learning immediately. No card required.</div>
         <div class="pc-features">
+          <div class="pc-feat">Full access to search engine &amp; articles</div>
+          <div class="pc-feat">Ask the AI tutor anything — finance, accounting, trading</div>
           <div class="pc-feat">15 lessons &amp; 4 mock exams monthly</div>
-          <div class="pc-feat">Chapters 1&ndash;3 of the novels</div>
-          <div class="pc-feat">Episode 1 of the Short Film</div>
+          <div class="pc-feat no">Novels &amp; Short Films (coming soon)</div>
+          <div class="pc-feat no">Completion certificate</div>
         </div>
         <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Get Started Free</button>
       </div>
       <div class="pricing-card featured">
         <div class="pc-name">Professional</div>
         <div class="pc-price-text">7 days free, then $3 for 90 days, then $5 monthly</div>
-        <div class="pc-desc">Everything you need to actually learn the material.</div>
+        <div class="pc-desc">Full access to everything available now — and everything as it launches.</div>
         <div class="pc-features">
           <div class="pc-feat">All in Free</div>
-          <div class="pc-feat">Full lessons &amp; mock exams (updated monthly)</div>
-          <div class="pc-feat">3 novels monthly</div>
-          <div class="pc-feat">Season 1 of Short Films</div>
+          <div class="pc-feat">Unlimited lessons &amp; mock exams</div>
+          <div class="pc-feat">Early access to new lessons as they are added</div>
+          <div class="pc-feat">Novel chapters as they are published</div>
+          <div class="pc-feat">Short Film episodes when they launch</div>
           <div class="pc-feat">Completion certificate</div>
         </div>
         <button class="btn btn-gold btn-full" onclick="openPayment('professional')">Start Free Trial</button>
@@ -1092,10 +1446,12 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <div class="pricing-card">
         <div class="pc-name">Expert</div>
         <div class="pc-price">$15 <span>/ month</span></div>
-        <div class="pc-desc">For learners who want it all.</div>
+        <div class="pc-desc">For learners who want the full experience.</div>
         <div class="pc-features">
           <div class="pc-feat">All in Professional</div>
-          <div class="pc-feat">Full access to Short Films</div>
+          <div class="pc-feat">Priority access to new content drops</div>
+          <div class="pc-feat">Full Short Film series on launch</div>
+          <div class="pc-feat">Direct Q&amp;A access (launching soon)</div>
         </div>
         <button class="btn btn-outline btn-full" onclick="openPayment('expert')">Subscribe — $15/mo</button>
       </div>
@@ -1423,11 +1779,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=21"></script>
-<script src="data.js?v=21"></script>
-<script src="auth.js?v=21"></script>
-<script src="app.js?v=21"></script>
-<script src="track.js?v=21"></script>
+<script src="supabase-config.js?v=22"></script>
+<script src="data.js?v=22"></script>
+<script src="auth.js?v=22"></script>
+<script src="app.js?v=22"></script>
+<script src="track.js?v=22"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
