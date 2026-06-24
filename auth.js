@@ -1,6 +1,6 @@
 // ============================================================
 // auth.js — Authentication & session management
-// Butterfly Dynamix Learning Platform
+// Butterfly Dynamix Platform
 // Depends on: supabase-config.js (db)
 // ============================================================
 
@@ -515,7 +515,7 @@ async function nlSubmit() {
     noteEl.style.color = 'var(--red, #e05)';
   } else {
     emailEl.value = '';
-    noteEl.textContent = "You're in! Welcome to the Butterfly Dynamix Learning community.";
+    noteEl.textContent = "You're in! Welcome to the Butterfly Dynamix community.";
     noteEl.style.color = 'var(--green, #4caf50)';
   }
 }
