@@ -901,7 +901,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <button class="nav-link" onclick="showPage('servicesPage')">Services</button>
     <button class="nav-link" onclick="openArticlesPage()">Articles</button>
     <button class="nav-link" onclick="showPage('howPage')">How It Works</button>
-    <button class="nav-link" onclick="showPage('pricingPage')">Pricing</button>
+    
   </div>
   <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileNav()" aria-label="Menu">
     <span></span><span></span><span></span>
@@ -911,7 +911,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <button class="mobile-nav-link" onclick="showPage('servicesPage');closeMobileNav();">Services</button>
     <button class="mobile-nav-link" onclick="openArticlesPage();closeMobileNav();">Articles</button>
     <button class="mobile-nav-link" onclick="showPage('howPage');closeMobileNav();">How It Works</button>
-    <button class="mobile-nav-link" onclick="showPage('pricingPage');closeMobileNav();">Pricing</button>
+    
   </div>
   <div class="nav-right">
     <div id="guestNav" style="display:flex;align-items:center;gap:8px;">
@@ -988,7 +988,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <!-- LOGGED IN HERO -->
 <!-- TRUST BAR -->
 <section id="trust">
-  <div class="trust-stat"><div class="trust-val">1</div><div class="trust-lbl">Article Weekly</div></div>
+  <div class="trust-stat"><div class="trust-val">1</div><div class="trust-lbl">New Article Weekly</div></div>
   <div class="trust-stat"><div class="trust-val">✨</div><div class="trust-lbl">AI Finance Tutor</div></div>
   <div class="trust-stat"><div class="trust-val">100%</div><div class="trust-lbl">Remote Service</div></div>
   <div class="trust-stat"><div class="trust-val">24hr</div><div class="trust-lbl">Response Time</div></div>
@@ -997,23 +997,23 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <!-- HOW IT WORKS -->
 <section id="how">
   <p class="section-eyebrow">How It Works</p>
-  <h2 class="section-heading" onclick="showPage('howPage')" style="cursor:pointer;text-decoration:underline;text-decoration-color:rgba(212,175,55,0.4);">Three ways to build your financial knowledge.</h2>
+  <h2 class="section-heading">Three ways to build your financial knowledge.</h2>
   <div class="steps">
     <div class="step" onclick="document.getElementById('searchInput').focus();window.scrollTo({top:0,behavior:'smooth'});" style="cursor:pointer;">
       <div class="step-num">Step 01</div><div class="step-icon">✨</div>
-      <h3 style="text-decoration:underline;text-decoration-color:rgba(212,175,55,0.4);">Ask the AI Tutor</h3>
+      <h3>Ask the AI Tutor</h3>
       <p>Type any finance or accounting question into the search bar and get a clear, expert answer instantly.</p>
       <div class="step-arrow">→</div>
     </div>
     <div class="step" onclick="openArticlesPage();" style="cursor:pointer;">
       <div class="step-num">Step 02</div><div class="step-icon">📰</div>
-      <h3 style="text-decoration:underline;text-decoration-color:rgba(212,175,55,0.4);">Read the Articles</h3>
+      <h3>Read the Articles</h3>
       <p>Deep-dive into professionally written articles on real accounting and finance concepts — then comment and discuss.</p>
       <div class="step-arrow">→</div>
     </div>
     <div class="step" onclick="showPage('servicesPage');" style="cursor:pointer;">
       <div class="step-num">Step 03</div><div class="step-icon">🧾</div>
-      <h3 style="text-decoration:underline;text-decoration-color:rgba(212,175,55,0.4);">Hire a Professional</h3>
+      <h3>Hire a Professional</h3>
       <p>Need bookkeeping, bank statement analysis or payroll done properly? Book a service directly on the platform.</p>
     </div>
   </div>
@@ -1040,26 +1040,29 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <div class="pricing-card">
       <div class="pc-name">Bookkeeping</div>
       <div class="pc-price">$100 <span>/ month</span></div>
-      <div class="pc-desc">Complete bookkeeping delivered remotely. Every transaction recorded, every account reconciled, financial statements monthly.</div>
+      <div class="pc-desc">Complete bookkeeping for your business — will record every financial transaction, reconcile the records, and deliver the financial statements monthly.</div>
       <div class="pc-features">
-        <div class="pc-feat">Ledgering &amp; record-taking</div>
+        <div class="pc-feat">Ledgering</div>
         <div class="pc-feat">Bank statement analysis</div>
         <div class="pc-feat">Bank reconciliation</div>
-        <div class="pc-feat">Trial balance</div>
-        <div class="pc-feat">P&amp;L &amp; Balance Sheet monthly</div>
+        <div class="pc-feat">Trial balance preparation</div>
+        <div class="pc-feat">Financial statements (P&amp;L &amp; Balance Sheet)</div>
       </div>
       <button class="btn btn-outline btn-full" onclick="showPage('servicesPage')">Book This Service →</button>
     </div>
     <div class="pricing-card featured">
       <div class="pc-name">Tax Services</div>
       <div class="pc-price">$100</div>
-      <div class="pc-desc">Core tax compliance handled correctly. CITN-certified. Full package or individual items — contact us.</div>
+      <div class="pc-desc">Core tax compliance handled correctly. CITN-certified.</div>
       <div class="pc-features">
-        <div class="pc-feat">CIT &amp; PIT return + Tax Clearance Certificate</div>
-        <div class="pc-feat">FIRS TIN registration</div>
-        <div class="pc-feat">VAT registration &amp; monthly returns</div>
-        <div class="pc-feat">PAYE remittance schedule</div>
+        <div class="pc-feat">Company Income Tax &amp; Personal Income Tax (PIT) return</div>
+        <div class="pc-feat">Tax Clearance Certificate</div>
+        <div class="pc-feat">FIRS TIN registration (individual or company)</div>
+        <div class="pc-feat">VAT registration with FIRS</div>
+        <div class="pc-feat">Monthly VAT return filing</div>
+        <div class="pc-feat">PAYE remittance schedule (payroll taxes)</div>
       </div>
+      <p style="font-size:0.72rem;color:var(--muted);margin-bottom:14px;line-height:1.55;">$100 covers the full package. Individual items priced separately — contact us for more information.</p>
       <button class="btn btn-gold btn-full" onclick="showPage('servicesPage')">Book This Service →</button>
     </div>
   </div>
@@ -1233,9 +1236,23 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <p class="section-eyebrow">How It Works</p>
     <h2 class="section-heading">Three ways to build your financial knowledge.</h2>
     <div class="steps">
-      <div class="step"><div class="step-num">Step 01</div><div class="step-icon">✨</div><h3>Ask the AI Tutor</h3><p>Type any accounting, finance or money question into the search bar. Get a clear, expert answer in seconds — no textbook required.</p><div class="step-arrow">→</div></div>
-      <div class="step"><div class="step-num">Step 02</div><div class="step-icon">📰</div><h3>Read the Articles</h3><p>Professionally written articles on real accounting and finance concepts. Read, thumbs up, and discuss in the comments.</p><div class="step-arrow">→</div></div>
-      <div class="step"><div class="step-num">Step 03</div><div class="step-icon">🧾</div><h3>Hire a Professional</h3><p>Bank statement analysis, monthly bookkeeping, payroll, and financial statements — delivered remotely by a qualified practitioner.</p></div>
+      <div class="step" onclick="showPage('homePage');setTimeout(()=>document.getElementById('searchInput').focus(),300);" style="cursor:pointer;">
+        <div class="step-num">Step 01</div><div class="step-icon">✨</div>
+        <h3 style="color:var(--gold);">Ask the AI Tutor ↗</h3>
+        <p>Type any accounting, finance or money question into the search bar. Get a clear, expert answer in seconds — no textbook required.</p>
+        <div class="step-arrow">→</div>
+      </div>
+      <div class="step" onclick="openArticlesPage();" style="cursor:pointer;">
+        <div class="step-num">Step 02</div><div class="step-icon">📰</div>
+        <h3 style="color:var(--gold);">Read the Articles ↗</h3>
+        <p>Professionally written articles on real accounting and finance concepts. Read, thumbs up, and discuss in the comments.</p>
+        <div class="step-arrow">→</div>
+      </div>
+      <div class="step" onclick="showPage('servicesPage');" style="cursor:pointer;">
+        <div class="step-num">Step 03</div><div class="step-icon">🧾</div>
+        <h3 style="color:var(--gold);">Hire a Professional ↗</h3>
+        <p>Bank statement analysis, monthly bookkeeping, payroll, and financial statements — delivered remotely by a qualified practitioner.</p>
+      </div>
     </div>
     <div style="margin-top:36px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
       <button class="btn btn-gold" onclick="showPage('servicesPage')" style="padding:14px 32px;">View Services →</button>
@@ -1244,55 +1261,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   </div>
 </div>
 
-<!-- PRICING PAGE -->
-<div id="pricingPage" class="page">
-  <div style="max-width:1000px;margin:0 auto;padding:40px 32px;">
-    <button class="track-sb-back" onclick="showPage('homePage')" style="margin-bottom:32px;">← Back to Home</button>
-    <p class="section-eyebrow">Services &amp; Platform</p>
-    <h2 class="section-heading">Professional services. Free platform to start.</h2>
-    <p style="font-size:0.85rem;color:var(--muted);max-width:520px;margin:0 auto 40px;">Hire us for bookkeeping or tax work — or join the platform free to access the AI tutor and articles.</p>
-    <div class="pricing-cards">
-      <div class="pricing-card">
-        <div class="pc-name">Bookkeeping</div>
-        <div class="pc-price">$100 <span>/ month</span></div>
-        <div class="pc-desc">Complete bookkeeping delivered remotely. Every transaction recorded, every account reconciled, financial statements monthly.</div>
-        <div class="pc-features">
-          <div class="pc-feat">Ledgering &amp; record-taking</div>
-          <div class="pc-feat">Bank statement analysis</div>
-          <div class="pc-feat">Bank reconciliation</div>
-          <div class="pc-feat">Trial balance</div>
-          <div class="pc-feat">P&amp;L &amp; Balance Sheet monthly</div>
-        </div>
-        <button class="btn btn-outline btn-full" onclick="showPage('servicesPage')">Book This Service →</button>
-      </div>
-      <div class="pricing-card featured">
-        <div class="pc-name">Tax Services</div>
-        <div class="pc-price">$100</div>
-        <div class="pc-desc">Core tax compliance handled correctly. CITN-certified. Full package or individual items — contact us.</div>
-        <div class="pc-features">
-          <div class="pc-feat">CIT &amp; PIT return + Tax Clearance Certificate</div>
-          <div class="pc-feat">FIRS TIN registration</div>
-          <div class="pc-feat">VAT registration &amp; monthly returns</div>
-          <div class="pc-feat">PAYE remittance schedule</div>
-        </div>
-        <button class="btn btn-gold btn-full" onclick="showPage('servicesPage')">Book This Service →</button>
-      </div>
-      <div class="pricing-card">
-        <div class="pc-name">Platform — Free</div>
-        <div class="pc-price">$0</div>
-        <div class="pc-desc">Access the AI finance tutor and all articles. Courses and more coming soon.</div>
-        <div class="pc-features">
-          <div class="pc-feat">AI tutor — ask anything about finance</div>
-          <div class="pc-feat">10 expert articles with comments</div>
-          <div class="pc-feat">Daily finance insights</div>
-          <div class="pc-feat no">Courses &amp; lessons (coming soon)</div>
-          <div class="pc-feat no">Novels &amp; Short Films (coming soon)</div>
-        </div>
-        <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Get Started Free</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- PRIVACY POLICY PAGE -->
 <div id="privacyPage" class="page">
@@ -1614,11 +1582,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=26"></script>
-<script src="data.js?v=26"></script>
-<script src="auth.js?v=26"></script>
-<script src="app.js?v=26"></script>
-<script src="track.js?v=26"></script>
+<script src="supabase-config.js?v=27"></script>
+<script src="data.js?v=27"></script>
+<script src="auth.js?v=27"></script>
+<script src="app.js?v=27"></script>
+<script src="track.js?v=27"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
