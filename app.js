@@ -1088,33 +1088,35 @@ function renderChatPanel(isLoading, typewriteLast = false) {
   });
 }
 
-// Typewriter effect — reveals formatted HTML word by word with auto-scroll
+// Typewriter effect — reveals formatted HTML word by word.
+// Scrolls to show the TOP of the response bubble at the start,
+// then stays still so the user reads naturally from top to bottom
+// without being dragged down the page.
 function typewriteMessage(bubbleId, rawText, scrollContainer) {
   const bubble = document.getElementById(bubbleId);
   if (!bubble) return;
 
-  // Format the full text into HTML, then extract plain segments to animate
-  // Strategy: typewrite the raw text word by word into the bubble,
-  // applying formatAIText() to the growing slice each tick.
-  // This gives natural word-by-word reveal with proper formatting.
   const words = rawText.split(' ');
   let wordIdx  = 0;
-  const SPEED  = 28; // ms per word — adjust for faster/slower
+  const SPEED  = 28; // ms per word
+
+  // Scroll to bring the start of this bubble into view — once, at the beginning
+  if (scrollContainer && bubble) {
+    const bubbleTop = bubble.offsetTop;
+    // Small offset so there's breathing room above the bubble
+    scrollContainer.scrollTop = Math.max(0, bubbleTop - 16);
+  }
 
   const tick = () => {
     wordIdx++;
     const slice = words.slice(0, wordIdx).join(' ');
     bubble.innerHTML = formatAIText(slice);
-
-    // Auto-scroll so the latest text is always visible
-    if (scrollContainer) {
-      scrollContainer.scrollTop = scrollContainer.scrollHeight;
-    }
+    // No scrolling during typing — user reads from where they are
 
     if (wordIdx < words.length) {
       setTimeout(tick, SPEED);
     } else {
-      // Finished — enable the follow-up input
+      // Finished — re-enable the follow-up input
       const inp = document.getElementById('aiFollowUpInput');
       if (inp) {
         inp.disabled = false;
@@ -1125,13 +1127,13 @@ function typewriteMessage(bubbleId, rawText, scrollContainer) {
     }
   };
 
-  // Disable input while typewriting so they don't send a follow-up mid-animation
+  // Disable follow-up input while typewriting
   const inp = document.getElementById('aiFollowUpInput');
   if (inp) inp.disabled = true;
   const btn = document.querySelector('.ai-send-btn');
   if (btn) btn.disabled = true;
 
-  setTimeout(tick, 50); // tiny delay before starting
+  setTimeout(tick, 80); // short pause after typing dots disappear
 }
 
 function sendFollowUp() {
