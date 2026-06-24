@@ -1057,17 +1057,7 @@ function renderChatPanel(isLoading) {
     </div>`;
 
   requestAnimationFrame(() => {
-    if (isLoading) {
-      // While waiting: scroll to show the typing indicator
-      const latest = document.getElementById('aiLatestResponse');
-      if (latest) latest.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      // Response arrived: scroll to the TOP of the new message so
-      // users read from the beginning — not dragged to the bottom
-      const latest = document.getElementById('aiLatestResponse');
-      if (latest) {
-        latest.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+    if (!isLoading) {
       const inp = document.getElementById('aiFollowUpInput');
       if (inp) inp.focus();
     }
