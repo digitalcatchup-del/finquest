@@ -1057,10 +1057,8 @@ function renderChatPanel(isLoading) {
     </div>`;
 
   requestAnimationFrame(() => {
-    if (!isLoading) {
-      const inp = document.getElementById('aiFollowUpInput');
-      if (inp) inp.focus();
-    }
+    // No automatic scrolling or focus — page stays still.
+    // User scrolls and interacts at their own pace.
   });
 }
 
