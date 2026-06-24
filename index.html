@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Butterfly Dynamix Learning</title>
+<title>Butterfly Dynamix</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -938,9 +938,9 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <!-- GUEST HERO -->
 <section id="heroSection">
   <div class="hero-bg"></div>
-  <p class="hero-eyebrow">Find Meaning</p>
+  <p class="hero-eyebrow">Think Finance</p>
   <h1 class="hero-heading">What's Your <span id="flavorWord">Flavor?</span></h1>
-  <p class="hero-sub">Search any topic related to money or jump straight into a lesson.</p>
+  <p class="hero-sub">Research any topic related to finance or select one of our services.</p>
 
   <!-- AI CHAT BAR -->
   <div class="search-wrap">
@@ -965,10 +965,10 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <!-- ACCOUNTING ENTRY — plain button, no card/widget -->
   <div class="flavor-section">
     <div style="text-align:center;">
-      <button class="btn btn-gold" onclick="openAccounting()" style="font-size:0.95rem;padding:14px 36px;">📊 Lessons</button>
+      <button class="btn btn-gold" onclick="showPage('servicesPage')" style="font-size:0.95rem;padding:14px 36px;">🧾 Our Services</button>
     </div>
     <div style="text-align:center;margin-top:14px;">
-      <button class="link-btn" onclick="openSampleNugget()" style="background:none;border:none;color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;text-decoration:underline;">Try a free 1-minute knowledge nugget →</button>
+      <button class="link-btn" onclick="openSampleNugget()" style="background:none;border:none;color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;text-decoration:underline;">Take our quiz and earn a discount on one of our services →</button>
     </div>
   </div>
 
@@ -988,10 +988,10 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <!-- LOGGED IN HERO -->
 <!-- TRUST BAR -->
 <section id="trust">
-  <div class="trust-stat"><div class="trust-val">63</div><div class="trust-lbl">Bite-Sized Lessons</div></div>
-  <div class="trust-stat"><div class="trust-val">2 min</div><div class="trust-lbl">Per Lesson</div></div>
-  <div class="trust-stat"><div class="trust-val">100%</div><div class="trust-lbl">Free to Start</div></div>
-  <div class="trust-stat"><div class="trust-val">24/7</div><div class="trust-lbl">Learn Anytime</div></div>
+  <div class="trust-stat"><div class="trust-val">10</div><div class="trust-lbl">Expert Articles</div></div>
+  <div class="trust-stat"><div class="trust-val">✨</div><div class="trust-lbl">AI Finance Tutor</div></div>
+  <div class="trust-stat"><div class="trust-val">100%</div><div class="trust-lbl">Remote Service</div></div>
+  <div class="trust-stat"><div class="trust-val">24hr</div><div class="trust-lbl">Response Time</div></div>
 </section>
 
 <!-- HOW IT WORKS -->
@@ -999,9 +999,23 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <p class="section-eyebrow">How It Works</p>
   <h2 class="section-heading">Three ways to build your financial knowledge.</h2>
   <div class="steps">
-    <div class="step"><div class="step-num">Step 01</div><div class="step-icon">✨</div><h3>Ask the AI Tutor</h3><p>Type any finance or accounting question into the search bar and get a clear, expert answer instantly.</p><div class="step-arrow">→</div></div>
-    <div class="step"><div class="step-num">Step 02</div><div class="step-icon">📰</div><h3>Read the Articles</h3><p>Deep-dive into professionally written articles on real accounting and finance concepts — then comment and discuss.</p><div class="step-arrow">→</div></div>
-    <div class="step"><div class="step-num">Step 03</div><div class="step-icon">🧾</div><h3>Hire a Professional</h3><p>Need bookkeeping, bank statement analysis or payroll done properly? Book a service directly on the platform.</p></div>
+    <div class="step" onclick="document.getElementById('searchInput').focus();window.scrollTo({top:0,behavior:'smooth'});" style="cursor:pointer;">
+      <div class="step-num">Step 01</div><div class="step-icon">✨</div>
+      <h3 style="text-decoration:underline;text-decoration-color:rgba(212,175,55,0.4);">Ask the AI Tutor</h3>
+      <p>Type any finance or accounting question into the search bar and get a clear, expert answer instantly.</p>
+      <div class="step-arrow">→</div>
+    </div>
+    <div class="step" onclick="openArticlesPage();" style="cursor:pointer;">
+      <div class="step-num">Step 02</div><div class="step-icon">📰</div>
+      <h3 style="text-decoration:underline;text-decoration-color:rgba(212,175,55,0.4);">Read the Articles</h3>
+      <p>Deep-dive into professionally written articles on real accounting and finance concepts — then comment and discuss.</p>
+      <div class="step-arrow">→</div>
+    </div>
+    <div class="step" onclick="showPage('servicesPage');" style="cursor:pointer;">
+      <div class="step-num">Step 03</div><div class="step-icon">🧾</div>
+      <h3 style="text-decoration:underline;text-decoration-color:rgba(212,175,55,0.4);">Hire a Professional</h3>
+      <p>Need bookkeeping, bank statement analysis or payroll done properly? Book a service directly on the platform.</p>
+    </div>
   </div>
 </section>
 
@@ -1019,48 +1033,47 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
 <!-- PRICING -->
 <section id="pricing">
-  <p class="section-eyebrow">Platform Membership</p>
-  <h2 class="section-heading">Free to start. Upgrade when you're ready.</h2>
-  <p style="font-size:0.85rem;color:var(--muted);max-width:500px;margin:0 auto;">AI tutor, articles, and professional finance education — structured courses launching soon.</p>
+  <p class="section-eyebrow">Services &amp; Platform</p>
+  <h2 class="section-heading">Professional services. Free platform to start.</h2>
+  <p style="font-size:0.85rem;color:var(--muted);max-width:520px;margin:0 auto;">Hire us for bookkeeping or tax work — or join the platform free to access the AI tutor and articles.</p>
   <div class="pricing-cards" style="margin-top:32px;">
     <div class="pricing-card">
-      <div class="pc-name">Free</div>
-      <div class="pc-price">$0</div>
-      <div class="pc-desc">Full access to the AI tutor and all articles. No card required.</div>
+      <div class="pc-name">Bookkeeping</div>
+      <div class="pc-price">$100 <span>/ month</span></div>
+      <div class="pc-desc">Complete bookkeeping delivered remotely. Every transaction recorded, every account reconciled, financial statements monthly.</div>
       <div class="pc-features">
-        <div class="pc-feat">AI tutor — ask anything about finance &amp; accounting</div>
-        <div class="pc-feat">All 10 articles with comments</div>
-        <div class="pc-feat">Finance news &amp; daily insights</div>
+        <div class="pc-feat">Ledgering &amp; record-taking</div>
+        <div class="pc-feat">Bank statement analysis</div>
+        <div class="pc-feat">Bank reconciliation</div>
+        <div class="pc-feat">Trial balance</div>
+        <div class="pc-feat">P&amp;L &amp; Balance Sheet monthly</div>
+      </div>
+      <button class="btn btn-outline btn-full" onclick="showPage('servicesPage')">Book This Service →</button>
+    </div>
+    <div class="pricing-card featured">
+      <div class="pc-name">Tax Services</div>
+      <div class="pc-price">$100</div>
+      <div class="pc-desc">Core tax compliance handled correctly. CITN-certified. Full package or individual items — contact us.</div>
+      <div class="pc-features">
+        <div class="pc-feat">CIT &amp; PIT return + Tax Clearance Certificate</div>
+        <div class="pc-feat">FIRS TIN registration</div>
+        <div class="pc-feat">VAT registration &amp; monthly returns</div>
+        <div class="pc-feat">PAYE remittance schedule</div>
+      </div>
+      <button class="btn btn-gold btn-full" onclick="showPage('servicesPage')">Book This Service →</button>
+    </div>
+    <div class="pricing-card">
+      <div class="pc-name">Platform — Free</div>
+      <div class="pc-price">$0</div>
+      <div class="pc-desc">Access the AI finance tutor and all articles. Courses, novels and short films coming soon.</div>
+      <div class="pc-features">
+        <div class="pc-feat">AI tutor — ask anything about finance</div>
+        <div class="pc-feat">10 expert articles with comments</div>
+        <div class="pc-feat">Daily finance insights</div>
         <div class="pc-feat no">Courses &amp; lessons (coming soon)</div>
         <div class="pc-feat no">Novels &amp; Short Films (coming soon)</div>
       </div>
       <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Get Started Free</button>
-    </div>
-    <div class="pricing-card featured">
-      <div class="pc-name">Professional</div>
-      <div class="pc-price-text">7 days free, then $3 for 90 days, then $5 monthly</div>
-      <div class="pc-desc">Early access to everything — now and as it launches.</div>
-      <div class="pc-features">
-        <div class="pc-feat">Everything in Free</div>
-        <div class="pc-feat">Early access to courses when they launch</div>
-        <div class="pc-feat">Novel chapters as they are published</div>
-        <div class="pc-feat">Short Film episodes on launch</div>
-        <div class="pc-feat">Completion certificate</div>
-        <div class="pc-feat">Priority support</div>
-      </div>
-      <button class="btn btn-gold btn-full" onclick="openPayment('professional')">Start Free Trial</button>
-    </div>
-    <div class="pricing-card">
-      <div class="pc-name">Expert</div>
-      <div class="pc-price">$15 <span>/ month</span></div>
-      <div class="pc-desc">The full experience, including everything launching next.</div>
-      <div class="pc-features">
-        <div class="pc-feat">Everything in Professional</div>
-        <div class="pc-feat">Priority access to new content drops</div>
-        <div class="pc-feat">Full Short Film series on launch</div>
-        <div class="pc-feat">Direct Q&amp;A access (coming soon)</div>
-      </div>
-      <button class="btn btn-outline btn-full" onclick="openPayment('expert')">Subscribe — $15/mo</button>
     </div>
   </div>
 </section>
@@ -1079,7 +1092,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 </section>
 
 <footer>
-  <span class="footer-logo">Butterfly Dynamix Learning</span>
+  <span class="footer-logo">Butterfly Dynamix</span>
   <div class="footer-links">
     <button class="footer-link" onclick="showPage('privacyPage')">Privacy Policy</button>
     <button class="footer-link" onclick="showPage('termsPage')">Terms of Service</button>
@@ -1098,72 +1111,52 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
     <p class="section-eyebrow">Professional Services</p>
     <h2 class="section-heading">Clear services. Clear pricing.</h2>
-    <p style="font-size:0.88rem;color:var(--muted);max-width:560px;margin:0 auto 12px;line-height:1.65;">Remote bookkeeping, tax compliance, and bespoke bundles — delivered by a qualified practitioner. Pick a service, pick a bundle, or tell us what you need.</p>
-    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:0 auto 36px;">
-      <span class="services-cred-badge">✓ Associate Member, CITN</span>
-      <span class="services-cred-badge">✓ ICAN Candidate</span>
-      <span class="services-cred-badge">✓ ACCA Candidate</span>
-    </div>
+    <p style="font-size:0.88rem;color:var(--muted);max-width:560px;margin:0 auto 40px;line-height:1.65;">Remote bookkeeping, tax compliance, and bespoke bundles.<br>Pick a service, or tell us specifically what you need.</p>
 
-    <!-- 3 SERVICE CARDS — same layout as pricing -->
-    <div class="pricing-cards">
+    <!-- 2 SERVICE CARDS — same style as pricing -->
+    <div class="pricing-cards" style="grid-template-columns:repeat(2,1fr);gap:24px;">
 
-      <!-- CARD 1: BOOKKEEPING -->
+      <!-- BOOKKEEPING -->
       <div class="pricing-card">
         <div class="pc-name">Bookkeeping</div>
-        <div class="pc-price">₦100,000 <span>/ month</span></div>
-        <div class="pc-desc">Complete bookkeeping for your business — every record kept, every account reconciled, monthly statements delivered.</div>
+        <div class="pc-price">$100 <span>/ month</span></div>
+        <div class="pc-desc">Complete bookkeeping for your business — will record every financial transaction, reconcile the records, and deliver the financial statements monthly.</div>
         <div class="pc-features">
-          <div class="pc-feat">Ledgering &amp; record-taking (all transactions recorded)</div>
+          <div class="pc-feat">Ledgering</div>
           <div class="pc-feat">Bank statement analysis</div>
           <div class="pc-feat">Bank reconciliation</div>
           <div class="pc-feat">Trial balance preparation</div>
           <div class="pc-feat">Financial statements (P&amp;L &amp; Balance Sheet)</div>
         </div>
-        <button class="btn btn-outline btn-full" onclick="selectService('Bookkeeping — Full Package ₦100,000/mo')">Book This Service →</button>
+        <button class="btn btn-outline btn-full" onclick="selectService('Bookkeeping — $100/month')">Book This Service →</button>
       </div>
 
-      <!-- CARD 2: TAX SERVICES (featured) -->
+      <!-- TAX SERVICES -->
       <div class="pricing-card featured">
         <div class="pc-name">Tax Services</div>
-        <div class="pc-price">₦100,000</div>
-        <div class="pc-desc">Core tax compliance handled correctly. CITN-qualified. Pick the service you need or take all five.</div>
+        <div class="pc-price">$100</div>
+        <div class="pc-desc">Core tax compliance handled correctly. CITN-certified.</div>
         <div class="pc-features">
-          <div class="pc-feat">Personal Income Tax (PIT) return &amp; Tax Clearance Certificate</div>
+          <div class="pc-feat">Company Income Tax &amp; Personal Income Tax (PIT) return</div>
+          <div class="pc-feat">Tax Clearance Certificate</div>
           <div class="pc-feat">FIRS TIN registration (individual or company)</div>
           <div class="pc-feat">VAT registration with FIRS</div>
           <div class="pc-feat">Monthly VAT return filing</div>
           <div class="pc-feat">PAYE remittance schedule (payroll taxes)</div>
         </div>
-        <p style="font-size:0.72rem;color:var(--muted);margin-bottom:16px;line-height:1.55;">₦100,000 covers the full package. Individual services priced separately — ask us.</p>
-        <button class="btn btn-gold btn-full" onclick="selectService('Tax Services — Full Package ₦100,000')">Book This Service →</button>
-      </div>
-
-      <!-- CARD 3: CUSTOM BUNDLE -->
-      <div class="pricing-card">
-        <div class="pc-name">Build Your Bundle</div>
-        <div class="pc-price">Custom <span>pricing</span></div>
-        <div class="pc-desc">Pick exactly what you need — one service or many. We price your bundle based on what you select.</div>
-        <div class="pc-features">
-          <div class="pc-feat">Bank statement analysis</div>
-          <div class="pc-feat">Tax filing (PIT or VAT)</div>
-          <div class="pc-feat">Monthly bookkeeping retainer</div>
-          <div class="pc-feat">Payroll processing</div>
-          <div class="pc-feat">Financial statement preparation</div>
-        </div>
-        <p style="font-size:0.72rem;color:var(--muted);margin-bottom:16px;line-height:1.55;">Tell us which services you want in the form below — we send a fixed quote within 24 hours.</p>
-        <button class="btn btn-outline btn-full" onclick="selectService('Custom Bundle — I will describe what I need')">Build My Bundle →</button>
+        <p style="font-size:0.72rem;color:var(--muted);margin-bottom:16px;line-height:1.55;">$100 covers the full package. Individual items priced separately — contact us for more information.</p>
+        <button class="btn btn-gold btn-full" onclick="selectService('Tax Services — $100 full package')">Book This Service →</button>
       </div>
 
     </div>
 
-    <!-- WHAT IS INCLUDED — brief breakdown under the cards -->
+    <!-- WHAT IS INCLUDED — 2-column breakdown -->
     <div style="margin-top:40px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px 28px;">
       <p class="section-eyebrow" style="text-align:left;">What Each Service Covers</p>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:20px;">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:32px;margin-top:20px;">
         <div>
-          <div style="font-size:0.78rem;font-weight:800;color:var(--gold);margin-bottom:10px;">Bookkeeping</div>
-          <div style="font-size:0.78rem;color:var(--muted);line-height:1.7;">
+          <div style="font-size:0.78rem;font-weight:800;color:var(--gold);margin-bottom:12px;">Bookkeeping</div>
+          <div style="font-size:0.78rem;color:var(--muted);line-height:1.75;">
             <strong style="color:var(--off);">Ledgering</strong> — every income and expense transaction recorded in proper books.<br><br>
             <strong style="color:var(--off);">Bank statement analysis</strong> — full review of your statement with a written report.<br><br>
             <strong style="color:var(--off);">Bank reconciliation</strong> — your books matched against your bank balance every month.<br><br>
@@ -1172,34 +1165,16 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
           </div>
         </div>
         <div>
-          <div style="font-size:0.78rem;font-weight:800;color:var(--gold);margin-bottom:10px;">Tax Services</div>
-          <div style="font-size:0.78rem;color:var(--muted);line-height:1.7;">
-            <strong style="color:var(--off);">PIT return &amp; TCC</strong> — annual personal tax return filed, Tax Clearance Certificate obtained.<br><br>
+          <div style="font-size:0.78rem;font-weight:800;color:var(--gold);margin-bottom:12px;">Tax Services</div>
+          <div style="font-size:0.78rem;color:var(--muted);line-height:1.75;">
+            <strong style="color:var(--off);">CIT, PIT return &amp; TCC</strong> — Annual tax return filed, Tax Clearance Certificate obtained.<br><br>
             <strong style="color:var(--off);">TIN registration</strong> — FIRS Tax Identification Number for individuals or companies.<br><br>
             <strong style="color:var(--off);">VAT registration</strong> — getting your business registered for VAT with FIRS.<br><br>
             <strong style="color:var(--off);">VAT returns</strong> — monthly VAT Form 002 prepared and filed correctly.<br><br>
             <strong style="color:var(--off);">PAYE remittance</strong> — employer payroll taxes computed and scheduled for filing.
           </div>
         </div>
-        <div>
-          <div style="font-size:0.78rem;font-weight:800;color:var(--gold);margin-bottom:10px;">Bundle Options</div>
-          <div style="font-size:0.78rem;color:var(--muted);line-height:1.7;">
-            <strong style="color:var(--off);">Bank statement analysis</strong> — one-off report on any statement, personal or business.<br><br>
-            <strong style="color:var(--off);">Tax filing</strong> — PIT or VAT, filed correctly and on time.<br><br>
-            <strong style="color:var(--off);">Monthly bookkeeping</strong> — ongoing record-keeping without the full package.<br><br>
-            <strong style="color:var(--off);">Payroll processing</strong> — monthly payslips, PAYE and pension deductions handled.<br><br>
-            <strong style="color:var(--off);">Financial statement prep</strong> — annual or quarterly accounts from your existing records.
-          </div>
-        </div>
       </div>
-    </div>
-
-    <!-- SAMPLE REPORT -->
-    <div style="margin-top:28px;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.3);border-radius:12px;padding:32px;text-align:center;">
-      <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">Sample Work</p>
-      <h3 style="font-size:1rem;font-weight:800;color:var(--white);margin:0 0 8px;">See what a bank statement analysis report looks like.</h3>
-      <p style="font-size:0.8rem;color:var(--muted);max-width:440px;margin:0 auto 20px;line-height:1.6;">Download a sample report — the same format and depth every client receives.</p>
-      <button class="btn btn-gold" onclick="downloadSampleReport()">⬇ Download Sample Report (PDF)</button>
     </div>
 
     <!-- BOOKING FORM -->
@@ -1233,39 +1208,32 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
           <select class="svc-input" id="svcService">
             <option value="">Select a service…</option>
             <optgroup label="── Bookkeeping ──">
-              <option value="Bookkeeping — Full Package ₦100,000/mo">Full Bookkeeping Package — ₦100,000/mo</option>
-              <option value="Bank Statement Analysis — Personal">Bank Statement Analysis — Personal</option>
-              <option value="Bank Statement Analysis — Business">Bank Statement Analysis — Business</option>
+              <option value="Bookkeeping — Full Package $100/month">Full Bookkeeping Package — $100/month</option>
+              <option value="Bank Statement Analysis only">Bank Statement Analysis only</option>
               <option value="Bank Reconciliation only">Bank Reconciliation only</option>
-              <option value="Financial Statement Preparation">Financial Statement Preparation</option>
-              <option value="Payroll Processing">Payroll Processing</option>
+              <option value="Financial Statement Preparation only">Financial Statement Preparation only</option>
             </optgroup>
             <optgroup label="── Tax Services ──">
-              <option value="Tax Services — Full Package ₦100,000">Tax Services — Full Package — ₦100,000</option>
-              <option value="Personal Income Tax Return & TCC">Personal Income Tax Return &amp; Tax Clearance Certificate</option>
+              <option value="Tax Services — Full Package $100">Tax Services — Full Package — $100</option>
+              <option value="CIT & PIT Return + Tax Clearance Certificate">CIT &amp; PIT Return + Tax Clearance Certificate</option>
               <option value="FIRS TIN Registration">FIRS TIN Registration</option>
               <option value="VAT Registration with FIRS">VAT Registration with FIRS</option>
               <option value="Monthly VAT Return Filing">Monthly VAT Return Filing</option>
               <option value="PAYE Remittance Schedule">PAYE Remittance Schedule</option>
             </optgroup>
-            <optgroup label="── Custom Bundle ──">
-              <option value="Custom Bundle — I will describe what I need">Custom Bundle — I will describe what I need</option>
+            <optgroup label="── Not sure ──">
+              <option value="Not sure — I will describe what I need">Not sure — I will describe what I need</option>
             </optgroup>
           </select>
         </div>
         <div class="svc-form-group">
           <label class="svc-label">Tell us about your situation</label>
-          <textarea class="svc-input svc-textarea" id="svcMessage" placeholder="What does your business do? Roughly how many transactions per month? Any specific deadlines or tax issues we should know about?"></textarea>
+          <textarea class="svc-input svc-textarea" id="svcMessage" placeholder="What does your business do? Any specific deadlines or tax issues we should know about?"></textarea>
         </div>
         <div id="svcFormMsg" style="display:none;"></div>
         <button class="btn btn-gold" style="width:100%;padding:15px;font-size:0.95rem;" onclick="submitServiceBooking()">Send Enquiry →</button>
         <p style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:10px;">We respond within 24 hours. Your information is kept strictly confidential.</p>
       </div>
-    </div>
-
-    <!-- LEGAL NOTE -->
-    <div style="margin-top:32px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
-      <p style="font-size:0.7rem;color:var(--muted);line-height:1.6;margin:0;">Management accounts and financial statements are produced for management purposes only and do not constitute audited financial statements. Services provided by Edesy Obi, Associate Member CITN, ICAN/ACCA Candidate.</p>
     </div>
 
   </div>
@@ -1302,48 +1270,47 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <div id="pricingPage" class="page">
   <div style="max-width:1000px;margin:0 auto;padding:40px 32px;">
     <button class="track-sb-back" onclick="showPage('homePage')" style="margin-bottom:32px;">← Back to Home</button>
-    <p class="section-eyebrow">Platform Membership</p>
-    <h2 class="section-heading">Free to start. Upgrade when you're ready.</h2>
-    <p style="font-size:0.85rem;color:var(--muted);max-width:500px;margin:0 auto 40px;">AI tutor, articles, and professional finance education — structured courses launching soon.</p>
+    <p class="section-eyebrow">Services &amp; Platform</p>
+    <h2 class="section-heading">Professional services. Free platform to start.</h2>
+    <p style="font-size:0.85rem;color:var(--muted);max-width:520px;margin:0 auto 40px;">Hire us for bookkeeping or tax work — or join the platform free to access the AI tutor and articles.</p>
     <div class="pricing-cards">
       <div class="pricing-card">
-        <div class="pc-name">Free</div>
-        <div class="pc-price">$0</div>
-        <div class="pc-desc">Full access to the AI tutor and all articles. No card required.</div>
+        <div class="pc-name">Bookkeeping</div>
+        <div class="pc-price">$100 <span>/ month</span></div>
+        <div class="pc-desc">Complete bookkeeping delivered remotely. Every transaction recorded, every account reconciled, financial statements monthly.</div>
         <div class="pc-features">
-          <div class="pc-feat">AI tutor — ask anything about finance &amp; accounting</div>
-          <div class="pc-feat">All 10 articles with comments</div>
-          <div class="pc-feat">Finance news &amp; daily insights</div>
+          <div class="pc-feat">Ledgering &amp; record-taking</div>
+          <div class="pc-feat">Bank statement analysis</div>
+          <div class="pc-feat">Bank reconciliation</div>
+          <div class="pc-feat">Trial balance</div>
+          <div class="pc-feat">P&amp;L &amp; Balance Sheet monthly</div>
+        </div>
+        <button class="btn btn-outline btn-full" onclick="showPage('servicesPage')">Book This Service →</button>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pc-name">Tax Services</div>
+        <div class="pc-price">$100</div>
+        <div class="pc-desc">Core tax compliance handled correctly. CITN-certified. Full package or individual items — contact us.</div>
+        <div class="pc-features">
+          <div class="pc-feat">CIT &amp; PIT return + Tax Clearance Certificate</div>
+          <div class="pc-feat">FIRS TIN registration</div>
+          <div class="pc-feat">VAT registration &amp; monthly returns</div>
+          <div class="pc-feat">PAYE remittance schedule</div>
+        </div>
+        <button class="btn btn-gold btn-full" onclick="showPage('servicesPage')">Book This Service →</button>
+      </div>
+      <div class="pricing-card">
+        <div class="pc-name">Platform — Free</div>
+        <div class="pc-price">$0</div>
+        <div class="pc-desc">Access the AI finance tutor and all articles. Courses and more coming soon.</div>
+        <div class="pc-features">
+          <div class="pc-feat">AI tutor — ask anything about finance</div>
+          <div class="pc-feat">10 expert articles with comments</div>
+          <div class="pc-feat">Daily finance insights</div>
           <div class="pc-feat no">Courses &amp; lessons (coming soon)</div>
           <div class="pc-feat no">Novels &amp; Short Films (coming soon)</div>
         </div>
         <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Get Started Free</button>
-      </div>
-      <div class="pricing-card featured">
-        <div class="pc-name">Professional</div>
-        <div class="pc-price-text">7 days free, then $3 for 90 days, then $5 monthly</div>
-        <div class="pc-desc">Early access to everything — now and as it launches.</div>
-        <div class="pc-features">
-          <div class="pc-feat">Everything in Free</div>
-          <div class="pc-feat">Early access to courses when they launch</div>
-          <div class="pc-feat">Novel chapters as they are published</div>
-          <div class="pc-feat">Short Film episodes on launch</div>
-          <div class="pc-feat">Completion certificate</div>
-          <div class="pc-feat">Priority support</div>
-        </div>
-        <button class="btn btn-gold btn-full" onclick="openPayment('professional')">Start Free Trial</button>
-      </div>
-      <div class="pricing-card">
-        <div class="pc-name">Expert</div>
-        <div class="pc-price">$15 <span>/ month</span></div>
-        <div class="pc-desc">The full experience, including everything launching next.</div>
-        <div class="pc-features">
-          <div class="pc-feat">Everything in Professional</div>
-          <div class="pc-feat">Priority access to new content drops</div>
-          <div class="pc-feat">Full Short Film series on launch</div>
-          <div class="pc-feat">Direct Q&amp;A access (coming soon)</div>
-        </div>
-        <button class="btn btn-outline btn-full" onclick="openPayment('expert')">Subscribe — $15/mo</button>
       </div>
     </div>
   </div>
@@ -1359,7 +1326,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
     <div class="legal-body">
       <h3>1. Who We Are</h3>
-      <p>Butterfly Dynamix Learning is operated by Butterfly Dynamix LLC ("we", "us", "our"). This Privacy Policy explains how we collect, use, and protect your personal information when you use our website and services at this domain (the "Platform").</p>
+      <p>Butterfly Dynamix is operated by Butterfly Dynamix LLC ("we", "us", "our"). This Privacy Policy explains how we collect, use, and protect your personal information when you use our website and services at this domain (the "Platform").</p>
 
       <h3>2. Information We Collect</h3>
       <p>We collect information you provide directly, including:</p>
@@ -1401,7 +1368,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <p>We use minimal cookies and local session storage necessary to keep you logged in and remember your preferences. We do not use third-party advertising trackers.</p>
 
       <h3>8. Children's Privacy</h3>
-      <p>Butterfly Dynamix Learning is not directed at children under 13, and we do not knowingly collect personal information from children under 13.</p>
+      <p>Butterfly Dynamix is not directed at children under 13, and we do not knowingly collect personal information from children under 13.</p>
 
       <h3>9. Changes to This Policy</h3>
       <p>We may update this Privacy Policy from time to time. Material changes will be communicated via the Platform or email.</p>
@@ -1422,17 +1389,17 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
     <div class="legal-body">
       <h3>1. Acceptance of Terms</h3>
-      <p>By creating an account or using Butterfly Dynamix Learning ("the Platform"), operated by Butterfly Dynamix LLC, you agree to these Terms of Service. If you do not agree, please do not use the Platform.</p>
+      <p>By creating an account or using Butterfly Dynamix ("the Platform"), operated by Butterfly Dynamix LLC, you agree to these Terms of Service. If you do not agree, please do not use the Platform.</p>
 
       <h3>2. Eligibility</h3>
-      <p>You must be at least 13 years old to use Butterfly Dynamix Learning. By using the Platform, you confirm that you meet this requirement.</p>
+      <p>You must be at least 13 years old to use Butterfly Dynamix. By using the Platform, you confirm that you meet this requirement.</p>
 
       <h3>3. Your Account</h3>
       <p>You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. Notify us immediately of any unauthorised use.</p>
 
       <h3>4. Subscriptions and Payments</h3>
       <ul>
-        <li>Butterfly Dynamix Learning offers a 7-day full-access free trial with no card required, after which a limited free tier applies, and paid subscription tiers ("Professional" and "Annual") that unlock full access to all content.</li>
+        <li>Butterfly Dynamix offers a 7-day full-access free trial with no card required, after which a limited free tier applies, and paid subscription tiers ("Professional" and "Annual") that unlock full access to all content.</li>
         <li>Payments are processed by our third-party payment partner. By subscribing, you authorise recurring charges as applicable to your selected plan.</li>
         <li>Subscriptions can be cancelled at any time; access continues until the end of the current billing period.</li>
         <li>Fees are non-refundable except where required by law.</li>
@@ -1450,16 +1417,16 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <p>We reserve the right to remove content or suspend accounts that violate these Terms.</p>
 
       <h3>6. User-Generated Content</h3>
-      <p>You retain ownership of content you post (such as community discussions and replies). By posting, you grant Butterfly Dynamix Learning a non-exclusive, royalty-free licence to display and distribute that content on the Platform. You are solely responsible for the content you post.</p>
+      <p>You retain ownership of content you post (such as community discussions and replies). By posting, you grant Butterfly Dynamix a non-exclusive, royalty-free licence to display and distribute that content on the Platform. You are solely responsible for the content you post.</p>
 
       <h3>7. Intellectual Property</h3>
       <p>All lesson content, branding, and Platform design are owned by Butterfly Dynamix LLC and protected by intellectual property laws. You may not copy, reproduce, or redistribute Platform content without permission.</p>
 
       <h3>8. Pip Scores and Rewards</h3>
-      <p>Pip scores are a gamified progress metric within Butterfly Dynamix Learning and hold no monetary value. They cannot be exchanged, transferred, or redeemed for cash.</p>
+      <p>Pip scores are a gamified progress metric within Butterfly Dynamix and hold no monetary value. They cannot be exchanged, transferred, or redeemed for cash.</p>
 
       <h3>9. Disclaimer</h3>
-      <p>Butterfly Dynamix Learning provides educational content for general learning purposes only. It does not constitute professional financial, accounting, investment, or legal advice. You should consult a qualified professional before making financial decisions.</p>
+      <p>Butterfly Dynamix provides educational content for general learning purposes only. It does not constitute professional financial, accounting, investment, or legal advice. You should consult a qualified professional before making financial decisions.</p>
 
       <h3>10. Limitation of Liability</h3>
       <p>To the fullest extent permitted by law, Butterfly Dynamix LLC shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Platform.</p>
@@ -1567,7 +1534,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <div class="auth-step active" id="sStep1">
         <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot"></div><span class="si-label">Step 1 of 2</span></div>
         <h2 class="auth-heading">Create your account</h2>
-        <p class="auth-sub">Join professionals building their edge on Butterfly Dynamix Learning.</p>
+        <p class="auth-sub">Join professionals building their financial edge on Butterfly Dynamix.</p>
         <div class="field-row">
           <div class="field"><label>First Name</label><input type="text" id="sfirst" placeholder="e.g. Alex"/><div class="field-err" id="eFirst">Required</div></div>
           <div class="field"><label>Last Name</label><input type="text" id="slast" placeholder="e.g. Johnson"/><div class="field-err" id="eLast">Required</div></div>
@@ -1669,11 +1636,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=24"></script>
-<script src="data.js?v=24"></script>
-<script src="auth.js?v=24"></script>
-<script src="app.js?v=24"></script>
-<script src="track.js?v=24"></script>
+<script src="supabase-config.js?v=25"></script>
+<script src="data.js?v=25"></script>
+<script src="auth.js?v=25"></script>
+<script src="app.js?v=25"></script>
+<script src="track.js?v=25"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
