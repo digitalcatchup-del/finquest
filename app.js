@@ -978,11 +978,11 @@ async function askAI(question) {
   panel.style.display = 'block';
   aiChatActive = true;
 
-  // Add the user's message to history and render it
+  // Add the user's message to history and render it immediately
   aiChatHistory.push({ role: 'user', content: question });
   document.getElementById('searchInput').value = '';
   showFakePlaceholder('searchFakePlaceholder', 'searchInput');
-  renderChatPanel(true); // true = show typing indicator
+  renderChatPanel(true); // show typing indicator while waiting
 
   // Call the Supabase Edge Function
   let reply = '';
@@ -1012,30 +1012,39 @@ async function askAI(question) {
     reply = json.reply || json.content || '';
   } catch (err) {
     console.error('AI chat error:', err);
-    // Check if the function simply isn't deployed yet
     if (err.message?.includes('Failed to fetch') || err.message?.includes('404') || err.message?.includes('Function not found')) {
-      reply = `⚙️ **Almost there!** The AI tutor needs one small setup step — the Edge Function isn't deployed yet. Ask your developer to follow the instructions in \`/supabase/functions/ai-chat/index.ts\` (included in your repo) to get it live. Once deployed, this will answer any accounting question instantly.`;
+      reply = `⚙️ **Almost there!** The AI tutor needs one small setup step — the Edge Function isn't deployed yet. Once deployed, this will answer any finance question instantly.`;
     } else {
       reply = `Sorry, I ran into a problem answering that. Please try again in a moment.`;
     }
   }
 
   aiChatHistory.push({ role: 'assistant', content: reply });
-  renderChatPanel(false);
+  // Render without loading state, then typewrite the last message
+  renderChatPanel(false, true); // second arg = typewrite last message
 }
 
-function renderChatPanel(isLoading) {
+function renderChatPanel(isLoading, typewriteLast = false) {
   const panel = document.getElementById('homeSearchResults');
 
-  const messagesHtml = aiChatHistory.map(msg => {
+  // All messages except the last assistant one (which will be typewritten)
+  const messages = aiChatHistory;
+  const lastIsAssistant = !isLoading && typewriteLast &&
+    messages.length > 0 && messages[messages.length - 1].role === 'assistant';
+
+  const messagesHtml = messages.map((msg, idx) => {
+    const isLast = idx === messages.length - 1;
     if (msg.role === 'user') {
       return `<div class="ai-msg ai-msg-user">
         <div class="ai-msg-bubble ai-msg-bubble-user">${escapeHtml(msg.content)}</div>
       </div>`;
     } else {
+      // If this is the last message and we're typewriting, render empty bubble
+      const content = (isLast && lastIsAssistant) ? '' : formatAIText(msg.content);
+      const id = (isLast && lastIsAssistant) ? ' id="aiTypewriterBubble"' : '';
       return `<div class="ai-msg ai-msg-assistant">
         <div class="ai-msg-avatar">✨</div>
-        <div class="ai-msg-bubble ai-msg-bubble-assistant">${formatAIText(msg.content)}</div>
+        <div class="ai-msg-bubble ai-msg-bubble-assistant"${id}>${content}</div>
       </div>`;
     }
   }).join('');
@@ -1065,15 +1074,64 @@ function renderChatPanel(isLoading) {
       <button class="ai-send-btn" onclick="sendFollowUp()" ${isLoading ? 'disabled' : ''}>›</button>
     </div>`;
 
-  // Scroll to bottom of messages
   requestAnimationFrame(() => {
     const msgs = document.getElementById('aiMessages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
-    if (!isLoading) {
+
+    if (lastIsAssistant) {
+      const lastMsg = messages[messages.length - 1];
+      typewriteMessage('aiTypewriterBubble', lastMsg.content, msgs);
+    } else if (!isLoading) {
       const inp = document.getElementById('aiFollowUpInput');
       if (inp) inp.focus();
     }
   });
+}
+
+// Typewriter effect — reveals formatted HTML word by word with auto-scroll
+function typewriteMessage(bubbleId, rawText, scrollContainer) {
+  const bubble = document.getElementById(bubbleId);
+  if (!bubble) return;
+
+  // Format the full text into HTML, then extract plain segments to animate
+  // Strategy: typewrite the raw text word by word into the bubble,
+  // applying formatAIText() to the growing slice each tick.
+  // This gives natural word-by-word reveal with proper formatting.
+  const words = rawText.split(' ');
+  let wordIdx  = 0;
+  const SPEED  = 28; // ms per word — adjust for faster/slower
+
+  const tick = () => {
+    wordIdx++;
+    const slice = words.slice(0, wordIdx).join(' ');
+    bubble.innerHTML = formatAIText(slice);
+
+    // Auto-scroll so the latest text is always visible
+    if (scrollContainer) {
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    }
+
+    if (wordIdx < words.length) {
+      setTimeout(tick, SPEED);
+    } else {
+      // Finished — enable the follow-up input
+      const inp = document.getElementById('aiFollowUpInput');
+      if (inp) {
+        inp.disabled = false;
+        inp.focus();
+      }
+      const btn = document.querySelector('.ai-send-btn');
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  // Disable input while typewriting so they don't send a follow-up mid-animation
+  const inp = document.getElementById('aiFollowUpInput');
+  if (inp) inp.disabled = true;
+  const btn = document.querySelector('.ai-send-btn');
+  if (btn) btn.disabled = true;
+
+  setTimeout(tick, 50); // tiny delay before starting
 }
 
 function sendFollowUp() {
