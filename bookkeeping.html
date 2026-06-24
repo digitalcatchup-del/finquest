@@ -562,42 +562,59 @@ async function saveAll() {
   if (!activeRecord || !bkUser) return;
   setSaveMsg('Saving…', false);
 
-  const toSave = rows.filter(r => hasData(r));
   recalcBalances();
+  const toSave = rows.filter(r => hasData(r));
+  if (!toSave.length) { setSaveMsg('Nothing to save.', true); return; }
 
-  const upserts = toSave.map((r, i) => ({
-    id:            r.id || undefined,
-    user_id:       bkUser.id,
-    record_type:   activeRecord,
-    serial_number: r.serial_number,
-    txn_date:      r.txn_date || null,
-    payee:         r.payer || null,
-    payer:         r.payer || null,
-    narration:     r.narration || null,
-    debit:         parseFloat(r.debit) || 0,
-    credit:        parseFloat(r.credit) || 0,
-    balance:       parseFloat(r.balance) || 0,
-    row_order:     toSave.indexOf(r),
-    updated_at:    new Date().toISOString(),
-  }));
+  const newRows     = toSave.filter(r => !r.id);
+  const existingRows = toSave.filter(r => r.id);
 
-  if (upserts.length > 0) {
-    const { data, error } = await bkDb.from('bk_transactions')
-      .upsert(upserts, { onConflict: 'id' })
-      .select();
+  let saveError = null;
 
-    if (error) {
-      setSaveMsg('Error saving — please try again.', false);
-      return;
+  // INSERT new rows
+  if (newRows.length > 0) {
+    const inserts = newRows.map(r => ({
+      user_id:       bkUser.id,
+      record_type:   activeRecord,
+      serial_number: r.serial_number,
+      txn_date:      r.txn_date || null,
+      payee:         r.payee || null,
+      payer:         r.payer || null,
+      narration:     r.narration || null,
+      debit:         parseFloat(r.debit) || 0,
+      credit:        parseFloat(r.credit) || 0,
+      balance:       parseFloat(r.balance) || 0,
+      row_order:     toSave.indexOf(r),
+    }));
+    const { data, error } = await bkDb.from('bk_transactions').insert(inserts).select();
+    if (error) { saveError = error; }
+    else if (data) {
+      // Assign returned IDs back to in-memory rows
+      data.forEach((saved, i) => { newRows[i].id = saved.id; });
     }
+  }
 
-    // Update row IDs from DB response
-    if (data) {
-      data.forEach(saved => {
-        const match = rows.find(r => !r.id || r.id === saved.id);
-        if (match) match.id = saved.id;
-      });
-    }
+  // UPDATE existing rows
+  for (const r of existingRows) {
+    const { error } = await bkDb.from('bk_transactions').update({
+      serial_number: r.serial_number,
+      txn_date:      r.txn_date || null,
+      payee:         r.payee || null,
+      payer:         r.payer || null,
+      narration:     r.narration || null,
+      debit:         parseFloat(r.debit) || 0,
+      credit:        parseFloat(r.credit) || 0,
+      balance:       parseFloat(r.balance) || 0,
+      row_order:     toSave.indexOf(r),
+      updated_at:    new Date().toISOString(),
+    }).eq('id', r.id).eq('user_id', bkUser.id);
+    if (error) saveError = error;
+  }
+
+  if (saveError) {
+    console.error('Save error:', saveError);
+    setSaveMsg('Error: ' + (saveError.message || 'please try again.'), false);
+    return;
   }
 
   isDirty = false;
