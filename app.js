@@ -1,6 +1,6 @@
 // ============================================================
 // app.js — Core application logic
-// Butterfly Dynamix Learning Platform
+// Butterfly Dynamix Platform
 // Depends on: supabase-config.js, auth.js, data.js
 // ============================================================
 
@@ -740,7 +740,7 @@ function initiateStripeCheckout() {
       name: name || 'Butterfly Dynamix Learner',
     },
     customizations: {
-      title:       'Butterfly Dynamix Learning',
+      title:       'Butterfly Dynamix',
       description: `${plan.name} Subscription`,
       logo:        '',
     },
@@ -938,7 +938,7 @@ function showFakePlaceholder(wrapId, inputId) {
 let aiChatHistory = []; // { role: 'user'|'assistant', content: string }[]
 let aiChatActive  = false;
 
-const AI_SYSTEM_PROMPT = `You are an expert financial education tutor for Butterfly Dynamix Learning, a professional education platform. You help students and professionals understand any topic related to money, finance, and business.
+const AI_SYSTEM_PROMPT = `You are an expert financial education tutor for Butterfly Dynamix, a professional education platform. You help students and professionals understand any topic related to money, finance, and business.
 
 Your areas of expertise:
 - Accounting: double entry, accruals, prudence, going concern, depreciation, trial balance, P&L accounts, balance sheets, working capital, bad debts, IFRS, financial statements
