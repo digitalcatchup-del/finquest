@@ -1,429 +1,758 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="background:#0f1117;">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FinQuest · Butterfly Dynamix</title>
-<link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Bookkeeping — Butterfly Dynamix</title>
+<style>html,body{background:#0f1117!important;}</style>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0f1117; --surface:#161b27; --surface2:#1d2437;
+  --border:#252d3d; --border2:#2e3850;
+  --white:#f1f5f9; --off:#c8d3e8; --muted:#6b7a99; --muted2:#4a5568;
+  --gold:#d4af37; --gold-dim:rgba(212,175,55,0.12);
+  --green:#1a7a4a; --green-l:#d1fae5;
+  --red:#c0392b; --red-l:#fee2e2;
+}
+body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;}
+
+/* ── HEADER ── */
+.bk-header{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 32px;display:flex;align-items:center;justify-content:space-between;}
+.bk-logo{font-size:0.72rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);}
+.bk-back{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.78rem;font-weight:700;padding:7px 16px;border-radius:6px;cursor:pointer;text-decoration:none;display:inline-block;}
+.bk-back:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ── MAIN AREA ── */
+.bk-main{max-width:1280px;margin:0 auto;padding:40px 32px;}
+
+/* ── HERO ── */
+.bk-think{font-size:3rem;font-weight:900;color:var(--white);text-align:center;letter-spacing:-0.02em;margin-bottom:6px;}
+.bk-think span{color:var(--gold);}
+.bk-welcome{font-size:1rem;color:var(--muted);text-align:center;margin-bottom:36px;}
+.bk-welcome strong{color:var(--white);}
+
+/* ── EQUATION BAR ── */
+.bk-equation{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px;flex-wrap:wrap;}
+.bk-eq-block{text-align:center;}
+.bk-eq-label{font-size:0.65rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.bk-eq-value{font-size:1.6rem;font-weight:900;color:var(--white);}
+.bk-eq-value.capital-val{color:#60a5fa;}
+.bk-eq-value.liabilities-val{color:#f97316;}
+.bk-eq-value.assets-val{color:var(--gold);}
+.bk-eq-op{font-size:1.8rem;font-weight:300;color:var(--muted);margin-top:18px;}
+.bk-eq-bar{max-width:700px;margin:0 auto 40px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 32px;}
+.bk-eq-title{font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:16px;}
+.bk-eq-check{text-align:center;font-size:0.75rem;color:var(--muted);margin-top:10px;}
+.bk-eq-check.balanced{color:var(--green);}
+.bk-eq-check.unbalanced{color:var(--red);}
+
+/* ── NAV ── */
+.bk-nav{display:flex;align-items:center;justify-content:center;gap:48px;margin-bottom:32px;position:relative;}
+.bk-nav-item{font-size:0.88rem;font-weight:700;color:var(--off);cursor:pointer;padding:8px 0;position:relative;letter-spacing:0.02em;user-select:none;}
+.bk-nav-item:hover{color:var(--white);}
+.bk-nav-item.active{color:var(--gold);}
+.bk-nav-item.active::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:2px;background:var(--gold);border-radius:2px;}
+
+/* ── RECORDS DROPDOWN ── */
+.bk-records-dropdown{position:absolute;top:calc(100% + 12px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border2);border-radius:10px;min-width:220px;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,0.4);overflow:hidden;}
+.bk-records-dropdown.hidden{display:none;}
+.bk-dropdown-item{padding:13px 20px;font-size:0.85rem;font-weight:600;color:var(--off);cursor:pointer;transition:background 0.1s;}
+.bk-dropdown-item:hover{background:var(--surface2);color:var(--white);}
+.bk-dropdown-item.active{color:var(--gold);background:var(--gold-dim);}
+.bk-dropdown-item:not(:last-child){border-bottom:1px solid var(--border);}
+
+/* ── CONTENT AREA ── */
+.bk-content{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.bk-content-header{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;border-bottom:1px solid var(--border);background:var(--bg);}
+.bk-content-title{font-size:1rem;font-weight:800;color:var(--white);letter-spacing:0.02em;}
+.bk-header-actions{display:flex;gap:10px;align-items:center;}
+.bk-btn{font-size:0.78rem;font-weight:700;padding:8px 18px;border-radius:6px;cursor:pointer;transition:all 0.15s;border:none;}
+.bk-btn-gold{background:var(--gold);color:#000;}
+.bk-btn-gold:hover{opacity:0.88;}
+.bk-btn-outline{background:none;border:1px solid var(--border2);color:var(--off);}
+.bk-btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+.bk-btn-danger{background:none;border:1px solid var(--red);color:var(--red);font-size:0.72rem;padding:6px 12px;}
+.bk-btn-danger:hover{background:var(--red);color:#fff;}
+.bk-save-msg{font-size:0.75rem;color:var(--green);font-weight:600;}
+
+/* ── SPREADSHEET ── */
+.bk-sheet-wrap{overflow-x:auto;}
+.bk-sheet{width:100%;border-collapse:collapse;table-layout:fixed;}
+.bk-sheet th{background:var(--bg);color:var(--gold);font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:10px 8px;text-align:left;border-bottom:2px solid var(--gold);border-right:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:2;}
+.bk-sheet th:last-child{border-right:none;}
+.bk-sheet td{border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:0;position:relative;}
+.bk-sheet td:last-child{border-right:none;}
+.bk-sheet tr:hover td{background:rgba(212,175,55,0.03);}
+.bk-sheet tr.row-dirty td{background:rgba(212,175,55,0.05);}
+
+/* Column widths */
+.col-sn   {width:52px;}
+.col-date {width:120px;}
+.col-payee{width:160px;}
+.col-payer{width:160px;}
+.col-narr {width:260px;}
+.col-dr   {width:120px;}
+.col-cr   {width:120px;}
+.col-bal  {width:130px;}
+.col-del  {width:44px;}
+
+.bk-cell{width:100%;height:36px;background:transparent;border:none;color:var(--white);font-size:0.82rem;font-family:inherit;padding:0 8px;outline:none;}
+.bk-cell:focus{background:rgba(212,175,55,0.08);}
+.bk-cell.numeric{text-align:right;}
+.bk-cell.balance-cell{color:var(--gold);font-weight:700;text-align:right;pointer-events:none;}
+.bk-cell.balance-cell.negative{color:var(--red);}
+.bk-cell.sn-cell{text-align:center;color:var(--muted);pointer-events:none;font-size:0.75rem;}
+
+/* Row action */
+.del-row-btn{width:100%;height:36px;background:none;border:none;color:var(--muted2);cursor:pointer;font-size:0.75rem;}
+.del-row-btn:hover{color:var(--red);}
+
+/* Add row */
+.bk-add-row{padding:12px 28px;border-top:1px solid var(--border);}
+.bk-add-row-btn{background:none;border:1px dashed var(--border2);color:var(--muted);font-size:0.78rem;font-weight:600;padding:8px 20px;border-radius:6px;cursor:pointer;width:100%;}
+.bk-add-row-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ── EMPTY STATE ── */
+.bk-empty{text-align:center;padding:80px 32px;color:var(--muted);}
+.bk-empty-icon{font-size:3rem;margin-bottom:16px;}
+.bk-empty-text{font-size:0.88rem;line-height:1.6;}
+
+/* ── TRIAL BALANCE / REPORTS ── */
+.report-wrap{padding:28px;}
+.report-title{font-size:1rem;font-weight:800;color:var(--white);margin-bottom:20px;text-align:center;}
+.report-table{width:100%;border-collapse:collapse;}
+.report-table th{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);padding:10px 16px;text-align:left;border-bottom:2px solid var(--gold);}
+.report-table th:last-child{text-align:right;}
+.report-table td{padding:10px 16px;font-size:0.84rem;color:var(--off);border-bottom:1px solid var(--border);}
+.report-table td:last-child{text-align:right;font-weight:700;color:var(--white);}
+.report-table tr.total-row td{color:var(--gold);font-weight:800;border-top:2px solid var(--gold);border-bottom:none;}
+.report-table tr.section-header td{color:var(--muted);font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:16px 16px 4px;border-bottom:none;}
+
+/* ── LOADING ── */
+.bk-loading{text-align:center;padding:60px;color:var(--muted);font-size:0.88rem;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  .bk-main{padding:24px 12px;}
+  .bk-think{font-size:2rem;}
+  .bk-nav{gap:20px;}
+  .bk-nav-item{font-size:0.78rem;}
+  .bk-eq-value{font-size:1.2rem;}
+  .bk-content-header{padding:14px 16px;}
+  .bk-add-row{padding:10px 16px;}
+}
+</style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <div class="logo-wrap" onclick="scrollToTop()">
-    <svg class="logo-svg" viewBox="0 0 28 28" fill="none">
-      <path d="M14 7C9 3 2 7 4 14C6 18 11 20 14 18C17 20 22 18 24 14C26 7 19 3 14 7Z" fill="none" stroke="#c9a84c" stroke-width="1.4"/>
-      <path d="M14 7C13 10 13 14 14 18" stroke="#c9a84c" stroke-width="1" stroke-dasharray="2,2"/>
-      <circle cx="14" cy="7" r="1.4" fill="#c9a84c"/>
-    </svg>
-    <div class="logo-text">
-      <span class="logo-main">Butterfly Dynamix</span>
-      <span class="logo-sub">FinQuest Learning</span>
-    </div>
-  </div>
-  <div class="nav-center">
-    <button class="nav-link" onclick="smoothScroll('#opinionsSection')">Community</button>
-    <button class="nav-link" onclick="smoothScroll('#how')">How It Works</button>
-    <button class="nav-link" onclick="smoothScroll('#pricing')">Pricing</button>
-  </div>
-  <div class="nav-right">
-    <div id="guestNav" style="display:flex;align-items:center;gap:8px;">
-      <button class="btn btn-outline" onclick="openAuth('login')" style="padding:7px 14px;font-size:0.68rem;">Log In</button>
-      <button class="btn btn-gold" onclick="openAuth('signup')" style="padding:7px 14px;font-size:0.68rem;">Join Free</button>
-    </div>
-    <div class="nav-user" id="userNav">
-      <div class="pip-ticker">
-        <span class="pip-label">PIP</span>
-        <span class="pip-value" id="navPip">1.00000</span>
-        <span class="pip-arrow">▲</span>
+<!-- HEADER -->
+<header class="bk-header">
+  <span class="bk-logo">📊 Butterfly Dynamix · Bookkeeping</span>
+  <a href="index.html" class="bk-back">← Back to main site</a>
+</header>
+
+<!-- MAIN -->
+<main class="bk-main">
+
+  <!-- HERO -->
+  <h1 class="bk-think">THINK <span>FINANCE</span></h1>
+  <p class="bk-welcome">Welcome, <strong id="bkUserName">—</strong></p>
+
+  <!-- EQUATION BAR -->
+  <div class="bk-eq-bar">
+    <div class="bk-eq-title">The Accounting Equation</div>
+    <div class="bk-equation">
+      <div class="bk-eq-block">
+        <div class="bk-eq-label">Capital</div>
+        <div class="bk-eq-value capital-val" id="eqCapital">$0.00</div>
       </div>
-      <span class="nav-streak" id="navStreak">🔥 0</span>
-      <div class="nav-avatar" id="navAvatar">😎</div>
-      <button class="nav-logout" onclick="logout()">Out</button>
+      <div class="bk-eq-op">+</div>
+      <div class="bk-eq-block">
+        <div class="bk-eq-label">Liabilities</div>
+        <div class="bk-eq-value liabilities-val" id="eqLiabilities">$0.00</div>
+      </div>
+      <div class="bk-eq-op">=</div>
+      <div class="bk-eq-block">
+        <div class="bk-eq-label">Assets</div>
+        <div class="bk-eq-value assets-val" id="eqAssets">$0.00</div>
+      </div>
     </div>
-  </div>
-</nav>
-
-<!-- HOME PAGE -->
-<div id="homePage" class="page">
-<!-- GUEST HERO -->
-<section id="heroSection">
-  <div class="hero-bg"></div>
-  <p class="hero-eyebrow">Find Meaning</p>
-  <h1 class="hero-heading">What's Your <span>Flavor?</span></h1>
-  <p class="hero-sub">Search any topic or pick a category and jump straight into your lesson.</p>
-
-  <!-- SEARCH BAR -->
-  <div class="search-wrap">
-    <div class="search-box">
-      <span class="search-icon">🔍</span>
-      <input class="search-input" type="text" id="searchInput" placeholder="Search topics, courses, keywords..." autocomplete="off" oninput="onSearch(this.value)" onkeydown="onSearchKey(event)"/>
-      <button class="search-btn" onclick="doSearch()">Search</button>
-    </div>
-    <div class="search-suggestions" id="searchSuggestions"></div>
+    <div class="bk-eq-check" id="eqCheck">Enter transactions to see the equation update.</div>
   </div>
 
-  <!-- FLAVOR GRID — equal size grid -->
-  <div class="flavor-section">
-    <div class="flavor-grid">
-      <div class="flavor-card fc-social" onclick="pickFlavor('social',this)">
-        <div class="flavor-icon">🧬</div>
-        <div class="flavor-name">Social Sciences</div>
-        <div class="flavor-count">9 Disciplines</div>
-      </div>
-      <div class="flavor-card fc-arts" onclick="pickFlavor('arts',this)">
-        <div class="flavor-icon">🎨</div>
-        <div class="flavor-name">Arts</div>
-        <div class="flavor-count">10 Topics</div>
-      </div>
-      <div class="flavor-card fc-stem" onclick="pickFlavor('stem',this)">
-        <div class="flavor-icon">⚗️</div>
-        <div class="flavor-name">STEM</div>
-        <div class="flavor-count">14 Topics</div>
-      </div>
-      <div class="flavor-card fc-reform" onclick="pickFlavor('reform',this)">
-        <div class="flavor-icon">🔄</div>
-        <div class="flavor-name">Reform Courses</div>
-        <div class="flavor-count">6 Topics</div>
-      </div>
-      <div class="flavor-card fc-future" onclick="pickFlavor('future',this)">
-        <div class="flavor-icon">🚀</div>
-        <div class="flavor-name">Future Studies</div>
-        <div class="flavor-count">7 Topics</div>
-      </div>
+  <!-- NAV -->
+  <nav class="bk-nav" id="bkNav">
+    <span class="bk-nav-item" id="navRecords" onclick="toggleRecordsMenu()">Records</span>
+    <span class="bk-nav-item" id="navTrial" onclick="showView('trial')">Trial Balance</span>
+    <span class="bk-nav-item" id="navPL" onclick="showView('pl')">Profitable</span>
+    <span class="bk-nav-item" id="navBS" onclick="showView('balance-sheet')">Balance Sheet</span>
+
+    <!-- Records dropdown -->
+    <div class="bk-records-dropdown hidden" id="recordsDropdown">
+      <div class="bk-dropdown-item" onclick="openRecord('capital')">1. Capital Records</div>
+      <div class="bk-dropdown-item" onclick="openRecord('liability')">2. Liability Records</div>
+      <div class="bk-dropdown-item" onclick="openRecord('asset')">3. Assets Records</div>
+      <div class="bk-dropdown-item" onclick="openRecord('income')">4. Income Records</div>
+      <div class="bk-dropdown-item" onclick="openRecord('expenditure')">5. Expenditure Records</div>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="bk-content" id="bkContent">
+    <div class="bk-empty">
+      <div class="bk-empty-icon">📒</div>
+      <div class="bk-empty-text">Select <strong>Records</strong> to open a ledger,<br>or choose a report from the menu above.</div>
     </div>
   </div>
 
-  <!-- TRENDING -->
-  <div class="trending-section">
-    <div class="trending-label-row">
-      <span class="trending-label">Trending</span>
-      <div class="trending-line"></div>
-    </div>
-    <div class="trending-ticker-wrap">
-      <div class="trending-ticker" id="trendingTicker"></div>
-    </div>
-  </div>
-</section>
+</main>
 
-<!-- LOGGED IN HERO -->
-<section id="liHero">
-  <div class="hero-bg"></div>
-  <p class="hero-eyebrow" style="position:relative;z-index:1">Welcome Back</p>
-  <h1 class="li-greeting">Good to see you, <span id="liName">Alex</span> 👋</h1>
-  <p class="li-sub">Your pip score is live. Every correct answer moves it forward.</p>
-  <div class="pip-dashboard">
-    <div class="pip-dash-label">Your Live Pip Score</div>
-    <div class="pip-dash-value" id="dashPip">1.00000</div>
-    <div class="pip-dash-sub" id="dashPipSub">Keep answering correctly to move your pip upward</div>
-    <div class="pip-bar"><div class="pip-bar-fill" id="pipBarFill" style="width:0%"></div></div>
-  </div>
-  <div class="li-stats">
-    <div class="li-stat"><div class="val" id="liStreak">0</div><div class="lbl">Day Streak 🔥</div></div>
-    <div class="li-stat"><div class="val" id="liLessons">0</div><div class="lbl">Lessons Done</div></div>
-    <div class="li-stat"><div class="val" id="liCorrect">0</div><div class="lbl">Correct Answers</div></div>
-  </div>
-  <div class="li-tracks" id="liTracks"></div>
-</section>
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ── CONFIG ───────────────────────────────────────────────────
+const SUPABASE_URL      = 'https://ikctnljbgsmlbyrcfrsi.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3RubGpiZ3NtbGJ5cmNmcnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzMxOTEsImV4cCI6MjA5NzQ0OTE5MX0.wT1fALAXQcSKIR27Xkv4wa6mtULcHy54DGK5htuppNo';
+const bkDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { autoRefreshToken: true, persistSession: true }
+});
 
-<!-- TRUST BAR -->
-<section id="trust">
-  <div class="trust-stat"><div class="trust-val">4,200+</div><div class="trust-lbl">Active Learners</div></div>
-  <div class="trust-stat"><div class="trust-val">90+</div><div class="trust-lbl">Topic Tracks</div></div>
-  <div class="trust-stat"><div class="trust-val">1,800+</div><div class="trust-lbl">Community Posts</div></div>
-  <div class="trust-stat"><div class="trust-val">5</div><div class="trust-lbl">Categories</div></div>
-</section>
+// ── STATE ────────────────────────────────────────────────────
+let bkUser        = null;
+let activeRecord  = null; // 'capital' | 'liability' | 'asset' | 'income' | 'expenditure'
+let activeView    = null; // 'records' | 'trial' | 'pl' | 'balance-sheet'
+let rows          = [];   // in-memory rows for current ledger
+let isDirty       = false;
 
-<!-- HOW IT WORKS -->
-<section id="how">
-  <p class="section-eyebrow">How It Works</p>
-  <h2 class="section-heading">Professional learning, reimagined.</h2>
-  <div class="steps">
-    <div class="step"><div class="step-num">Step 01</div><div class="step-icon">🎯</div><h3>Pick Your Flavor</h3><p>Choose from 9 knowledge pillars and jump straight into a free lesson — no commitment needed.</p><div class="step-arrow">→</div></div>
-    <div class="step"><div class="step-num">Step 02</div><div class="step-icon">⚡</div><h3>Earn Pips</h3><p>Every correct answer moves your pip score up — like a live trade going in your favour.</p><div class="step-arrow">→</div></div>
-    <div class="step"><div class="step-num">Step 03</div><div class="step-icon">💬</div><h3>Join the Community</h3><p>Post opinions, vote on ideas and learn from a global community of curious professionals.</p></div>
-  </div>
-</section>
+const RECORD_LABELS = {
+  capital:     'CAPITAL RECORDS',
+  liability:   'LIABILITY RECORDS',
+  asset:       'ASSETS RECORDS',
+  income:      'INCOME RECORDS',
+  expenditure: 'EXPENDITURE RECORDS',
+};
 
-<!-- COMMUNITY OPINIONS -->
-<section id="opinionsSection">
-  <div class="opinions-header">
-    <div>
-      <p class="section-eyebrow">Community</p>
-      <h2 class="section-heading" style="margin-bottom:0">Top Opinions This Week</h2>
-    </div>
-    <div class="op-filter">
-      <button class="pf active" onclick="filterOpinions('all',this)">All</button>
-      <button class="pf" onclick="filterOpinions('acc',this)">Accounting</button>
-      <button class="pf" onclick="filterOpinions('fin',this)">Finance</button>
-      <button class="pf" onclick="filterOpinions('econ',this)">Economics</button>
-      <button class="pf" onclick="filterOpinions('trd',this)">Trading</button>
-    </div>
-  </div>
-  <div class="opinions-grid" id="opinionsGrid"></div>
-  <div class="opinions-cta">
-    <button class="btn btn-outline" onclick="openPostOpinion()">+ Post Your Opinion</button>
-    <p class="opinions-cta-note">Join free to post and vote on community opinions</p>
-  </div>
-</section>
+const EMPTY_ROWS = 20;
 
-<!-- DAILY TIP -->
-<section id="tip">
-  <div class="tip-inner">
-    <div><div class="tip-date-badge" id="tipDate">Today</div></div>
-    <div>
-      <p class="tip-eyebrow">Daily Insight</p>
-      <p class="tip-text" id="tipText"></p>
-      <p class="tip-source" id="tipSource"></p>
-    </div>
-  </div>
-</section>
+// ── INIT ─────────────────────────────────────────────────────
+(async () => {
+  const { data: { session } } = await bkDb.auth.getSession();
+  if (!session) {
+    window.location.href = 'index.html';
+    return;
+  }
+  bkUser = session.user;
 
-<!-- PRICING -->
-<section id="pricing">
-  <p class="section-eyebrow">Pricing</p>
-  <h2 class="section-heading">Simple, honest pricing.</h2>
-  <p style="font-size:0.85rem;color:var(--muted);max-width:480px;margin:0 auto;">One subscription. All 9 pillars. Every topic from beginner to expert.</p>
-  <div class="pricing-cards">
-    <div class="pricing-card">
-      <div class="pc-name">Free</div>
-      <div class="pc-price">$0 <span>forever</span></div>
-      <div class="pc-desc">Try before you commit. Sample lessons across all pillars.</div>
-      <div class="pc-features">
-        <div class="pc-feat">3 free lessons per topic</div>
-        <div class="pc-feat">Read community opinions</div>
-        <div class="pc-feat">Daily insight</div>
-        <div class="pc-feat no">Quiz & pip rewards</div>
-        <div class="pc-feat no">Post opinions</div>
-      </div>
-      <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Get Started Free</button>
-    </div>
-    <div class="pricing-card featured">
-      <div class="pc-name">Professional</div>
-      <div class="pc-price">$5 <span>/ month</span></div>
-      <div class="pc-desc">Full access to everything across all 9 knowledge pillars.</div>
-      <div class="pc-features">
-        <div class="pc-feat">All topics — all 9 pillars</div>
-        <div class="pc-feat">Full lessons beginner to expert</div>
-        <div class="pc-feat">Quizzes, flashcards & pip rewards</div>
-        <div class="pc-feat">Post & vote on opinions</div>
-        <div class="pc-feat">Leaderboard & certificates</div>
-      </div>
-      <button class="btn btn-gold btn-full" onclick="openPayment('Professional','$5/month',5)">Subscribe — $5/mo</button>
-    </div>
-    <div class="pricing-card">
-      <div class="pc-name">Annual</div>
-      <div class="pc-price">$48 <span>/ year</span></div>
-      <div class="pc-desc">Save 20% vs monthly. Best value for committed learners.</div>
-      <div class="pc-features">
-        <div class="pc-feat">Everything in Professional</div>
-        <div class="pc-feat">Save $12 vs monthly</div>
-        <div class="pc-feat">Priority new content access</div>
-        <div class="pc-feat">Annual completion certificate</div>
-        <div class="pc-feat">Early access to new features</div>
-      </div>
-      <button class="btn btn-outline btn-full" onclick="openPayment('Annual','$48/year',48)">Subscribe — $48/yr</button>
-    </div>
-  </div>
-</section>
+  // Get profile for display name
+  const { data: profile } = await bkDb.from('profiles')
+    .select('username').eq('id', bkUser.id).single();
+  const displayName = profile?.username
+    ? profile.username.charAt(0).toUpperCase() + profile.username.slice(1)
+    : bkUser.email?.split('@')[0] || 'there';
+  document.getElementById('bkUserName').textContent = displayName;
 
-<!-- NEWSLETTER -->
-<section id="newsletter">
-  <div class="nl-inner">
-    <h2>Stay Sharp Every Week</h2>
-    <p>One insight, one opinion and one community highlight — every week. Free, no spam.</p>
-    <div class="nl-form">
-      <input class="nl-input" type="email" placeholder="Enter your email address" id="nlEmail"/>
-      <button class="btn btn-gold" onclick="nlSubmit()">Subscribe</button>
-    </div>
-    <p class="nl-note" id="nlNote">Join 4,200+ subscribers. Unsubscribe anytime.</p>
-  </div>
-</section>
+  await refreshEquation();
+})();
 
-<footer>
-  <span class="footer-logo">Butterfly Dynamix Ltd · FinQuest</span>
-  <div class="footer-links">
-    <button class="footer-link">Privacy Policy</button>
-    <button class="footer-link">Terms of Service</button>
-    <button class="footer-link">Community Guidelines</button>
-  </div>
-  <span class="footer-copy">© 2025 Butterfly Dynamix Ltd. All rights reserved.</span>
-</footer>
-</div>
-<!-- /HOME PAGE -->
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('recordsDropdown');
+  const nr = document.getElementById('navRecords');
+  if (!dd.contains(e.target) && e.target !== nr) {
+    dd.classList.add('hidden');
+    if (activeView !== 'records') {
+      nr.classList.remove('active');
+    }
+  }
+});
 
-<!-- TRACK PAGE -->
-<div id="trackPage" class="page">
-  <div class="track-app">
-    <aside class="track-sidebar">
-      <div class="track-sb-header">
-        <button class="track-sb-back" onclick="closeTrack()">← Back to FinQuest</button>
-        <div class="track-sb-title" id="trackTitle">Track Title</div>
-        <div class="track-sb-sub" id="trackSub">Beginner Track · 10 Lessons</div>
-        <div class="track-sb-pip"><div><div class="track-sb-pip-label">Pip Score</div><div class="track-sb-pip-val" id="trackPip">1.00000</div></div></div>
-      </div>
-      <div class="track-stage-tabs" id="trackStageTabs"></div>
-      <div class="track-sb-progress" id="trackSbProgress">
-        <div class="track-sb-prog-label"><span>Progress</span><span id="trackProgText">0 / 10</span></div>
-        <div class="track-sb-prog-bar"><div class="track-sb-prog-fill" id="trackProgFill" style="width:0%"></div></div>
-      </div>
-      <div class="track-sb-lessons" id="trackSbLessons"></div>
-    </aside>
-    <main class="track-main" id="trackMainContent"></main>
-  </div>
-</div>
+// ── EQUATION ─────────────────────────────────────────────────
+async function refreshEquation() {
+  if (!bkUser) return;
+  const { data } = await bkDb.from('bk_transactions')
+    .select('record_type, debit, credit')
+    .eq('user_id', bkUser.id);
 
+  if (!data) return;
 
-<div class="overlay" id="authOverlay">
-  <div class="modal">
-    <button class="modal-close-btn" onclick="closeAuth()">✕</button>
-    <div class="auth-tabs">
-      <button class="auth-tab active" id="tabSignup" onclick="switchAuthTab('signup')">Create Account</button>
-      <button class="auth-tab" id="tabLogin" onclick="switchAuthTab('login')">Log In</button>
-    </div>
-    <div id="signupFlow">
-      <div class="auth-step active" id="sStep1">
-        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot"></div><div class="si-dot"></div><span class="si-label">Step 1 of 3</span></div>
-        <h2 class="auth-heading">Create your account</h2>
-        <p class="auth-sub">Join 4,200+ professionals on FinQuest.</p>
-        <div class="field-row">
-          <div class="field"><label>First Name</label><input type="text" id="sfirst" placeholder="e.g. Alex"/><div class="field-err" id="eFirst">Required</div></div>
-          <div class="field"><label>Last Name</label><input type="text" id="slast" placeholder="e.g. Johnson"/><div class="field-err" id="eLast">Required</div></div>
-        </div>
-        <div class="field"><label>Email</label><input type="email" id="semail" placeholder="you@email.com"/><div class="field-err" id="eEmail">Enter a valid email</div></div>
-        <div class="field"><label>Password</label>
-          <div class="pw-wrap"><input type="password" id="spw" placeholder="Min. 8 characters" oninput="checkPW(this)"/><button class="pw-toggle" onclick="togglePW('spw',this)">👁</button></div>
-          <div class="pw-strength"><div class="pw-strength-fill" id="pwFill"></div></div>
-          <div class="field-err" id="ePW">Min. 8 characters required</div>
-        </div>
-        <div class="step-nav"><button class="btn btn-gold btn-full" onclick="goStep1()">Continue →</button></div>
-        <div class="switch-mode">Already have an account? <button onclick="switchAuthTab('login')">Log in</button></div>
-      </div>
-      <div class="auth-step" id="sStep2">
-        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot done"></div><div class="si-dot"></div><span class="si-label">Step 2 of 3</span></div>
-        <h2 class="auth-heading">Pick your flavors</h2>
-        <p class="auth-sub">Select the topics you want to learn.</p>
-        <div class="flavor-mini" id="flavorMini">
-          <div class="fm-chip" data-topic="acc" onclick="toggleFlavor(this)">📊 Accounting</div>
-          <div class="fm-chip" data-topic="fin" onclick="toggleFlavor(this)">💰 Finance</div>
-          <div class="fm-chip" data-topic="econ" onclick="toggleFlavor(this)">🌍 Economics</div>
-          <div class="fm-chip" data-topic="trd" onclick="toggleFlavor(this)">📈 Trading</div>
-          <div class="fm-chip" data-topic="psych" onclick="toggleFlavor(this)">🧠 Psychology</div>
-          <div class="fm-chip" data-topic="arts" onclick="toggleFlavor(this)">🎨 Arts</div>
-          <div class="fm-chip" data-topic="stem" onclick="toggleFlavor(this)">⚗️ STEM</div>
-          <div class="fm-chip" data-topic="reform" onclick="toggleFlavor(this)">🔄 Reform Courses</div>
-          <div class="fm-chip" data-topic="future" onclick="toggleFlavor(this)">🚀 Future Studies</div>
-        </div>
-        <div class="field-err" id="eFlavor" style="margin-bottom:10px">Pick at least one topic</div>
-        <div class="step-nav"><button class="btn btn-ghost" onclick="showStep(1)">← Back</button><button class="btn btn-gold" style="flex:1" onclick="goStep2()">Continue →</button></div>
-      </div>
-      <div class="auth-step" id="sStep3">
-        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot done"></div><div class="si-dot done"></div><span class="si-label">Step 3 of 3</span></div>
-        <h2 class="auth-heading">Set up your profile</h2>
-        <p class="auth-sub">How other learners will see you in the community.</p>
-        <div class="field"><label>Username</label><input type="text" id="suname" placeholder="e.g. finwiz_alex"/><div class="field-err" id="eUname">Required</div></div>
-        <div class="field"><label>Short Bio</label><textarea id="sbio" placeholder="Passionate about learning and growth..."></textarea></div>
-        <div class="field"><label>Choose Your Avatar</label><div class="avatar-grid" id="avatarGrid"></div></div>
-        <div class="step-nav"><button class="btn btn-ghost" onclick="showStep(2)">← Back</button><button class="btn btn-gold" style="flex:1" onclick="completeSignup()">Create Account →</button></div>
-      </div>
-      <div class="auth-step" id="sWelcome">
-        <div class="welcome-screen">
-          <div class="welcome-avatar" id="wAvatar">😎</div>
-          <h2 class="welcome-name">Welcome, <span id="wName">Alex</span>!</h2>
-          <p class="welcome-sub">Your pip score starts at <strong>1.00000</strong> — every correct answer moves it forward.</p>
-          <div class="welcome-flavors" id="wFlavors"></div>
-          <button class="btn btn-gold btn-full" style="margin-bottom:8px" onclick="enterApp()">Start Learning →</button>
-          <button class="btn btn-ghost btn-full" onclick="closeAuth()">Explore first</button>
-        </div>
+  const totals = { capital: 0, liability: 0, asset: 0, income: 0, expenditure: 0 };
+  data.forEach(r => {
+    const net = (parseFloat(r.credit) || 0) - (parseFloat(r.debit) || 0);
+    if (r.record_type === 'capital')     totals.capital     += net;
+    if (r.record_type === 'liability')   totals.liability   += net;
+    if (r.record_type === 'asset')       totals.asset       -= net; // assets: debits increase
+    if (r.record_type === 'income')      totals.income      += net;
+    if (r.record_type === 'expenditure') totals.expenditure -= net;
+  });
+
+  const capital     = totals.capital;
+  const liabilities = totals.liability;
+  const assets      = totals.asset;
+
+  document.getElementById('eqCapital').textContent     = fmt(capital);
+  document.getElementById('eqLiabilities').textContent = fmt(liabilities);
+  document.getElementById('eqAssets').textContent      = fmt(assets);
+
+  const lhs     = capital + liabilities;
+  const diff    = Math.abs(lhs - assets);
+  const check   = document.getElementById('eqCheck');
+  if (data.length === 0) {
+    check.textContent = 'Enter transactions to see the equation update.';
+    check.className = 'bk-eq-check';
+  } else if (diff < 0.01) {
+    check.textContent = '✓ Books are balanced — Capital + Liabilities = Assets';
+    check.className = 'bk-eq-check balanced';
+  } else {
+    check.textContent = `⚠ Difference of ${fmt(diff)} — check your entries for missing double entries`;
+    check.className = 'bk-eq-check unbalanced';
+  }
+}
+
+function fmt(n) {
+  return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ── NAV ──────────────────────────────────────────────────────
+function setActiveNav(id) {
+  document.querySelectorAll('.bk-nav-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function toggleRecordsMenu() {
+  const dd = document.getElementById('recordsDropdown');
+  dd.classList.toggle('hidden');
+  setActiveNav('navRecords');
+}
+
+function showView(view) {
+  activeView = view;
+  document.getElementById('recordsDropdown').classList.add('hidden');
+  const navMap = { trial: 'navTrial', pl: 'navPL', 'balance-sheet': 'navBS' };
+  setActiveNav(navMap[view]);
+  if (view === 'trial')         renderTrialBalance();
+  if (view === 'pl')            renderPL();
+  if (view === 'balance-sheet') renderBalanceSheet();
+}
+
+// ── RECORDS ──────────────────────────────────────────────────
+async function openRecord(type) {
+  activeRecord = type;
+  activeView   = 'records';
+  document.getElementById('recordsDropdown').classList.add('hidden');
+  setActiveNav('navRecords');
+
+  // Mark active in dropdown
+  document.querySelectorAll('.bk-dropdown-item').forEach(el => el.classList.remove('active'));
+  const idx = ['capital','liability','asset','income','expenditure'].indexOf(type);
+  const items = document.querySelectorAll('.bk-dropdown-item');
+  if (items[idx]) items[idx].classList.add('active');
+
+  // Load from DB
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
+  const { data } = await bkDb.from('bk_transactions')
+    .select('*')
+    .eq('user_id', bkUser.id)
+    .eq('record_type', type)
+    .order('row_order', { ascending: true });
+
+  rows = (data || []).map(r => ({
+    id:            r.id,
+    serial_number: r.serial_number,
+    txn_date:      r.txn_date || '',
+    payee:         r.payee || '',
+    payer:         r.payer || '',
+    narration:     r.narration || '',
+    debit:         r.debit || 0,
+    credit:        r.credit || 0,
+    balance:       r.balance || 0,
+    row_order:     r.row_order,
+    saved:         true,
+  }));
+
+  // Pad to EMPTY_ROWS
+  while (rows.length < EMPTY_ROWS) rows.push(newEmptyRow(rows.length));
+  isDirty = false;
+  renderLedger();
+}
+
+function newEmptyRow(order) {
+  return { id: null, serial_number: null, txn_date: '', payee: '', payer: '',
+           narration: '', debit: 0, credit: 0, balance: 0, row_order: order, saved: false };
+}
+
+// ── RENDER LEDGER ─────────────────────────────────────────────
+function renderLedger() {
+  const label = RECORD_LABELS[activeRecord];
+  const content = document.getElementById('bkContent');
+
+  content.innerHTML = `
+    <div class="bk-content-header">
+      <div class="bk-content-title">${label}</div>
+      <div class="bk-header-actions">
+        <span class="bk-save-msg" id="saveMsg"></span>
+        <button class="bk-btn bk-btn-outline" onclick="addRow()">+ Add Row</button>
+        <button class="bk-btn bk-btn-gold" onclick="saveAll()">Save</button>
       </div>
     </div>
-    <div id="loginFlow" style="display:none;">
-      <div style="padding:28px;">
-        <h2 class="auth-heading">Welcome back</h2>
-        <p class="auth-sub">Log in to continue your pip streak.</p>
-        <div class="field"><label>Email</label><input type="email" id="lemail" placeholder="you@email.com"/><div class="field-err" id="lEEmail">Enter a valid email</div></div>
-        <div class="field"><label>Password</label>
-          <div class="pw-wrap"><input type="password" id="lpw" placeholder="Your password"/><button class="pw-toggle" onclick="togglePW('lpw',this)">👁</button></div>
-          <div class="field-err" id="lEPW">Incorrect email or password</div>
-        </div>
-        <button class="forgot-link">Forgot password?</button>
-        <div class="step-nav" style="margin-top:14px;"><button class="btn btn-gold btn-full" onclick="doLogin()">Log In →</button></div>
-        <div class="switch-mode">No account yet? <button onclick="switchAuthTab('signup')">Join free</button></div>
+    <div class="bk-sheet-wrap">
+      <table class="bk-sheet" id="ledgerTable">
+        <thead>
+          <tr>
+            <th class="col-date">Date</th>
+            <th class="col-payee">Payee</th>
+            <th class="col-payer">Payer</th>
+            <th class="col-narr">Narration</th>
+            <th class="col-dr" style="text-align:right">Debit ($)</th>
+            <th class="col-cr" style="text-align:right">Credit ($)</th>
+            <th class="col-bal" style="text-align:right">Balance ($)</th>
+            <th class="col-sn" style="text-align:center">S/N</th>
+            <th class="col-del"></th>
+          </tr>
+        </thead>
+        <tbody id="ledgerBody"></tbody>
+      </table>
+    </div>
+    <div class="bk-add-row">
+      <button class="bk-add-row-btn" onclick="addRow()">+ Add another row</button>
+    </div>`;
+
+  recalcBalances();
+  renderRows();
+}
+
+function renderRows() {
+  const tbody = document.getElementById('ledgerBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = rows.map((row, i) => {
+    const sn  = i + 1;
+    const bal = parseFloat(row.balance) || 0;
+    const balClass = 'bk-cell balance-cell' + (bal < 0 ? ' negative' : '');
+    return `<tr id="row_${i}">
+      <td class="col-date">
+        <input class="bk-cell" type="date" value="${row.txn_date}"
+          onchange="cellChange(${i},'txn_date',this.value)" onblur="onCellBlur(${i})"/>
+      </td>
+      <td class="col-payee">
+        <input class="bk-cell" type="text" value="${escHtml(row.payee)}" placeholder="—"
+          oninput="cellChange(${i},'payee',this.value)" onblur="onCellBlur(${i})"/>
+      </td>
+      <td class="col-payer">
+        <input class="bk-cell" type="text" value="${escHtml(row.payer)}" placeholder="—"
+          oninput="cellChange(${i},'payer',this.value)" onblur="onCellBlur(${i})"/>
+      </td>
+      <td class="col-narr">
+        <input class="bk-cell" type="text" value="${escHtml(row.narration)}" placeholder="—"
+          oninput="cellChange(${i},'narration',this.value)" onblur="onCellBlur(${i})"/>
+      </td>
+      <td class="col-dr">
+        <input class="bk-cell numeric" type="number" value="${row.debit > 0 ? row.debit : ''}" placeholder="0.00" min="0" step="0.01"
+          oninput="numChange(${i},'debit',this.value)" onblur="onCellBlur(${i})"/>
+      </td>
+      <td class="col-cr">
+        <input class="bk-cell numeric" type="number" value="${row.credit > 0 ? row.credit : ''}" placeholder="0.00" min="0" step="0.01"
+          oninput="numChange(${i},'credit',this.value)" onblur="onCellBlur(${i})"/>
+      </td>
+      <td class="col-bal">
+        <input class="${balClass}" type="text" value="${bal !== 0 ? fmt(bal) : ''}" readonly tabindex="-1"/>
+      </td>
+      <td class="col-sn">
+        <input class="bk-cell sn-cell" type="text" value="${hasData(row) ? sn : ''}" readonly tabindex="-1"/>
+      </td>
+      <td class="col-del">
+        <button class="del-row-btn" onclick="deleteRow(${i})" title="Delete row">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function hasData(row) {
+  return row.txn_date || row.payee || row.payer || row.narration || row.debit > 0 || row.credit > 0;
+}
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── CELL CHANGE ──────────────────────────────────────────────
+function cellChange(i, field, val) {
+  rows[i][field] = val;
+  rows[i].saved  = false;
+  isDirty = true;
+  setSaveMsg('Unsaved changes…', false);
+}
+
+function numChange(i, field, val) {
+  rows[i][field] = parseFloat(val) || 0;
+  rows[i].saved  = false;
+  isDirty = true;
+  recalcBalances();
+  // Update balance cell immediately without full re-render
+  const bal  = rows[i].balance;
+  const tr   = document.getElementById(`row_${i}`);
+  if (tr) {
+    const balInput = tr.querySelectorAll('input')[6];
+    if (balInput) {
+      balInput.value = bal !== 0 ? fmt(bal) : '';
+      balInput.className = 'bk-cell balance-cell' + (bal < 0 ? ' negative' : '');
+    }
+    // Update S/N
+    const snInput = tr.querySelectorAll('input')[7];
+    if (snInput) snInput.value = hasData(rows[i]) ? i + 1 : '';
+    // Update subsequent balance cells
+    for (let j = i + 1; j < rows.length; j++) {
+      const tr2 = document.getElementById(`row_${j}`);
+      if (!tr2) continue;
+      const b2 = tr2.querySelectorAll('input')[6];
+      if (b2) {
+        b2.value = rows[j].balance !== 0 ? fmt(rows[j].balance) : '';
+        b2.className = 'bk-cell balance-cell' + (rows[j].balance < 0 ? ' negative' : '');
+      }
+    }
+  }
+  setSaveMsg('Unsaved changes…', false);
+}
+
+function onCellBlur(i) {
+  // update S/N display
+  const tr = document.getElementById(`row_${i}`);
+  if (tr) {
+    const snInput = tr.querySelectorAll('input')[7];
+    if (snInput) snInput.value = hasData(rows[i]) ? i + 1 : '';
+  }
+}
+
+// ── BALANCE CALCULATION ───────────────────────────────────────
+function recalcBalances() {
+  let running = 0;
+  rows.forEach((r, i) => {
+    running += (parseFloat(r.credit) || 0) - (parseFloat(r.debit) || 0);
+    rows[i].balance = running;
+    rows[i].serial_number = hasData(r) ? i + 1 : null;
+  });
+}
+
+// ── ROW MANAGEMENT ───────────────────────────────────────────
+function addRow() {
+  rows.push(newEmptyRow(rows.length));
+  renderRows();
+  // Focus the date cell of the new row
+  setTimeout(() => {
+    const tr = document.getElementById(`row_${rows.length - 1}`);
+    if (tr) tr.querySelector('input')?.focus();
+  }, 50);
+}
+
+async function deleteRow(i) {
+  const row = rows[i];
+  if (row.id) {
+    await bkDb.from('bk_transactions').delete().eq('id', row.id);
+  }
+  rows.splice(i, 1);
+  recalcBalances();
+  renderRows();
+  await refreshEquation();
+  setSaveMsg('Row deleted.', true);
+}
+
+// ── SAVE ─────────────────────────────────────────────────────
+async function saveAll() {
+  if (!activeRecord || !bkUser) return;
+  setSaveMsg('Saving…', false);
+
+  const toSave = rows.filter(r => hasData(r));
+  recalcBalances();
+
+  const upserts = toSave.map((r, i) => ({
+    id:            r.id || undefined,
+    user_id:       bkUser.id,
+    record_type:   activeRecord,
+    serial_number: r.serial_number,
+    txn_date:      r.txn_date || null,
+    payee:         r.payer || null,
+    payer:         r.payer || null,
+    narration:     r.narration || null,
+    debit:         parseFloat(r.debit) || 0,
+    credit:        parseFloat(r.credit) || 0,
+    balance:       parseFloat(r.balance) || 0,
+    row_order:     toSave.indexOf(r),
+    updated_at:    new Date().toISOString(),
+  }));
+
+  if (upserts.length > 0) {
+    const { data, error } = await bkDb.from('bk_transactions')
+      .upsert(upserts, { onConflict: 'id' })
+      .select();
+
+    if (error) {
+      setSaveMsg('Error saving — please try again.', false);
+      return;
+    }
+
+    // Update row IDs from DB response
+    if (data) {
+      data.forEach(saved => {
+        const match = rows.find(r => !r.id || r.id === saved.id);
+        if (match) match.id = saved.id;
+      });
+    }
+  }
+
+  isDirty = false;
+  rows.forEach(r => r.saved = true);
+  setSaveMsg('✓ Saved', true);
+  await refreshEquation();
+}
+
+function setSaveMsg(msg, positive) {
+  const el = document.getElementById('saveMsg');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = positive ? 'var(--green)' : 'var(--gold)';
+}
+
+// ── TRIAL BALANCE ─────────────────────────────────────────────
+async function renderTrialBalance() {
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading Trial Balance…</div>';
+  const { data } = await bkDb.from('bk_transactions')
+    .select('record_type, debit, credit')
+    .eq('user_id', bkUser.id);
+
+  const totals = {};
+  ['capital','liability','asset','income','expenditure'].forEach(t => {
+    totals[t] = { dr: 0, cr: 0 };
+  });
+  (data || []).forEach(r => {
+    totals[r.record_type].dr += parseFloat(r.debit) || 0;
+    totals[r.record_type].cr += parseFloat(r.credit) || 0;
+  });
+
+  const totalDr = Object.values(totals).reduce((a, t) => a + t.dr, 0);
+  const totalCr = Object.values(totals).reduce((a, t) => a + t.cr, 0);
+  const balanced = Math.abs(totalDr - totalCr) < 0.01;
+
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div class="bk-content-title">TRIAL BALANCE</div>
+      <div class="bk-header-actions">
+        <span style="font-size:0.78rem;font-weight:700;color:${balanced ? 'var(--green)' : 'var(--red)'}">
+          ${balanced ? '✓ Balanced' : '⚠ Not Balanced'}
+        </span>
       </div>
     </div>
-  </div>
-</div>
+    <div class="report-wrap">
+      <table class="report-table">
+        <thead>
+          <tr><th>Account</th><th>Debit ($)</th><th>Credit ($)</th></tr>
+        </thead>
+        <tbody>
+          ${Object.entries(totals).map(([type, t]) => `
+          <tr>
+            <td>${RECORD_LABELS[type].replace(' RECORDS','')}</td>
+            <td style="text-align:right">${t.dr > 0 ? fmt(t.dr) : '—'}</td>
+            <td style="text-align:right">${t.cr > 0 ? fmt(t.cr) : '—'}</td>
+          </tr>`).join('')}
+          <tr class="total-row">
+            <td>TOTAL</td>
+            <td style="text-align:right">${fmt(totalDr)}</td>
+            <td style="text-align:right">${fmt(totalCr)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+}
 
-<!-- LESSON OVERLAY -->
-<div class="overlay" id="lessonOverlay">
-  <div class="modal lesson-modal">
-    <div class="modal-head">
-      <h2 id="modalTitle">Sample Lesson</h2>
-      <button class="modal-close-btn" onclick="closeLessonOverlay()">✕</button>
+// ── PROFIT & LOSS ─────────────────────────────────────────────
+async function renderPL() {
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
+  const { data } = await bkDb.from('bk_transactions')
+    .select('record_type, debit, credit')
+    .eq('user_id', bkUser.id);
+
+  let income = 0, expenditure = 0;
+  (data || []).forEach(r => {
+    if (r.record_type === 'income')      income      += (parseFloat(r.credit)||0) - (parseFloat(r.debit)||0);
+    if (r.record_type === 'expenditure') expenditure += (parseFloat(r.debit)||0)  - (parseFloat(r.credit)||0);
+  });
+  const netProfit = income - expenditure;
+
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div class="bk-content-title">PROFIT & LOSS ACCOUNT</div>
     </div>
-    <div id="modalTag" class="modal-tag"></div>
-    <div class="modal-body" id="modalBody"></div>
-    <div class="modal-quiz" id="modalQuiz"></div>
-  </div>
-</div>
+    <div class="report-wrap">
+      <table class="report-table">
+        <thead><tr><th>Item</th><th>Amount ($)</th></tr></thead>
+        <tbody>
+          <tr class="section-header"><td colspan="2">Income</td></tr>
+          <tr><td>Total Income</td><td>${fmt(income)}</td></tr>
+          <tr class="section-header"><td colspan="2">Expenditure</td></tr>
+          <tr><td>Total Expenditure</td><td>${fmt(expenditure)}</td></tr>
+          <tr class="total-row">
+            <td>${netProfit >= 0 ? 'NET PROFIT' : 'NET LOSS'}</td>
+            <td style="color:${netProfit >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(Math.abs(netProfit))}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+}
 
-<!-- POST OPINION OVERLAY -->
-<div class="overlay" id="postOpinionOverlay">
-  <div class="modal">
-    <button class="modal-close-btn" onclick="closePostOpinion()">✕</button>
-    <div class="post-opinion-modal">
-      <p style="font-size:0.62rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Community</p>
-      <h2 style="font-size:1rem;font-weight:800;color:var(--white);margin-bottom:4px">Post Your Opinion</h2>
-      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:20px">Share your professional take. Max 280 characters.</p>
-      <div class="field"><label>Topic</label>
-        <div class="poi-topics">
-          <div class="poi-topic" data-topic="acc" onclick="selectOpinionTopic('acc',this)">📊 Accounting</div>
-          <div class="poi-topic" data-topic="fin" onclick="selectOpinionTopic('fin',this)">💰 Finance</div>
-          <div class="poi-topic" data-topic="econ" onclick="selectOpinionTopic('econ',this)">🌍 Economics</div>
-          <div class="poi-topic" data-topic="trd" onclick="selectOpinionTopic('trd',this)">📈 Trading</div>
-        </div>
-        <div class="field-err" id="eOpTopic">Select a topic</div>
+// ── BALANCE SHEET ─────────────────────────────────────────────
+async function renderBalanceSheet() {
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
+  const { data } = await bkDb.from('bk_transactions')
+    .select('record_type, debit, credit')
+    .eq('user_id', bkUser.id);
+
+  let capital = 0, liabilities = 0, assets = 0, income = 0, expenditure = 0;
+  (data || []).forEach(r => {
+    const cr = parseFloat(r.credit)||0, dr = parseFloat(r.debit)||0;
+    if (r.record_type === 'capital')     capital     += cr - dr;
+    if (r.record_type === 'liability')   liabilities += cr - dr;
+    if (r.record_type === 'asset')       assets      += dr - cr;
+    if (r.record_type === 'income')      income      += cr - dr;
+    if (r.record_type === 'expenditure') expenditure += dr - cr;
+  });
+  const netProfit = income - expenditure;
+  const totalEquity = capital + netProfit;
+  const totalFinancing = totalEquity + liabilities;
+  const balanced = Math.abs(totalFinancing - assets) < 0.01;
+
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div class="bk-content-title">BALANCE SHEET</div>
+      <div class="bk-header-actions">
+        <span style="font-size:0.78rem;font-weight:700;color:${balanced ? 'var(--green)' : 'var(--red)'}">
+          ${balanced ? '✓ Balanced' : '⚠ Not Balanced'}
+        </span>
       </div>
-      <div class="field"><label>Opinion Title</label><input type="text" id="opTitle" placeholder="Your headline opinion..."/><div class="field-err" id="eOpTitle">Required</div></div>
-      <div class="field"><label>Your Opinion</label><textarea id="opBody" placeholder="Share your perspective... (max 280 characters)" maxlength="280" oninput="document.getElementById('charCount').textContent=this.value.length"></textarea>
-        <div class="char-count"><span id="charCount">0</span> / 280</div>
-        <div class="field-err" id="eOpBody">Required</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-gold" style="flex:1" onclick="submitOpinion()">Post Opinion →</button>
-        <button class="btn btn-ghost" onclick="closePostOpinion()">Cancel</button>
-      </div>
-      <p style="font-size:0.65rem;color:var(--muted2);margin-top:12px;text-align:center">Opinions are personal views and do not constitute professional advice.</p>
     </div>
-  </div>
-</div>
+    <div class="report-wrap">
+      <table class="report-table">
+        <thead><tr><th>Item</th><th>Amount ($)</th></tr></thead>
+        <tbody>
+          <tr class="section-header"><td colspan="2">Assets</td></tr>
+          <tr><td>Total Assets</td><td>${fmt(assets)}</td></tr>
 
-<!-- PAYMENT OVERLAY -->
-<div class="overlay" id="paymentOverlay">
-  <div class="modal">
-    <button class="modal-close-btn" onclick="closePayment()">✕</button>
-    <div class="payment-modal" id="paymentContent">
-      <p style="font-size:0.62rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Secure Checkout</p>
-      <div class="payment-plan-name" id="payPlanName">Professional</div>
-      <div class="payment-plan-price" id="payPlanPrice">$5 <span>/ month</span></div>
-      <div class="field"><label>Full Name</label><input type="text" id="payName" placeholder="Your full name"/></div>
-      <div class="field"><label>Email Address</label><input type="email" id="payEmail" placeholder="you@email.com"/></div>
-      <div class="field"><label>Phone Number</label><input type="tel" id="payPhone" placeholder="+234 800 000 0000"/></div>
-      <button class="btn btn-gold btn-full" style="margin-top:8px" onclick="initiateFlutterwave()">Pay with Flutterwave →</button>
-      <div class="flw-note">🔒 Secured by <strong style="color:var(--gold)">Flutterwave</strong> · 256-bit SSL</div>
-    </div>
-    <div class="payment-success" id="paymentSuccess">
-      <div class="ps-icon">🎉</div>
-      <h3>Payment Successful!</h3>
-      <p>Welcome to FinQuest Professional. All content is now unlocked.</p>
-      <button class="btn btn-gold" style="margin-top:20px;width:100%" onclick="closePayment();enterApp()">Start Learning →</button>
-    </div>
-  </div>
-</div>
+          <tr class="section-header"><td colspan="2">Liabilities</td></tr>
+          <tr><td>Total Liabilities</td><td>${fmt(liabilities)}</td></tr>
 
-<script src="data.js"></script>
-<script src="app.js"></script>
-<script src="track.js"></script>
+          <tr class="section-header"><td colspan="2">Capital & Reserves</td></tr>
+          <tr><td>Capital</td><td>${fmt(capital)}</td></tr>
+          <tr><td>${netProfit >= 0 ? 'Add: Net Profit' : 'Less: Net Loss'}</td>
+              <td style="color:${netProfit >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(netProfit)}</td></tr>
+          <tr><td>Total Equity</td><td>${fmt(totalEquity)}</td></tr>
+
+          <tr class="total-row">
+            <td>TOTAL LIABILITIES + EQUITY</td>
+            <td>${fmt(totalFinancing)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+</script>
 </body>
 </html>
