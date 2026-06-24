@@ -894,7 +894,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <div class="logo-wrap" onclick="showPage('homePage')" style="cursor:pointer;">
     <div class="logo-text">
       <span class="logo-main">Butterfly Dynamix</span>
-      <span class="logo-sub">Learning</span>
     </div>
   </div>
   <div class="nav-center">
@@ -939,8 +938,9 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <section id="heroSection">
   <div class="hero-bg"></div>
   <p class="hero-eyebrow">Think Finance</p>
-  <h1 class="hero-heading">What's Your <span id="flavorWord">Flavor?</span></h1>
+  <h1 class="hero-heading">Think <span id="flavorWord" style="color:var(--gold);">Butterfly Dynamix</span></h1>
   <p class="hero-sub">Research any topic related to finance or select one of our services.</p>
+  <p style="font-size:0.85rem;color:var(--muted);margin-top:-8px;margin-bottom:20px;position:relative;z-index:1;">What's Your Flavor?</p>
 
   <!-- AI CHAT BAR -->
   <div class="search-wrap">
@@ -988,7 +988,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <!-- LOGGED IN HERO -->
 <!-- TRUST BAR -->
 <section id="trust">
-  <div class="trust-stat"><div class="trust-val">10</div><div class="trust-lbl">Expert Articles</div></div>
+  <div class="trust-stat"><div class="trust-val">1</div><div class="trust-lbl">Article Weekly</div></div>
   <div class="trust-stat"><div class="trust-val">✨</div><div class="trust-lbl">AI Finance Tutor</div></div>
   <div class="trust-stat"><div class="trust-val">100%</div><div class="trust-lbl">Remote Service</div></div>
   <div class="trust-stat"><div class="trust-val">24hr</div><div class="trust-lbl">Response Time</div></div>
@@ -997,7 +997,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <!-- HOW IT WORKS -->
 <section id="how">
   <p class="section-eyebrow">How It Works</p>
-  <h2 class="section-heading">Three ways to build your financial knowledge.</h2>
+  <h2 class="section-heading" onclick="showPage('howPage')" style="cursor:pointer;text-decoration:underline;text-decoration-color:rgba(212,175,55,0.4);">Three ways to build your financial knowledge.</h2>
   <div class="steps">
     <div class="step" onclick="document.getElementById('searchInput').focus();window.scrollTo({top:0,behavior:'smooth'});" style="cursor:pointer;">
       <div class="step-num">Step 01</div><div class="step-icon">✨</div>
@@ -1033,10 +1033,10 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 
 <!-- PRICING -->
 <section id="pricing">
-  <p class="section-eyebrow">Services &amp; Platform</p>
-  <h2 class="section-heading">Professional services. Free platform to start.</h2>
-  <p style="font-size:0.85rem;color:var(--muted);max-width:520px;margin:0 auto;">Hire us for bookkeeping or tax work — or join the platform free to access the AI tutor and articles.</p>
-  <div class="pricing-cards" style="margin-top:32px;">
+  <p class="section-eyebrow">Just Services</p>
+  <h2 class="section-heading">Professional services.</h2>
+  <p style="font-size:0.85rem;color:var(--muted);max-width:420px;margin:0 auto;">Hire us for bookkeeping or tax work.</p>
+  <div class="pricing-cards" style="margin-top:32px;grid-template-columns:repeat(2,1fr);max-width:720px;margin-left:auto;margin-right:auto;">
     <div class="pricing-card">
       <div class="pc-name">Bookkeeping</div>
       <div class="pc-price">$100 <span>/ month</span></div>
@@ -1061,19 +1061,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
         <div class="pc-feat">PAYE remittance schedule</div>
       </div>
       <button class="btn btn-gold btn-full" onclick="showPage('servicesPage')">Book This Service →</button>
-    </div>
-    <div class="pricing-card">
-      <div class="pc-name">Platform — Free</div>
-      <div class="pc-price">$0</div>
-      <div class="pc-desc">Access the AI finance tutor and all articles. Courses, novels and short films coming soon.</div>
-      <div class="pc-features">
-        <div class="pc-feat">AI tutor — ask anything about finance</div>
-        <div class="pc-feat">10 expert articles with comments</div>
-        <div class="pc-feat">Daily finance insights</div>
-        <div class="pc-feat no">Courses &amp; lessons (coming soon)</div>
-        <div class="pc-feat no">Novels &amp; Short Films (coming soon)</div>
-      </div>
-      <button class="btn btn-outline btn-full" onclick="openAuth('signup')">Get Started Free</button>
     </div>
   </div>
 </section>
@@ -1250,18 +1237,9 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
       <div class="step"><div class="step-num">Step 02</div><div class="step-icon">📰</div><h3>Read the Articles</h3><p>Professionally written articles on real accounting and finance concepts. Read, thumbs up, and discuss in the comments.</p><div class="step-arrow">→</div></div>
       <div class="step"><div class="step-num">Step 03</div><div class="step-icon">🧾</div><h3>Hire a Professional</h3><p>Bank statement analysis, monthly bookkeeping, payroll, and financial statements — delivered remotely by a qualified practitioner.</p></div>
     </div>
-    <div style="margin-top:56px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:36px;text-align:center;">
-      <p class="section-eyebrow">Coming Soon</p>
-      <h3 style="font-size:1.1rem;font-weight:800;color:var(--white);margin:8px 0 12px;">Structured Accounting &amp; Finance Courses</h3>
-      <p style="font-size:0.85rem;color:var(--muted);max-width:480px;margin:0 auto 24px;line-height:1.65;">
-        Full lesson tracks — Business Accounting Volume 1, ICAN Foundation, personal finance and more — are in development.
-        Sign up for early access and you'll be the first to know when they launch.
-      </p>
-      <button class="btn btn-gold" onclick="goToNewsletter()" style="padding:13px 36px;">Get Early Access →</button>
-    </div>
-    <div style="margin-top:28px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
+    <div style="margin-top:36px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
       <button class="btn btn-gold" onclick="showPage('servicesPage')" style="padding:14px 32px;">View Services →</button>
-      <button class="btn btn-outline" onclick="showPage('pricingPage')" style="padding:14px 32px;">View Pricing</button>
+      <button class="btn btn-outline" onclick="openArticlesPage()" style="padding:14px 32px;">Read the Articles</button>
     </div>
   </div>
 </div>
@@ -1636,11 +1614,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=25"></script>
-<script src="data.js?v=25"></script>
-<script src="auth.js?v=25"></script>
-<script src="app.js?v=25"></script>
-<script src="track.js?v=25"></script>
+<script src="supabase-config.js?v=26"></script>
+<script src="data.js?v=26"></script>
+<script src="auth.js?v=26"></script>
+<script src="app.js?v=26"></script>
+<script src="track.js?v=26"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
