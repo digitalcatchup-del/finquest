@@ -196,6 +196,41 @@ select.bk-cell {
   font-size: 0.74rem;
   padding: 2px 4px;
 }
+/* COLUMN HELP TOOLTIP */
+.col-help-tooltip{position:fixed;z-index:800;background:var(--surface);border:1px solid var(--gold);border-radius:10px;padding:16px 18px;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+.col-help-title{font-size:0.88rem;font-weight:800;color:var(--gold);margin-bottom:8px;}
+.col-help-text{font-size:0.8rem;color:var(--off);line-height:1.6;margin-bottom:8px;}
+.col-help-example{font-size:0.74rem;color:var(--muted);line-height:1.55;padding:8px 10px;background:var(--surface2);border-radius:6px;border-left:2px solid var(--gold);margin-bottom:10px;}
+.col-help-example strong{color:var(--gold);display:block;font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:3px;}
+.col-help-actions{display:flex;gap:8px;}
+.col-help-close{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.72rem;font-weight:700;padding:5px 12px;border-radius:5px;cursor:pointer;}
+.col-help-close:hover{color:var(--white);border-color:var(--border3);}
+.col-help-ai{background:var(--gold);border:none;color:#000;font-size:0.72rem;font-weight:700;padding:5px 12px;border-radius:5px;cursor:pointer;}
+.col-help-ai:hover{opacity:0.85;}
+/* Help icon on TH */
+.th-help-icon{display:inline-block;width:14px;height:14px;background:rgba(212,175,55,0.2);border-radius:50%;font-size:0.6rem;color:var(--gold);text-align:center;line-height:14px;margin-left:4px;cursor:pointer;vertical-align:middle;}
+/* TOOLBAR */
+.bk-toolbar{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 14px;margin-bottom:16px;flex-wrap:wrap;overflow-x:auto;}
+.tb-sep{width:1px;height:20px;background:var(--border2);margin:0 4px;flex-shrink:0;}
+.tb-btn{background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:600;padding:5px 9px;border-radius:5px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;transition:all 0.12s;}
+.tb-btn:hover{background:var(--surface2);color:var(--white);}
+.tb-btn.active{background:var(--gold-dim);color:var(--gold);}
+.tb-btn:disabled{opacity:0.35;cursor:default;}
+.tb-search-wrap{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;overflow:hidden;flex:1;min-width:160px;max-width:280px;}
+.tb-search-input{background:transparent;border:none;color:var(--white);padding:5px 8px;font-size:0.8rem;font-family:inherit;outline:none;flex:1;min-width:0;}
+.tb-search-input::placeholder{color:var(--muted2);}
+.tb-search-btn{background:none;border:none;color:var(--muted);padding:5px 8px;cursor:pointer;font-size:0.82rem;}
+.tb-search-btn:hover{color:var(--gold);}
+.bk-sheet th{position:relative;}
+.col-resize-handle{position:absolute;right:0;top:0;bottom:0;width:4px;cursor:col-resize;background:transparent;}
+.col-resize-handle:hover,.col-resize-handle.dragging{background:var(--gold);}
+.bk-sheet.rows-compact tbody tr td{height:24px !important;}
+.bk-sheet.rows-compact .bk-cell{height:24px !important;font-size:0.74rem;}
+.bk-sheet.rows-expanded tbody tr td{height:56px !important;}
+.bk-sheet.rows-expanded .bk-cell{height:56px !important;}
+tr.row-selected td{background:rgba(212,175,55,0.07) !important;}
+.bk-sheet.text-wrap .bk-cell{white-space:normal !important;height:auto !important;min-height:34px;}
+.bk-sheet.text-wrap td{height:auto !important;}
 .tpl-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:var(--surface);border-left:1px solid var(--border2);z-index:600;transition:right 0.3s ease;display:flex;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,0.4);}
 .tpl-panel.open{right:0;}
 .tpl-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
@@ -276,17 +311,17 @@ select.bk-cell {
   <div class="bk-eq-bar">
     <div class="bk-eq-title">Capital + Liabilities = Assets</div>
     <div class="bk-equation">
-      <div class="bk-eq-block">
+      <div class="bk-eq-block" onclick="eqNav('capital')" style="cursor:pointer;" title="Go to Capital Records">
         <div class="bk-eq-label">Capital</div>
         <div class="bk-eq-value cv" id="eqCapital">—</div>
       </div>
       <div class="bk-eq-op">+</div>
-      <div class="bk-eq-block">
+      <div class="bk-eq-block" onclick="eqNav('liability')" style="cursor:pointer;" title="Go to Liability Records">
         <div class="bk-eq-label">Liabilities</div>
         <div class="bk-eq-value lv" id="eqLiabilities">—</div>
       </div>
       <div class="bk-eq-op">=</div>
-      <div class="bk-eq-block">
+      <div class="bk-eq-block" onclick="eqNav('asset')" style="cursor:pointer;" title="Go to Assets Records">
         <div class="bk-eq-label">Assets</div>
         <div class="bk-eq-value av" id="eqAssets">—</div>
       </div>
@@ -328,6 +363,28 @@ select.bk-cell {
         <div class="bk-dd-sub" id="subExpenditure"></div>
       </div>
     </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="bk-toolbar" id="bkToolbar">
+    <div class="tb-search-wrap">
+      <input class="tb-search-input" id="tbSearch" placeholder="🔍 Search…"
+        onkeydown="if(event.key==='Enter') tbDoSearch()"/>
+      <button class="tb-search-btn" onclick="tbDoSearch()" title="Search">⌕</button>
+    </div>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="tbUndo" onclick="undoAction()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
+    <button class="tb-btn" id="tbRedo" onclick="redoAction()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="tbWrap" onclick="toggleWrap()" title="Toggle text wrap">↕ Wrap</button>
+    <button class="tb-btn" onclick="cycleRowHeight()" title="Toggle row height" id="tbRowH">⬛ Normal</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" onclick="tbInsertRow()" title="Insert row">+ Insert Row</button>
+    <button class="tb-btn" onclick="tbDeleteSelected()" title="Delete selected row">✕ Delete Row</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" onclick="exportCSV()" title="Export to CSV">⬇ CSV</button>
+    <button class="tb-btn" onclick="printLedger()" title="Print">🖨 Print</button>
+    <button class="tb-btn" onclick="tbPDF()" title="Export PDF">⬇ PDF</button>
   </div>
 
   <div id="bkContent">
@@ -418,7 +475,10 @@ function setCurrency(code) {
     bkDb.from('bk_settings').upsert({ user_id:bkUser.id, currency:code, updated_at:new Date().toISOString() });
   }
   refreshEquation();
+  // Re-render whatever is currently visible
   if (activeAccount) renderLedger();
+  else if (document.getElementById('journalTable')) renderJournal();
+  else showDashboard();
 }
 
 // ── DEFAULT ACCOUNTS ─────────────────────────────────────────
@@ -671,14 +731,14 @@ function renderLedger() {
       <table class="bk-sheet" id="ledgerTable">
         <thead>
           <tr>
-            <th class="col-date">Date</th>
-            <th class="col-payee">Payee</th>
-            <th class="col-payer">Payer</th>
-            <th class="col-narr">Narration</th>
-            <th class="col-dr num">Debit (${CURRENCIES[activeCurrency].symbol})</th>
-            <th class="col-cr num">Credit (${CURRENCIES[activeCurrency].symbol})</th>
-            <th class="col-bal num">Balance (${CURRENCIES[activeCurrency].symbol})</th>
-            <th class="col-sn num">S/N</th>
+            <th class="col-date" onclick="showColumnHelp(this,'Date')">Date<span class="th-help-icon">?</span></th>
+            <th class="col-payee" onclick="showColumnHelp(this,'Payee')">Payee<span class="th-help-icon">?</span></th>
+            <th class="col-payer" onclick="showColumnHelp(this,'Payer')">Payer<span class="th-help-icon">?</span></th>
+            <th class="col-narr" onclick="showColumnHelp(this,'Narration')">Narration<span class="th-help-icon">?</span></th>
+            <th class="col-dr num" onclick="showColumnHelp(this,'Debit')">Debit (${CURRENCIES[activeCurrency].symbol})<span class="th-help-icon">?</span></th>
+            <th class="col-cr num" onclick="showColumnHelp(this,'Credit')">Credit (${CURRENCIES[activeCurrency].symbol})<span class="th-help-icon">?</span></th>
+            <th class="col-bal num" onclick="showColumnHelp(this,'Balance')">Balance (${CURRENCIES[activeCurrency].symbol})<span class="th-help-icon">?</span></th>
+            <th class="col-sn num" onclick="showColumnHelp(this,'S/N')">S/N<span class="th-help-icon">?</span></th>
             <th class="col-del"></th>
           </tr>
         </thead>
@@ -695,8 +755,20 @@ function renderLedger() {
 function renderRows(displayRows) {
   const tbody = document.getElementById('ledgerBody');
   if (!tbody) return;
+  const ob = parseFloat(activeAccount?.opening_balance)||0;
 
-  tbody.innerHTML = (displayRows||rows).map((row, i) => {
+  // Opening balance row at the top
+  const obRow = ob !== 0 ? `
+    <tr class="ob-row" id="row_ob">
+      <td colspan="4" style="padding:8px 10px;font-size:0.78rem;font-weight:700;color:var(--gold);">Opening Balance</td>
+      <td style="text-align:right;padding:8px 10px;font-size:0.78rem;color:var(--muted);">—</td>
+      <td style="text-align:right;padding:8px 10px;font-size:0.78rem;color:var(--muted);">—</td>
+      <td style="text-align:right;padding:8px 10px;font-size:0.82rem;font-weight:800;color:var(--gold);">${fmt(ob)}</td>
+      <td style="text-align:center;padding:8px 10px;font-size:0.72rem;color:var(--muted);">—</td>
+      <td></td>
+    </tr>` : '';
+
+  tbody.innerHTML = obRow + (displayRows||rows).map((row, i) => {
     const realIdx = rows.indexOf(row);
     const idx = realIdx >= 0 ? realIdx : i;
     const bal = parseFloat(row.balance)||0;
@@ -721,10 +793,12 @@ function renderRows(displayRows) {
       </td>
       <td class="col-dr">
         <input class="bk-cell num" type="number" value="${row.debit>0?row.debit:''}" placeholder="0.00" min="0" step="0.01"
+          onclick="this.select()"
           oninput="numChange(${idx},'debit',this.value)"/>
       </td>
       <td class="col-cr">
         <input class="bk-cell num" type="number" value="${row.credit>0?row.credit:''}" placeholder="0.00" min="0" step="0.01"
+          onclick="this.select()"
           oninput="numChange(${idx},'credit',this.value)"/>
       </td>
       <td class="col-bal">
@@ -779,11 +853,13 @@ function escH(s) {
 // ── CELL CHANGES ──────────────────────────────────────────────
 function cellChange(i, field, val) {
   rows[i][field]=val; rows[i].saved=false; isDirty=true;
+  pushUndoState();
   setSaveMsg('Unsaved…','pending');
 }
 
 function numChange(i, field, val) {
   rows[i][field]=parseFloat(val)||0; rows[i].saved=false; isDirty=true;
+  pushUndoState();
   recalcBalances();
   // Update balance cells from row i onwards without full re-render
   for (let j=i; j<rows.length; j++) {
@@ -1290,15 +1366,15 @@ function renderJournal() {
     <div class="bk-sheet-wrap">
       <table class="bk-sheet" id="journalTable">
         <thead><tr>
-          <th style="width:110px;">Date</th>
-          <th style="width:120px;">Payee</th>
-          <th style="width:120px;">Payer</th>
-          <th style="width:180px;">Narration</th>
-          <th style="width:175px;">Debit Account</th>
-          <th style="width:175px;">Credit Account</th>
-          <th class="num" style="width:110px;">Debit (${CURRENCIES[activeCurrency].symbol})</th>
-          <th class="num" style="width:110px;">Credit (${CURRENCIES[activeCurrency].symbol})</th>
-          <th class="num" style="width:44px;">S/N</th>
+          <th style="width:110px;" onclick="showColumnHelp(this,'Date')">Date<span class="th-help-icon">?</span></th>
+          <th style="width:120px;" onclick="showColumnHelp(this,'Payee')">Payee<span class="th-help-icon">?</span></th>
+          <th style="width:120px;" onclick="showColumnHelp(this,'Payer')">Payer<span class="th-help-icon">?</span></th>
+          <th style="width:180px;" onclick="showColumnHelp(this,'Narration')">Narration<span class="th-help-icon">?</span></th>
+          <th style="width:175px;" onclick="showColumnHelp(this,'Debit Account')">Debit Account<span class="th-help-icon">?</span></th>
+          <th style="width:175px;" onclick="showColumnHelp(this,'Credit Account')">Credit Account<span class="th-help-icon">?</span></th>
+          <th class="num" style="width:110px;" onclick="showColumnHelp(this,'Debit')">Debit (${CURRENCIES[activeCurrency].symbol})<span class="th-help-icon">?</span></th>
+          <th class="num" style="width:110px;" onclick="showColumnHelp(this,'Credit')">Credit (${CURRENCIES[activeCurrency].symbol})<span class="th-help-icon">?</span></th>
+          <th class="num" style="width:44px;" onclick="showColumnHelp(this,'S/N')">S/N<span class="th-help-icon">?</span></th>
           <th style="width:38px;"></th>
         </tr></thead>
         <tbody id="journalBody"></tbody>
@@ -1342,10 +1418,12 @@ function renderJournalRows() {
       </select></td>
       <td><input class="bk-cell num" type="number"
         value="${row.debit_amount>0?row.debit_amount:''}" placeholder="0.00" min="0" step="0.01"
+        onclick="this.select()"
         style="${(!balanced&&row.debit_amount>0)?'color:var(--red);':''}"
         oninput="jNumChange(${i},'debit_amount',this.value)"/></td>
       <td><input class="bk-cell num" type="number"
         value="${row.credit_amount>0?row.credit_amount:''}" placeholder="0.00" min="0" step="0.01"
+        onclick="this.select()"
         style="${(!balanced&&row.credit_amount>0)?'color:var(--red);':''}"
         oninput="jNumChange(${i},'credit_amount',this.value)"/></td>
       <td><input class="bk-cell sn-cell" type="text" value="${sn}" readonly tabindex="-1"/></td>
@@ -1373,8 +1451,24 @@ function jAccountChange(i,side,val){
   journalRows[i].saved=false;
 }
 
-function jNumChange(i,field,val){
-  journalRows[i][field]=parseFloat(val)||0; journalRows[i].saved=false; renderJournalRows();
+function jNumChange(i, field, val) {
+  journalRows[i][field] = parseFloat(val)||0;
+  journalRows[i].saved  = false;
+  pushUndoState();
+  // Update balance indicator only — do NOT re-render rows (causes focus loss)
+  updateJournalBalance();
+}
+
+function updateJournalBalance() {
+  const totalDr = journalRows.reduce((a,r)=>a+(r.debit_amount||0),0);
+  const totalCr = journalRows.reduce((a,r)=>a+(r.credit_amount||0),0);
+  const balanced = Math.abs(totalDr-totalCr)<0.01;
+  const msg = document.getElementById('journalSaveMsg');
+  if (!msg) return;
+  if (journalRows.some(r=>journalHasData(r))) {
+    if (balanced) { msg.textContent='✓ Journal balanced'; msg.className='bk-save-msg ok'; }
+    else { msg.textContent=`⚠ Dr ${fmt(totalDr)} ≠ Cr ${fmt(totalCr)}`; msg.className='bk-save-msg err'; }
+  }
 }
 
 function addJournalRow(){
@@ -1570,7 +1664,6 @@ Reply ONLY with valid JSON in this exact format, no other text:
 }
 
 function showAiMsg(rowIdx, msg, positive) {
-  // Show a brief tooltip under the narration cell
   const existing = document.getElementById(`aimsg_${rowIdx}`);
   if (existing) existing.remove();
 
@@ -1586,14 +1679,21 @@ function showAiMsg(rowIdx, msg, positive) {
     color:${positive ? 'var(--gold)' : '#fca5a5'};
     font-size:0.72rem; padding:6px 10px; border-radius:6px;
     white-space:nowrap; pointer-events:none;
-    top:34px; left:0;`;
+    top:34px; left:0; max-width:340px;`;
   msgEl.textContent = msg;
 
   const narCell = tr.querySelector('td:nth-child(4)');
   if (narCell) {
     narCell.style.position = 'relative';
     narCell.appendChild(msgEl);
-    setTimeout(() => msgEl.remove(), 3500);
+    // Remove only when cursor leaves the narration input (not on a timer)
+    const narInput = document.getElementById(`jnarr_${rowIdx}`);
+    if (narInput) {
+      const remove = () => { msgEl.remove(); narInput.removeEventListener('blur', remove); };
+      narInput.addEventListener('blur', remove);
+    }
+    // Fallback: remove after 12 seconds if blur never fires
+    setTimeout(() => { if (msgEl.parentNode) msgEl.remove(); }, 12000);
   }
 }
 
@@ -1742,6 +1842,368 @@ async function deleteTemplate(templateId) {
   templates = templates.filter(t => t.id !== templateId);
   renderTemplateList();
 }
-</script>
+
+// ── UNDO / REDO ───────────────────────────────────────────────
+let undoStack = [];
+let redoStack = [];
+const MAX_UNDO = 30;
+
+function pushUndoState() {
+  const state = JSON.stringify(activeAccount ? rows : journalRows);
+  if (undoStack[undoStack.length-1] === state) return;
+  undoStack.push(state);
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+  redoStack = [];
+  updateUndoButtons();
+}
+
+function undoAction() {
+  if (!undoStack.length) return;
+  const current = JSON.stringify(activeAccount ? rows : journalRows);
+  redoStack.push(current);
+  const prev = JSON.parse(undoStack.pop());
+  if (activeAccount) { rows = prev; recalcBalances(); renderRows(); }
+  else { journalRows = prev; renderJournalRows(); }
+  updateUndoButtons();
+}
+
+function redoAction() {
+  if (!redoStack.length) return;
+  const current = JSON.stringify(activeAccount ? rows : journalRows);
+  undoStack.push(current);
+  const next = JSON.parse(redoStack.pop());
+  if (activeAccount) { rows = next; recalcBalances(); renderRows(); }
+  else { journalRows = next; renderJournalRows(); }
+  updateUndoButtons();
+}
+
+function updateUndoButtons() {
+  const u = document.getElementById('tbUndo');
+  const r = document.getElementById('tbRedo');
+  if (u) u.disabled = undoStack.length === 0;
+  if (r) r.disabled = redoStack.length === 0;
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey||e.metaKey) && e.key==='z' && !e.shiftKey) { e.preventDefault(); undoAction(); }
+  if ((e.ctrlKey||e.metaKey) && (e.key==='y' || (e.key==='z'&&e.shiftKey))) { e.preventDefault(); redoAction(); }
+});
+
+// ── TOOLBAR ACTIONS ───────────────────────────────────────────
+let wrapActive   = false;
+let rowHeightState = 'normal'; // 'compact' | 'normal' | 'expanded'
+let selectedRowIdx = null;
+
+function tbDoSearch() {
+  const val = document.getElementById('tbSearch')?.value.trim() || '';
+  searchQuery = val;
+  if (activeAccount) {
+    applyFilter();
+  } else if (document.getElementById('journalTable')) {
+    // Filter journal rows
+    const q = val.toLowerCase();
+    const filtered = val ? journalRows.filter(r =>
+      (r.narration||'').toLowerCase().includes(q) ||
+      (r.payee||'').toLowerCase().includes(q) ||
+      (r.debit_account_name||'').toLowerCase().includes(q) ||
+      (r.credit_account_name||'').toLowerCase().includes(q)
+    ) : journalRows;
+    const tbody = document.getElementById('journalBody');
+    if (tbody) {
+      // Just highlight matching rows
+      document.querySelectorAll('#journalBody tr').forEach((tr, i) => {
+        tr.style.display = (!val || journalRows[i] && (
+          (journalRows[i].narration||'').toLowerCase().includes(q) ||
+          (journalRows[i].payee||'').toLowerCase().includes(q) ||
+          (journalRows[i].debit_account_name||'').toLowerCase().includes(q) ||
+          (journalRows[i].credit_account_name||'').toLowerCase().includes(q)
+        )) ? '' : 'none';
+      });
+    }
+  }
+}
+
+function toggleWrap() {
+  wrapActive = !wrapActive;
+  const table = document.querySelector('.bk-sheet');
+  if (table) table.classList.toggle('text-wrap', wrapActive);
+  const btn = document.getElementById('tbWrap');
+  if (btn) btn.classList.toggle('active', wrapActive);
+}
+
+const ROW_HEIGHT_CYCLE = ['normal','compact','expanded'];
+const ROW_HEIGHT_LABELS = { normal:'⬛ Normal', compact:'▪ Compact', expanded:'⬛ Tall' };
+
+function cycleRowHeight() {
+  const idx = ROW_HEIGHT_CYCLE.indexOf(rowHeightState);
+  rowHeightState = ROW_HEIGHT_CYCLE[(idx+1) % ROW_HEIGHT_CYCLE.length];
+  const table = document.querySelector('.bk-sheet');
+  if (table) {
+    table.classList.remove('rows-compact','rows-normal','rows-expanded');
+    if (rowHeightState !== 'normal') table.classList.add(`rows-${rowHeightState}`);
+  }
+  const btn = document.getElementById('tbRowH');
+  if (btn) btn.textContent = ROW_HEIGHT_LABELS[rowHeightState];
+}
+
+function tbInsertRow() {
+  if (activeAccount) {
+    const idx = selectedRowIdx !== null ? selectedRowIdx : rows.length;
+    rows.splice(idx, 0, emptyRow(idx));
+    recalcBalances();
+    renderRows();
+  } else if (document.getElementById('journalTable')) {
+    const idx = selectedRowIdx !== null ? selectedRowIdx : journalRows.length;
+    journalRows.splice(idx, 0, emptyJournalRow(idx));
+    renderJournalRows();
+  }
+}
+
+function tbDeleteSelected() {
+  if (selectedRowIdx === null) return;
+  if (activeAccount) deleteRow(selectedRowIdx);
+  else deleteJournalRow(selectedRowIdx);
+  selectedRowIdx = null;
+}
+
+// Track selected row
+document.addEventListener('click', e => {
+  const tr = e.target.closest('tr[id^="row_"], tr[id^="jrow_"]');
+  if (!tr) { selectedRowIdx = null; return; }
+  document.querySelectorAll('tr.row-selected').forEach(r => r.classList.remove('row-selected'));
+  tr.classList.add('row-selected');
+  const match = tr.id.match(/\d+$/);
+  selectedRowIdx = match ? parseInt(match[0]) : null;
+});
+
+function tbPDF() {
+  if (document.getElementById('journalTable')) exportJournalPDF();
+  else exportPDF();
+}
+
+// ── CSV EXPORT ────────────────────────────────────────────────
+function exportCSV() {
+  const table = document.querySelector('.bk-sheet');
+  if (!table) { alert('Open a ledger or journal first.'); return; }
+
+  const headers = Array.from(table.querySelectorAll('thead th'))
+    .map(th => `"${th.textContent.trim()}"`).join(',');
+
+  const bodyRows = Array.from(table.querySelectorAll('tbody tr'))
+    .map(tr => Array.from(tr.querySelectorAll('input,select'))
+      .map(el => `"${(el.value||'').replace(/"/g,'""')}"`)
+      .join(','))
+    .filter(r => r.replace(/","/g,'').replace(/"/g,'').trim());
+
+  const csv = [headers, ...bodyRows].join('\n');
+  const blob = new Blob([csv], { type:'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `bd-${(activeAccount?.account_name||'journal').toLowerCase().replace(/\s/g,'-')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── COLUMN RESIZE ─────────────────────────────────────────────
+function initColumnResize() {
+  const table = document.querySelector('.bk-sheet');
+  if (!table) return;
+
+  table.querySelectorAll('thead th').forEach(th => {
+    // Remove any existing handles
+    const existing = th.querySelector('.col-resize-handle');
+    if (existing) existing.remove();
+
+    const handle = document.createElement('div');
+    handle.className = 'col-resize-handle';
+    th.appendChild(handle);
+
+    let startX, startW;
+    handle.addEventListener('mousedown', e => {
+      startX = e.pageX;
+      startW = th.offsetWidth;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      const onMove = e2 => {
+        const newW = Math.max(40, startW + (e2.pageX - startX));
+        th.style.width = newW + 'px';
+        th.style.minWidth = newW + 'px';
+      };
+      const onUp = () => {
+        handle.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      e.preventDefault();
+    });
+  });
+}
+
+// Row height resize via drag on row bottom border
+function initRowResize() {
+  const table = document.querySelector('#ledgerTable, #journalTable');
+  if (!table) return;
+  table.querySelectorAll('tbody tr').forEach(tr => {
+    tr.style.position = 'relative';
+    const handle = document.createElement('div');
+    handle.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:3px;cursor:row-resize;z-index:10;';
+    handle.addEventListener('mousedown', e => {
+      const startY = e.pageY;
+      const startH = tr.offsetHeight;
+      document.body.style.cursor = 'row-resize';
+      const onMove = e2 => {
+        const newH = Math.max(24, startH + (e2.pageY - startY));
+        tr.style.height = newH + 'px';
+        tr.querySelectorAll('.bk-cell').forEach(c => c.style.height = newH + 'px');
+      };
+      const onUp = () => {
+        document.body.style.cursor = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      e.preventDefault();
+    });
+    tr.appendChild(handle);
+  });
+}
+
+// Re-init resize after any render
+const _origRenderRows = renderRows;
+function renderRows(d) {
+  _origRenderRows(d);
+  setTimeout(()=>{ initColumnResize(); initRowResize(); }, 50);
+}
+
+const _origRenderJournalRows = renderJournalRows;
+function renderJournalRows() {
+  _origRenderJournalRows();
+  setTimeout(()=>{ initColumnResize(); initRowResize(); }, 50);
+}
+
+// ── EQUATION NAVIGATION ───────────────────────────────────────
+function eqNav(type) {
+  const typeAccounts = accounts[type];
+  if (typeAccounts && typeAccounts.length > 0) {
+    openAccount(type, typeAccounts[0]);
+  } else {
+    // No accounts yet — open the records dropdown
+    toggleRecordsDD();
+  }
+}
+
+// ── COLUMN HELP DEFINITIONS ───────────────────────────────────
+const COLUMN_HELP = {
+  'Date': {
+    title: 'Date',
+    text: 'The date the transaction actually took place — not the date you recorded it, but the actual date the money moved or the agreement was made.',
+    example: 'If you paid rent on 1st January, write 01/01/2026 here — even if you only sat down to record it a week later.',
+  },
+  'Payee': {
+    title: 'Payee',
+    text: 'The person or business receiving money in this transaction. Simply put — who did you pay?',
+    example: 'If your business paid rent, the landlord\'s name goes here. If you paid a supplier for goods, write the supplier\'s name.',
+  },
+  'Payer': {
+    title: 'Payer',
+    text: 'The person or business who sent the money — who paid? This is who the money came from.',
+    example: 'If a customer paid your business for a service, the customer\'s name goes here. If your business is making a payment, your business name goes here.',
+  },
+  'Narration': {
+    title: 'Narration',
+    text: 'A short plain-English note explaining what this transaction was for. Think of it as a memo to your future self — or to your accountant — explaining why this entry exists.',
+    example: '"January office rent payment to Mr. Adeyemi" or "Received payment for Invoice #005 from Tunde Tech."',
+  },
+  'Debit Account': {
+    title: 'Debit Account',
+    text: 'The account that is being debited. For asset and expense accounts, a debit INCREASES the balance. For capital and liability accounts, a debit DECREASES it.',
+    example: 'If you buy stock with cash, the Debit Account is "Inventory/Stock" — because your stock (an asset) is going up.',
+  },
+  'Credit Account': {
+    title: 'Credit Account',
+    text: 'The account that is being credited. For liability and capital accounts, a credit INCREASES the balance. For asset accounts, a credit DECREASES it.',
+    example: 'If you buy stock with cash, the Credit Account is "Cash and Bank" — because your cash (an asset) is going down.',
+  },
+  'Debit': {
+    title: 'Debit (Dr)',
+    text: 'In accounting — not banking — a debit increases assets and expenses, and decreases liabilities and capital. Enter the amount here when the debit account is being increased. Every debit must have a matching credit of the same amount.',
+    example: 'Paying ₦50,000 for stock: enter 50,000 in this Debit column because your Inventory (an asset) is increasing.',
+  },
+  'Credit': {
+    title: 'Credit (Cr)',
+    text: 'In accounting — not banking — a credit increases liabilities and capital, and decreases assets. Enter the amount here when the credit account is being reduced or a liability is being created. Must always equal the debit amount.',
+    example: 'Paying ₦50,000 for stock from your bank: enter 50,000 in this Credit column because Cash and Bank (an asset) is decreasing.',
+  },
+  'Balance': {
+    title: 'Balance',
+    text: 'The running total of this account after each transaction is applied. It starts from the opening balance and updates automatically with every entry. You never type here — it calculates itself.',
+    example: 'If your opening balance is ₦100,000 and you spend ₦30,000, the balance on that row shows ₦70,000.',
+  },
+  'S/N': {
+    title: 'Serial Number (S/N)',
+    text: 'The sequential number of each transaction in this ledger. It fills in automatically — you never need to type it. It helps you reference and trace specific entries quickly.',
+    example: 'The first transaction recorded is S/N 1, the second is S/N 2, and so on for the whole period.',
+  },
+};
+
+// ── SHOW COLUMN HELP TOOLTIP ──────────────────────────────────
+function showColumnHelp(thEl, colName) {
+  // Remove any existing tooltip
+  document.getElementById('colHelpTooltip')?.remove();
+
+  const data = COLUMN_HELP[colName];
+  if (!data) return;
+
+  const rect = thEl.getBoundingClientRect();
+  const tip  = document.createElement('div');
+  tip.id     = 'colHelpTooltip';
+  tip.className = 'col-help-tooltip';
+  tip.innerHTML = `
+    <div class="col-help-title">${data.title}</div>
+    <div class="col-help-text">${data.text}</div>
+    <div class="col-help-example">
+      <strong>Example</strong>
+      ${data.example}
+    </div>
+    <div class="col-help-actions">
+      <button class="col-help-close" onclick="document.getElementById('colHelpTooltip')?.remove()">Close</button>
+      <button class="col-help-ai" onclick="askAIFromHelp('${colName}')">Ask AI more ✨</button>
+    </div>`;
+
+  // Position below the header, keep within viewport
+  const top  = Math.min(rect.bottom + 6, window.innerHeight - 300);
+  const left = Math.min(Math.max(8, rect.left), window.innerWidth - 340);
+  tip.style.top  = top  + 'px';
+  tip.style.left = left + 'px';
+  document.body.appendChild(tip);
+
+  // Close when clicking outside
+  setTimeout(() => {
+    document.addEventListener('click', function removeTip(e) {
+      if (!tip.contains(e.target) && e.target !== thEl) {
+        tip.remove();
+        document.removeEventListener('click', removeTip);
+      }
+    });
+  }, 10);
+}
+
+function askAIFromHelp(colName) {
+  document.getElementById('colHelpTooltip')?.remove();
+  // Open the main site AI tutor with a pre-filled accounting question
+  const question = encodeURIComponent(
+    `In bookkeeping, what is "${colName}"? Please explain it simply for a complete beginner with a practical example.`
+  );
+  window.open(`index.html#ask=${question}`, '_blank');
+}</script>
 </body>
 </html>
