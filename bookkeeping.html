@@ -260,6 +260,9 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
     </nav>
 
     <div class="bk-dd hidden" id="recordsDD">
+      <div class="bk-dd-cat" id="catJournal" onclick="openJournal()" style="color:var(--gold);font-weight:800;border-bottom:2px solid var(--gold);">
+        📒 Master Records (General Journal)
+      </div>
       <div class="bk-dd-cat" id="catCapital">
         Capital <span class="arrow">▶</span>
         <div class="bk-dd-sub" id="subCapital"></div>
@@ -532,7 +535,7 @@ async function openAccount(type, acct) {
     .select('*')
     .eq('user_id', bkUser.id)
     .eq('record_type', type)
-    .eq('account_name', acct.account_name)
+    .or(`account_name.eq.${acct.account_name},account_name.is.null`)
     .order('row_order', { ascending:true });
 
   rows = (data||[]).map(r=>({
@@ -591,13 +594,13 @@ function renderLedger() {
     </div>
 
     <div class="bk-search-bar" style="padding:12px 24px 0;">
-      <input class="bk-search-input" type="text" placeholder="Search narration, payee, payer…"
-        value="${escH(searchQuery)}" oninput="searchQuery=this.value;renderLedger()"/>
-      <input class="bk-date-input" type="date" value="${dateFrom}" title="From date"
-        onchange="dateFrom=this.value;renderLedger()"/>
-      <input class="bk-date-input" type="date" value="${dateTo}" title="To date"
-        onchange="dateTo=this.value;renderLedger()"/>
-      <button class="bk-search-clear" onclick="searchQuery='';dateFrom='';dateTo='';renderLedger()">Clear</button>
+      <input class="bk-search-input" type="text" id="searchInput" placeholder="Search narration, payee, payer…"
+        value="${escH(searchQuery)}" oninput="onSearchInput(this.value)"/>
+      <input class="bk-date-input" type="date" id="dateFromInput" value="${dateFrom}" title="From date"
+        onchange="dateFrom=this.value;applyFilter()"/>
+      <input class="bk-date-input" type="date" id="dateToInput" value="${dateTo}" title="To date"
+        onchange="dateTo=this.value;applyFilter()"/>
+      <button class="bk-search-clear" onclick="searchQuery='';dateFrom='';dateTo='';document.getElementById('searchInput').value='';document.getElementById('dateFromInput').value='';document.getElementById('dateToInput').value='';applyFilter()">Clear</button>
     </div>
 
     <div class="bk-sheet-wrap">
@@ -675,6 +678,34 @@ function renderRows(displayRows) {
 
 function hasData(r) {
   return r.txn_date||r.payee||r.payer||r.narration||r.debit>0||r.credit>0;
+}
+
+// ── SEARCH STATE ─────────────────────────────────────────────
+
+function onSearchInput(val) {
+  searchQuery = val;
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    applyFilter();
+  }, 300); // wait 300ms after user stops typing before re-rendering
+}
+
+function applyFilter() {
+  // Re-render rows only — not the whole ledger (preserves focus)
+  const q = searchQuery.toLowerCase();
+  let displayRows = rows;
+  if (q || dateFrom || dateTo) {
+    displayRows = rows.filter(r => {
+      const matchText = !q ||
+        (r.narration||'').toLowerCase().includes(q) ||
+        (r.payee||'').toLowerCase().includes(q) ||
+        (r.payer||'').toLowerCase().includes(q);
+      const matchFrom = !dateFrom || r.txn_date >= dateFrom;
+      const matchTo   = !dateTo   || r.txn_date <= dateTo;
+      return matchText && matchFrom && matchTo;
+    });
+  }
+  renderRows(displayRows);
 }
 
 function escH(s) {
@@ -1116,6 +1147,268 @@ function exportPDF() {
   });
 
   doc.save(`bd-${(activeAccount?.account_name||'report').toLowerCase().replace(/\s/g,'-')}.pdf`);
+}
+
+// ── GENERAL JOURNAL ───────────────────────────────────────────
+let journalRows = [];
+
+function getAllAccounts() {
+  const all = [];
+  ['capital','liability','asset','income','expenditure'].forEach(type => {
+    (accounts[type]||[]).forEach(a => {
+      all.push({ name:a.account_name, type, label:`${type.charAt(0).toUpperCase()+type.slice(1)} — ${a.account_name}` });
+    });
+  });
+  return all;
+}
+
+function buildAccountOptions(selectedName) {
+  const types = ['capital','liability','asset','income','expenditure'];
+  let html = '<option value="">— Select Account —</option>';
+  types.forEach(type => {
+    const accts = accounts[type]||[];
+    if (!accts.length) return;
+    html += `<optgroup label="${type.charAt(0).toUpperCase()+type.slice(1)}">`;
+    accts.forEach(a => {
+      const sel = a.account_name === selectedName ? 'selected' : '';
+      html += `<option value="${escH(a.account_name)}|${type}" ${sel}>${escH(a.account_name)}</option>`;
+    });
+    html += '</optgroup>';
+  });
+  return html;
+}
+
+function emptyJournalRow(order) {
+  return { id:null, txn_date:today(), payee:'', payer:'', narration:'',
+           debit_account_name:'', debit_record_type:'',
+           credit_account_name:'', credit_record_type:'',
+           debit_amount:0, credit_amount:0, row_order:order, saved:false };
+}
+
+async function openJournal() {
+  activeType=null; activeAccount=null;
+  document.getElementById('recordsDD').classList.add('hidden');
+  setActiveNav('navRecords');
+  document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading General Journal…</div>';
+
+  const { data } = await bkDb.from('bk_journal')
+    .select('*').eq('user_id',bkUser.id).order('row_order',{ascending:true});
+
+  journalRows=(data||[]).map(r=>({
+    id:r.id, txn_date:r.txn_date||today(),
+    payee:r.payee||'', payer:r.payer||'', narration:r.narration||'',
+    debit_account_name:r.debit_account_name||'', debit_record_type:r.debit_record_type||'',
+    credit_account_name:r.credit_account_name||'', credit_record_type:r.credit_record_type||'',
+    debit_amount:parseFloat(r.debit_amount)||0, credit_amount:parseFloat(r.credit_amount)||0,
+    row_order:r.row_order, saved:true
+  }));
+
+  while(journalRows.length<20) journalRows.push(emptyJournalRow(journalRows.length));
+  renderJournal();
+}
+
+function renderJournal() {
+  document.getElementById('bkContent').innerHTML=`
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">MASTER RECORDS — GENERAL JOURNAL</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Transactions entered here post automatically to the relevant ledgers.</div>
+      </div>
+      <div class="bk-header-actions">
+        <span class="bk-save-msg" id="journalSaveMsg"></span>
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+        <button class="bk-btn bk-btn-print" onclick="exportJournalPDF()">⬇ PDF</button>
+        <button class="bk-btn bk-btn-outline" onclick="addJournalRow()">+ Row</button>
+        <button class="bk-btn bk-btn-gold" onclick="saveJournal()">Save & Post</button>
+      </div>
+    </div>
+    <div class="bk-sheet-wrap">
+      <table class="bk-sheet" id="journalTable">
+        <thead><tr>
+          <th style="width:110px;">Date</th>
+          <th style="width:120px;">Payee</th>
+          <th style="width:120px;">Payer</th>
+          <th style="width:180px;">Narration</th>
+          <th style="width:175px;">Debit Account</th>
+          <th style="width:175px;">Credit Account</th>
+          <th class="num" style="width:110px;">Debit (${CURRENCIES[activeCurrency].symbol})</th>
+          <th class="num" style="width:110px;">Credit (${CURRENCIES[activeCurrency].symbol})</th>
+          <th class="num" style="width:44px;">S/N</th>
+          <th style="width:38px;"></th>
+        </tr></thead>
+        <tbody id="journalBody"></tbody>
+      </table>
+    </div>
+    <div class="bk-add-row">
+      <button class="bk-add-row-btn" onclick="addJournalRow()">+ Add another row</button>
+    </div>`;
+  renderJournalRows();
+}
+
+function renderJournalRows() {
+  const tbody=document.getElementById('journalBody'); if(!tbody) return;
+  const totalDr=journalRows.reduce((a,r)=>a+(r.debit_amount||0),0);
+  const totalCr=journalRows.reduce((a,r)=>a+(r.credit_amount||0),0);
+  const balanced=Math.abs(totalDr-totalCr)<0.01;
+
+  tbody.innerHTML=journalRows.map((row,i)=>{
+    const sn=journalHasData(row)?i+1:'';
+    return `<tr id="jrow_${i}">
+      <td><input class="bk-cell" type="date" value="${row.txn_date}"
+        onchange="jCellChange(${i},'txn_date',this.value)"/></td>
+      <td><input class="bk-cell" type="text" value="${escH(row.payee)}" placeholder="—"
+        oninput="jCellChange(${i},'payee',this.value)"/></td>
+      <td><input class="bk-cell" type="text" value="${escH(row.payer)}" placeholder="—"
+        oninput="jCellChange(${i},'payer',this.value)"/></td>
+      <td><input class="bk-cell" type="text" value="${escH(row.narration)}" placeholder="—"
+        oninput="jCellChange(${i},'narration',this.value)"/></td>
+      <td><select class="bk-cell" style="cursor:pointer;font-size:0.74rem;padding:2px 4px;"
+        onchange="jAccountChange(${i},'debit',this.value)">
+        ${buildAccountOptions(row.debit_account_name)}
+      </select></td>
+      <td><select class="bk-cell" style="cursor:pointer;font-size:0.74rem;padding:2px 4px;"
+        onchange="jAccountChange(${i},'credit',this.value)">
+        ${buildAccountOptions(row.credit_account_name)}
+      </select></td>
+      <td><input class="bk-cell num" type="number"
+        value="${row.debit_amount>0?row.debit_amount:''}" placeholder="0.00" min="0" step="0.01"
+        style="${(!balanced&&row.debit_amount>0)?'color:var(--red);':''}"
+        oninput="jNumChange(${i},'debit_amount',this.value)"/></td>
+      <td><input class="bk-cell num" type="number"
+        value="${row.credit_amount>0?row.credit_amount:''}" placeholder="0.00" min="0" step="0.01"
+        style="${(!balanced&&row.credit_amount>0)?'color:var(--red);':''}"
+        oninput="jNumChange(${i},'credit_amount',this.value)"/></td>
+      <td><input class="bk-cell sn-cell" type="text" value="${sn}" readonly tabindex="-1"/></td>
+      <td><button class="del-btn" onclick="deleteJournalRow(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  const msg=document.getElementById('journalSaveMsg');
+  if(msg && journalRows.some(r=>journalHasData(r))){
+    if(balanced){ msg.textContent='✓ Journal balanced'; msg.className='bk-save-msg ok'; }
+    else{ msg.textContent=`⚠ Dr ${fmt(totalDr)} ≠ Cr ${fmt(totalCr)}`; msg.className='bk-save-msg err'; }
+  }
+}
+
+function journalHasData(r){
+  return r.narration||r.debit_account_name||r.credit_account_name||r.debit_amount>0||r.credit_amount>0;
+}
+
+function jCellChange(i,field,val){ journalRows[i][field]=val; journalRows[i].saved=false; }
+
+function jAccountChange(i,side,val){
+  const [name,type]=(val||'').split('|');
+  if(side==='debit'){ journalRows[i].debit_account_name=name||''; journalRows[i].debit_record_type=type||''; }
+  else{ journalRows[i].credit_account_name=name||''; journalRows[i].credit_record_type=type||''; }
+  journalRows[i].saved=false;
+}
+
+function jNumChange(i,field,val){
+  journalRows[i][field]=parseFloat(val)||0; journalRows[i].saved=false; renderJournalRows();
+}
+
+function addJournalRow(){
+  journalRows.push(emptyJournalRow(journalRows.length));
+  renderJournalRows();
+  setTimeout(()=>{ const tr=document.getElementById(`jrow_${journalRows.length-1}`); if(tr) tr.querySelector('input')?.focus(); },40);
+}
+
+async function deleteJournalRow(i){
+  const row=journalRows[i];
+  if(row.id) await bkDb.from('bk_journal').delete().eq('id',row.id);
+  journalRows.splice(i,1);
+  renderJournalRows();
+  await refreshEquation();
+}
+
+async function saveJournal(){
+  if(!bkUser) return;
+  const msg=document.getElementById('journalSaveMsg');
+  const toSave=journalRows.filter(r=>journalHasData(r));
+  if(!toSave.length) return;
+
+  const totalDr=toSave.reduce((a,r)=>a+(r.debit_amount||0),0);
+  const totalCr=toSave.reduce((a,r)=>a+(r.credit_amount||0),0);
+  if(Math.abs(totalDr-totalCr)>0.01){
+    if(msg){ msg.textContent=`⚠ Cannot save — Dr ${fmt(totalDr)} ≠ Cr ${fmt(totalCr)}. Journal must balance.`; msg.className='bk-save-msg err'; }
+    return;
+  }
+
+  if(msg){ msg.textContent='Saving & posting…'; msg.className='bk-save-msg pending'; }
+
+  const newRows=toSave.filter(r=>!r.id);
+  const existRows=toSave.filter(r=>r.id);
+  let err=null;
+
+  if(newRows.length){
+    const { data:created, error }=await bkDb.from('bk_journal').insert(
+      newRows.map(r=>({
+        user_id:bkUser.id, txn_date:r.txn_date||null, payee:r.payee||null, payer:r.payer||null,
+        narration:r.narration||null, debit_account_name:r.debit_account_name||null,
+        debit_record_type:r.debit_record_type||null, credit_account_name:r.credit_account_name||null,
+        credit_record_type:r.credit_record_type||null, debit_amount:r.debit_amount||0,
+        credit_amount:r.credit_amount||0, serial_number:toSave.indexOf(r)+1, row_order:toSave.indexOf(r),
+      }))
+    ).select();
+    if(error){ err=error; }
+    else if(created){ created.forEach((s,i)=>{ newRows[i].id=s.id; }); for(const[i,r]of newRows.entries()) await postToLedgers(created[i].id,r); }
+  }
+
+  for(const r of existRows){
+    const { error }=await bkDb.from('bk_journal').update({
+      txn_date:r.txn_date||null, payee:r.payee||null, payer:r.payer||null, narration:r.narration||null,
+      debit_account_name:r.debit_account_name||null, debit_record_type:r.debit_record_type||null,
+      credit_account_name:r.credit_account_name||null, credit_record_type:r.credit_record_type||null,
+      debit_amount:r.debit_amount||0, credit_amount:r.credit_amount||0,
+      serial_number:toSave.indexOf(r)+1, row_order:toSave.indexOf(r), updated_at:new Date().toISOString(),
+    }).eq('id',r.id).eq('user_id',bkUser.id);
+    if(error){ err=error; continue; }
+    await bkDb.from('bk_transactions').delete().eq('journal_id',r.id);
+    await postToLedgers(r.id,r);
+  }
+
+  if(err){ if(msg){ msg.textContent='Error: '+err.message; msg.className='bk-save-msg err'; } return; }
+  journalRows.forEach(r=>r.saved=true);
+  if(msg){ msg.textContent='✓ Saved & posted to all ledgers'; msg.className='bk-save-msg ok'; }
+  await refreshEquation();
+}
+
+async function postToLedgers(journalId,row){
+  const base={ user_id:bkUser.id, journal_id:journalId, txn_date:row.txn_date||null,
+               payee:row.payee||null, payer:row.payer||null, narration:row.narration||null, row_order:row.row_order||0 };
+  const postings=[];
+  if(row.debit_account_name && row.debit_record_type && row.debit_amount>0){
+    postings.push({...base, record_type:row.debit_record_type, account_name:row.debit_account_name, debit:row.debit_amount, credit:0, balance:0 });
+  }
+  if(row.credit_account_name && row.credit_record_type && row.credit_amount>0){
+    postings.push({...base, record_type:row.credit_record_type, account_name:row.credit_account_name, debit:0, credit:row.credit_amount, balance:0 });
+  }
+  if(postings.length) await bkDb.from('bk_transactions').insert(postings);
+}
+
+function exportJournalPDF(){
+  const { jsPDF }=window.jspdf; if(!jsPDF){ alert('PDF library loading — try again.'); return; }
+  const doc=new jsPDF({orientation:'landscape'});
+  doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(212,175,55);
+  doc.text('Butterfly Dynamix Bookkeeping',14,18);
+  doc.setFontSize(11); doc.setTextColor(30,30,50);
+  doc.text('GENERAL JOURNAL — MASTER RECORDS',14,28);
+  doc.setFontSize(8); doc.setTextColor(100,100,120);
+  doc.text(`Generated: ${new Date().toLocaleDateString()} · Currency: ${activeCurrency}`,14,35);
+
+  const headers=['S/N','Date','Payee','Payer','Narration','Debit Account','Credit Account',
+    `Debit (${CURRENCIES[activeCurrency].symbol})`,`Credit (${CURRENCIES[activeCurrency].symbol})`];
+  const bodyData=journalRows.filter(r=>journalHasData(r)).map((r,i)=>[
+    i+1, r.txn_date||'', r.payee||'', r.payer||'', r.narration||'',
+    r.debit_account_name||'', r.credit_account_name||'',
+    r.debit_amount>0?fmt(r.debit_amount):'—', r.credit_amount>0?fmt(r.credit_amount):'—',
+  ]);
+
+  doc.autoTable({ startY:42, head:[headers], body:bodyData,
+    styles:{fontSize:8,cellPadding:3},
+    headStyles:{fillColor:[15,17,23],textColor:[212,175,55],fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[245,248,252]} });
+  doc.save('bd-general-journal.pdf');
 }
 </script>
 </body>
