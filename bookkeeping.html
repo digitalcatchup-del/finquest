@@ -237,12 +237,21 @@ const EMPTY_ROWS = 20;
 
 // ── INIT ─────────────────────────────────────────────────────
 (async () => {
-  const { data: { session } } = await bkDb.auth.getSession();
+  const { data: { session }, error: sessErr } = await bkDb.auth.getSession();
+  console.log('Session check:', session ? 'FOUND — user: ' + session.user.email : 'NOT FOUND', sessErr || '');
+
   if (!session) {
-    window.location.href = 'index.html';
-    return;
+    // Try refreshing the session before giving up
+    const { data: refreshed } = await bkDb.auth.refreshSession();
+    if (!refreshed.session) {
+      window.location.href = 'index.html';
+      return;
+    }
+    bkUser = refreshed.session.user;
+    console.log('Session refreshed:', bkUser.email);
+  } else {
+    bkUser = session.user;
   }
-  bkUser = session.user;
 
   // Get profile for display name
   const { data: profile } = await bkDb.from('profiles')
