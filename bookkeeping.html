@@ -185,9 +185,53 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 /* LOADING */
 .bk-loading{text-align:center;padding:48px;color:var(--muted);font-size:0.85rem;}
 
+.bk-cell option, .bk-cell optgroup {
+  background: var(--surface2) !important;
+  color: var(--white) !important;
+}
+select.bk-cell {
+  background: var(--surface2) !important;
+  color: var(--white) !important;
+  cursor: pointer;
+  font-size: 0.74rem;
+  padding: 2px 4px;
+}
+.tpl-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:var(--surface);border-left:1px solid var(--border2);z-index:600;transition:right 0.3s ease;display:flex;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,0.4);}
+.tpl-panel.open{right:0;}
+.tpl-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.tpl-header-title{font-size:0.88rem;font-weight:800;color:var(--white);}
+.tpl-close{background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px;}
+.tpl-close:hover{color:var(--white);}
+.tpl-list{flex:1;overflow-y:auto;padding:12px;}
+.tpl-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s;}
+.tpl-item:hover{border-color:var(--gold);}
+.tpl-item-name{font-size:0.82rem;font-weight:700;color:var(--white);margin-bottom:4px;}
+.tpl-item-accounts{font-size:0.72rem;color:var(--muted);line-height:1.5;}
+.tpl-item-accounts span{color:var(--gold);}
+.tpl-item-actions{display:flex;gap:6px;margin-top:8px;}
+.tpl-apply-btn{background:var(--gold);border:none;color:#000;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:4px;cursor:pointer;}
+.tpl-apply-btn:hover{opacity:0.85;}
+.tpl-del-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:4px;cursor:pointer;}
+.tpl-del-btn:hover{border-color:var(--red);color:var(--red);}
+.tpl-footer{padding:14px 16px;border-top:1px solid var(--border);flex-shrink:0;}
+.tpl-save-form{display:flex;gap:8px;}
+.tpl-save-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:8px 10px;font-size:0.8rem;font-family:inherit;outline:none;}
+.tpl-save-input:focus{border-color:var(--gold);}
+.tpl-save-btn{background:var(--gold);border:none;color:#000;font-size:0.75rem;font-weight:700;padding:8px 14px;border-radius:6px;cursor:pointer;white-space:nowrap;}
+.tpl-empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:0.8rem;}
+.tpl-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:599;display:none;}
+.tpl-overlay.show{display:block;}
+
+/* AI SUGGESTION */
+.ai-suggest-btn{background:none;border:none;color:var(--gold);font-size:0.9rem;cursor:pointer;padding:2px 6px;opacity:0.7;transition:opacity 0.15s;vertical-align:middle;}
+.ai-suggest-btn:hover{opacity:1;}
+.ai-suggest-btn.loading{animation:pulse 1s infinite;}
+.ai-suggested{background:rgba(212,175,55,0.1) !important;}
+@keyframes pulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
+
 /* PRINT */
 @media print{
-  .bk-header,.bk-nav-wrap,.bk-search-bar,.bk-header-actions,.bk-add-row,.del-btn,.bk-btn{display:none!important;}
+  .bk-header,.bk-nav-wrap,.bk-search-bar,.bk-header-actions,.bk-add-row,.del-btn,.bk-btn,.tpl-panel,.tpl-overlay{display:none!important;}
   body{background:white!important;color:black!important;}
   .bk-content{border:none;}
   .bk-sheet thead th,.bk-content-header{background:white!important;color:black!important;border-color:#ccc!important;}
@@ -314,6 +358,26 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
       <button class="bk-btn bk-btn-gold" onclick="confirmAddAccount()">Add Account</button>
       <button class="bk-btn bk-btn-outline" onclick="closeAddAccountModal()">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- TEMPLATES PANEL -->
+<div class="tpl-overlay" id="tplOverlay" onclick="closeTemplates()"></div>
+<div class="tpl-panel" id="tplPanel">
+  <div class="tpl-header">
+    <span class="tpl-header-title">⚡ Transaction Templates</span>
+    <button class="tpl-close" onclick="closeTemplates()">✕</button>
+  </div>
+  <div class="tpl-list" id="tplList">
+    <div class="tpl-empty">Loading templates…</div>
+  </div>
+  <div class="tpl-footer">
+    <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px;">Save current row as template:</div>
+    <div class="tpl-save-form">
+      <input class="tpl-save-input" type="text" id="tplNameInput" placeholder="e.g. Monthly Rent Payment"/>
+      <button class="tpl-save-btn" onclick="saveCurrentAsTemplate()">Save</button>
+    </div>
+    <div id="tplSaveMsg" style="font-size:0.72rem;margin-top:6px;min-height:16px;"></div>
   </div>
 </div>
 
@@ -1216,6 +1280,7 @@ function renderJournal() {
       </div>
       <div class="bk-header-actions">
         <span class="bk-save-msg" id="journalSaveMsg"></span>
+        <button class="bk-btn bk-btn-print" onclick="openTemplates()">⚡ Templates</button>
         <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
         <button class="bk-btn bk-btn-print" onclick="exportJournalPDF()">⬇ PDF</button>
         <button class="bk-btn bk-btn-outline" onclick="addJournalRow()">+ Row</button>
@@ -1260,13 +1325,18 @@ function renderJournalRows() {
         oninput="jCellChange(${i},'payee',this.value)"/></td>
       <td><input class="bk-cell" type="text" value="${escH(row.payer)}" placeholder="—"
         oninput="jCellChange(${i},'payer',this.value)"/></td>
-      <td><input class="bk-cell" type="text" value="${escH(row.narration)}" placeholder="—"
-        oninput="jCellChange(${i},'narration',this.value)"/></td>
-      <td><select class="bk-cell" style="cursor:pointer;font-size:0.74rem;padding:2px 4px;"
+      <td style="position:relative;">
+        <input class="bk-cell" type="text" value="${escH(row.narration)}" placeholder="Describe transaction…"
+          oninput="jCellChange(${i},'narration',this.value)"
+          id="jnarr_${i}"/>
+        <button class="ai-suggest-btn" id="aibtn_${i}"
+          onclick="aiSuggestAccounts(${i})" title="✨ AI suggest accounts">✨</button>
+      </td>
+      <td><select class="bk-cell" 
         onchange="jAccountChange(${i},'debit',this.value)">
         ${buildAccountOptions(row.debit_account_name)}
       </select></td>
-      <td><select class="bk-cell" style="cursor:pointer;font-size:0.74rem;padding:2px 4px;"
+      <td><select class="bk-cell" 
         onchange="jAccountChange(${i},'credit',this.value)">
         ${buildAccountOptions(row.credit_account_name)}
       </select></td>
@@ -1409,6 +1479,268 @@ function exportJournalPDF(){
     headStyles:{fillColor:[15,17,23],textColor:[212,175,55],fontStyle:'bold'},
     alternateRowStyles:{fillColor:[245,248,252]} });
   doc.save('bd-general-journal.pdf');
+}
+
+// ── AI ACCOUNT SUGGESTION ─────────────────────────────────────
+let aiSuggestTimer = null;
+
+async function aiSuggestAccounts(rowIdx) {
+  const narration = journalRows[rowIdx]?.narration?.trim();
+  if (!narration) {
+    showAiMsg(rowIdx, 'Type a narration first, then click ✨', false);
+    return;
+  }
+
+  const btn = document.getElementById(`aibtn_${rowIdx}`);
+  if (btn) { btn.classList.add('loading'); btn.textContent = '⏳'; }
+
+  // Build account list for the AI
+  const accountList = [];
+  ['capital','liability','asset','income','expenditure'].forEach(type => {
+    (accounts[type]||[]).forEach(a => {
+      accountList.push(`${type}: ${a.account_name}`);
+    });
+  });
+
+  const prompt = `You are an expert accountant. A user has entered this transaction description: "${narration}"
+
+Available accounts:
+${accountList.join('\n')}
+
+Suggest the most appropriate debit and credit accounts from the list above.
+Reply ONLY with valid JSON in this exact format, no other text:
+{"debit":"exact account name from list","credit":"exact account name from list","reason":"one short sentence"}`;
+
+  try {
+    const { data:{ session } } = await bkDb.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: prompt }],
+        system: 'You are an accounting expert. Always respond with valid JSON only.',
+      }),
+    });
+
+    const json = await res.json();
+    const rawText = json.reply || json.content || '';
+
+    // Extract JSON from response
+    const jsonMatch = rawText.match(/\{[^}]+\}/);
+    if (!jsonMatch) throw new Error('No JSON in response');
+    const suggestion = JSON.parse(jsonMatch[0]);
+
+    // Find matching accounts
+    const allAccts = getAllAccounts();
+    const debitMatch  = allAccts.find(a => a.name.toLowerCase() === suggestion.debit?.toLowerCase());
+    const creditMatch = allAccts.find(a => a.name.toLowerCase() === suggestion.credit?.toLowerCase());
+
+    if (debitMatch) {
+      journalRows[rowIdx].debit_account_name = debitMatch.name;
+      journalRows[rowIdx].debit_record_type  = debitMatch.type;
+    }
+    if (creditMatch) {
+      journalRows[rowIdx].credit_account_name = creditMatch.name;
+      journalRows[rowIdx].credit_record_type  = creditMatch.type;
+    }
+
+    journalRows[rowIdx].saved = false;
+    renderJournalRows();
+
+    // Highlight the suggested row
+    const tr = document.getElementById(`jrow_${rowIdx}`);
+    if (tr) {
+      tr.querySelectorAll('select').forEach(s => s.classList.add('ai-suggested'));
+      setTimeout(() => tr.querySelectorAll('select').forEach(s => s.classList.remove('ai-suggested')), 3000);
+    }
+
+    if (suggestion.reason) {
+      showAiMsg(rowIdx, `✨ ${suggestion.reason}`, true);
+    }
+
+  } catch (err) {
+    console.error('AI suggest error:', err);
+    showAiMsg(rowIdx, 'Could not suggest — check narration and try again', false);
+  } finally {
+    if (btn) { btn.classList.remove('loading'); btn.textContent = '✨'; }
+  }
+}
+
+function showAiMsg(rowIdx, msg, positive) {
+  // Show a brief tooltip under the narration cell
+  const existing = document.getElementById(`aimsg_${rowIdx}`);
+  if (existing) existing.remove();
+
+  const tr = document.getElementById(`jrow_${rowIdx}`);
+  if (!tr) return;
+
+  const msgEl = document.createElement('div');
+  msgEl.id = `aimsg_${rowIdx}`;
+  msgEl.style.cssText = `
+    position:absolute; z-index:500;
+    background:${positive ? 'var(--surface2)' : '#3b1515'};
+    border:1px solid ${positive ? 'var(--gold)' : 'var(--red)'};
+    color:${positive ? 'var(--gold)' : '#fca5a5'};
+    font-size:0.72rem; padding:6px 10px; border-radius:6px;
+    white-space:nowrap; pointer-events:none;
+    top:34px; left:0;`;
+  msgEl.textContent = msg;
+
+  const narCell = tr.querySelector('td:nth-child(4)');
+  if (narCell) {
+    narCell.style.position = 'relative';
+    narCell.appendChild(msgEl);
+    setTimeout(() => msgEl.remove(), 3500);
+  }
+}
+
+// ── TEMPLATES ─────────────────────────────────────────────────
+let templates      = [];
+let templateTarget = null; // rowIdx that "Save as Template" will use
+
+const DEFAULT_TEMPLATES = [
+  { template_name:'Monthly Rent Payment',   debit_account_name:'Rent',              debit_record_type:'expenditure', credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Salary Payment',         debit_account_name:'Salaries and Wages',debit_record_type:'expenditure', credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Cash Sale',              debit_account_name:'Cash and Bank',      debit_record_type:'asset',       credit_account_name:'Sales Revenue',     credit_record_type:'income' },
+  { template_name:'Credit Sale',            debit_account_name:'Trade Debtors',      debit_record_type:'asset',       credit_account_name:'Sales Revenue',     credit_record_type:'income' },
+  { template_name:'Customer Payment Received',debit_account_name:'Cash and Bank',   debit_record_type:'asset',       credit_account_name:'Trade Debtors',     credit_record_type:'asset' },
+  { template_name:'Purchase Stock on Credit',debit_account_name:'Inventory / Stock',debit_record_type:'asset',       credit_account_name:'Trade Creditors',   credit_record_type:'liability' },
+  { template_name:'Pay Supplier',           debit_account_name:'Trade Creditors',    debit_record_type:'liability',   credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Owner Invests Cash',     debit_account_name:'Cash and Bank',      debit_record_type:'asset',       credit_account_name:'Share Capital',     credit_record_type:'capital' },
+  { template_name:'Bank Loan Received',     debit_account_name:'Cash and Bank',      debit_record_type:'asset',       credit_account_name:'Bank Loan',         credit_record_type:'liability' },
+  { template_name:'Loan Repayment',         debit_account_name:'Bank Loan',          debit_record_type:'liability',   credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Buy Equipment Cash',     debit_account_name:'Equipment',          debit_record_type:'asset',       credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Electricity Bill',       debit_account_name:'Utilities',          debit_record_type:'expenditure', credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Marketing Expense',      debit_account_name:'Marketing',          debit_record_type:'expenditure', credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Interest Received',      debit_account_name:'Cash and Bank',      debit_record_type:'asset',       credit_account_name:'Interest Received', credit_record_type:'income' },
+];
+
+async function loadTemplates() {
+  const { data } = await bkDb.from('bk_templates')
+    .select('*').eq('user_id', bkUser.id).order('created_at');
+
+  templates = data||[];
+
+  // Create default templates if none exist
+  if (templates.length === 0) {
+    const inserts = DEFAULT_TEMPLATES.map(t => ({ ...t, user_id:bkUser.id, is_default:true }));
+    const { data:created } = await bkDb.from('bk_templates').insert(inserts).select();
+    templates = created||[];
+  }
+}
+
+async function openTemplates() {
+  if (!templates.length) await loadTemplates();
+  renderTemplateList();
+  document.getElementById('tplPanel').classList.add('open');
+  document.getElementById('tplOverlay').classList.add('show');
+  document.getElementById('tplNameInput').value = '';
+  document.getElementById('tplSaveMsg').textContent = '';
+}
+
+function closeTemplates() {
+  document.getElementById('tplPanel').classList.remove('open');
+  document.getElementById('tplOverlay').classList.remove('show');
+}
+
+function renderTemplateList() {
+  const list = document.getElementById('tplList');
+  if (!templates.length) {
+    list.innerHTML = '<div class="tpl-empty">No templates yet. Add a transaction to the journal and save it as a template.</div>';
+    return;
+  }
+
+  list.innerHTML = templates.map(t => `
+    <div class="tpl-item">
+      <div class="tpl-item-name">${escH(t.template_name)}</div>
+      <div class="tpl-item-accounts">
+        Dr <span>${escH(t.debit_account_name||'—')}</span><br>
+        Cr <span>${escH(t.credit_account_name||'—')}</span>
+      </div>
+      <div class="tpl-item-actions">
+        <button class="tpl-apply-btn" onclick="applyTemplate('${t.id}')">Apply to new row</button>
+        <button class="tpl-del-btn" onclick="deleteTemplate('${t.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function applyTemplate(templateId) {
+  const tpl = templates.find(t => t.id === templateId);
+  if (!tpl) return;
+
+  // Add a new journal row with template accounts pre-filled
+  const newRow = emptyJournalRow(journalRows.length);
+  newRow.debit_account_name  = tpl.debit_account_name||'';
+  newRow.debit_record_type   = tpl.debit_record_type||'';
+  newRow.credit_account_name = tpl.credit_account_name||'';
+  newRow.credit_record_type  = tpl.credit_record_type||'';
+
+  journalRows.push(newRow);
+  renderJournalRows();
+  closeTemplates();
+
+  // Scroll to new row and focus narration
+  setTimeout(() => {
+    const tr = document.getElementById(`jrow_${journalRows.length-1}`);
+    if (tr) {
+      tr.scrollIntoView({ behavior:'smooth', block:'center' });
+      const narInput = document.getElementById(`jnarr_${journalRows.length-1}`);
+      if (narInput) narInput.focus();
+    }
+  }, 100);
+}
+
+async function saveCurrentAsTemplate() {
+  const name = document.getElementById('tplNameInput').value.trim();
+  const msg  = document.getElementById('tplSaveMsg');
+  if (!name) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Enter a template name first.';
+    return;
+  }
+
+  // Find the first journal row that has both accounts filled
+  const sourceRow = journalRows.find(r =>
+    r.debit_account_name && r.credit_account_name
+  );
+
+  if (!sourceRow) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Fill in Debit and Credit accounts on a journal row first.';
+    return;
+  }
+
+  const { data, error } = await bkDb.from('bk_templates').insert({
+    user_id:             bkUser.id,
+    template_name:       name,
+    debit_account_name:  sourceRow.debit_account_name,
+    debit_record_type:   sourceRow.debit_record_type,
+    credit_account_name: sourceRow.credit_account_name,
+    credit_record_type:  sourceRow.credit_record_type,
+    is_default:          false,
+  }).select().single();
+
+  if (error) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Error saving — try again.';
+    return;
+  }
+
+  templates.push(data);
+  renderTemplateList();
+  document.getElementById('tplNameInput').value = '';
+  msg.style.color = 'var(--green)';
+  msg.textContent = '✓ Template saved';
+  setTimeout(() => { msg.textContent = ''; }, 2000);
+}
+
+async function deleteTemplate(templateId) {
+  await bkDb.from('bk_templates').delete().eq('id', templateId).eq('user_id', bkUser.id);
+  templates = templates.filter(t => t.id !== templateId);
+  renderTemplateList();
 }
 </script>
 </body>
