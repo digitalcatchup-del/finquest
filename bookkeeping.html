@@ -812,6 +812,7 @@ function renderRows(displayRows) {
       </td>
     </tr>`;
   }).join('');
+  setTimeout(()=>{ initColumnResize(); initRowResize(); }, 50);
 }
 
 function hasData(r) {
@@ -1436,6 +1437,7 @@ function renderJournalRows() {
     if(balanced){ msg.textContent='✓ Journal balanced'; msg.className='bk-save-msg ok'; }
     else{ msg.textContent=`⚠ Dr ${fmt(totalDr)} ≠ Cr ${fmt(totalCr)}`; msg.className='bk-save-msg err'; }
   }
+  setTimeout(()=>{ initColumnResize(); initRowResize(); }, 50);
 }
 
 function journalHasData(r){
@@ -2075,19 +2077,6 @@ function initRowResize() {
     });
     tr.appendChild(handle);
   });
-}
-
-// Re-init resize after any render
-const _origRenderRows = renderRows;
-function renderRows(d) {
-  _origRenderRows(d);
-  setTimeout(()=>{ initColumnResize(); initRowResize(); }, 50);
-}
-
-const _origRenderJournalRows = renderJournalRows;
-function renderJournalRows() {
-  _origRenderJournalRows();
-  setTimeout(()=>{ initColumnResize(); initRowResize(); }, 50);
 }
 
 // ── EQUATION NAVIGATION ───────────────────────────────────────
