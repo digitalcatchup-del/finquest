@@ -470,6 +470,44 @@ async function submitArticleComment(articleId, body) {
   return error ? null : data;
 }
 
+// ── SERVICE ENQUIRIES ─────────────────────────────────────────
+async function submitServiceEnquiry({ name, email, phone, business, service, message, amountUsd }) {
+  if (!currentUser) return { error: 'not_logged_in' };
+  const { data, error } = await db.from('service_enquiries').insert({
+    user_id:     currentUser.id,
+    name,
+    email,
+    phone:       phone || null,
+    business:    business || null,
+    service,
+    message:     message || null,
+    amount_usd:  amountUsd || null,
+    status:      'new',
+  }).select().single();
+  return error ? { error } : { data };
+}
+
+async function loadMyEnquiries() {
+  if (!currentUser) return [];
+  const { data, error } = await db
+    .from('service_enquiries')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+  return error ? [] : (data || []);
+}
+
+async function markEnquiryPaid(enquiryId, txRef) {
+  if (!currentUser) return;
+  await db.from('service_enquiries').update({
+    paid:        true,
+    paid_at:     new Date().toISOString(),
+    payment_ref: txRef,
+    status:      'in_progress',
+    updated_at:  new Date().toISOString(),
+  }).eq('id', enquiryId).eq('user_id', currentUser.id);
+}
+
 // ── LEADERBOARD ──────────────────────────────────────────────
 async function loadLeaderboard(limit = 10) {
   const { data, error } = await db
@@ -536,11 +574,4 @@ async function submitSuggestedDefinition(idx) {
 }
 
 // ── STRIPE CHECKOUT ──────────────────────────────────────────
-async function initiateStripeCheckout() {
-  // This calls your Stripe payment link or a Supabase Edge Function.
-  // For now, opens Stripe checkout. Replace STRIPE_PAYMENT_LINK with your actual link.
-  const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/YOUR_PAYMENT_LINK';
-  const email = currentUser?.email || document.getElementById('payEmail')?.value || '';
-  const url = `${STRIPE_PAYMENT_LINK}?prefilled_email=${encodeURIComponent(email)}&client_reference_id=${currentUser?.id || ''}`;
-  window.location.href = url;
-}
+// initiateStripeCheckout is defined in app.js (uses Flutterwave)
