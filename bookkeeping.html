@@ -606,15 +606,27 @@ const bkDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 // ── CURRENCIES ───────────────────────────────────────────────
 const CURRENCIES = {
   NGN:{ symbol:'₦', name:'Nigerian Naira',       rate:1        },
-  USD:{ symbol:'$', name:'US Dollar',            rate:0.00063  },
-  GBP:{ symbol:'£', name:'British Pound',        rate:0.00050  },
-  EUR:{ symbol:'€', name:'Euro',                 rate:0.00058  },
-  GHS:{ symbol:'₵', name:'Ghana Cedi',           rate:0.0095   },
-  ZAR:{ symbol:'R', name:'South African Rand',   rate:0.012    },
+  USD:{ symbol:'$', name:'US Dollar',            rate:0.000625 }, // ~₦1,600 per $1 (Jun 2026)
+  GBP:{ symbol:'£', name:'British Pound',        rate:0.000496 }, // ~₦2,016 per £1
+  EUR:{ symbol:'€', name:'Euro',                 rate:0.000575 }, // ~₦1,739 per €1
+  GHS:{ symbol:'₵', name:'Ghana Cedi',           rate:0.00952  }, // ~₦105 per ₵1
+  ZAR:{ symbol:'R', name:'South African Rand',   rate:0.01136  }, // ~₦88 per R1
 };
 let activeCurrency = 'NGN';
 
-// fmt() is defined later with decimal place support
+// ── FMT — format a number with current currency and decimal places ──
+let decimalPlaces = 0;
+function fmt(n) {
+  const c = CURRENCIES[activeCurrency];
+  const converted = n * c.rate;
+  const abs = Math.abs(converted);
+  const formatted = abs.toLocaleString('en-US', {
+    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: decimalPlaces,
+  });
+  return (n < 0 ? '-' : '') + c.symbol + formatted;
+}
+
 
 function setCurrency(code) {
   activeCurrency = code;
@@ -806,7 +818,7 @@ async function openAccount(type, acct) {
     .select('*')
     .eq('user_id', bkUser.id)
     .eq('record_type', type)
-    .or(`account_name.eq.${acct.account_name},account_name.is.null`)
+    .or(`account_name.eq."${acct.account_name}",account_name.is.null`)
     .order('row_order', { ascending:true });
 
   rows = (data||[]).map(r=>({
@@ -2891,31 +2903,20 @@ function toggleToolbar() {
   if (btn) btn.textContent = toolbarOpen ? '▾' : '▸';
 }
 
-// ── DECIMAL PLACES ────────────────────────────────────────────
-let decimalPlaces = 0;
-
 function changeDecimals(dir) {
   decimalPlaces = Math.max(0, Math.min(6, decimalPlaces + dir));
-  // Reformat all visible balance and number cells
-  document.querySelectorAll('.bk-cell.bal').forEach(el => {
-    const raw = el.dataset.raw;
-    if (raw !== undefined) el.value = parseFloat(raw).toFixed(decimalPlaces);
-  });
-  // Re-render current view to apply new decimal setting
-  if (activeAccount) { recalcBalances(); renderRows(); }
+  // Re-render current view to apply new decimal setting everywhere
+  if (activeAccount) {
+    recalcBalances(); renderRows();
+  } else if (document.getElementById('journalTable')) {
+    renderJournalRows();
+  } else {
+    refreshEquation(); // update the equation bar values
+  }
 }
 
 // Override fmt to use decimalPlaces
-function fmt(n) {
-  const c = CURRENCIES[activeCurrency];
-  const converted = n * c.rate;
-  const abs = Math.abs(converted);
-  const formatted = abs.toLocaleString('en-US', {
-    minimumFractionDigits: decimalPlaces,
-    maximumFractionDigits: decimalPlaces,
-  });
-  return (n < 0 ? '-' : '') + c.symbol + formatted;
-}
+// fmt() defined at top of script
 
 // ── DATE FORMAT ───────────────────────────────────────────────
 let dateFormat = 'dd/mm/yyyy';
