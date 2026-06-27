@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -211,6 +212,55 @@ select.bk-cell {
 .th-help-icon{display:none;}
 .th-help-text{cursor:pointer;}
 .th-help-text:hover{color:var(--gold);}
+/* QUICK INPUT WIDGET */
+.qi-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:700;display:flex;align-items:center;justify-content:center;}
+.qi-overlay.hidden{display:none;}
+.qi-modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.qi-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);}
+.qi-title{font-size:1rem;font-weight:800;color:var(--white);}
+.qi-close{background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px;}
+.qi-close:hover{color:var(--white);}
+.qi-body{padding:20px 22px;}
+.qi-step-label{font-size:0.65rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+.qi-type-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:4px;}
+.qi-type-btn{background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:16px 12px;cursor:pointer;text-align:center;transition:all 0.12s;}
+.qi-type-btn:hover{border-color:var(--gold);}
+.qi-type-btn.selected{border-color:var(--gold);background:var(--gold-dim);}
+.qi-type-icon{font-size:1.6rem;margin-bottom:6px;}
+.qi-type-name{font-size:0.82rem;font-weight:700;color:var(--white);}
+.qi-type-desc{font-size:0.7rem;color:var(--muted);margin-top:2px;}
+.qi-search-bar{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-bottom:14px;overflow:hidden;}
+.qi-search-input{flex:1;background:transparent;border:none;color:var(--white);padding:9px 12px;font-size:0.82rem;font-family:inherit;outline:none;}
+.qi-search-input::placeholder{color:var(--muted2);}
+.qi-search-icon{padding:9px 12px;color:var(--muted);}
+.qi-product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;max-height:240px;overflow-y:auto;}
+.qi-product-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 8px;cursor:pointer;text-align:center;transition:all 0.12s;}
+.qi-product-item:hover{border-color:var(--gold);}
+.qi-product-item.selected{border-color:var(--gold);background:var(--gold-dim);}
+.qi-product-name{font-size:0.75rem;font-weight:700;color:var(--white);margin-bottom:3px;}
+.qi-product-price{font-size:0.7rem;color:var(--gold);}
+.qi-more-btn{background:none;border:1px dashed var(--border2);border-radius:8px;padding:10px 8px;cursor:pointer;color:var(--muted);font-size:0.75rem;font-weight:600;width:100%;margin-bottom:14px;}
+.qi-more-btn:hover{border-color:var(--gold);color:var(--gold);}
+.qi-field{margin-bottom:14px;}
+.qi-field label{display:block;font-size:0.73rem;font-weight:700;color:var(--off);margin-bottom:5px;}
+.qi-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 13px;font-size:0.9rem;font-family:inherit;outline:none;}
+.qi-input:focus{border-color:var(--gold);}
+.qi-pay-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:4px;}
+.qi-pay-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;cursor:pointer;text-align:center;font-size:0.78rem;font-weight:600;color:var(--off);transition:all 0.12s;}
+.qi-pay-btn:hover{border-color:var(--gold);color:var(--white);}
+.qi-pay-btn.selected{border-color:var(--gold);background:var(--gold-dim);color:var(--gold);}
+.qi-summary{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;font-size:0.82rem;color:var(--off);line-height:1.7;}
+.qi-summary strong{color:var(--white);}
+.qi-record-btn{width:100%;padding:14px;background:var(--gold);border:none;border-radius:8px;color:#000;font-size:0.95rem;font-weight:800;cursor:pointer;transition:opacity 0.15s;}
+.qi-record-btn:hover{opacity:0.88;}
+.qi-record-btn:disabled{opacity:0.4;cursor:default;}
+.qi-success{text-align:center;padding:32px 20px;}
+.qi-success-icon{font-size:3rem;margin-bottom:12px;}
+/* READ-ONLY LEDGER */
+.ledger-readonly-banner{background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:10px 16px;font-size:0.78rem;color:var(--muted);margin-bottom:0;display:flex;align-items:center;gap:8px;}
+.bk-cell-ro{width:100%;height:34px;background:transparent;border:none;color:var(--off);font-size:0.8rem;font-family:inherit;padding:0 8px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bk-cell-ro.num{text-align:right;}
+
 /* ACCOUNT SETUP WIZARD */
 .setup-heading{font-size:1.1rem;font-weight:800;color:var(--white);margin-bottom:24px;line-height:1.4;}
 .setup-options{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px;}
@@ -442,6 +492,14 @@ tr.row-selected td{background:rgba(212,175,55,0.07) !important;}
     </div>
   </div>
 
+  <!-- QUICK INPUT -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+    <button class="bk-btn bk-btn-gold" style="padding:9px 28px;font-size:0.88rem;font-weight:800;letter-spacing:0.04em;" onclick="openQuickInput()">
+      ⚡ Input
+    </button>
+    <span style="font-size:0.75rem;color:var(--muted);">Quick-record a transaction</span>
+  </div>
+
   <!-- TOOLBAR -->
   <div class="bk-toolbar" id="bkToolbar">
     <div class="tb-search-wrap">
@@ -507,6 +565,11 @@ tr.row-selected td{background:rgba(212,175,55,0.07) !important;}
       <button class="bk-btn bk-btn-outline" onclick="closeAddAccountModal()">Cancel</button>
     </div>
   </div>
+</div>
+
+<!-- QUICK INPUT WIDGET -->
+<div class="qi-overlay hidden" id="qiOverlay" onclick="if(event.target===this)closeQuickInput()">
+  <div class="qi-modal" id="qiModal"></div>
 </div>
 
 <!-- TEMPLATES PANEL -->
@@ -795,6 +858,8 @@ function renderLedger() {
       </div>
       <div class="bk-header-actions">
         <span class="bk-save-msg" id="saveMsg"></span>
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+        <button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button>
       </div>
     </div>
 
@@ -808,6 +873,10 @@ function renderLedger() {
       <button class="bk-search-clear" onclick="searchQuery='';dateFrom='';dateTo='';document.getElementById('searchInput').value='';document.getElementById('dateFromInput').value='';document.getElementById('dateToInput').value='';applyFilter()">Clear</button>
     </div>
 
+    <div class="ledger-readonly-banner">
+      <span>📖</span>
+      <span>View only — all transactions are entered through <button onclick="openJournal()" style="background:none;border:none;color:var(--gold);font-weight:700;cursor:pointer;font-size:inherit;padding:0;">Master Records</button> and posted here automatically.</span>
+    </div>
     <div class="bk-sheet-wrap">
       <table class="bk-sheet" id="ledgerTable">
         <thead>
@@ -857,48 +926,16 @@ function renderRows(displayRows) {
     const bal = parseFloat(row.balance)||0;
     const balClass = bal > 0 ? 'pos' : bal < 0 ? 'neg' : 'zero';
     const sn  = hasData(row) ? idx+1 : '';
+    const dateDisplay = row.txn_date ? formatDateDisplay(row.txn_date) : '';
     return `<tr id="row_${idx}" draggable="true">
-      <td class="col-date">
-        <input class="bk-cell" type="date" value="${row.txn_date}"
-          onchange="cellChange(${idx},'txn_date',this.value)"/>
-      </td>
-      <td class="col-payee">
-        <input class="bk-cell" type="text" value="${escH(row.payee)}" placeholder="—"
-          oninput="cellChange(${idx},'payee',this.value)"/>
-      </td>
-      <td class="col-payer">
-        <input class="bk-cell" type="text" value="${escH(row.payer)}" placeholder="—"
-          oninput="cellChange(${idx},'payer',this.value)"/>
-      </td>
-      <td class="col-narr">
-        <input class="bk-cell" type="text" value="${escH(row.narration)}" placeholder="—"
-          oninput="cellChange(${idx},'narration',this.value)"/>
-      </td>
-      <td class="col-dr">
-        <input class="bk-cell num" type="number" value="${row.debit>0?row.debit:''}" placeholder="0" min="0" step="any"
-          onclick="this.select()"
-          oninput="numChange(${idx},'debit',this.value)"/>
-      </td>
-      <td class="col-cr">
-        <input class="bk-cell num" type="number" value="${row.credit>0?row.credit:''}" placeholder="0" min="0" step="any"
-          onclick="this.select()"
-          oninput="numChange(${idx},'credit',this.value)"/>
-      </td>
-      <td class="col-bal">
-        <input class="bk-cell bal ${balClass}" type="text" value="${bal!==0?fmt(bal):''}" readonly tabindex="-1"/>
-      </td>
-      <td class="col-sn">
-        <input class="bk-cell sn-cell" type="text" value="${sn}" readonly tabindex="-1"/>
-      </td>
-      <td class="col-del">
-        <button class="del-btn" onclick="deleteRow(${idx})">✕</button>
-      </td>
-      <td class="col-save">
-        <button class="save-row-btn" onclick="saveRow(${idx})" title="Save this row">›</button>
-      </td>
-      <td class="col-drag">
-        <div class="drag-handle" title="Drag to reorder">⠿</div>
-      </td>
+      <td class="col-date"><div class="bk-cell-ro">${dateDisplay}</div></td>
+      <td class="col-payee"><div class="bk-cell-ro">${escH(row.payee)}</div></td>
+      <td class="col-payer"><div class="bk-cell-ro">${escH(row.payer)}</div></td>
+      <td class="col-narr"><div class="bk-cell-ro">${escH(row.narration)}</div></td>
+      <td class="col-dr"><div class="bk-cell-ro num">${row.debit>0?fmt(row.debit):''}</div></td>
+      <td class="col-cr"><div class="bk-cell-ro num">${row.credit>0?fmt(row.credit):''}</div></td>
+      <td class="col-bal"><div class="bk-cell-ro bal ${balClass}">${bal!==0?fmt(bal):''}</div></td>
+      <td class="col-sn"><div class="bk-cell-ro sn-cell">${sn}</div></td>
     </tr>`;
   }).join('');
   setTimeout(()=>{ initColumnResize(); initRowResize(); initDragRows(); }, 50);
@@ -2405,6 +2442,446 @@ function initRowResize() {
   });
 }
 
+// ── QUICK INPUT WIDGET ────────────────────────────────────────
+let qiState   = {}; // current quick input state
+let qiProducts = []; // loaded user products
+
+const DEFAULT_PRODUCTS_BY_INDUSTRY = {
+  'Retail & E-commerce': [
+    {n:'Soft Drink (bottle)',p:200},{n:'Pure Water (sachet)',p:20},{n:'Bread (loaf)',p:700},
+    {n:'Noodles (pack)',p:150},{n:'Biscuit (pack)',p:100},{n:'Rice (cup)',p:200},
+    {n:'Sugar (cup)',p:150},{n:'Milk (tin)',p:350},{n:'Groundnut (wrap)',p:100},{n:'Chin Chin (wrap)',p:200},
+  ],
+  'Health & Medical': [
+    {n:'Paracetamol (tablet)',p:50},{n:'Vitamin C',p:200},{n:'Cough Syrup',p:500},
+    {n:'Antiseptic Lotion',p:300},{n:'Plaster (pack)',p:150},{n:'Cotton Wool',p:200},
+    {n:'Bandage',p:250},{n:'Hand Sanitizer',p:400},{n:'Thermometer',p:1500},{n:'Consultation',p:2000,svc:true},
+  ],
+  'Agriculture & Food': [
+    {n:'Tomatoes (basket)',p:5000},{n:'Pepper (bag)',p:8000},{n:'Onion (bag)',p:6000},
+    {n:'Rice (50kg bag)',p:45000},{n:'Beans (50kg bag)',p:38000},{n:'Yam (tuber)',p:1500},
+    {n:'Plantain (bunch)',p:1200},{n:'Palm Oil (litre)',p:1200},{n:'Cassava (bag)',p:3000},{n:'Vegetable (bunch)',p:300},
+  ],
+  'Hospitality & Tourism': [
+    {n:'Rice & Stew',p:800},{n:'Jollof Rice',p:1000},{n:'Fried Rice',p:1200},
+    {n:'Pounded Yam & Soup',p:1500},{n:'Beans & Plantain',p:700},{n:'Chicken (piece)',p:1500},
+    {n:'Fish (piece)',p:1000},{n:'Cold Drink',p:300},{n:'Water (bottle)',p:150},{n:'Juice (can)',p:350},
+  ],
+  'Education': [
+    {n:'School Fees (term)',p:30000},{n:'Registration Fee',p:5000},{n:'Exam Fee',p:2000},
+    {n:'Lesson Fee (session)',p:3000},{n:'Textbook',p:2000},{n:'Exercise Book',p:300},
+    {n:'Uniform',p:5000},{n:'School Bag',p:3000},{n:'Tutorial (hour)',p:2000,svc:true},{n:'Certificate Fee',p:1000},
+  ],
+  'Information Technology': [
+    {n:'Website Design',p:100000,svc:true},{n:'Computer Repair',p:10000,svc:true},
+    {n:'Phone Repair',p:5000,svc:true},{n:'Data Recovery',p:15000,svc:true},
+    {n:'Software Setup',p:5000,svc:true},{n:'IT Support (hr)',p:3000,svc:true},
+    {n:'Printing (page)',p:50},{n:'Scanning (page)',p:100},{n:'Cybersecurity Audit',p:50000,svc:true},{n:'Digital Marketing',p:50000,svc:true},
+  ],
+  'Construction & Real Estate': [
+    {n:'Labour (per day)',p:3000},{n:'Cement (bag)',p:5000},{n:'Gravel (trip)',p:30000},
+    {n:'Sand (trip)',p:25000},{n:'Iron Rod (length)',p:3500},{n:'Tiles (box)',p:8000},
+    {n:'Paint (bucket)',p:7000},{n:'Plumbing Work',p:15000,svc:true},{n:'Electrical Work',p:10000,svc:true},{n:'Masonry (sqm)',p:2000,svc:true},
+  ],
+  'Transportation & Logistics': [
+    {n:'Haulage (trip)',p:50000,svc:true},{n:'Delivery (local)',p:2000,svc:true},
+    {n:'Delivery (interstate)',p:10000,svc:true},{n:'Car Hire (day)',p:20000,svc:true},
+    {n:'Courier (parcel)',p:3000,svc:true},{n:'Freight (kg)',p:500,svc:true},
+    {n:'Airport Transfer',p:15000,svc:true},{n:'Moving Service',p:30000,svc:true},{n:'Fuel (litre)',p:600},{n:'Loading Fee',p:2000},
+  ],
+  'Financial Services': [
+    {n:'Consultation (hr)',p:10000,svc:true},{n:'Tax Filing',p:50000,svc:true},
+    {n:'Audit Fee',p:100000,svc:true},{n:'Bookkeeping (month)',p:50000,svc:true},
+    {n:'Payroll Processing',p:25000,svc:true},{n:'VAT Return',p:20000,svc:true},
+    {n:'TIN Registration',p:10000,svc:true},{n:'Business Registration',p:30000,svc:true},{n:'Financial Report',p:40000,svc:true},{n:'Training (session)',p:15000,svc:true},
+  ],
+  'Manufacturing': [
+    {n:'Finished Goods (unit)',p:5000},{n:'Raw Materials (kg)',p:2000},
+    {n:'Labour (day)',p:3000},{n:'Packaging (unit)',p:500},{n:'Maintenance service',p:20000,svc:true},
+    {n:'Quality Inspection',p:10000,svc:true},{n:'Equipment Hire (day)',p:25000,svc:true},
+    {n:'Custom Order',p:50000,svc:true},{n:'Bulk Order (wholesale)',p:100000},{n:'Factory Tour',p:5000,svc:true},
+  ],
+};
+
+const DEFAULT_PRODUCTS_GENERIC = [
+  {n:'Product / Item',p:0},{n:'Service Fee',p:0,svc:true},{n:'Consultation',p:0,svc:true},
+  {n:'Labour',p:0},{n:'Materials',p:0},{n:'Delivery',p:0,svc:true},
+  {n:'Subscription',p:0,svc:true},{n:'Commission',p:0,svc:true},{n:'Rental',p:0},{n:'Other',p:0},
+];
+
+async function openQuickInput() {
+  qiState = { step:'type', txnType:null, product:null, qty:1, amount:0, payment:'cash', customerName:'' };
+
+  // Load user products
+  const { data } = await bkDb.from('bk_products').select('*')
+    .eq('user_id', bkUser.id).eq('is_active', true).order('product_name');
+  qiProducts = data || [];
+
+  document.getElementById('qiOverlay').classList.remove('hidden');
+  renderQI();
+}
+
+function closeQuickInput() {
+  document.getElementById('qiOverlay').classList.add('hidden');
+  qiState = {};
+}
+
+function renderQI() {
+  const modal = document.getElementById('qiModal');
+  const sym   = CURRENCIES[activeCurrency].symbol;
+
+  if (qiState.step === 'type') {
+    modal.innerHTML = `
+      <div class="qi-header">
+        <span class="qi-title">⚡ Quick Input</span>
+        <button class="qi-close" onclick="closeQuickInput()">✕</button>
+      </div>
+      <div class="qi-body">
+        <div class="qi-step-label">What type of transaction?</div>
+        <div class="qi-type-grid">
+          <div class="qi-type-btn" onclick="qiSetType('sale')">
+            <div class="qi-type-icon">🛒</div>
+            <div class="qi-type-name">Product Sale</div>
+            <div class="qi-type-desc">Selling goods or inventory</div>
+          </div>
+          <div class="qi-type-btn" onclick="qiSetType('service')">
+            <div class="qi-type-icon">🛠️</div>
+            <div class="qi-type-name">Service Income</div>
+            <div class="qi-type-desc">Selling a service or consultation</div>
+          </div>
+          <div class="qi-type-btn" onclick="qiSetType('expense')">
+            <div class="qi-type-icon">💸</div>
+            <div class="qi-type-name">Expense</div>
+            <div class="qi-type-desc">A business cost or payment made</div>
+          </div>
+          <div class="qi-type-btn" onclick="qiSetType('other')">
+            <div class="qi-type-icon">📝</div>
+            <div class="qi-type-name">Other</div>
+            <div class="qi-type-desc">Capital, loan, transfer, etc.</div>
+          </div>
+        </div>
+      </div>`;
+
+  } else if (qiState.step === 'product') {
+    // Build product list — user's saved products + industry defaults
+    const industry = setupProfile?.industry || 'Other';
+    const defaults  = DEFAULT_PRODUCTS_BY_INDUSTRY[industry] || DEFAULT_PRODUCTS_GENERIC;
+    const userProds = qiProducts.filter(p => !qiState.showAll
+      ? true : true).slice(0, qiState.showAll ? 999 : 10);
+
+    // Combine: user products first, then fill with defaults up to 10
+    const allProds = [
+      ...userProds.map(p => ({ n:p.product_name, p:p.price, id:p.id, isUser:true })),
+      ...defaults.filter(d => qiState.txnType === 'service' ? d.svc : !d.svc),
+    ];
+
+    const query    = (qiState.productSearch||'').toLowerCase();
+    const filtered = query ? allProds.filter(p => p.n.toLowerCase().includes(query)) : allProds.slice(0, qiState.showAll?999:10);
+
+    modal.innerHTML = `
+      <div class="qi-header">
+        <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;padding:4px 10px;" onclick="qiState.step='type';renderQI()">← Back</button>
+        <span class="qi-title">${qiState.txnType==='service'?'Select Service':'Select Product'}</span>
+        <button class="qi-close" onclick="closeQuickInput()">✕</button>
+      </div>
+      <div class="qi-body">
+        <div class="qi-search-bar">
+          <span class="qi-search-icon">🔍</span>
+          <input class="qi-search-input" type="text" placeholder="Search products…"
+            value="${qiState.productSearch||''}"
+            oninput="qiState.productSearch=this.value;renderQI()"/>
+        </div>
+        <div class="qi-step-label">Choose ${qiState.txnType==='service'?'service':'product'}</div>
+        <div class="qi-product-grid">
+          ${filtered.map(p=>`
+          <div class="qi-product-item ${qiState.product?.n===p.n?'selected':''}"
+            onclick="qiSelectProduct(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+            <div class="qi-product-name">${escH(p.n)}</div>
+            <div class="qi-product-price">${p.p>0?sym+p.p.toLocaleString():'Set price'}</div>
+          </div>`).join('')}
+        </div>
+        ${!qiState.showAll&&allProds.length>10?`
+        <button class="qi-more-btn" onclick="qiState.showAll=true;renderQI()">
+          + More (${allProds.length-10} more available)
+        </button>`:''}
+        <p style="font-size:0.72rem;color:var(--muted);text-align:center;">
+          Don't see yours? <button onclick="qiState.productSearch='';document.querySelector('.qi-search-input').focus()" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:inherit;">Search above</button> or
+          <button onclick="showSettings()" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:inherit;">add in Settings</button>
+        </p>
+      </div>`;
+
+  } else if (qiState.step === 'details') {
+    const totalCalc = (parseFloat(qiState.qty)||1) * (parseFloat(qiState.amount)||0);
+    modal.innerHTML = `
+      <div class="qi-header">
+        <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;padding:4px 10px;" onclick="qiState.step='product';renderQI()">← Back</button>
+        <span class="qi-title">${escH(qiState.product?.n||'Transaction')}</span>
+        <button class="qi-close" onclick="closeQuickInput()">✕</button>
+      </div>
+      <div class="qi-body">
+        ${qiState.txnType !== 'service' ? `
+        <div class="qi-field">
+          <label>How many units?</label>
+          <input class="qi-input" type="number" min="1" step="0.1" value="${qiState.qty||1}"
+            oninput="qiState.qty=this.value;document.getElementById('qiTotal').textContent='${sym}'+((parseFloat(this.value)||1)*(parseFloat(qiState.amount)||0)).toLocaleString()"/>
+        </div>` : ''}
+        <div class="qi-field">
+          <label>Amount (${sym}) ${qiState.txnType !== 'service'?'per unit':''}</label>
+          <input class="qi-input" type="number" min="0" step="0.01" value="${qiState.amount||qiState.product?.p||''}"
+            placeholder="0" oninput="qiState.amount=this.value;renderQITotal()"/>
+        </div>
+        ${qiState.txnType !== 'service' ? `
+        <div style="font-size:0.85rem;font-weight:700;color:var(--gold);margin-bottom:14px;">
+          Total: <span id="qiTotal">${sym}${totalCalc.toLocaleString()}</span>
+        </div>` : ''}
+        <div class="qi-field">
+          <label>Payment Method</label>
+          <div class="qi-pay-grid">
+            ${[['cash','💵 Cash'],['bank','🏦 Bank Transfer'],['pos','💳 POS / Card'],['credit','📝 Credit (unpaid)']].map(([v,l])=>`
+            <div class="qi-pay-btn ${qiState.payment===v?'selected':''}"
+              onclick="qiState.payment='${v}';renderQI()">${l}</div>`).join('')}
+          </div>
+        </div>
+        ${qiState.payment==='credit'?`
+        <div class="qi-field">
+          <label>Customer Name</label>
+          <input class="qi-input" type="text" placeholder="Who owes this amount?"
+            value="${qiState.customerName||''}" oninput="qiState.customerName=this.value"/>
+        </div>`:''}
+        <div class="qi-field">
+          <label>Note (optional)</label>
+          <input class="qi-input" type="text" placeholder="e.g. Invoice #001, description…"
+            value="${qiState.note||''}" oninput="qiState.note=this.value"/>
+        </div>
+        <button class="qi-record-btn" onclick="recordQuickInput()">⚡ Record Transaction</button>
+      </div>`;
+
+  } else if (qiState.step === 'expense') {
+    const expAccounts = (accounts['expenditure']||[]).map(a=>a.account_name);
+    modal.innerHTML = `
+      <div class="qi-header">
+        <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;padding:4px 10px;" onclick="qiState.step='type';renderQI()">← Back</button>
+        <span class="qi-title">Record Expense</span>
+        <button class="qi-close" onclick="closeQuickInput()">✕</button>
+      </div>
+      <div class="qi-body">
+        <div class="qi-field">
+          <label>Expense Category</label>
+          <select class="qi-input" onchange="qiState.expenseAccount=this.value">
+            <option value="">— Select category —</option>
+            ${expAccounts.map(a=>`<option value="${escH(a)}" ${qiState.expenseAccount===a?'selected':''}>${escH(a)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="qi-field">
+          <label>Amount (${sym})</label>
+          <input class="qi-input" type="number" min="0" step="0.01" placeholder="0"
+            value="${qiState.amount||''}" oninput="qiState.amount=this.value"/>
+        </div>
+        <div class="qi-field">
+          <label>Paid to (Payee)</label>
+          <input class="qi-input" type="text" placeholder="Who did you pay?"
+            value="${qiState.payee||''}" oninput="qiState.payee=this.value"/>
+        </div>
+        <div class="qi-field">
+          <label>Payment Method</label>
+          <div class="qi-pay-grid">
+            ${[['cash','💵 Cash'],['bank','🏦 Bank Transfer'],['pos','💳 POS / Card'],['credit','📝 On Credit']].map(([v,l])=>`
+            <div class="qi-pay-btn ${qiState.payment===v?'selected':''}"
+              onclick="qiState.payment='${v}';renderQI()">${l}</div>`).join('')}
+          </div>
+        </div>
+        <div class="qi-field">
+          <label>Note (optional)</label>
+          <input class="qi-input" type="text" placeholder="Description…"
+            value="${qiState.note||''}" oninput="qiState.note=this.value"/>
+        </div>
+        <button class="qi-record-btn" onclick="recordExpense()">⚡ Record Expense</button>
+      </div>`;
+
+  } else if (qiState.step === 'success') {
+    modal.innerHTML = `
+      <div class="qi-header">
+        <span class="qi-title">Transaction Recorded</span>
+        <button class="qi-close" onclick="closeQuickInput()">✕</button>
+      </div>
+      <div class="qi-body">
+        <div class="qi-success">
+          <div class="qi-success-icon">✅</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--white);margin-bottom:8px;">Posted successfully!</div>
+          <div style="font-size:0.82rem;color:var(--muted);line-height:1.6;margin-bottom:20px;">${qiState.successMsg||''}</div>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <button class="bk-btn bk-btn-gold" onclick="qiState={step:'type'};renderQI()">Record Another</button>
+            <button class="bk-btn bk-btn-outline" onclick="openJournal();closeQuickInput()">View in Master Records</button>
+            <button class="bk-btn bk-btn-outline" onclick="closeQuickInput()">Done</button>
+          </div>
+        </div>
+      </div>`;
+  }
+}
+
+function renderQITotal() {
+  const el = document.getElementById('qiTotal');
+  if (el) {
+    const sym   = CURRENCIES[activeCurrency].symbol;
+    const total = (parseFloat(qiState.qty)||1) * (parseFloat(qiState.amount)||0);
+    el.textContent = sym + total.toLocaleString();
+  }
+}
+
+function qiSetType(type) {
+  qiState.txnType = type;
+  if (type === 'expense') {
+    qiState.step = 'expense';
+    qiState.payment = 'cash';
+  } else if (type === 'other') {
+    qiState.step = 'product';
+  } else {
+    qiState.step = 'product';
+  }
+  renderQI();
+}
+
+function qiSelectProduct(product) {
+  qiState.product = product;
+  qiState.amount  = product.p || 0;
+  qiState.qty     = 1;
+  qiState.step    = 'details';
+  renderQI();
+}
+
+// Determine accounts automatically based on transaction type
+function getQuickAccounts(txnType, payment) {
+  const creditSide = payment === 'credit' ? 'Trade Debtors' : 'Cash and Bank';
+  const creditType = payment === 'credit' ? 'asset'         : 'asset';
+
+  if (txnType === 'sale') {
+    return {
+      debitAccount:  creditSide,
+      debitType:     creditType,
+      creditAccount: 'Sales Revenue',
+      creditType:    'income',
+    };
+  }
+  if (txnType === 'service') {
+    return {
+      debitAccount:  creditSide,
+      debitType:     creditType,
+      creditAccount: 'Service Income',
+      creditType:    'income',
+    };
+  }
+  if (txnType === 'other') {
+    return {
+      debitAccount:  'Cash and Bank',
+      debitType:     'asset',
+      creditAccount: 'Share Capital',
+      creditType:    'capital',
+    };
+  }
+  return { debitAccount:'Cash and Bank', debitType:'asset', creditAccount:'Sales Revenue', creditType:'income' };
+}
+
+async function recordQuickInput() {
+  const qty    = parseFloat(qiState.qty)||1;
+  const amount = parseFloat(qiState.amount)||0;
+  const total  = qty * amount;
+  if (!total) { alert('Please enter an amount.'); return; }
+
+  const accounts = getQuickAccounts(qiState.txnType, qiState.payment);
+  const narration = [
+    qiState.txnType==='sale'?`Sale of ${qiState.product?.n}`:`${qiState.product?.n||'Service'} income`,
+    qty>1?`x ${qty} units`:'',
+    qiState.customerName?`— ${qiState.customerName}`:'',
+    qiState.note?`(${qiState.note})`:'',
+  ].filter(Boolean).join(' ');
+
+  await postJournalEntry({
+    debitAccount:  accounts.debitAccount,
+    debitType:     accounts.debitType,
+    creditAccount: accounts.creditAccount,
+    creditType:    accounts.creditType,
+    amount: total,
+    narration,
+    payee:  qiState.customerName || null,
+    payer:  null,
+  });
+
+  qiState.successMsg = `<strong>${narration}</strong><br>
+    Dr ${accounts.debitAccount} ${fmt(total)}<br>
+    Cr ${accounts.creditAccount} ${fmt(total)}<br>
+    <span style="color:var(--gold);">Payment: ${qiState.payment}</span>`;
+  qiState.step = 'success';
+  renderQI();
+  await refreshEquation();
+}
+
+async function recordExpense() {
+  const amount = parseFloat(qiState.amount)||0;
+  if (!amount) { alert('Please enter an amount.'); return; }
+  if (!qiState.expenseAccount) { alert('Please select an expense category.'); return; }
+
+  const creditAccount = qiState.payment === 'credit' ? 'Trade Creditors' : 'Cash and Bank';
+  const creditType    = qiState.payment === 'credit' ? 'liability'        : 'asset';
+  const narration = [
+    qiState.expenseAccount,
+    qiState.payee?`— ${qiState.payee}`:'',
+    qiState.note?`(${qiState.note})`:'',
+  ].filter(Boolean).join(' ');
+
+  await postJournalEntry({
+    debitAccount:  qiState.expenseAccount,
+    debitType:     'expenditure',
+    creditAccount,
+    creditType,
+    amount,
+    narration,
+    payee:  qiState.payee || null,
+    payer:  null,
+  });
+
+  qiState.successMsg = `<strong>${narration}</strong><br>
+    Dr ${qiState.expenseAccount} ${fmt(amount)}<br>
+    Cr ${creditAccount} ${fmt(amount)}`;
+  qiState.step = 'success';
+  renderQI();
+  await refreshEquation();
+}
+
+async function postJournalEntry({ debitAccount, debitType, creditAccount, creditType, amount, narration, payee, payer }) {
+  const today = new Date().toISOString().slice(0,10);
+  const { data: journalEntry } = await bkDb.from('bk_journal').insert({
+    user_id:             bkUser.id,
+    txn_date:            today,
+    payee:               payee || null,
+    payer:               payer || null,
+    narration,
+    debit_account_name:  debitAccount,
+    debit_record_type:   debitType,
+    credit_account_name: creditAccount,
+    credit_record_type:  creditType,
+    debit_amount:        amount,
+    credit_amount:       amount,
+    serial_number:       1,
+    row_order:           0,
+  }).select().single();
+
+  if (journalEntry) {
+    await postToLedgers(journalEntry.id, {
+      txn_date:            today,
+      payee:               payee || null,
+      payer:               payer || null,
+      narration,
+      debit_account_name:  debitAccount,
+      debit_record_type:   debitType,
+      credit_account_name: creditAccount,
+      credit_record_type:  creditType,
+      debit_amount:        amount,
+      credit_amount:       amount,
+      row_order:           0,
+    });
+  }
+}
+
 // ── TOOLBAR TOGGLE ────────────────────────────────────────────
 let toolbarOpen = true;
 function toggleToolbar() {
@@ -2565,9 +3042,10 @@ async function showSettings() {
   document.getElementById('recordsDD').classList.add('hidden');
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading settings…</div>';
 
-  const [{ data:qa }, { data:profile }] = await Promise.all([
+  const [{ data:qa }, { data:profile }, { data:prods }] = await Promise.all([
     bkDb.from('bk_qa_history').select('*').eq('user_id', bkUser.id).order('created_at', {ascending:false}).limit(100),
     bkDb.from('bk_business_profiles').select('*').eq('user_id', bkUser.id).single(),
+    bkDb.from('bk_products').select('*').eq('user_id', bkUser.id).order('product_name'),
   ]);
 
   document.getElementById('bkContent').innerHTML = `
@@ -2586,6 +3064,32 @@ async function showSettings() {
       ` : `
         <button class="bk-btn bk-btn-gold" onclick="setupProfile={};showSetupWizard(1)">Complete Business Setup</button>
       `}
+    </div>
+    <div class="settings-section" style="margin-top:24px;">
+      <div class="settings-title">Products & Services</div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;line-height:1.55;">These appear in the Quick Input widget. Add your products, prices and stock quantities here.</p>
+      <div id="productsSettingsList">
+        ${(!prods||prods.length===0)
+          ? '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:14px;">No products added yet.</div>'
+          : prods.map(p=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="flex:1;font-size:0.82rem;color:var(--off);">${escH(p.product_name)}</span>
+            <span style="font-size:0.78rem;color:var(--gold);width:90px;text-align:right;">${fmt(p.price)}</span>
+            <span style="font-size:0.72rem;color:var(--muted);width:80px;">Qty: ${p.qty_in_stock} ${p.unit}</span>
+            <button onclick="deleteProduct('${p.id}')" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:0.75rem;">✕</button>
+          </div>`).join('')
+        }
+      </div>
+      <div style="margin-top:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">Add Product / Service</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+          <input class="setup-input" type="text" id="newProdName" placeholder="Product name *"/>
+          <input class="setup-input" type="number" id="newProdPrice" placeholder="Price" min="0" step="0.01"/>
+          <input class="setup-input" type="number" id="newProdQty" placeholder="Qty in stock" min="0"/>
+          <input class="setup-input" type="text" id="newProdUnit" placeholder="Unit (e.g. piece)" value="unit"/>
+        </div>
+        <button class="bk-btn bk-btn-gold" onclick="addProduct()">+ Add</button>
+      </div>
     </div>
     <div class="settings-section" style="margin-top:24px;">
       <div class="settings-title">Questions & Answers History</div>
@@ -2897,48 +3401,84 @@ function showSetupWizard(step) {
       </div>`;
 
   } else if (setupStep === 3) {
+    const indQuery = setupProfile._indSearch||'';
+    const filtered3 = indQuery
+      ? INDUSTRIES.filter(i=>i.toLowerCase().includes(indQuery.toLowerCase()))
+      : INDUSTRIES;
     stepHTML = `
       <div class="setup-heading">What industry are you in?</div>
+      <div class="qi-search-bar" style="margin-bottom:16px;max-width:480px;">
+        <span class="qi-search-icon">🔍</span>
+        <input class="qi-search-input" type="text" id="indSearchInput"
+          placeholder="Search any industry…" value="${indQuery}"
+          oninput="setupProfile._indSearch=this.value;showSetupWizard(3)"
+          autofocus/>
+      </div>
+      ${indQuery && !filtered3.length ? `
+      <div style="background:var(--surface2);border:1px solid var(--gold);border-radius:8px;padding:14px;max-width:480px;margin-bottom:16px;">
+        <div style="font-size:0.8rem;color:var(--off);margin-bottom:8px;">
+          No match for "<strong style="color:var(--gold)">${indQuery}</strong>".
+          You can use it as a custom industry:
+        </div>
+        <button class="bk-btn bk-btn-gold" onclick="setupSelect('industry','${indQuery}');setupProfile._indSearch='';showSetupWizard(4)">
+          Use "${indQuery}" as my industry →
+        </button>
+      </div>` : ''}
       <div class="setup-industry-grid">
-        ${INDUSTRIES.map(ind=>`
+        ${filtered3.map(ind=>`
         <div class="setup-industry-item ${setupProfile.industry===ind?'selected':''}"
-          onclick="setupSelect('industry','${ind}');showSetupWizard(4)">
+          onclick="setupSelect('industry','${ind}');setupProfile._indSearch='';showSetupWizard(4)">
           ${ind}
         </div>`).join('')}
       </div>`;
 
   } else if (setupStep === 4) {
+    const country4   = setupProfile.country||'Nigeria';
+    const stateList4 = (COUNTRY_STATES[country4]||[]).map(s=>`<option value="${s}">`).join('');
+    const lgaList4   = (NIGERIA_LGAS[setupProfile.state_province]||[]).map(l=>`<option value="${l}">`).join('');
     stepHTML = `
       <div class="setup-heading">Where is your business located?</div>
       <div class="setup-form">
+        <datalist id="dl_countries">${ALL_COUNTRIES.map(c=>`<option value="${c}">`).join('')}</datalist>
+        <datalist id="dl_states">${stateList4}</datalist>
+        <datalist id="dl_lgas">${lgaList4}</datalist>
         <div class="setup-form-row">
           <div class="setup-field">
             <label class="setup-label">Country *</label>
-            <input class="setup-input" type="text" id="sf_country" value="${setupProfile.country||''}" placeholder="e.g. Nigeria"/>
+            <input class="setup-input" type="text" id="sf_country" list="dl_countries"
+              value="${setupProfile.country||'Nigeria'}" placeholder="Start typing country…"
+              oninput="setupProfile.country=this.value;refreshStateDL()"/>
           </div>
           <div class="setup-field">
             <label class="setup-label">State / Province</label>
-            <input class="setup-input" type="text" id="sf_state" value="${setupProfile.state_province||''}" placeholder="e.g. Lagos"/>
+            <input class="setup-input" type="text" id="sf_state" list="dl_states"
+              value="${setupProfile.state_province||'Lagos'}" placeholder="Start typing state…"
+              oninput="setupProfile.state_province=this.value;refreshLgaDL()"/>
           </div>
         </div>
         <div class="setup-form-row">
           <div class="setup-field">
-            <label class="setup-label">City</label>
-            <input class="setup-input" type="text" id="sf_city" value="${setupProfile.city||''}" placeholder="e.g. Ikeja"/>
+            <label class="setup-label">Local Government Area</label>
+            <input class="setup-input" type="text" id="sf_city" list="dl_lgas"
+              value="${setupProfile.city||'Ikeja'}" placeholder="Start typing LGA…"
+              oninput="setupProfile.city=this.value"/>
           </div>
           <div class="setup-field">
             <label class="setup-label">Town</label>
-            <input class="setup-input" type="text" id="sf_town" value="${setupProfile.town||''}" placeholder="e.g. Allen Avenue area"/>
+            <input class="setup-input" type="text" id="sf_town"
+              value="${setupProfile.town||''}" placeholder="e.g. Allen Avenue area"/>
           </div>
         </div>
         <div class="setup-form-row">
           <div class="setup-field">
             <label class="setup-label">Village (if applicable)</label>
-            <input class="setup-input" type="text" id="sf_village" value="${setupProfile.village||''}" placeholder="Village name"/>
+            <input class="setup-input" type="text" id="sf_village"
+              value="${setupProfile.village||''}" placeholder="Village name (if applicable)"/>
           </div>
           <div class="setup-field">
             <label class="setup-label">Street / Address</label>
-            <input class="setup-input" type="text" id="sf_street" value="${setupProfile.street||''}" placeholder="Street name or number"/>
+            <input class="setup-input" type="text" id="sf_street"
+              value="${setupProfile.street||''}" placeholder="e.g. 14 Allen Avenue"/>
           </div>
         </div>
         <button class="bk-btn bk-btn-gold" style="margin-top:16px;padding:12px 32px;" onclick="saveLocationStep()">Continue →</button>
@@ -2957,35 +3497,59 @@ function showSetupWizard(step) {
       </div>`;
 
   } else if (setupStep === 6) {
-    const offerings = INDUSTRY_OFFERINGS[setupProfile.industry] || INDUSTRY_OFFERINGS['Other'];
-    const selected  = (setupProfile.specific_offerings||'').split(',').filter(Boolean);
+    const offerings6 = INDUSTRY_OFFERINGS[setupProfile.industry] || INDUSTRY_OFFERINGS['Other'];
+    const selected6  = (setupProfile.specific_offerings||'').split(',').filter(Boolean);
+    const offerQuery = setupProfile._offerSearch||'';
+    const customOff  = setupProfile._customOfferings||[];
+    const showMoreOff= setupProfile._showMoreOff||false;
+    const allOff     = [...offerings6, ...customOff];
+    const filteredOff= offerQuery ? allOff.filter(o=>o.toLowerCase().includes(offerQuery.toLowerCase())) : allOff;
     stepHTML = `
       <div class="setup-heading">What does <strong style="color:var(--gold)">${setupProfile.business_name||'your business'}</strong> offer?</div>
       <div class="setup-options" style="grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
-        <div class="setup-option ${setupProfile.offers==='products'?'selected':''}"
-          onclick="setupSelect('offers','products');document.querySelectorAll('.setup-option[data-offers]').forEach(el=>el.classList.remove('selected'));this.classList.add('selected');" data-offers>
-          <div class="setup-option-icon">📦</div>
-          <div class="setup-option-title">Products</div>
+        <div class="setup-option ${setupProfile.offers==='products'?'selected':''}" data-offers
+          onclick="setupSelect('offers','products');document.querySelectorAll('.setup-option[data-offers]').forEach(e=>e.classList.remove('selected'));this.classList.add('selected');">
+          <div class="setup-option-icon">📦</div><div class="setup-option-title">Products</div>
         </div>
-        <div class="setup-option ${setupProfile.offers==='services'?'selected':''}"
-          onclick="setupSelect('offers','services');document.querySelectorAll('.setup-option[data-offers]').forEach(el=>el.classList.remove('selected'));this.classList.add('selected');" data-offers>
-          <div class="setup-option-icon">🛠️</div>
-          <div class="setup-option-title">Services</div>
+        <div class="setup-option ${setupProfile.offers==='services'?'selected':''}" data-offers
+          onclick="setupSelect('offers','services');document.querySelectorAll('.setup-option[data-offers]').forEach(e=>e.classList.remove('selected'));this.classList.add('selected');">
+          <div class="setup-option-icon">🛠️</div><div class="setup-option-title">Services</div>
         </div>
-        <div class="setup-option ${setupProfile.offers==='both'?'selected':''}"
-          onclick="setupSelect('offers','both');document.querySelectorAll('.setup-option[data-offers]').forEach(el=>el.classList.remove('selected'));this.classList.add('selected');" data-offers>
-          <div class="setup-option-icon">⚡</div>
-          <div class="setup-option-title">Both</div>
+        <div class="setup-option ${setupProfile.offers==='both'?'selected':''}" data-offers
+          onclick="setupSelect('offers','both');document.querySelectorAll('.setup-option[data-offers]').forEach(e=>e.classList.remove('selected'));this.classList.add('selected');">
+          <div class="setup-option-icon">⚡</div><div class="setup-option-title">Both</div>
         </div>
       </div>
-      <div class="setup-heading" style="font-size:0.85rem;margin-bottom:12px;">Select what specifically you offer (choose all that apply):</div>
-      <div class="setup-industry-grid" style="margin-bottom:20px;">
-        ${offerings.map(off=>`
-        <div class="setup-industry-item ${selected.includes(off)?'selected':''}"
-          onclick="toggleOffering(this,'${off.replace(/'/g,"\\'")}')">
-          ${off}
-        </div>`).join('')}
+      <div class="setup-heading" style="font-size:0.85rem;margin-bottom:12px;">Select what you offer (choose all that apply):</div>
+      <div class="setup-industry-grid" style="margin-bottom:12px;">
+        ${offerings6.map(off=>`
+          <div class="setup-industry-item ${selected6.includes(off)?'selected':''}"
+            onclick="toggleOffering(this,decodeURIComponent('${encodeURIComponent(off)}'))">${off}</div>`).join('')}
+        ${customOff.map(off=>`
+          <div class="setup-industry-item ${selected6.includes(off)?'selected':''}" style="border-color:var(--gold);"
+            onclick="toggleOffering(this,decodeURIComponent('${encodeURIComponent(off)}'))">${off}</div>`).join('')}
       </div>
+      ${showMoreOff ? `
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Search or add your own</div>
+          <div class="qi-search-bar" style="margin-bottom:10px;">
+            <span class="qi-search-icon">🔍</span>
+            <input class="qi-search-input" id="offerSearchInput" type="text" placeholder="Type to search or add…"
+              value="${offerQuery}" oninput="setupProfile._offerSearch=this.value;showSetupWizard(6)" autofocus/>
+          </div>
+          ${offerQuery && !filteredOff.length ? `
+            <button class="bk-btn bk-btn-outline" style="font-size:0.78rem;margin-bottom:8px;"
+              onclick="addCustomOffering()">+ Add as custom offering</button>` : ''}
+          ${filteredOff.length && offerQuery ? `
+            <div class="setup-industry-grid">
+              ${filteredOff.map(off=>`
+                <div class="setup-industry-item ${selected6.includes(off)?'selected':''}"
+                  onclick="toggleOffering(this,decodeURIComponent('${encodeURIComponent(off)}'));setupProfile._offerSearch='';showSetupWizard(6)">${off}</div>`).join('')}
+            </div>` : ''}
+        </div>` : `
+        <button class="qi-more-btn" style="margin-bottom:14px;" onclick="setupProfile._showMoreOff=true;showSetupWizard(6)">
+          + More — search any product or service, or add your own
+        </button>`}
       <button class="bk-btn bk-btn-gold" style="padding:12px 32px;" onclick="showSetupWizard(7)">Continue →</button>`;
 
   } else if (setupStep === 7) {
@@ -3007,44 +3571,30 @@ function showSetupWizard(step) {
       </div>`;
 
   } else if (setupStep === 8) {
-    if (setupProfile.is_new_business === false) {
-      stepHTML = `
-        <div class="setup-heading">Great — let's get your existing business set up.</div>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:24px;max-width:560px;margin-bottom:20px;">
-          <div style="font-size:0.82rem;font-weight:700;color:var(--gold);margin-bottom:12px;">How we handle existing businesses:</div>
-          <div style="font-size:0.8rem;color:var(--off);line-height:1.7;">
-            <p style="margin-bottom:10px;">You don't need to enter every historical transaction. Instead, you'll set an <strong style="color:var(--white);">opening balance date</strong> and enter what each account holds on that date.</p>
-            <p style="margin-bottom:10px;"><strong style="color:var(--white);">Example:</strong> If your business started 3 years ago and you're starting records from 1 January 2026, you simply enter what your cash balance, stock value, loans, and capital were on 1 January 2026. That becomes your starting point.</p>
-            <p>Going forward, all new transactions are recorded normally. Historical transactions are summarised into those opening balances.</p>
-          </div>
-        </div>
-        <div class="setup-field" style="max-width:360px;margin-bottom:20px;">
-          <label class="setup-label">How many years has the business been operating?</label>
-          <input class="setup-input" type="number" id="sf_years" min="1" max="100"
-            value="${setupProfile.years_operating||''}" placeholder="e.g. 3"/>
-        </div>
-        <button class="bk-btn bk-btn-gold" style="padding:12px 32px;" onclick="completeSetup()">Set Up My Books →</button>`;
-    } else {
-      // New business — go straight to completion
-      completeSetup();
-      return;
-    }
-  }
-
-  content.innerHTML = `
-    <div style="max-width:720px;margin:0 auto;padding:40px 24px;">
-      <div style="margin-bottom:28px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">Setup — Step ${setupStep} of ${TOTAL_STEPS}</div>
-          ${setupStep > 1 ? `<button class="bk-btn bk-btn-outline" style="font-size:0.72rem;padding:5px 12px;" onclick="showSetupWizard(${setupStep-1})">← Back</button>` : ''}
-        </div>
-        <div style="height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;">
-          <div style="height:100%;width:${progressPct}%;background:var(--gold);border-radius:2px;transition:width 0.3s;"></div>
+    // TESTING MODE — show summary + refresh button, do NOT save to Supabase
+    const s = setupProfile;
+    stepHTML = `
+      <div class="setup-heading">🎉 Setup Complete — Testing Mode</div>
+      <div style="background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.3);border-radius:10px;padding:20px;max-width:560px;margin-bottom:20px;">
+        <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">What you entered (not saved yet)</div>
+        <div style="font-size:0.82rem;color:var(--off);line-height:1.9;">
+          <div><strong style="color:var(--white);display:inline-block;width:140px;">Business Name:</strong> ${s.business_name||'—'}</div>
+          <div><strong style="color:var(--white);display:inline-block;width:140px;">Business Type:</strong> ${s.business_type||'—'}</div>
+          <div><strong style="color:var(--white);display:inline-block;width:140px;">Industry:</strong> ${s.industry||'—'}</div>
+          <div><strong style="color:var(--white);display:inline-block;width:140px;">Location:</strong> ${[s.city,s.state_province,s.country].filter(Boolean).join(', ')||'—'}</div>
+          <div><strong style="color:var(--white);display:inline-block;width:140px;">Offers:</strong> ${s.offers||'—'}</div>
+          <div><strong style="color:var(--white);display:inline-block;width:140px;">Type:</strong> ${s.is_new_business===false?'Existing business':'Brand new business'}</div>
         </div>
       </div>
-      ${stepHTML}
-    </div>`;
-}
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;max-width:560px;margin-bottom:20px;font-size:0.78rem;color:var(--muted);line-height:1.6;">
+        ⚠️ <strong style="color:var(--off);">Testing mode:</strong> This information has not been saved. We are still building and refining this feature. Use the Refresh button below to clear everything and start again.
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="bk-btn bk-btn-outline" style="padding:12px 28px;" onclick="showSetupWizard(${setupStep-1})">← Back</button>
+        <button class="bk-btn" style="padding:12px 28px;background:var(--red);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;" onclick="refreshSetup()">🔄 Refresh & Start Over</button>
+      </div>`;
+  }
+
 
 function setupSelect(field, value) {
   setupProfile[field] = value;
@@ -3070,6 +3620,142 @@ function saveLocationStep() {
   }
   showSetupWizard(5);
 }
+
+// ── SETUP HELPERS ─────────────────────────────────────────────
+function refreshSetup() {
+  setupProfile = {};
+  // Navigate back to setup start
+  checkSetupAndInit();
+}
+
+function addCustomOffering() {
+  const q = setupProfile._offerSearch||'';
+  if (!q.trim()) return;
+  if (!setupProfile._customOfferings) setupProfile._customOfferings = [];
+  if (!setupProfile._customOfferings.includes(q)) setupProfile._customOfferings.push(q);
+  const arr = (setupProfile.specific_offerings||'').split(',').filter(Boolean);
+  if (!arr.includes(q)) arr.push(q);
+  setupProfile.specific_offerings = arr.join(',');
+  setupProfile._offerSearch = '';
+  showSetupWizard(6);
+}
+
+function refreshStateDL() {
+  const country = document.getElementById('sf_country')?.value||'';
+  setupProfile.country = country;
+  const states = COUNTRY_STATES[country]||[];
+  const dl = document.getElementById('dl_states');
+  if (dl) dl.innerHTML = states.map(s=>`<option value="${s}">`).join('');
+  document.getElementById('sf_state').value  = '';
+  document.getElementById('sf_city').value   = '';
+  const dlLga = document.getElementById('dl_lgas');
+  if (dlLga) dlLga.innerHTML = '';
+}
+
+function refreshLgaDL() {
+  const state = document.getElementById('sf_state')?.value||'';
+  setupProfile.state_province = state;
+  const lgas = NIGERIA_LGAS[state]||[];
+  const dl = document.getElementById('dl_lgas');
+  if (dl) dl.innerHTML = lgas.map(l=>`<option value="${l}">`).join('');
+  if (document.getElementById('sf_city')) document.getElementById('sf_city').value = '';
+}
+
+// ── LOCATION DATA ─────────────────────────────────────────────
+const ALL_COUNTRIES = [
+  'Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda','Argentina','Armenia',
+  'Australia','Austria','Azerbaijan','Bahamas','Bahrain','Bangladesh','Barbados','Belarus','Belgium',
+  'Belize','Benin','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana','Brazil','Brunei','Bulgaria',
+  'Burkina Faso','Burundi','Cabo Verde','Cambodia','Cameroon','Canada','Central African Republic','Chad',
+  'Chile','China','Colombia','Comoros','Congo','Costa Rica','Croatia','Cuba','Cyprus','Czech Republic',
+  'Denmark','Djibouti','Dominica','Dominican Republic','Ecuador','Egypt','El Salvador','Equatorial Guinea',
+  'Eritrea','Estonia','Eswatini','Ethiopia','Fiji','Finland','France','Gabon','Gambia','Georgia',
+  'Germany','Ghana','Greece','Grenada','Guatemala','Guinea','Guinea-Bissau','Guyana','Haiti','Honduras',
+  'Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy','Jamaica','Japan',
+  'Jordan','Kazakhstan','Kenya','Kiribati','Kuwait','Kyrgyzstan','Laos','Latvia','Lebanon','Lesotho',
+  'Liberia','Libya','Liechtenstein','Lithuania','Luxembourg','Madagascar','Malawi','Malaysia','Maldives',
+  'Mali','Malta','Marshall Islands','Mauritania','Mauritius','Mexico','Micronesia','Moldova','Monaco',
+  'Mongolia','Montenegro','Morocco','Mozambique','Myanmar','Namibia','Nauru','Nepal','Netherlands',
+  'New Zealand','Nicaragua','Niger','Nigeria','North Korea','North Macedonia','Norway','Oman','Pakistan',
+  'Palau','Palestine','Panama','Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal',
+  'Qatar','Romania','Russia','Rwanda','Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines',
+  'Samoa','San Marino','Sao Tome and Principe','Saudi Arabia','Senegal','Serbia','Seychelles','Sierra Leone',
+  'Singapore','Slovakia','Slovenia','Solomon Islands','Somalia','South Africa','South Korea','South Sudan',
+  'Spain','Sri Lanka','Sudan','Suriname','Sweden','Switzerland','Syria','Taiwan','Tajikistan','Tanzania',
+  'Thailand','Timor-Leste','Togo','Tonga','Trinidad and Tobago','Tunisia','Turkey','Turkmenistan','Tuvalu',
+  'Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan','Vanuatu',
+  'Vatican City','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe'
+];
+
+const COUNTRY_STATES = {
+  'Nigeria': ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River',
+    'Delta','Ebonyi','Edo','Ekiti','Enugu','FCT - Abuja','Gombe','Imo','Jigawa','Kaduna','Kano',
+    'Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo',
+    'Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'],
+  'Ghana': ['Ahafo','Ashanti','Bono','Bono East','Central','Eastern','Greater Accra','North East',
+    'Northern','Oti','Savannah','Upper East','Upper West','Volta','Western','Western North'],
+  'United States': ['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut',
+    'Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky',
+    'Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri',
+    'Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York',
+    'North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island',
+    'South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington',
+    'West Virginia','Wisconsin','Wyoming'],
+  'United Kingdom': ['England','Scotland','Wales','Northern Ireland'],
+  'South Africa': ['Eastern Cape','Free State','Gauteng','KwaZulu-Natal','Limpopo','Mpumalanga',
+    'North West','Northern Cape','Western Cape'],
+  'Kenya': ['Nairobi','Mombasa','Kisumu','Nakuru','Eldoret','Thika','Malindi','Kitale','Garissa',
+    'Kakamega','Nyeri','Meru','Machakos','Kilifi','Bungoma','Kericho','Embu','Isiolo','Lamu','Wajir'],
+  'Canada': ['Alberta','British Columbia','Manitoba','New Brunswick','Newfoundland and Labrador',
+    'Northwest Territories','Nova Scotia','Nunavut','Ontario','Prince Edward Island',
+    'Quebec','Saskatchewan','Yukon'],
+  'Australia': ['Australian Capital Territory','New South Wales','Northern Territory','Queensland',
+    'South Australia','Tasmania','Victoria','Western Australia'],
+  'India': ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
+    'Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra',
+    'Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim',
+    'Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'],
+  'Germany': ['Baden-Württemberg','Bavaria','Berlin','Brandenburg','Bremen','Hamburg','Hesse',
+    'Lower Saxony','Mecklenburg-Vorpommern','North Rhine-Westphalia','Rhineland-Palatinate',
+    'Saarland','Saxony','Saxony-Anhalt','Schleswig-Holstein','Thuringia'],
+  'France': ['Auvergne-Rhône-Alpes','Bourgogne-Franche-Comté','Brittany','Centre-Val de Loire',
+    'Corsica','Grand Est','Hauts-de-France','Île-de-France','Normandy','Nouvelle-Aquitaine',
+    'Occitanie','Pays de la Loire','Provence-Alpes-Côte d\'Azur'],
+};
+
+const NIGERIA_LGAS = {
+  'Lagos': ['Agege','Ajeromi-Ifelodun','Alimosho','Amuwo-Odofin','Apapa','Badagry','Epe',
+    'Eti-Osa','Ibeju-Lekki','Ifako-Ijaiye','Ikeja','Ikorodu','Kosofe','Lagos Island',
+    'Lagos Mainland','Mushin','Ojo','Oshodi-Isolo','Shomolu','Surulere'],
+  'FCT - Abuja': ['Abaji','Bwari','Gwagwalada','Kuje','Kwali','Municipal Area Council'],
+  'Kano': ['Fagge','Dala','Gwale','Kano Municipal','Nassarawa','Tarauni','Ungogo','Doguwa',
+    'Garko','Garum Mallam','Gaya','Gezawa','Kiru','Madobi','Makoda','Rimin Gado','Shanono',
+    'Sumaila','Takai','Tofa','Tsanyawa','Wudil'],
+  'Rivers': ['Port Harcourt','Obio-Akpor','Okrika','Ogu-Bolo','Eleme','Tai','Gokana','Khana',
+    'Oyigbo','Opobo-Nkoro','Andoni','Bonny','Degema','Asari-Toru','Akuku-Toru','Abua-Odual',
+    'Ahoada West','Ahoada East','Ogba-Egbema-Ndoni','Emohua','Ikwerre','Etche','Omuma'],
+  'Oyo': ['Ibadan North','Ibadan North-East','Ibadan North-West','Ibadan South-East',
+    'Ibadan South-West','Ibarapa Central','Ibarapa East','Ibarapa North','Ido','Lagelu',
+    'Ogbomosho North','Ogbomosho South','Ogo Oluwa','Olorunsogo','Oluyole','Ona Ara',
+    'Orelope','Ori Ire','Oyo East','Oyo West','Surulere'],
+  'Ogun': ['Abeokuta North','Abeokuta South','Ado-Odo/Ota','Ewekoro','Ifo','Ijebu East',
+    'Ijebu North','Ijebu North-East','Ijebu Ode','Ikenne','Imeko-Afon','Ipokia','Obafemi-Owode',
+    'Odeda','Odogbolu','Ogun Waterside','Remo North','Sagamu','Yewa North','Yewa South'],
+  'Enugu': ['Aninri','Awgu','Enugu East','Enugu North','Enugu South','Ezeagu','Igbo-Etiti',
+    'Igbo-Eze North','Igbo-Eze South','Isi-Uzo','Nkanu East','Nkanu West','Nsukka',
+    'Oji River','Udenu','Udi','Uzo-Uwani'],
+  'Anambra': ['Aguata','Anambra East','Anambra West','Anaocha','Awka North','Awka South',
+    'Ayamelum','Dunukofia','Ekwusigo','Idemili North','Idemili South','Ihiala','Njikoka',
+    'Nnewi North','Nnewi South','Ogbaru','Onitsha North','Onitsha South','Orumba North',
+    'Orumba South','Oyi'],
+  'Kaduna': ['Birnin Gwari','Chikun','Giwa','Igabi','Ikara','Jaba','Jema\'a','Kachia','Kaduna North',
+    'Kaduna South','Kagarko','Kajuru','Kaura','Kauru','Kubau','Kudan','Lere','Makarfi',
+    'Sabon Gari','Sanga','Soba','Zangon Kataf','Zaria'],
+  'Delta': ['Aniocha North','Aniocha South','Bomadi','Burutu','Ethiope East','Ethiope West',
+    'Ika North-East','Ika South','Isoko North','Isoko South','Ndokwa East','Ndokwa West',
+    'Okpe','Oshimili North','Oshimili South','Patani','Sapele','Udu','Ughelli North',
+    'Ughelli South','Ukwuani','Uvwie','Warri North','Warri South','Warri South-West'],
+};
 
 function saveNameStep() {
   const name = document.getElementById('sf_bizname')?.value.trim();
@@ -3131,6 +3817,24 @@ async function completeSetup() {
         Go to My Dashboard →
       </button>
     </div>`;
+}
+
+async function addProduct() {
+  const name  = document.getElementById('newProdName')?.value.trim();
+  const price = parseFloat(document.getElementById('newProdPrice')?.value)||0;
+  const qty   = parseFloat(document.getElementById('newProdQty')?.value)||0;
+  const unit  = document.getElementById('newProdUnit')?.value.trim()||'unit';
+  if (!name) { document.getElementById('newProdName').style.borderColor='var(--red)'; return; }
+
+  const { error } = await bkDb.from('bk_products').insert({
+    user_id: bkUser.id, product_name: name, price, qty_in_stock: qty, unit, is_active: true
+  });
+  if (!error) showSettings();
+}
+
+async function deleteProduct(id) {
+  await bkDb.from('bk_products').delete().eq('id', id).eq('user_id', bkUser.id);
+  showSettings();
 }
 
 // ── SETTINGS — ADD BUSINESS PROFILE SECTION ───────────────────
