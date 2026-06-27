@@ -274,7 +274,7 @@ async function submitServiceBooking() {
 function payForService(serviceName, amountUsd, enquiryId) {
   if (!currentUser) { openAuth('signup'); return; }
 
-  const NGN_RATE  = 1360;
+  const NGN_RATE  = 1600; // ~₦1,600 per $1 (Jun 2026 — check quarterly)
   const amountNGN = amountUsd * NGN_RATE;
   const txRef     = 'BD_SVC_' + Date.now();
 
@@ -798,6 +798,7 @@ function openPayment(planKey) {
   window._payPlan = { name: planName, amount };
 }
 
+function closePaymentModal() { const ov=document.getElementById('paymentOverlay'); if(ov) ov.style.display='none'; }
 function closePayment() {
   document.getElementById('paymentOverlay').classList.remove('open');
   document.body.style.overflow = '';
@@ -813,7 +814,7 @@ function initiateStripeCheckout() {
   if (!email) { alert('Please enter your email address.'); return; }
 
   const plan     = window._payPlan || { name: 'Professional', amount: PROFESSIONAL_STANDARD_PRICE };
-  const NGN_RATE = 1360; // approximate USD→NGN rate as of June 2026 — naira is volatile,
+  const NGN_RATE = 1600;  // ~₦1,600 per $1 (Jun 2026 — check quarterly) // approximate USD→NGN rate as of June 2026 — naira is volatile,
                           // recheck this periodically (e.g. quarterly) before live launch
                           // and afterward, rather than letting it go stale for years.
   const amountNGN = plan.amount * NGN_RATE;
@@ -1055,10 +1056,6 @@ function doSearch() {
   const val = document.getElementById('searchInput').value.trim();
   if (!val) return;
   askAI(val);
-}
-
-function onSearch() {
-  // No live suggestions in AI mode — input is free-form question
 }
 
 async function askAI(question) {
