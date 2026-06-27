@@ -211,6 +211,32 @@ select.bk-cell {
 .th-help-icon{display:none;}
 .th-help-text{cursor:pointer;}
 .th-help-text:hover{color:var(--gold);}
+/* ACCOUNT SETUP WIZARD */
+.setup-heading{font-size:1.1rem;font-weight:800;color:var(--white);margin-bottom:24px;line-height:1.4;}
+.setup-options{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px;}
+.setup-option{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:20px 16px;cursor:pointer;text-align:center;transition:border-color 0.15s,background 0.15s;}
+.setup-option:hover{border-color:var(--gold);}
+.setup-option.selected{border-color:var(--gold);background:var(--gold-dim);}
+.setup-option.disabled{opacity:0.5;cursor:not-allowed;}
+.setup-option-icon{font-size:1.8rem;margin-bottom:8px;}
+.setup-option-title{font-size:0.88rem;font-weight:800;color:var(--white);margin-bottom:4px;}
+.setup-option-desc{font-size:0.73rem;color:var(--muted);line-height:1.4;}
+.setup-industry-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;}
+.setup-industry-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:0.8rem;font-weight:600;color:var(--off);cursor:pointer;text-align:center;transition:all 0.12s;}
+.setup-industry-item:hover{border-color:var(--gold);color:var(--white);}
+.setup-industry-item.selected{border-color:var(--gold);background:var(--gold-dim);color:var(--gold);}
+.setup-form{max-width:600px;}
+.setup-form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.setup-field{display:flex;flex-direction:column;gap:6px;}
+.setup-label{font-size:0.74rem;font-weight:700;color:var(--off);}
+.setup-input{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 13px;font-size:0.88rem;font-family:inherit;outline:none;}
+.setup-input:focus{border-color:var(--gold);}
+@media(max-width:600px){
+  .setup-options{grid-template-columns:1fr;}
+  .setup-industry-grid{grid-template-columns:1fr 1fr;}
+  .setup-form-row{grid-template-columns:1fr;}
+}
+
 /* TOOLBAR */
 .bk-toolbar{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 14px;margin-bottom:16px;flex-wrap:wrap;overflow-x:auto;}
 .tb-sep{width:1px;height:20px;background:var(--border2);margin:0 4px;flex-shrink:0;}
@@ -234,6 +260,17 @@ select.bk-cell {
 .tb-dec-btn:hover{border-color:var(--gold);color:var(--gold);}
 .tb-dec-top{font-weight:700;}
 .tb-dec-arrow{font-size:0.7rem;}
+/* Draggable rows */
+tr.dragging{opacity:0.4;}
+tr.drag-over td{border-top:2px solid var(--gold) !important;}
+tr[draggable]{cursor:grab;}
+tr[draggable]:active{cursor:grabbing;}
+/* Drag handle cell */
+.col-drag{width:22px;}
+.drag-handle{width:100%;height:34px;background:none;border:none;color:var(--muted2);cursor:grab;font-size:0.75rem;display:flex;align-items:center;justify-content:center;}
+.drag-handle:hover{color:var(--gold);}
+/* Equation error clickable */
+.bk-eq-check.unbalanced{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;}
 /* Save per row */
 .save-row-btn{width:100%;height:34px;background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;font-weight:900;}
 .save-row-btn:hover{color:#fff;background:var(--gold-dim);}
@@ -433,9 +470,6 @@ tr.row-selected td{background:rgba(212,175,55,0.07) !important;}
         <span class="tb-dec-top">.0</span><span class="tb-dec-arrow">→</span>
       </button>
     </div>
-    <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="tbInsertRow()" title="Insert row">+ Row</button>
-    <button class="tb-btn" onclick="tbDeleteSelected()" title="Delete selected row">✕ Row</button>
     <div class="tb-sep"></div>
     <button class="tb-btn" onclick="openTemplates()" title="Templates">⚡ Templates</button>
     <button class="tb-btn" onclick="exportCSV()" title="Export to CSV">⬇ CSV</button>
@@ -788,6 +822,7 @@ function renderLedger() {
             <th class="col-sn num"><span class="th-help-text" onclick="showColumnHelp(this,'S/N')">S/N</span></th>
             <th class="col-del"></th>
             <th class="col-save"></th>
+            <th class="col-drag"></th>
           </tr>
         </thead>
         <tbody id="ledgerBody"></tbody>
@@ -822,7 +857,7 @@ function renderRows(displayRows) {
     const bal = parseFloat(row.balance)||0;
     const balClass = bal > 0 ? 'pos' : bal < 0 ? 'neg' : 'zero';
     const sn  = hasData(row) ? idx+1 : '';
-    return `<tr id="row_${idx}">
+    return `<tr id="row_${idx}" draggable="true">
       <td class="col-date">
         <input class="bk-cell" type="date" value="${row.txn_date}"
           onchange="cellChange(${idx},'txn_date',this.value)"/>
@@ -861,9 +896,12 @@ function renderRows(displayRows) {
       <td class="col-save">
         <button class="save-row-btn" onclick="saveRow(${idx})" title="Save this row">›</button>
       </td>
+      <td class="col-drag">
+        <div class="drag-handle" title="Drag to reorder">⠿</div>
+      </td>
     </tr>`;
   }).join('');
-  setTimeout(()=>{ initColumnResize(); initRowResize(); }, 50);
+  setTimeout(()=>{ initColumnResize(); initRowResize(); initDragRows(); }, 50);
 }
 
 function hasData(r) {
@@ -1054,7 +1092,8 @@ async function refreshEquation() {
     check.textContent='✓ Books are balanced';
     check.className='bk-eq-check balanced';
   } else {
-    check.textContent=`⚠ Difference of ${fmt(diff)} — check for missing entries`;
+    const diffFmt = fmt(diff);
+    check.innerHTML='<span onclick="explainEquationError('+diff+')" title="Click for AI explanation">⚠ Difference of '+diffFmt+' — check for missing entries. Click here for help ✨</span>';
     check.className='bk-eq-check unbalanced';
   }
 }
@@ -2526,14 +2565,29 @@ async function showSettings() {
   document.getElementById('recordsDD').classList.add('hidden');
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading settings…</div>';
 
-  const { data:qa } = await bkDb.from('bk_qa_history')
-    .select('*').eq('user_id', bkUser.id).order('created_at', {ascending:false}).limit(100);
+  const [{ data:qa }, { data:profile }] = await Promise.all([
+    bkDb.from('bk_qa_history').select('*').eq('user_id', bkUser.id).order('created_at', {ascending:false}).limit(100),
+    bkDb.from('bk_business_profiles').select('*').eq('user_id', bkUser.id).single(),
+  ]);
 
   document.getElementById('bkContent').innerHTML = `
     <div class="bk-content-header">
       <div class="bk-content-title">SETTINGS</div>
     </div>
     <div class="settings-section">
+      <div class="settings-title">Business Profile</div>
+      ${profile ? `
+        <div style="background:var(--surface2);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:0.82rem;color:var(--off);line-height:1.7;">
+          <strong style="color:var(--white)">${profile.business_name||'—'}</strong> &nbsp;·&nbsp;
+          ${profile.business_type||''} &nbsp;·&nbsp; ${profile.industry||''}<br>
+          ${[profile.city,profile.state_province,profile.country].filter(Boolean).join(', ')}
+        </div>
+        <button class="bk-btn bk-btn-outline" onclick="setupProfile={};showSetupWizard(1)">Edit Business Profile</button>
+      ` : `
+        <button class="bk-btn bk-btn-gold" onclick="setupProfile={};showSetupWizard(1)">Complete Business Setup</button>
+      `}
+    </div>
+    <div class="settings-section" style="margin-top:24px;">
       <div class="settings-title">Questions & Answers History</div>
       <p style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;line-height:1.55;">
         Every question you've asked the AI tutor via the column help widget is saved here.
@@ -2660,7 +2714,426 @@ async function askColumnAI(colName) {
   }
 }
 
-// ── EQUATION NAVIGATION ───────────────────────────────────────
+// ── EQUATION ERROR EXPLAINER ──────────────────────────────────
+async function explainEquationError(diff) {
+  // Remove any existing modal
+  document.getElementById('eqErrorModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'eqErrorModal';
+  modal.className = 'col-help-tooltip';
+  modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:900;max-width:400px;width:90%;';
+  modal.innerHTML = `
+    <div class="col-help-title">⚠ Accounting Equation Imbalance</div>
+    <div class="col-help-text" id="eqErrText">✨ AI is analysing your books…</div>
+    <div class="col-help-actions" style="margin-top:12px;">
+      <button class="col-help-close" onclick="document.getElementById('eqErrorModal')?.remove()">Close</button>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'eqErrorOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:899;';
+  overlay.onclick = () => { modal.remove(); overlay.remove(); };
+  document.body.insertBefore(overlay, modal);
+
+  try {
+    const { data: { session } } = await bkDb.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content:
+          `In my bookkeeping software, the accounting equation (Capital + Liabilities = Assets) shows a difference of ${fmt(diff)}. This means my books are not balanced. Please explain in simple terms what this means and give me 3 specific steps to find and fix the problem. Be concise and beginner-friendly.`
+        }],
+        system: 'You are a bookkeeping tutor. Give clear, practical advice for beginners. Keep response under 200 words.',
+      }),
+    });
+    const json = await res.json();
+    const answer = json.reply || json.content || 'Could not get explanation. Please check your entries.';
+    const el = document.getElementById('eqErrText');
+    if (el) el.textContent = answer;
+  } catch(e) {
+    const el = document.getElementById('eqErrText');
+    if (el) el.textContent = 'Could not connect to AI. The imbalance means one side of a transaction was recorded without the other. Check your Master Records for entries where the debit and credit amounts do not match.';
+  }
+}
+
+// ── DRAGGABLE ROWS ────────────────────────────────────────────
+let draggedRowIdx = null;
+
+function initDragRows() {
+  const tbody = document.getElementById('ledgerBody');
+  if (!tbody) return;
+  tbody.querySelectorAll('tr[draggable]').forEach(tr => {
+    tr.addEventListener('dragstart', e => {
+      draggedRowIdx = parseInt(tr.id.replace('row_',''));
+      tr.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    tr.addEventListener('dragend', () => {
+      tr.classList.remove('dragging');
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+    tr.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      tr.classList.add('drag-over');
+    });
+    tr.addEventListener('dragleave', () => tr.classList.remove('drag-over'));
+    tr.addEventListener('drop', e => {
+      e.preventDefault();
+      tr.classList.remove('drag-over');
+      const targetIdx = parseInt(tr.id.replace('row_',''));
+      if (draggedRowIdx === null || draggedRowIdx === targetIdx) return;
+      const moved = rows.splice(draggedRowIdx, 1)[0];
+      rows.splice(targetIdx, 0, moved);
+      recalcBalances();
+      renderRows();
+      draggedRowIdx = null;
+    });
+  });
+}
+
+// Make ledger rows draggable in renderRows — update the tr element
+// (applied via the HTML template in renderRows which now includes draggable)
+
+// ── ACCOUNT SETUP WIZARD ──────────────────────────────────────
+let setupProfile = {};
+let setupStep    = 1;
+const TOTAL_STEPS = 7;
+
+const INDUSTRIES = [
+  'Agriculture & Food','Construction & Real Estate','Education',
+  'Entertainment & Media','Financial Services','Health & Medical',
+  'Hospitality & Tourism','Information Technology','Legal Services',
+  'Manufacturing','Oil & Gas','Retail & E-commerce','Sports & Fitness',
+  'Transportation & Logistics','Other'
+];
+
+const INDUSTRY_OFFERINGS = {
+  'Agriculture & Food': ['Crop farming','Livestock','Poultry','Fish farming','Food processing','Agro-trading','Organic produce'],
+  'Construction & Real Estate': ['Building construction','Civil engineering','Interior design','Electrical installation','Plumbing','Property development','Estate agency'],
+  'Education': ['Nursery/Primary school','Secondary school','Tutorial centre','Training institute','Online courses','Vocational training','University'],
+  'Entertainment & Media': ['Music production','Film production','Event planning','Photography','Videography','Comedy/Performance','Media/Publishing'],
+  'Financial Services': ['Investment advisory','Insurance','Microfinance','Money transfer','Forex trading','Accounting services','Auditing'],
+  'Health & Medical': ['Hospital/Clinic','Pharmacy','Laboratory','Physiotherapy','Dental care','Mental health','Medical equipment supply'],
+  'Hospitality & Tourism': ['Hotel/Lodging','Restaurant/Canteen','Catering','Event venue','Tourism agency','Travel agency','Bar/Lounge'],
+  'Information Technology': ['Software development','Website design','IT support','Data analytics','Digital marketing','Cybersecurity','Mobile apps'],
+  'Legal Services': ['Law firm','Notary services','Legal consulting','Mediation & arbitration','IP services'],
+  'Manufacturing': ['Food manufacturing','Textiles','Electronics assembly','Furniture','Chemicals','Plastics','Printing'],
+  'Oil & Gas': ['Oil trading','Gas distribution','Petroleum retail','Drilling services','Pipeline services','Lubricants'],
+  'Retail & E-commerce': ['General merchandise','Supermarket','Fashion & Clothing','Electronics retail','Online store','Wholesale','Pharmacy/Chemist'],
+  'Sports & Fitness': ['Sports academy','Gym/Fitness centre','Sports equipment retail','Sports management','Sports events','Personal training'],
+  'Transportation & Logistics': ['Road haulage','Logistics & warehousing','Courier services','Car hire','Ride sharing','Shipping & freight'],
+  'Other': ['Professional services','Consulting','Non-profit','Government services','Mixed/Multiple industries'],
+};
+
+async function checkSetupAndInit() {
+  // Check if business profile exists
+  const { data: profile } = await bkDb.from('bk_business_profiles')
+    .select('*').eq('user_id', bkUser.id).single();
+
+  if (!profile || !profile.setup_complete) {
+    showSetupWizard();
+  } else {
+    setupProfile = profile;
+    showDashboard();
+  }
+}
+
+function showSetupWizard(step) {
+  setupStep = step || 1;
+  activeType    = null;
+  activeAccount = null;
+  const content = document.getElementById('bkContent');
+
+  const progressPct = Math.round((setupStep/TOTAL_STEPS)*100);
+
+  let stepHTML = '';
+
+  if (setupStep === 1) {
+    stepHTML = `
+      <div class="setup-heading">What type of account do you want to set up?</div>
+      <div class="setup-options">
+        <div class="setup-option ${setupProfile.account_type==='business'?'selected':''}"
+          onclick="setupSelect('account_type','business');showSetupWizard(2)">
+          <div class="setup-option-icon">🏢</div>
+          <div class="setup-option-title">Business Account</div>
+          <div class="setup-option-desc">For sole traders, companies, partnerships and organisations</div>
+        </div>
+        <div class="setup-option disabled" title="Coming soon">
+          <div class="setup-option-icon">👤</div>
+          <div class="setup-option-title">Personal Account</div>
+          <div class="setup-option-desc">Coming soon — personal finance tracking</div>
+          <div style="font-size:0.68rem;color:var(--gold);margin-top:6px;">Coming Soon</div>
+        </div>
+      </div>`;
+
+  } else if (setupStep === 2) {
+    const types = [
+      { val:'sole_proprietorship', icon:'👤', label:'Sole Proprietorship', desc:'One owner, personally liable' },
+      { val:'company',             icon:'🏢', label:'Limited Company',      desc:'Separate legal entity, limited liability' },
+      { val:'partnership',         icon:'🤝', label:'Partnership',          desc:'Two or more people sharing ownership' },
+      { val:'plc',                 icon:'📈', label:'Public Limited Company',desc:'Shares traded publicly' },
+      { val:'joint_venture',       icon:'🔗', label:'Joint Venture',        desc:'Two entities collaborating on a project' },
+      { val:'government',          icon:'🏛️', label:'Government Account',   desc:'Public sector or government entity' },
+    ];
+    stepHTML = `
+      <div class="setup-heading">What type of business?</div>
+      <div class="setup-options" style="grid-template-columns:repeat(3,1fr);">
+        ${types.map(t=>`
+        <div class="setup-option ${setupProfile.business_type===t.val?'selected':''}"
+          onclick="setupSelect('business_type','${t.val}');showSetupWizard(3)">
+          <div class="setup-option-icon">${t.icon}</div>
+          <div class="setup-option-title">${t.label}</div>
+          <div class="setup-option-desc">${t.desc}</div>
+        </div>`).join('')}
+      </div>`;
+
+  } else if (setupStep === 3) {
+    stepHTML = `
+      <div class="setup-heading">What industry are you in?</div>
+      <div class="setup-industry-grid">
+        ${INDUSTRIES.map(ind=>`
+        <div class="setup-industry-item ${setupProfile.industry===ind?'selected':''}"
+          onclick="setupSelect('industry','${ind}');showSetupWizard(4)">
+          ${ind}
+        </div>`).join('')}
+      </div>`;
+
+  } else if (setupStep === 4) {
+    stepHTML = `
+      <div class="setup-heading">Where is your business located?</div>
+      <div class="setup-form">
+        <div class="setup-form-row">
+          <div class="setup-field">
+            <label class="setup-label">Country *</label>
+            <input class="setup-input" type="text" id="sf_country" value="${setupProfile.country||''}" placeholder="e.g. Nigeria"/>
+          </div>
+          <div class="setup-field">
+            <label class="setup-label">State / Province</label>
+            <input class="setup-input" type="text" id="sf_state" value="${setupProfile.state_province||''}" placeholder="e.g. Lagos"/>
+          </div>
+        </div>
+        <div class="setup-form-row">
+          <div class="setup-field">
+            <label class="setup-label">City</label>
+            <input class="setup-input" type="text" id="sf_city" value="${setupProfile.city||''}" placeholder="e.g. Ikeja"/>
+          </div>
+          <div class="setup-field">
+            <label class="setup-label">Town</label>
+            <input class="setup-input" type="text" id="sf_town" value="${setupProfile.town||''}" placeholder="e.g. Allen Avenue area"/>
+          </div>
+        </div>
+        <div class="setup-form-row">
+          <div class="setup-field">
+            <label class="setup-label">Village (if applicable)</label>
+            <input class="setup-input" type="text" id="sf_village" value="${setupProfile.village||''}" placeholder="Village name"/>
+          </div>
+          <div class="setup-field">
+            <label class="setup-label">Street / Address</label>
+            <input class="setup-input" type="text" id="sf_street" value="${setupProfile.street||''}" placeholder="Street name or number"/>
+          </div>
+        </div>
+        <button class="bk-btn bk-btn-gold" style="margin-top:16px;padding:12px 32px;" onclick="saveLocationStep()">Continue →</button>
+      </div>`;
+
+  } else if (setupStep === 5) {
+    stepHTML = `
+      <div class="setup-heading">What is the name of your business?</div>
+      <div class="setup-form">
+        <div class="setup-field" style="max-width:480px;">
+          <label class="setup-label">Business Name *</label>
+          <input class="setup-input" type="text" id="sf_bizname" value="${setupProfile.business_name||''}"
+            placeholder="Enter your business name" style="font-size:1rem;padding:14px;"/>
+        </div>
+        <button class="bk-btn bk-btn-gold" style="margin-top:20px;padding:12px 32px;" onclick="saveNameStep()">Continue →</button>
+      </div>`;
+
+  } else if (setupStep === 6) {
+    const offerings = INDUSTRY_OFFERINGS[setupProfile.industry] || INDUSTRY_OFFERINGS['Other'];
+    const selected  = (setupProfile.specific_offerings||'').split(',').filter(Boolean);
+    stepHTML = `
+      <div class="setup-heading">What does <strong style="color:var(--gold)">${setupProfile.business_name||'your business'}</strong> offer?</div>
+      <div class="setup-options" style="grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
+        <div class="setup-option ${setupProfile.offers==='products'?'selected':''}"
+          onclick="setupSelect('offers','products');document.querySelectorAll('.setup-option[data-offers]').forEach(el=>el.classList.remove('selected'));this.classList.add('selected');" data-offers>
+          <div class="setup-option-icon">📦</div>
+          <div class="setup-option-title">Products</div>
+        </div>
+        <div class="setup-option ${setupProfile.offers==='services'?'selected':''}"
+          onclick="setupSelect('offers','services');document.querySelectorAll('.setup-option[data-offers]').forEach(el=>el.classList.remove('selected'));this.classList.add('selected');" data-offers>
+          <div class="setup-option-icon">🛠️</div>
+          <div class="setup-option-title">Services</div>
+        </div>
+        <div class="setup-option ${setupProfile.offers==='both'?'selected':''}"
+          onclick="setupSelect('offers','both');document.querySelectorAll('.setup-option[data-offers]').forEach(el=>el.classList.remove('selected'));this.classList.add('selected');" data-offers>
+          <div class="setup-option-icon">⚡</div>
+          <div class="setup-option-title">Both</div>
+        </div>
+      </div>
+      <div class="setup-heading" style="font-size:0.85rem;margin-bottom:12px;">Select what specifically you offer (choose all that apply):</div>
+      <div class="setup-industry-grid" style="margin-bottom:20px;">
+        ${offerings.map(off=>`
+        <div class="setup-industry-item ${selected.includes(off)?'selected':''}"
+          onclick="toggleOffering(this,'${off.replace(/'/g,"\\'")}')">
+          ${off}
+        </div>`).join('')}
+      </div>
+      <button class="bk-btn bk-btn-gold" style="padding:12px 32px;" onclick="showSetupWizard(7)">Continue →</button>`;
+
+  } else if (setupStep === 7) {
+    stepHTML = `
+      <div class="setup-heading">Is this a brand new business or an existing one?</div>
+      <div class="setup-options">
+        <div class="setup-option ${setupProfile.is_new_business===true?'selected':''}"
+          onclick="setupSelect('is_new_business',true);showSetupWizard(8)">
+          <div class="setup-option-icon">🌱</div>
+          <div class="setup-option-title">Brand New Business</div>
+          <div class="setup-option-desc">Starting fresh — no previous transactions to worry about</div>
+        </div>
+        <div class="setup-option ${setupProfile.is_new_business===false?'selected':''}"
+          onclick="setupSelect('is_new_business',false);showSetupWizard(8)">
+          <div class="setup-option-icon">🏗️</div>
+          <div class="setup-option-title">Existing Business</div>
+          <div class="setup-option-desc">Already trading — I need to bring my books up to date</div>
+        </div>
+      </div>`;
+
+  } else if (setupStep === 8) {
+    if (setupProfile.is_new_business === false) {
+      stepHTML = `
+        <div class="setup-heading">Great — let's get your existing business set up.</div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:24px;max-width:560px;margin-bottom:20px;">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--gold);margin-bottom:12px;">How we handle existing businesses:</div>
+          <div style="font-size:0.8rem;color:var(--off);line-height:1.7;">
+            <p style="margin-bottom:10px;">You don't need to enter every historical transaction. Instead, you'll set an <strong style="color:var(--white);">opening balance date</strong> and enter what each account holds on that date.</p>
+            <p style="margin-bottom:10px;"><strong style="color:var(--white);">Example:</strong> If your business started 3 years ago and you're starting records from 1 January 2026, you simply enter what your cash balance, stock value, loans, and capital were on 1 January 2026. That becomes your starting point.</p>
+            <p>Going forward, all new transactions are recorded normally. Historical transactions are summarised into those opening balances.</p>
+          </div>
+        </div>
+        <div class="setup-field" style="max-width:360px;margin-bottom:20px;">
+          <label class="setup-label">How many years has the business been operating?</label>
+          <input class="setup-input" type="number" id="sf_years" min="1" max="100"
+            value="${setupProfile.years_operating||''}" placeholder="e.g. 3"/>
+        </div>
+        <button class="bk-btn bk-btn-gold" style="padding:12px 32px;" onclick="completeSetup()">Set Up My Books →</button>`;
+    } else {
+      // New business — go straight to completion
+      completeSetup();
+      return;
+    }
+  }
+
+  content.innerHTML = `
+    <div style="max-width:720px;margin:0 auto;padding:40px 24px;">
+      <div style="margin-bottom:28px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">Setup — Step ${setupStep} of ${TOTAL_STEPS}</div>
+          ${setupStep > 1 ? `<button class="bk-btn bk-btn-outline" style="font-size:0.72rem;padding:5px 12px;" onclick="showSetupWizard(${setupStep-1})">← Back</button>` : ''}
+        </div>
+        <div style="height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;width:${progressPct}%;background:var(--gold);border-radius:2px;transition:width 0.3s;"></div>
+        </div>
+      </div>
+      ${stepHTML}
+    </div>`;
+}
+
+function setupSelect(field, value) {
+  setupProfile[field] = value;
+}
+
+function toggleOffering(el, offering) {
+  el.classList.toggle('selected');
+  const selected = Array.from(document.querySelectorAll('.setup-industry-item.selected'))
+    .map(e => e.textContent.trim());
+  setupProfile.specific_offerings = selected.join(',');
+}
+
+function saveLocationStep() {
+  setupProfile.country        = document.getElementById('sf_country')?.value.trim();
+  setupProfile.state_province = document.getElementById('sf_state')?.value.trim();
+  setupProfile.city           = document.getElementById('sf_city')?.value.trim();
+  setupProfile.town           = document.getElementById('sf_town')?.value.trim();
+  setupProfile.village        = document.getElementById('sf_village')?.value.trim();
+  setupProfile.street         = document.getElementById('sf_street')?.value.trim();
+  if (!setupProfile.country) {
+    document.getElementById('sf_country').style.borderColor='var(--red)';
+    return;
+  }
+  showSetupWizard(5);
+}
+
+function saveNameStep() {
+  const name = document.getElementById('sf_bizname')?.value.trim();
+  if (!name) { document.getElementById('sf_bizname').style.borderColor='var(--red)'; return; }
+  setupProfile.business_name = name;
+  showSetupWizard(6);
+}
+
+async function completeSetup() {
+  if (document.getElementById('sf_years')) {
+    setupProfile.years_operating = parseInt(document.getElementById('sf_years')?.value)||null;
+  }
+  setupProfile.setup_complete = true;
+
+  const content = document.getElementById('bkContent');
+  content.innerHTML = '<div class="bk-loading">Saving your profile…</div>';
+
+  const { error } = await bkDb.from('bk_business_profiles').upsert({
+    user_id:            bkUser.id,
+    account_type:       setupProfile.account_type       || 'business',
+    business_type:      setupProfile.business_type      || null,
+    industry:           setupProfile.industry           || null,
+    country:            setupProfile.country            || null,
+    state_province:     setupProfile.state_province     || null,
+    city:               setupProfile.city               || null,
+    town:               setupProfile.town               || null,
+    village:            setupProfile.village            || null,
+    street:             setupProfile.street             || null,
+    business_name:      setupProfile.business_name      || null,
+    offers:             setupProfile.offers             || null,
+    specific_offerings: setupProfile.specific_offerings || null,
+    is_new_business:    setupProfile.is_new_business !== false,
+    years_operating:    setupProfile.years_operating    || null,
+    setup_complete:     true,
+    updated_at:         new Date().toISOString(),
+  }, { onConflict: 'user_id' });
+
+  if (error) {
+    content.innerHTML = `<div class="bk-empty"><div class="bk-empty-icon">⚠️</div><p>${error.message}</p></div>`;
+    return;
+  }
+
+  // Show completion screen
+  content.innerHTML = `
+    <div style="text-align:center;padding:60px 24px;max-width:560px;margin:0 auto;">
+      <div style="font-size:3rem;margin-bottom:16px;">🎉</div>
+      <h2 style="font-size:1.4rem;font-weight:900;color:var(--white);margin-bottom:10px;">
+        ${setupProfile.business_name || 'Your business'} is set up!
+      </h2>
+      <p style="font-size:0.85rem;color:var(--muted);line-height:1.65;margin-bottom:8px;">
+        ${setupProfile.is_new_business===false
+          ? 'Your accounts are ready. Start by setting opening balances for each account — go to Records and enter your opening balance when creating each account.'
+          : 'Your bookkeeping is ready to go. Start recording transactions in the Master Records (General Journal) or open individual ledger accounts from the Records menu.'}
+      </p>
+      <p style="font-size:0.78rem;color:var(--gold);margin-bottom:28px;">
+        ✨ Tip: Always use the AI tutor — click any column header for instant help.
+      </p>
+      <button class="bk-btn bk-btn-gold" style="padding:14px 40px;font-size:0.95rem;" onclick="showDashboard()">
+        Go to My Dashboard →
+      </button>
+    </div>`;
+}
+
+// ── SETTINGS — ADD BUSINESS PROFILE SECTION ───────────────────
 function eqNav(type) {
   const typeAccounts = accounts[type];
   if (typeAccounts && typeAccounts.length > 0) {
