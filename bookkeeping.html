@@ -1012,109 +1012,345 @@ async function refreshEquation() {
 async function showDashboard() {
   setActiveNav('navDash');
   document.getElementById('recordsDD').classList.add('hidden');
-  const content=document.getElementById('bkContent');
-  content.innerHTML='<div class="bk-loading">Loading dashboard…</div>';
+  const content = document.getElementById('bkContent');
+  content.innerHTML = '<div class="bk-loading">Loading dashboard…</div>';
 
-  const { data } = await bkDb.from('bk_transactions')
-    .select('record_type,debit,credit').eq('user_id',bkUser.id);
+  // Fetch all transactions with full detail
+  const { data: txns } = await bkDb.from('bk_transactions')
+    .select('record_type,account_name,debit,credit,txn_date,payee,payer,narration')
+    .eq('user_id', bkUser.id);
 
-  let income=0,expenditure=0,capital=0,liabilities=0,assets=0;
-  (data||[]).forEach(r=>{
-    const dr=parseFloat(r.debit)||0, cr=parseFloat(r.credit)||0;
-    if(r.record_type==='income')      income      += cr-dr;
-    if(r.record_type==='expenditure') expenditure += dr-cr;
-    if(r.record_type==='capital')     capital     += cr-dr;
-    if(r.record_type==='liability')   liabilities += cr-dr;
-    if(r.record_type==='asset')       assets      += dr-cr;
+  const rows = txns || [];
+
+  // ── TOTALS ───────────────────────────────────────────────────
+  let income=0, expenditure=0, capital=0, liabilities=0, assets=0;
+  let cashBalance=0, debtors=0, creditors=0;
+  const expByCategory = {};
+  const incByCategory = {};
+  const monthlyIncome = {};
+  const monthlyExp    = {};
+
+  rows.forEach(r => {
+    const dr = parseFloat(r.debit)||0;
+    const cr = parseFloat(r.credit)||0;
+    const month = r.txn_date ? r.txn_date.slice(0,7) : null;
+
+    if (r.record_type==='income') {
+      const net = cr-dr;
+      income += net;
+      incByCategory[r.account_name] = (incByCategory[r.account_name]||0) + net;
+      if (month) monthlyIncome[month] = (monthlyIncome[month]||0) + net;
+    }
+    if (r.record_type==='expenditure') {
+      const net = dr-cr;
+      expenditure += net;
+      expByCategory[r.account_name] = (expByCategory[r.account_name]||0) + net;
+      if (month) monthlyExp[month] = (monthlyExp[month]||0) + net;
+    }
+    if (r.record_type==='capital')   capital     += cr-dr;
+    if (r.record_type==='liability') liabilities += cr-dr;
+    if (r.record_type==='asset')     assets      += dr-cr;
+
+    // Cash and Bank specifically
+    if (r.record_type==='asset' && r.account_name==='Cash and Bank')
+      cashBalance += dr-cr;
+    // Trade Debtors
+    if (r.record_type==='asset' && r.account_name==='Trade Debtors')
+      debtors += dr-cr;
+    // Trade Creditors
+    if (r.record_type==='liability' && r.account_name==='Trade Creditors')
+      creditors += cr-dr;
   });
-  const profit=income-expenditure;
 
-  content.innerHTML=`
-    <div class="bk-content-header">
-      <div class="bk-content-title">DASHBOARD</div>
-      <div class="bk-header-actions">
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
-      </div>
-    </div>
-    <div style="padding:24px;">
-      <div class="summary-cards">
-        <div class="summary-card">
-          <div class="summary-card-label">Total Income</div>
-          <div class="summary-card-value green">${fmt(income)}</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-card-label">Total Expenditure</div>
-          <div class="summary-card-value red">${fmt(expenditure)}</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-card-label">${profit>=0?'Net Profit':'Net Loss'}</div>
-          <div class="summary-card-value ${profit>=0?'green':'red'}">${fmt(Math.abs(profit))}</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-card-label">Total Assets</div>
-          <div class="summary-card-value gold">${fmt(assets)}</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-card-label">Total Liabilities</div>
-          <div class="summary-card-value">${fmt(liabilities)}</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-card-label">Capital</div>
-          <div class="summary-card-value">${fmt(capital)}</div>
-        </div>
-      </div>
-      <div class="dashboard-grid">
-        <div class="chart-card">
-          <div class="chart-card-title">Income vs Expenditure</div>
-          <div class="chart-wrap"><canvas id="chartIE"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-card-title">Balance Sheet Overview</div>
-          <div class="chart-wrap"><canvas id="chartBS"></canvas></div>
-        </div>
-      </div>
-    </div>`;
+  const profit       = income - expenditure;
+  const profitMargin = income > 0 ? (profit/income)*100 : 0;
+
+  // ── HEALTH SCORE ─────────────────────────────────────────────
+  function healthScore() {
+    if (rows.length === 0) return { grade:'—', label:'No data yet', color:'var(--muted)' };
+    let score = 0;
+    if (profitMargin >= 20)  score += 40;
+    else if (profitMargin >= 10) score += 25;
+    else if (profitMargin >= 0)  score += 10;
+    if (cashBalance > 0)     score += 20;
+    if (debtors < income*0.3) score += 20;
+    if (liabilities < assets*0.5) score += 20;
+    if (score >= 80) return { grade:'A', label:'Excellent', color:'#1a7a4a' };
+    if (score >= 60) return { grade:'B', label:'Good',      color:'#16a34a' };
+    if (score >= 40) return { grade:'C', label:'Monitor',   color:'#b45309' };
+    return                  { grade:'D', label:'Needs Attention', color:'#c0392b' };
+  }
+  const health = healthScore();
+
+  // ── MONTHLY TREND DATA ────────────────────────────────────────
+  const allMonths = [...new Set([...Object.keys(monthlyIncome), ...Object.keys(monthlyExp)])]
+    .sort().slice(-6);
+
+  // ── DEBTOR / CREDITOR BREAKDOWN ───────────────────────────────
+  const debtorMap = {}, creditorMap = {};
+  rows.forEach(r => {
+    if (r.record_type==='asset' && r.account_name==='Trade Debtors') {
+      const name = r.payer || r.payee || 'Unknown';
+      debtorMap[name] = (debtorMap[name]||0) + (parseFloat(r.debit)||0) - (parseFloat(r.credit)||0);
+    }
+    if (r.record_type==='liability' && r.account_name==='Trade Creditors') {
+      const name = r.payee || r.payer || 'Unknown';
+      creditorMap[name] = (creditorMap[name]||0) + (parseFloat(r.credit)||0) - (parseFloat(r.debit)||0);
+    }
+  });
+  const debtorList   = Object.entries(debtorMap).filter(([,v])=>v>0.01).sort((a,b)=>b[1]-a[1]);
+  const creditorList = Object.entries(creditorMap).filter(([,v])=>v>0.01).sort((a,b)=>b[1]-a[1]);
+
+  // ── EXPENSE CATEGORIES ────────────────────────────────────────
+  const topExp = Object.entries(expByCategory).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,6);
 
   // Destroy old charts
   Object.values(charts).forEach(c=>c.destroy());
-  charts={};
+  charts = {};
 
-  // Income vs Expenditure bar chart
-  charts.ie = new Chart(document.getElementById('chartIE'),{
-    type:'bar',
-    data:{
-      labels:['Income','Expenditure','Net '+( profit>=0?'Profit':'Loss')],
-      datasets:[{
-        data:[income, expenditure, Math.abs(profit)],
-        backgroundColor:['rgba(26,122,74,0.7)','rgba(192,57,43,0.7)',profit>=0?'rgba(212,175,55,0.7)':'rgba(192,57,43,0.4)'],
-        borderColor:['#1a7a4a','#c0392b',profit>=0?'#d4af37':'#c0392b'],
-        borderWidth:1, borderRadius:5,
-      }]
+  // ── RENDER ───────────────────────────────────────────────────
+  content.innerHTML = `
+    <div class="bk-content-header">
+      <div class="bk-content-title">BUSINESS DASHBOARD</div>
+      <div class="bk-header-actions">
+        <span style="font-size:0.72rem;color:var(--muted);">Last updated: ${new Date().toLocaleTimeString()}</span>
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+        <button class="bk-btn bk-btn-gold" onclick="showDashboard()">↻ Refresh</button>
+      </div>
+    </div>
+    <div style="padding:20px 24px;">
+
+      <!-- HEALTH SCORE + KEY METRICS -->
+      <div style="display:grid;grid-template-columns:160px 1fr;gap:16px;margin-bottom:20px;">
+        <!-- Health Score -->
+        <div class="dash-health-card" style="background:var(--surface2);border:2px solid ${health.color};border-radius:12px;padding:20px;text-align:center;">
+          <div style="font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Business Health</div>
+          <div style="font-size:3.5rem;font-weight:900;color:${health.color};line-height:1;">${health.grade}</div>
+          <div style="font-size:0.78rem;font-weight:700;color:${health.color};margin-top:4px;">${health.label}</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:8px;line-height:1.5;">Profit margin<br><strong style="color:var(--white)">${profitMargin.toFixed(1)}%</strong></div>
+        </div>
+        <!-- Key Metrics Grid -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+          <div class="summary-card" style="cursor:pointer;" onclick="showReport('pl')">
+            <div class="summary-card-label">Total Income</div>
+            <div class="summary-card-value green">${fmt(income)}</div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:4px;">↗ Click for P&L</div>
+          </div>
+          <div class="summary-card" style="cursor:pointer;" onclick="showReport('pl')">
+            <div class="summary-card-label">Total Expenditure</div>
+            <div class="summary-card-value red">${fmt(expenditure)}</div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:4px;">↗ Click for P&L</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-card-label">${profit>=0?'Net Profit':'Net Loss'}</div>
+            <div class="summary-card-value ${profit>=0?'green':'red'}">${fmt(Math.abs(profit))}</div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:4px;">Margin: ${profitMargin.toFixed(1)}%</div>
+          </div>
+          <div class="summary-card" style="cursor:pointer;" onclick="eqNav('asset')">
+            <div class="summary-card-label">Cash & Bank</div>
+            <div class="summary-card-value ${cashBalance>=0?'gold':'red'}">${fmt(cashBalance)}</div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:4px;">↗ View account</div>
+          </div>
+          <div class="summary-card" style="cursor:pointer;" onclick="eqNav('asset')">
+            <div class="summary-card-label">Debtors (Owed to You)</div>
+            <div class="summary-card-value ${debtors>0?'gold':'green'}">${fmt(debtors)}</div>
+            <div style="font-size:0.68rem;color:${debtors>income*0.3?'#c0392b':'var(--muted)'};margin-top:4px;">
+              ${debtors>income*0.3?'⚠ High — chase payments':'On track'}
+            </div>
+          </div>
+          <div class="summary-card" style="cursor:pointer;" onclick="eqNav('liability')">
+            <div class="summary-card-label">Creditors (You Owe)</div>
+            <div class="summary-card-value ${creditors>0?'#f97316':'green'}">${fmt(creditors)}</div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:4px;">Outstanding payables</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW -->
+      <div class="dashboard-grid" style="margin-bottom:20px;">
+        <div class="chart-card">
+          <div class="chart-card-title">Revenue Trend — Last 6 Months</div>
+          <div class="chart-wrap"><canvas id="chartTrend"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">Expense Breakdown by Category</div>
+          <div class="chart-wrap"><canvas id="chartExp"></canvas></div>
+        </div>
+      </div>
+
+      <!-- DEBTORS & CREDITORS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <!-- Debtors -->
+        <div class="chart-card">
+          <div class="chart-card-title">Who Owes You (Debtors)</div>
+          ${debtorList.length === 0
+            ? `<div style="text-align:center;padding:24px;font-size:0.82rem;color:var(--muted);">No outstanding debtors</div>`
+            : debtorList.map(([name,amt])=>`
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+                <span style="font-size:0.82rem;color:var(--off);">${name}</span>
+                <span style="font-size:0.82rem;font-weight:700;color:var(--gold);">${fmt(amt)}</span>
+              </div>`).join('')
+          }
+          ${debtorList.length > 0 ? `
+            <div style="display:flex;justify-content:space-between;padding:9px 0;border-top:2px solid var(--gold);">
+              <span style="font-size:0.78rem;font-weight:700;color:var(--muted);">TOTAL</span>
+              <span style="font-size:0.82rem;font-weight:800;color:var(--gold);">${fmt(debtors)}</span>
+            </div>` : ''}
+        </div>
+        <!-- Creditors -->
+        <div class="chart-card">
+          <div class="chart-card-title">Who You Owe (Creditors)</div>
+          ${creditorList.length === 0
+            ? `<div style="text-align:center;padding:24px;font-size:0.82rem;color:var(--muted);">No outstanding creditors</div>`
+            : creditorList.map(([name,amt])=>`
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+                <span style="font-size:0.82rem;color:var(--off);">${name}</span>
+                <span style="font-size:0.82rem;font-weight:700;color:#f97316;">${fmt(amt)}</span>
+              </div>`).join('')
+          }
+          ${creditorList.length > 0 ? `
+            <div style="display:flex;justify-content:space-between;padding:9px 0;border-top:2px solid #f97316;">
+              <span style="font-size:0.78rem;font-weight:700;color:var(--muted);">TOTAL</span>
+              <span style="font-size:0.82rem;font-weight:800;color:#f97316;">${fmt(creditors)}</span>
+            </div>` : ''}
+        </div>
+      </div>
+
+      <!-- INSIGHTS PANEL -->
+      <div class="chart-card">
+        <div class="chart-card-title">Business Insights</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+          ${generateInsights(income, expenditure, profit, profitMargin, cashBalance, debtors, creditors, assets, liabilities).map(i=>`
+            <div style="background:var(--surface2);border-radius:8px;padding:14px;border-left:3px solid ${i.color};">
+              <div style="font-size:0.7rem;font-weight:700;color:${i.color};margin-bottom:4px;">${i.label}</div>
+              <div style="font-size:0.8rem;color:var(--off);line-height:1.5;">${i.text}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+    </div>`;
+
+  // ── CHARTS ────────────────────────────────────────────────────
+  // Revenue Trend
+  const sym = CURRENCIES[activeCurrency].symbol;
+  charts.trend = new Chart(document.getElementById('chartTrend'), {
+    type: 'line',
+    data: {
+      labels: allMonths.map(m => {
+        const [y,mo] = m.split('-');
+        return new Date(y,mo-1).toLocaleString('default',{month:'short',year:'2-digit'});
+      }),
+      datasets: [
+        {
+          label: 'Income',
+          data: allMonths.map(m => monthlyIncome[m]||0),
+          borderColor: '#1a7a4a', backgroundColor: 'rgba(26,122,74,0.1)',
+          tension: 0.4, fill: true, pointRadius: 4,
+        },
+        {
+          label: 'Expenditure',
+          data: allMonths.map(m => monthlyExp[m]||0),
+          borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,0.05)',
+          tension: 0.4, fill: false, pointRadius: 4,
+        },
+      ],
     },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false} },
-      scales:{ y:{ ticks:{ color:'#6b7a99', callback:v=>CURRENCIES[activeCurrency].symbol+v.toLocaleString() }, grid:{color:'#252d3d'} }, x:{ ticks:{color:'#c8d3e8'}, grid:{display:false} } }
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color:'#c8d3e8', font:{size:10} } } },
+      scales: {
+        y: { ticks:{ color:'#6b7a99', callback:v=>sym+v.toLocaleString() }, grid:{color:'#252d3d'} },
+        x: { ticks:{ color:'#c8d3e8' }, grid:{display:false} }
+      }
     }
   });
 
-  // Balance sheet doughnut
-  charts.bs = new Chart(document.getElementById('chartBS'),{
-    type:'doughnut',
-    data:{
-      labels:['Assets','Liabilities','Capital'],
-      datasets:[{
-        data:[Math.max(0,assets),Math.max(0,liabilities),Math.max(0,capital)],
-        backgroundColor:['rgba(212,175,55,0.7)','rgba(249,115,22,0.7)','rgba(96,165,250,0.7)'],
-        borderColor:['#d4af37','#f97316','#60a5fa'],
-        borderWidth:1,
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{color:'#c8d3e8', font:{size:11}} } }
+  // Expense Breakdown
+  if (topExp.length > 0) {
+    charts.exp = new Chart(document.getElementById('chartExp'), {
+      type: 'doughnut',
+      data: {
+        labels: topExp.map(([name])=>name),
+        datasets: [{
+          data: topExp.map(([,v])=>v),
+          backgroundColor: [
+            'rgba(212,175,55,0.8)','rgba(249,115,22,0.8)','rgba(239,68,68,0.8)',
+            'rgba(96,165,250,0.8)','rgba(52,211,153,0.8)','rgba(167,139,250,0.8)',
+          ],
+          borderWidth: 1,
+          borderColor: 'var(--surface)',
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position:'right', labels:{ color:'#c8d3e8', font:{size:10}, boxWidth:12 } },
+          tooltip: { callbacks: { label: ctx => ` ${sym}${ctx.parsed.toLocaleString()}` } }
+        }
+      }
+    });
+  } else {
+    document.getElementById('chartExp').parentElement.innerHTML =
+      '<div style="text-align:center;padding:40px;color:var(--muted);font-size:0.82rem;">Add expenditure transactions to see breakdown</div>';
+  }
+}
+
+function generateInsights(income, expenditure, profit, margin, cash, debtors, creditors, assets, liabilities) {
+  const insights = [];
+  const sym = CURRENCIES[activeCurrency].symbol;
+
+  // Profit margin insight
+  if (income === 0) {
+    insights.push({ label:'NO INCOME YET', color:'var(--muted)', text:'Start recording your income transactions to see profitability insights.' });
+  } else if (margin >= 20) {
+    insights.push({ label:'✓ HEALTHY MARGIN', color:'#1a7a4a', text:`Your profit margin is ${margin.toFixed(1)}% — above the healthy 20% threshold. Keep expenses in check.` });
+  } else if (margin > 0) {
+    insights.push({ label:'⚠ LOW MARGIN', color:'#b45309', text:`Margin of ${margin.toFixed(1)}% is below 20%. Review your largest expense categories.` });
+  } else {
+    insights.push({ label:'✗ LOSS MAKING', color:'#c0392b', text:`Expenditure exceeds income by ${sym}${Math.abs(profit).toLocaleString()}. Urgent action required.` });
+  }
+
+  // Cash insight
+  if (cash > expenditure * 3) {
+    insights.push({ label:'✓ STRONG CASH', color:'#1a7a4a', text:'Cash reserves cover more than 3 months of expenses. Business is liquid and resilient.' });
+  } else if (cash > 0) {
+    insights.push({ label:'⚠ WATCH CASH', color:'#b45309', text:'Cash reserves are positive but limited. Monitor closely, especially before large payments.' });
+  } else {
+    insights.push({ label:'✗ CASH WARNING', color:'#c0392b', text:'Cash balance is negative. Prioritise collections and delay non-essential payments immediately.' });
+  }
+
+  // Debtors insight
+  if (debtors > income * 0.3 && income > 0) {
+    insights.push({ label:'⚠ HIGH DEBTORS', color:'#b45309', text:`${sym}${debtors.toLocaleString()} owed to you — over 30% of income. Chase outstanding payments to improve cash flow.` });
+  } else if (debtors > 0) {
+    insights.push({ label:'ℹ DEBTORS', color:'var(--gold)', text:`${sym}${debtors.toLocaleString()} outstanding from customers. Keep following up to ensure timely collection.` });
+  }
+
+  // Creditors insight
+  if (creditors > assets * 0.5 && assets > 0) {
+    insights.push({ label:'⚠ HIGH CREDITORS', color:'#c0392b', text:`Creditors represent over 50% of assets. Manage payment timing carefully to avoid cash strain.` });
+  } else if (creditors > 0) {
+    insights.push({ label:'ℹ CREDITORS', color:'var(--gold)', text:`${sym}${creditors.toLocaleString()} owed to suppliers. Plan cash for upcoming payments.` });
+  }
+
+  // Leverage insight
+  if (assets > 0) {
+    const leverage = liabilities / assets;
+    if (leverage < 0.3) {
+      insights.push({ label:'✓ LOW DEBT', color:'#1a7a4a', text:`Debt-to-assets ratio is ${(leverage*100).toFixed(0)}% — well within safe limits. Business is largely self-funded.` });
+    } else if (leverage < 0.6) {
+      insights.push({ label:'ℹ MODERATE DEBT', color:'var(--gold)', text:`Debt-to-assets ratio is ${(leverage*100).toFixed(0)}%. Manageable, but avoid taking on significant new liabilities.` });
+    } else {
+      insights.push({ label:'⚠ HIGH DEBT', color:'#c0392b', text:`Debt-to-assets ratio is ${(leverage*100).toFixed(0)}%. Prioritise paying down liabilities before expanding.` });
     }
-  });
+  }
+
+  // If too few insights, add encouragement
+  if (insights.length < 3) {
+    insights.push({ label:'ℹ ADD MORE DATA', color:'var(--muted)', text:'The more transactions you record, the more accurate and useful these insights become.' });
+  }
+
+  return insights.slice(0, 6);
 }
 
 // ── REPORTS ──────────────────────────────────────────────────
