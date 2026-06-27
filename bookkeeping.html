@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -3595,6 +3594,39 @@ function showSetupWizard(step) {
       </div>`;
   }
 
+  // Render the step into the content area
+  content.innerHTML = `
+    <div style="max-width:720px;margin:0 auto;padding:40px 24px;">
+      <div style="margin-bottom:28px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">
+            Setup — Step ${setupStep} of ${TOTAL_STEPS}
+          </div>
+          ${setupStep > 1 && setupStep < 8 ? `
+          <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;padding:5px 12px;"
+            onclick="showSetupWizard(${setupStep-1})">← Back</button>` : ''}
+        </div>
+        <div style="height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;width:${progressPct}%;background:var(--gold);border-radius:2px;transition:width 0.3s;"></div>
+        </div>
+      </div>
+      ${stepHTML}
+    </div>`;
+
+  // Restore focus on search inputs after render
+  setTimeout(() => {
+    const ind = document.getElementById('indSearchInput');
+    if (ind) { ind.focus(); ind.selectionStart = ind.value.length; }
+    const off = document.getElementById('offerSearchInput');
+    if (off) { off.focus(); off.selectionStart = off.value.length; }
+  }, 30);
+}
+
+function refreshSetup() {
+  setupProfile = {};
+  showSetupWizard(1);
+}
+
 
 function setupSelect(field, value) {
   setupProfile[field] = value;
@@ -3622,12 +3654,6 @@ function saveLocationStep() {
 }
 
 // ── SETUP HELPERS ─────────────────────────────────────────────
-function refreshSetup() {
-  setupProfile = {};
-  // Navigate back to setup start
-  checkSetupAndInit();
-}
-
 function addCustomOffering() {
   const q = setupProfile._offerSearch||'';
   if (!q.trim()) return;
