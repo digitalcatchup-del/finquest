@@ -498,6 +498,11 @@ tr.row-selected td{background:rgba(212,175,55,0.07) !important;}
 </head>
 <body>
 
+<!-- AUTH SCREEN — shown to unauthenticated users, hidden when logged in -->
+<div id="bkAuthScreen" class="bk-auth-screen hidden">
+  <div class="bk-auth-box" id="bkAuthContent"></div>
+</div>
+
 <header class="bk-header">
   <span class="bk-logo">📊 Butterfly Dynamix · Bookkeeping</span>
   <div class="bk-header-right">
@@ -817,8 +822,8 @@ let suData = {
 function showAuthScreen(view) {
   const screen = document.getElementById('bkAuthScreen');
   const content = document.getElementById('bkAuthContent');
-  if (!screen||!content) return;
-  screen.classList.remove('hidden');
+  if (!screen || !content) return;
+  screen.classList.remove('hidden'); // show it
 
   if (view==='landing') {
     content.innerHTML = `
@@ -1322,22 +1327,34 @@ const CREDIT_NORMAL = ['capital','liability','income'];
 })();
 
 async function continueInit() {
-  const { data:profile } = await bkDb.from('profiles').select('username').eq('id',bkUser.id).single();
-  const name = profile?.username
-    ? profile.username.charAt(0).toUpperCase()+profile.username.slice(1)
-    : bkUser.email?.split('@')[0]||'there';
-  document.getElementById('bkUserName').textContent = name;
-
-  const { data:settings } = await bkDb.from('bk_settings').select('currency').eq('user_id',bkUser.id).single();
-  if (settings?.currency) {
-    activeCurrency = settings.currency;
-    const sel = document.getElementById('currencySelect');
-    if (sel) sel.value = activeCurrency;
+  try {
+    const { data:profile } = await bkDb.from('profiles')
+      .select('username').eq('id', bkUser.id).maybeSingle();
+    const name = profile?.username
+      ? profile.username.charAt(0).toUpperCase() + profile.username.slice(1)
+      : (bkUser.email?.split('@')[0] || 'there');
+    const el = document.getElementById('bkUserName');
+    if (el) el.textContent = name;
+  } catch(e) {
+    const el = document.getElementById('bkUserName');
+    if (el) el.textContent = bkUser.email?.split('@')[0] || 'there';
   }
 
-  await loadAccounts();
-  await refreshEquation();
-  buildDropdowns();
+  try {
+    const { data:settings } = await bkDb.from('bk_settings')
+      .select('currency').eq('user_id', bkUser.id).maybeSingle();
+    if (settings?.currency) {
+      activeCurrency = settings.currency;
+      const sel = document.getElementById('currencySelect');
+      if (sel) sel.value = activeCurrency;
+    }
+  } catch(e) { /* use default NGN */ }
+
+  try { await loadAccounts(); } catch(e) { console.warn('loadAccounts failed:', e); }
+  try { await refreshEquation(); } catch(e) { console.warn('refreshEquation failed:', e); }
+  try { buildDropdowns(); } catch(e) { console.warn('buildDropdowns failed:', e); }
+
+  // Always show the dashboard — never leave the page blank
   showDashboard();
 }
 
