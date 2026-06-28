@@ -1,10 +1,94 @@
+
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Bookkeeping — Butterfly Dynamix</title>
-<style>html,body{background:#0f1117!important;}</style>
+<style>html,body{background:#0f1117!important;}
+/* ── AUTH SCREEN ──────────────────────────────────────── */
+.bk-auth-screen{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;align-items:center;justify-content:center;overflow-y:auto;}
+.bk-auth-screen.hidden{display:none;}
+.bk-auth-box{width:100%;max-width:520px;padding:40px 24px;}
+.bk-auth-think{text-align:center;margin-bottom:8px;}
+.bk-auth-think-1{font-size:2.4rem;font-weight:900;color:var(--white);letter-spacing:-0.02em;}
+.bk-auth-think-2{font-size:1.1rem;font-weight:700;color:var(--gold);letter-spacing:0.04em;margin-bottom:32px;text-align:center;}
+.bk-auth-btns{display:flex;gap:14px;justify-content:center;margin-bottom:32px;}
+.bk-auth-btn-primary{background:var(--gold);border:none;color:#000;font-size:0.95rem;font-weight:800;padding:14px 40px;border-radius:8px;cursor:pointer;transition:opacity 0.15s;}
+.bk-auth-btn-primary:hover{opacity:0.88;}
+.bk-auth-btn-secondary{background:none;border:2px solid var(--border2);color:var(--white);font-size:0.95rem;font-weight:700;padding:14px 40px;border-radius:8px;cursor:pointer;transition:all 0.15s;}
+.bk-auth-btn-secondary:hover{border-color:var(--gold);color:var(--gold);}
+.bk-auth-tagline{text-align:center;font-size:0.75rem;color:var(--muted);line-height:1.6;}
+/* Signup wizard inside auth screen */
+.su-progress{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:28px;}
+.su-progress-bar{height:100%;background:var(--gold);border-radius:2px;transition:width 0.3s;}
+.su-heading{font-size:1.1rem;font-weight:800;color:var(--white);margin-bottom:20px;line-height:1.4;}
+.su-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.su-option{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:18px 14px;cursor:pointer;text-align:center;transition:all 0.12s;}
+.su-option:hover{border-color:var(--gold);}
+.su-option.sel{border-color:var(--gold);background:var(--gold-dim);}
+.su-option.disabled{opacity:0.45;cursor:not-allowed;}
+.su-option-icon{font-size:1.6rem;margin-bottom:6px;}
+.su-option-title{font-size:0.85rem;font-weight:800;color:var(--white);}
+.su-option-desc{font-size:0.7rem;color:var(--muted);margin-top:3px;line-height:1.35;}
+.su-option-badge{font-size:0.62rem;color:var(--gold);margin-top:4px;font-weight:700;}
+.su-industry-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;}
+.su-industry-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:0.78rem;font-weight:600;color:var(--off);cursor:pointer;text-align:center;transition:all 0.12s;}
+.su-industry-item:hover{border-color:var(--gold);color:var(--white);}
+.su-industry-item.sel{border-color:var(--gold);background:var(--gold-dim);color:var(--gold);}
+.su-biz-type-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:300px;overflow-y:auto;margin-bottom:14px;padding-right:4px;}
+.su-biz-type-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:0.77rem;font-weight:600;color:var(--off);cursor:pointer;text-align:left;transition:all 0.12s;position:relative;}
+.su-biz-type-item:hover{border-color:var(--gold);color:var(--white);}
+.su-biz-type-item.sel{border-color:var(--gold);background:var(--gold-dim);color:var(--gold);}
+.su-biz-type-item.disabled-max{opacity:0.4;cursor:not-allowed;}
+.su-selected-count{font-size:0.72rem;color:var(--muted);margin-bottom:10px;}
+.su-selected-count span{color:var(--gold);font-weight:700;}
+.su-field{margin-bottom:14px;}
+.su-label{display:block;font-size:0.74rem;font-weight:700;color:var(--off);margin-bottom:5px;}
+.su-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 13px;font-size:0.88rem;font-family:inherit;outline:none;}
+.su-input:focus{border-color:var(--gold);}
+.su-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.su-btn-row{display:flex;gap:10px;margin-top:20px;justify-content:space-between;align-items:center;}
+.su-next-btn{background:var(--gold);border:none;color:#000;font-size:0.88rem;font-weight:800;padding:12px 32px;border-radius:8px;cursor:pointer;}
+.su-next-btn:hover{opacity:0.88;}
+.su-back-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.82rem;font-weight:600;padding:10px 20px;border-radius:8px;cursor:pointer;}
+.su-back-btn:hover{color:var(--white);border-color:var(--border3);}
+.su-search{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:8px 13px;font-size:0.82rem;font-family:inherit;outline:none;margin-bottom:12px;}
+.su-search:focus{border-color:var(--gold);}
+/* Products spreadsheet */
+.su-prod-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+.su-prod-table th{background:var(--bg);color:var(--gold);font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 8px;text-align:left;border-bottom:2px solid var(--gold);}
+.su-prod-table th.num{text-align:right;}
+.su-prod-table td{border-bottom:1px solid var(--border);padding:0;}
+.su-prod-cell{width:100%;background:transparent;border:none;color:var(--white);font-size:0.8rem;font-family:inherit;padding:6px 8px;outline:none;height:32px;}
+.su-prod-cell:focus{background:rgba(212,175,55,0.07);}
+.su-prod-cell.num{text-align:right;}
+.su-prod-sn{text-align:center;color:var(--muted);font-size:0.72rem;padding:6px 4px;width:36px;}
+.su-prod-del{width:32px;text-align:center;}
+.su-prod-del-btn{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:0.75rem;padding:4px 6px;}
+.su-prod-del-btn:hover{color:var(--red);}
+.su-prod-save-btn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.9rem;font-weight:900;padding:4px 8px;width:28px;}
+.su-prod-save-btn:hover{color:var(--white);}
+.su-curr-select{background:var(--surface2);border:1px solid var(--border2);color:var(--gold);font-size:0.68rem;font-weight:700;padding:2px 4px;border-radius:4px;cursor:pointer;outline:none;margin-left:4px;}
+.su-add-row-btn{background:none;border:1px dashed var(--border2);color:var(--muted);font-size:0.75rem;font-weight:600;padding:7px;border-radius:6px;cursor:pointer;width:100%;margin-top:8px;}
+.su-add-row-btn:hover{border-color:var(--gold);color:var(--gold);}
+.su-done-btn{width:100%;padding:14px;background:var(--gold);border:none;border-radius:8px;color:#000;font-size:0.95rem;font-weight:800;cursor:pointer;margin-top:16px;}
+.su-done-btn:hover{opacity:0.88;}
+/* Login form */
+.bk-login-form{display:flex;flex-direction:column;gap:14px;}
+.bk-login-input{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:12px 14px;font-size:0.9rem;font-family:inherit;outline:none;width:100%;}
+.bk-login-input:focus{border-color:var(--gold);}
+.bk-login-btn{background:var(--gold);border:none;color:#000;font-size:0.95rem;font-weight:800;padding:13px;border-radius:8px;cursor:pointer;width:100%;}
+.bk-login-btn:hover{opacity:0.88;}
+.bk-login-err{font-size:0.78rem;color:var(--red);text-align:center;min-height:16px;}
+.bk-login-back{background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;margin-top:4px;display:block;width:100%;text-align:center;}
+.bk-login-back:hover{color:var(--gold);}
+/* Welcome screen */
+.su-welcome{text-align:center;padding:40px 24px;}
+.su-welcome-icon{font-size:3rem;margin-bottom:14px;}
+.su-welcome-title{font-size:1.5rem;font-weight:900;color:var(--white);margin-bottom:10px;}
+.su-welcome-sub{font-size:0.82rem;color:var(--muted);line-height:1.65;margin-bottom:24px;}
+</style>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -596,6 +680,556 @@ tr.row-selected td{background:rgba(212,175,55,0.07) !important;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script>
+// ── INDUSTRY → BUSINESS TYPES ────────────────────────────────
+const INDUSTRY_BUSINESS_TYPES = {
+  'Agriculture & Food':['Crop Farming','Poultry Farm','Livestock Farm','Fish Farm/Fishery','Food Processing Plant','Agro-trading/Distribution','Rice/Flour Mill','Palm Oil Production','Cassava Processing','Cold Storage/Warehouse','Agricultural Input Supply','Organic Produce Farm','Snail/Rabbit Farm'],
+  'Construction & Real Estate':['General Building Contractor','Property Developer','Estate Agency','Architectural Firm','Civil Engineering','Electrical Installation','Plumbing Services','Interior Design/Decoration','Roofing Services','Tiling & Flooring','Painting Contractor','Steel Fabrication','Block/Quarry Industry','Building Materials Supply','Facility Management'],
+  'Education':['Nursery/Primary School','Secondary School','Tutorial/Lesson Centre','Vocational Training Centre','Coding/Tech Bootcamp','Language School','Music School','Driving School','Creche/Daycare','Online Learning Platform','Professional Training Institute','Special Needs School','University/Polytechnic'],
+  'Entertainment & Media':['Music Production Studio','Film/Video Production','Photography Studio','Event Planning/Management','Event Decoration','DJ/Entertainment Services','Cinema/Theatre','TV/Radio Station','Podcast Studio','Social Media Agency','PR & Branding Agency','Advertising Agency','Printing & Publishing','Art Gallery','Gaming Lounge'],
+  'Financial Services':['Microfinance Institution','Investment/Wealth Management','Insurance Agency','Forex Trading','POS/Agent Banking','Cooperative Society','Accounting/Bookkeeping Firm','Audit Firm','Tax Consulting','Money Transfer/Remittance','Mortgage Broker','Stock Brokerage','Business Advisory','Payroll Services','Debt Recovery'],
+  'Health & Medical':['General Hospital/Clinic','Specialist Hospital','Dental Clinic','Eye Care/Optician','Pharmacy','Medical Laboratory','Physiotherapy Centre','Mental Health Practice','Maternity/Nursing Home','Radiology Centre','Dialysis Centre','Fertility Clinic','Medical Equipment Supply','Ambulance Service','Veterinary Clinic'],
+  'Hospitality & Tourism':['Hotel','Motel/Guest House','Airbnb/Short-let Apartment','Restaurant','Fast Food Restaurant','Bakery/Pastry Shop','Bar/Lounge','Nightclub','Catering Service','Event Hall/Venue','Tourism Agency','Travel Agency','Car Hire/Rental'],
+  'Information Technology':['Software Development','Website Design & Development','Mobile App Development','IT Support & Maintenance','Cybersecurity Firm','Data Analytics','Digital Marketing Agency','SEO Agency','E-commerce Store','Cloud Services','Network Installation','CCTV/Security Systems','Computer Sales & Repair','Phone Repair','Business Centre/Printing'],
+  'Legal Services':['Law Firm','Notary/Commissioner for Oaths','Legal Aid Service','IP/Patent Services','Corporate Law','Criminal Defense','Family Law Practice','Real Estate Law','Mediation/Arbitration','Legal Consulting'],
+  'Manufacturing':['Food & Beverage Manufacturing','Textile/Garment Factory','Furniture Manufacturing','Plastics Manufacturing','Chemical Production','Electronics Assembly','Paper/Packaging','Soap & Detergent Production','Cosmetics Manufacturing','Metal Fabrication','Printing Press','Pharmaceutical Manufacturing','Paint Manufacturing','Shoe Manufacturing'],
+  'Oil & Gas':['Petroleum Retail (Filling Station)','Gas Distribution','Oil Trading','Lubricant Supply','Drilling Services','Pipeline Services','Oil Field Equipment Supply','Environmental Services','LPG/Cooking Gas Retail','Petroleum Haulage'],
+  'Personal & Beauty Services':['Barbing Salon/Barbershop','Beauty Salon/Hair Salon','Nail Studio','Laundromat/Dry Cleaner','Tailoring/Fashion Design','Shoe Repair/Cobbler','Spa & Massage Centre','Makeup Artist','Event Styling','Lace & Fabric Sales','Wig Making/Wig Store','Tattoo & Piercing Studio','Photo Printing/Framing'],
+  'Retail & E-commerce':['Supermarket/Grocery Store','Pharmacy/Chemist','Fashion/Clothing Store','Electronics Store','Hardware Store','Cosmetics/Beauty Products Store','Bookshop/Stationery Store','Food & Beverage Store','Automobile Parts Store','Shoe Store','Furniture Store','Jewelry Store','Kiosk/Convenience Store','Wholesale/Distribution','Online Store','Agricultural Input Store','Baby/Children Products Store','Sports Equipment Store','Phone Accessories Store'],
+  'Sports & Fitness':['Gym/Fitness Centre','Sports Academy','Football Club','Swimming Pool','Martial Arts Studio','Yoga Studio','Sports Equipment Store','Sports Event Management','Personal Training Service','Dance Studio','Sports Nutrition/Supplement Store','Cycling Centre'],
+  'Transportation & Logistics':['Road Haulage','Logistics & Warehousing','Courier Service','Car Hire/Rental','Ride Sharing/Taxi Service','Shipping & Freight','Moving/Relocation Service','Bus/Coach Service','Motorcycle Dispatch','Cold Chain Logistics','Customs Clearing Agent','Vehicle Tracking Service'],
+  'Other':['Consulting','Non-Profit/NGO','Government Agency','Religious Organisation','Community Association','Mixed/Multiple Industries','Professional Services'],
+};
+
+// ── BUSINESS TYPE → DEFAULT PRODUCTS/SERVICES ─────────────────
+const BIZ_TYPE_PRODUCTS = {
+  'Barbing Salon/Barbershop':[
+    {n:'Haircut',p:1500},{n:'Shave',p:1000},{n:'Beard Trim',p:800},
+    {n:'Shape Up / Lining',p:500},{n:"Kids' Haircut",p:1000},{n:'Hair Colour',p:3000},
+    {n:'Hair Wash',p:500},{n:'Hot Towel Treatment',p:500},{n:'Eyebrow Shaping',p:500},{n:'Dreadlock Maintenance',p:5000},
+  ],
+  'Laundromat/Dry Cleaner':[
+    {n:'Wash Only (per load)',p:1500},{n:'Wash & Iron (per load)',p:2500},{n:'Iron Only (per item)',p:300},
+    {n:'Dry Clean — Shirt',p:1500},{n:'Dry Clean — Trouser',p:1500},{n:'Dry Clean — Suit (2-piece)',p:4000},
+    {n:'Dry Clean — Gown/Dress',p:3000},{n:'Dry Clean — Duvet/Bedding',p:5000},{n:'Dry Clean — Curtain (per panel)',p:2000},
+    {n:'Express Service (same day)',p:5000},{n:'Shoe Cleaning',p:1000},
+  ],
+  'Beauty Salon/Hair Salon':[
+    {n:'Hair Wash & Set',p:3000},{n:'Relaxer Application',p:5000},{n:'Braiding (full head)',p:8000},
+    {n:'Weave Installation',p:15000},{n:'Wig Styling',p:5000},{n:'Hair Treatment',p:4000},
+    {n:'Eyebrow Threading',p:1000},{n:'Facial Treatment',p:6000},{n:'Makeup (daily)',p:5000},{n:'Makeup (bridal)',p:50000},
+  ],
+  'Nail Studio':[
+    {n:'Manicure',p:3000},{n:'Pedicure',p:4000},{n:'Gel Nails',p:8000},{n:'Acrylic Nails',p:12000},
+    {n:'Nail Art',p:5000},{n:'Nail Removal',p:2000},{n:'Foot Scrub',p:2000},{n:'French Tips',p:5000},
+  ],
+  'Spa & Massage Centre':[
+    {n:'Full Body Massage (60 min)',p:10000},{n:'Swedish Massage',p:12000},{n:'Deep Tissue Massage',p:15000},
+    {n:'Facial Treatment',p:8000},{n:'Body Scrub',p:10000},{n:'Steam Bath',p:5000},{n:'Waxing',p:5000},{n:'Couple Massage',p:25000},
+  ],
+  'Restaurant':[
+    {n:'Jollof Rice',p:1500},{n:'Fried Rice',p:1500},{n:'Pounded Yam & Soup',p:2500},
+    {n:'Amala & Ewedu',p:2000},{n:'Grilled Chicken',p:3000},{n:'Grilled Fish',p:4000},
+    {n:'Pepper Soup',p:3500},{n:'Eba & Egusi',p:2000},{n:'Salad',p:1500},{n:'Soft Drink',p:300},
+  ],
+  'Fast Food Restaurant':[
+    {n:'Burger',p:2500},{n:'Chicken & Chips',p:3000},{n:'Pizza (small)',p:4000},
+    {n:'Shawarma',p:2000},{n:'Hotdog',p:1500},{n:'Milkshake',p:2000},{n:'Juice',p:800},{n:'Water',p:200},
+  ],
+  'Bakery/Pastry Shop':[
+    {n:'Bread (loaf)',p:1000},{n:'Croissant',p:500},{n:'Doughnut',p:300},{n:'Chin Chin (pack)',p:500},
+    {n:'Cake (slice)',p:1000},{n:'Birthday Cake (6")',p:15000},{n:'Meat Pie',p:500},{n:'Sausage Roll',p:400},{n:'Chapman (bottle)',p:1000},
+  ],
+  'Hotel':[
+    {n:'Standard Room (per night)',p:25000},{n:'Deluxe Room (per night)',p:40000},{n:'Suite (per night)',p:80000},
+    {n:'Conference Room (half day)',p:50000},{n:'Breakfast',p:5000},{n:'Laundry Service',p:3000},{n:'Airport Transfer',p:15000},
+  ],
+  'Motel/Guest House':[
+    {n:'Standard Room (per night)',p:12000},{n:'Self-Contain Room',p:18000},{n:'Short Rest (6hrs)',p:7000},
+    {n:'Breakfast',p:2500},{n:'Parking',p:500},{n:'WiFi',p:500},
+  ],
+  'Supermarket/Grocery Store':[
+    {n:'Packaged Food (average)',p:2000},{n:'Beverages',p:1500},{n:'Household Items',p:3000},
+    {n:'Fresh Produce',p:1000},{n:'Personal Care Products',p:2500},{n:'Dairy Products',p:1800},
+  ],
+  'Pharmacy/Chemist':[
+    {n:'Paracetamol (pack)',p:300},{n:'Vitamin C (pack)',p:500},{n:'Amoxicillin (pack)',p:1500},
+    {n:'Antimalarial',p:2000},{n:'Cough Syrup',p:800},{n:'Antiseptic Lotion',p:600},{n:'Cotton Wool',p:400},
+    {n:'Hand Sanitizer',p:700},{n:'Plaster (pack)',p:300},{n:'Multivitamins',p:2000},
+  ],
+  'Gym/Fitness Centre':[
+    {n:'Monthly Membership',p:15000},{n:'Daily Pass',p:2000},{n:'Personal Training (session)',p:10000},
+    {n:'Aerobics Class',p:3000},{n:'Yoga Class',p:4000},{n:'Swimming (per visit)',p:3000},
+  ],
+  'General Hospital/Clinic':[
+    {n:'Consultation',p:5000},{n:'Lab Test',p:5000},{n:'Injection/Drip',p:3000},
+    {n:'Admission (per day)',p:15000},{n:'Scan/Ultrasound',p:10000},{n:'Wound Dressing',p:2000},{n:'Vaccination',p:5000},
+  ],
+  'Pharmacy':[
+    {n:'Paracetamol (pack)',p:300},{n:'Amoxicillin',p:1500},{n:'Vitamin C',p:500},
+    {n:'Blood Pressure Drugs',p:5000},{n:'Diabetes Medication',p:8000},{n:'Antimalarial',p:2000},{n:'ORS Sachet',p:200},
+  ],
+  'Kiosk/Convenience Store':[
+    {n:'Soft Drink (bottle)',p:300},{n:'Pure Water (sachet)',p:20},{n:'Bread (loaf)',p:700},
+    {n:'Noodles (pack)',p:200},{n:'Biscuit (pack)',p:150},{n:'Rice (cup)',p:300},{n:'Sugar (cup)',p:200},{n:'Milk (tin)',p:400},
+    {n:'Groundnut (wrap)',p:200},{n:'Chin Chin (wrap)',p:200},
+  ],
+  'Tailoring/Fashion Design':[
+    {n:'Plain Shirt (sewing)',p:5000},{n:'Trouser (sewing)',p:4000},{n:'Traditional Attire (sewing)',p:15000},
+    {n:'Gown (sewing)',p:8000},{n:'Suit (sewing)',p:25000},{n:'Alteration',p:1500},{n:'Fabric Sales (per yard)',p:2500},
+  ],
+  'Poultry Farm':[
+    {n:'Broiler (per bird)',p:4500},{n:'Layer Eggs (per crate)',p:4500},{n:'Day-Old Chick',p:500},
+    {n:'Frozen Chicken (kg)',p:3000},{n:'Manure (bag)',p:2000},
+  ],
+  'Filling Station':[
+    {n:'Petrol (litre)',p:860},{n:'Diesel (litre)',p:1100},{n:'Engine Oil',p:4500},
+    {n:'Car Wash',p:2000},{n:'Tyre Inflation',p:200},
+  ],
+  'Software Development':[
+    {n:'Website (basic)',p:150000},{n:'Website (e-commerce)',p:350000},{n:'Mobile App',p:500000},
+    {n:'Monthly Maintenance',p:25000},{n:'Domain & Hosting (yearly)',p:50000},{n:'SEO Setup',p:80000},
+  ],
+  'default':[
+    {n:'Product / Service 1',p:0},{n:'Product / Service 2',p:0},{n:'Product / Service 3',p:0},
+    {n:'Product / Service 4',p:0},{n:'Product / Service 5',p:0},
+  ],
+};
+
+// ── ADMIN USERS ───────────────────────────────────────────────
+const ADMIN_USERNAMES = ['chukwunonso'];
+function isAdminUser(user) {
+  if (!user) return false;
+  return ADMIN_USERNAMES.includes((user.username||'').toLowerCase()) ||
+         ADMIN_USERNAMES.includes((user.email||'').split('@')[0].toLowerCase());
+}
+
+// ── AUTH SCREEN STATE ─────────────────────────────────────────
+let suStep = 1;
+const SU_TOTAL = 8;
+let suData = {
+  accountType:'business', whoAreYou:'owner', businessType:'',
+  isRegistered:null, industry:'', bizTypes:[], // max 5
+  country:'Nigeria', state:'Lagos', lga:'Ikeja', town:'', village:'', street:'',
+  businessName:'', offerType:'services', products:[], // [{name,price,currency}]
+  prodCurrency:'NGN',
+};
+
+function showAuthScreen(view) {
+  const screen = document.getElementById('bkAuthScreen');
+  const content = document.getElementById('bkAuthContent');
+  if (!screen||!content) return;
+  screen.classList.remove('hidden');
+
+  if (view==='landing') {
+    content.innerHTML = `
+      <div class="bk-auth-think">
+        <div class="bk-auth-think-1">THINK <span style="color:var(--gold)">FINANCE</span></div>
+      </div>
+      <div class="bk-auth-think-2">Think Butterfly Dynamix</div>
+      <div class="bk-auth-btns">
+        <button class="bk-auth-btn-primary" onclick="showAuthScreen('signup')">Sign Up</button>
+        <button class="bk-auth-btn-secondary" onclick="showAuthScreen('login')">Log In</button>
+      </div>
+      <div class="bk-auth-tagline">
+        Professional bookkeeping for every business.<br>
+        Built for Nigeria. Designed for growth.
+      </div>`;
+
+  } else if (view==='login') {
+    content.innerHTML = `
+      <div class="bk-auth-think-1" style="text-align:center;margin-bottom:6px;">Log In</div>
+      <div style="text-align:center;font-size:0.78rem;color:var(--muted);margin-bottom:24px;">Welcome back — enter your details below</div>
+      <div class="bk-login-form">
+        <input class="bk-login-input" type="email" id="loginEmail" placeholder="Email address" autocomplete="email"/>
+        <input class="bk-login-input" type="password" id="loginPW" placeholder="Password"
+          onkeydown="if(event.key==='Enter')doLogin()"/>
+        <div class="bk-login-err" id="loginErr"></div>
+        <button class="bk-login-btn" onclick="doLogin()">Log In →</button>
+        <button class="bk-login-back" onclick="showAuthScreen('landing')">← Back</button>
+      </div>`;
+    setTimeout(()=>document.getElementById('loginEmail')?.focus(), 50);
+
+  } else if (view==='signup') {
+    suStep = 1;
+    suData = { accountType:'business', whoAreYou:'owner', businessType:'',
+      isRegistered:null, industry:'', bizTypes:[], country:'Nigeria',
+      state:'Lagos', lga:'Ikeja', town:'', village:'', street:'',
+      businessName:'', offerType:'services', products:[], prodCurrency:'NGN' };
+    renderSuStep();
+  }
+}
+
+function hideAuthScreen() {
+  document.getElementById('bkAuthScreen')?.classList.add('hidden');
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail')?.value.trim();
+  const pw    = document.getElementById('loginPW')?.value;
+  const err   = document.getElementById('loginErr');
+  if (!email||!pw) { if(err) err.textContent='Please enter email and password.'; return; }
+  if (err) err.textContent='Logging in…';
+
+  const { data:{ session }, error } = await bkDb.auth.signInWithPassword({ email, password:pw });
+  if (error||!session) {
+    if (err) err.textContent = error?.message||'Login failed. Please try again.';
+    return;
+  }
+  bkUser = session.user;
+  hideAuthScreen();
+  await continueInit();
+}
+
+// ── SIGNUP WIZARD ─────────────────────────────────────────────
+function renderSuStep() {
+  const c = document.getElementById('bkAuthContent');
+  const pct = Math.round((suStep/SU_TOTAL)*100);
+  let html = `
+    <div style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">Step ${suStep} of ${SU_TOTAL}</span>
+        ${suStep>1?`<button class="su-back-btn" onclick="suBack()">← Back</button>`:''}
+      </div>
+      <div class="su-progress"><div class="su-progress-bar" style="width:${pct}%"></div></div>
+    </div>`;
+
+  if (suStep===1) html += `
+    <div class="su-heading">What type of account do you want to set up?</div>
+    <div class="su-options">
+      <div class="su-option sel" onclick="suData.accountType='business';renderSuStep()">
+        <div class="su-option-icon">🏢</div>
+        <div class="su-option-title">Business Account</div>
+        <div class="su-option-desc">For sole traders, companies, partnerships and organisations</div>
+      </div>
+      <div class="su-option disabled">
+        <div class="su-option-icon">👤</div>
+        <div class="su-option-title">Personal Account</div>
+        <div class="su-option-desc">Personal finance and budgeting</div>
+        <div class="su-option-badge">Coming Soon</div>
+      </div>
+    </div>
+    <button class="su-next-btn" onclick="suNext()">Continue →</button>
+    <div style="text-align:center;margin-top:16px;"><button class="su-back-btn" onclick="showAuthScreen('landing')">← Back to start</button></div>`;
+
+  else if (suStep===2) html += `
+    <div class="su-heading">Who are you?</div>
+    <div class="su-options">
+      <div class="su-option ${suData.whoAreYou==='owner'?'sel':''}" onclick="suData.whoAreYou='owner';renderSuStep()">
+        <div class="su-option-icon">👔</div>
+        <div class="su-option-title">Business Owner</div>
+        <div class="su-option-desc">I own or co-own this business</div>
+      </div>
+      <div class="su-option disabled">
+        <div class="su-option-icon">👷</div>
+        <div class="su-option-title">Employee / Staff</div>
+        <div class="su-option-desc">I work here and record transactions</div>
+        <div class="su-option-badge">Coming Soon</div>
+      </div>
+    </div>
+    <button class="su-next-btn" onclick="suNext()">Continue →</button>`;
+
+  else if (suStep===3) {
+    const types=[
+      {val:'sole_proprietorship',icon:'👤',label:'Sole Proprietorship',desc:'One owner, personally liable'},
+      {val:'company',icon:'🏢',label:'Limited Company',desc:'Separate legal entity'},
+      {val:'partnership',icon:'🤝',label:'Partnership',desc:'Two or more owners'},
+      {val:'plc',icon:'📈',label:'Public Limited Company',desc:'Publicly traded shares'},
+      {val:'joint_venture',icon:'🔗',label:'Joint Venture',desc:'Two entities collaborating'},
+      {val:'government',icon:'🏛️',label:'Government Account',desc:'Public sector entity'},
+    ];
+    html += `<div class="su-heading">What type of business?</div>
+    <div class="su-options" style="grid-template-columns:repeat(2,1fr);gap:10px;">
+      ${types.map(t=>`
+      <div class="su-option ${suData.businessType===t.val?'sel':''}"
+        onclick="suData.businessType='${t.val}';renderSuStep()">
+        <div class="su-option-icon">${t.icon}</div>
+        <div class="su-option-title">${t.label}</div>
+        <div class="su-option-desc">${t.desc}</div>
+      </div>`).join('')}
+    </div>
+    <button class="su-next-btn" onclick="suNext()">Continue →</button>`;
+  }
+
+  else if (suStep===4) html += `
+    <div class="su-heading">Is your business registered?</div>
+    <div class="su-options">
+      <div class="su-option ${suData.isRegistered===true?'sel':''}"
+        onclick="suData.isRegistered=true;renderSuStep()">
+        <div class="su-option-icon">✅</div>
+        <div class="su-option-title">Yes, it is registered</div>
+        <div class="su-option-desc">RC number / CAC / FIRS registered</div>
+      </div>
+      <div class="su-option ${suData.isRegistered===false?'sel':''}"
+        onclick="suData.isRegistered=false;renderSuStep()">
+        <div class="su-option-icon">⏳</div>
+        <div class="su-option-title">Not yet registered</div>
+        <div class="su-option-desc">Operating informally for now</div>
+      </div>
+    </div>
+    <button class="su-next-btn" onclick="suNext()">Continue →</button>`;
+
+  else if (suStep===5) {
+    const industries = Object.keys(INDUSTRY_BUSINESS_TYPES);
+    const query = (suData._indSearch||'').toLowerCase();
+    const filtered = query ? industries.filter(i=>i.toLowerCase().includes(query)) : industries;
+    const selectedIndustry = suData.industry;
+    const bizTypes = selectedIndustry ? (INDUSTRY_BUSINESS_TYPES[selectedIndustry]||[]) : [];
+    const selectedBizTypes = suData.bizTypes || [];
+
+    html += `
+      <div class="su-heading">What industry are you in?</div>
+      <input class="su-search" type="text" placeholder="Search industry…"
+        id="suIndSearch" value="${suData._indSearch||''}"
+        oninput="suData._indSearch=this.value;renderSuStep()"/>
+      <div class="su-industry-grid" style="max-height:180px;overflow-y:auto;margin-bottom:16px;">
+        ${filtered.map(ind=>`
+        <div class="su-industry-item ${suData.industry===ind?'sel':''}"
+          onclick="suData.industry='${ind}';suData.bizTypes=[];renderSuStep()">
+          ${ind}
+        </div>`).join('')}
+      </div>
+      ${selectedIndustry?`
+        <div style="font-size:0.75rem;font-weight:700;color:var(--gold);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">
+          Select your business type(s) — up to 5
+        </div>
+        <div class="su-selected-count">
+          <span>${selectedBizTypes.length}</span>/5 selected
+        </div>
+        <div class="su-biz-type-grid">
+          ${bizTypes.map(bt=>{
+            const isSel = selectedBizTypes.includes(bt);
+            const isMaxed = !isSel && selectedBizTypes.length >= 5;
+            return `<div class="su-biz-type-item ${isSel?'sel':''} ${isMaxed?'disabled-max':''}"
+              onclick="${isMaxed?'':`suToggleBizType('${bt.replace(/'/g,"\\'")}');renderSuStep()`}">
+              ${isSel?'✓ ':''}${bt}
+            </div>`;
+          }).join('')}
+        </div>
+        <button class="su-next-btn" onclick="suNext()" ${selectedBizTypes.length===0?'disabled style="opacity:0.4;"':''}>
+          Continue with ${selectedBizTypes.length} business type${selectedBizTypes.length!==1?'s':''} →
+        </button>
+      `:''} `;
+  }
+
+  else if (suStep===6) html += `
+    <div class="su-heading">Where is your business located?</div>
+    <div class="su-row">
+      <div class="su-field">
+        <label class="su-label">Country *</label>
+        <input class="su-input" type="text" id="su_country" value="${suData.country}" placeholder="e.g. Nigeria"
+          list="su_countries" oninput="suData.country=this.value;suRefreshState()"/>
+        <datalist id="su_countries">${ALL_COUNTRIES.map(c=>`<option value="${c}">`).join('')}</datalist>
+      </div>
+      <div class="su-field">
+        <label class="su-label">State / Province</label>
+        <input class="su-input" type="text" id="su_state" value="${suData.state}" placeholder="e.g. Lagos"
+          list="su_states" oninput="suData.state=this.value;suRefreshLga()"/>
+        <datalist id="su_states"></datalist>
+      </div>
+    </div>
+    <div class="su-row">
+      <div class="su-field">
+        <label class="su-label">Local Government Area</label>
+        <input class="su-input" type="text" id="su_lga" value="${suData.lga}" placeholder="e.g. Ikeja"
+          list="su_lgas" oninput="suData.lga=this.value"/>
+        <datalist id="su_lgas"></datalist>
+      </div>
+      <div class="su-field">
+        <label class="su-label">Town</label>
+        <input class="su-input" type="text" id="su_town" value="${suData.town}" placeholder="Town name"/>
+      </div>
+    </div>
+    <div class="su-row">
+      <div class="su-field">
+        <label class="su-label">Village (if applicable)</label>
+        <input class="su-input" type="text" id="su_village" value="${suData.village}" placeholder="Village name"/>
+      </div>
+      <div class="su-field">
+        <label class="su-label">Street / Address</label>
+        <input class="su-input" type="text" id="su_street" value="${suData.street}" placeholder="Street address"/>
+      </div>
+    </div>
+    <button class="su-next-btn" style="margin-top:16px;" onclick="suSaveLocation()">Continue →</button>`;
+
+  else if (suStep===7) html += `
+    <div class="su-heading">What is the name of your business?</div>
+    <div class="su-field">
+      <label class="su-label">Business Name *</label>
+      <input class="su-input" type="text" id="su_bizname" value="${suData.businessName}"
+        placeholder="Enter your business name" style="font-size:1rem;padding:13px;"/>
+    </div>
+    <button class="su-next-btn" style="margin-top:8px;" onclick="suSaveName()">Continue →</button>`;
+
+  else if (suStep===8) {
+    // Products spreadsheet
+    const sym = CURRENCIES[suData.prodCurrency]?.symbol || '₦';
+    const rows = suData.products;
+
+    html += `
+      <div class="su-heading">Register the products & services you offer</div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;">
+        <div class="su-option ${suData.offerType==='products'?'sel':''}"
+          style="flex:1;padding:12px 8px;" onclick="suData.offerType='products';renderSuStep()">
+          <div style="font-size:1rem;margin-bottom:4px;">📦</div>
+          <div style="font-size:0.78rem;font-weight:700;color:var(--white);">Products</div>
+        </div>
+        <div class="su-option ${suData.offerType==='services'?'sel':''}"
+          style="flex:1;padding:12px 8px;" onclick="suData.offerType='services';renderSuStep()">
+          <div style="font-size:1rem;margin-bottom:4px;">🛠️</div>
+          <div style="font-size:0.78rem;font-weight:700;color:var(--white);">Services</div>
+        </div>
+        <div class="su-option ${suData.offerType==='both'?'sel':''}"
+          style="flex:1;padding:12px 8px;" onclick="suData.offerType='both';renderSuStep()">
+          <div style="font-size:1rem;margin-bottom:4px;">⚡</div>
+          <div style="font-size:0.78rem;font-weight:700;color:var(--white);">Both</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="su-prod-table">
+          <thead><tr>
+            <th style="width:32px;">S/N</th>
+            <th>Product / Service Type</th>
+            <th class="num" style="width:130px;">
+              Unit Price
+              <select class="su-curr-select" onchange="suData.prodCurrency=this.value;renderSuStep()">
+                ${Object.entries(CURRENCIES).map(([k,v])=>`<option value="${k}" ${suData.prodCurrency===k?'selected':''}>${v.symbol} ${k}</option>`).join('')}
+              </select>
+            </th>
+            <th style="width:32px;"></th>
+            <th style="width:28px;"></th>
+          </tr></thead>
+          <tbody id="suProdBody">
+            ${rows.map((r,i)=>`
+            <tr>
+              <td class="su-prod-sn">${i+1}</td>
+              <td><input class="su-prod-cell" type="text" value="${escH(r.name)}"
+                oninput="suData.products[${i}].name=this.value"/></td>
+              <td><input class="su-prod-cell num" type="number" value="${r.price||''}" placeholder="0"
+                oninput="suData.products[${i}].price=parseFloat(this.value)||0"/></td>
+              <td class="su-prod-del"><button class="su-prod-del-btn" onclick="suDelProd(${i})">✕</button></td>
+              <td><button class="su-prod-save-btn" onclick="suSaveProdRow(${i})" title="Save row">›</button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <button class="su-add-row-btn" onclick="suAddProdRow()">+ Add row</button>
+      <button class="su-done-btn" onclick="suDone()">Done — Go to My Dashboard →</button>`;
+  }
+
+  c.innerHTML = html;
+
+  // After render, init datalists for step 6
+  if (suStep===6) {
+    suRefreshState();
+  }
+}
+
+function suNext() {
+  if (suStep===1 && !suData.accountType) return;
+  if (suStep===3 && !suData.businessType) return;
+  if (suStep===4 && suData.isRegistered===null) return;
+  if (suStep===5 && suData.bizTypes.length===0) return;
+  if (suStep===8) { suDone(); return; }
+  // When entering step 8, pre-populate products from selected business types
+  if (suStep===7) {
+    suData.products = [];
+    suData.bizTypes.forEach(bt=>{
+      const prods = BIZ_TYPE_PRODUCTS[bt] || BIZ_TYPE_PRODUCTS['default'];
+      prods.forEach(p=>suData.products.push({name:p.n, price:p.p, currency:suData.prodCurrency, bizType:bt}));
+    });
+  }
+  suStep++;
+  renderSuStep();
+}
+
+function suBack() {
+  if (suStep<=1) { showAuthScreen('landing'); return; }
+  suStep--;
+  renderSuStep();
+}
+
+function suToggleBizType(bt) {
+  const idx = suData.bizTypes.indexOf(bt);
+  if (idx>=0) suData.bizTypes.splice(idx,1);
+  else if (suData.bizTypes.length<5) suData.bizTypes.push(bt);
+}
+
+function suRefreshState() {
+  const country = document.getElementById('su_country')?.value||suData.country;
+  const states  = COUNTRY_STATES[country]||[];
+  const dl = document.getElementById('su_states');
+  if (dl) dl.innerHTML = states.map(s=>`<option value="${s}">`).join('');
+  suRefreshLga();
+}
+
+function suRefreshLga() {
+  const state = document.getElementById('su_state')?.value||suData.state;
+  const lgas  = NIGERIA_LGAS[state]||[];
+  const dl = document.getElementById('su_lgas');
+  if (dl) dl.innerHTML = lgas.map(l=>`<option value="${l}">`).join('');
+}
+
+function suSaveLocation() {
+  suData.country = document.getElementById('su_country')?.value.trim()||suData.country;
+  suData.state   = document.getElementById('su_state')?.value.trim()||suData.state;
+  suData.lga     = document.getElementById('su_lga')?.value.trim()||suData.lga;
+  suData.town    = document.getElementById('su_town')?.value.trim();
+  suData.village = document.getElementById('su_village')?.value.trim();
+  suData.street  = document.getElementById('su_street')?.value.trim();
+  suNext();
+}
+
+function suSaveName() {
+  const name = document.getElementById('su_bizname')?.value.trim();
+  if (!name) { document.getElementById('su_bizname').style.borderColor='var(--red)'; return; }
+  suData.businessName = name;
+  suNext();
+}
+
+function suAddProdRow() {
+  suData.products.push({name:'', price:0, currency:suData.prodCurrency});
+  renderSuStep();
+  setTimeout(()=>{
+    const rows = document.querySelectorAll('#suProdBody tr');
+    const last = rows[rows.length-1];
+    last?.querySelector('input')?.focus();
+  }, 30);
+}
+
+function suDelProd(i) {
+  suData.products.splice(i,1);
+  renderSuStep();
+}
+
+function suSaveProdRow(i) {
+  const btn = document.querySelectorAll('#suProdBody tr')[i]?.querySelector('.su-prod-save-btn');
+  if (btn) { btn.textContent='✓'; btn.style.color='var(--green)'; setTimeout(()=>{btn.textContent='›';btn.style.color='';},1200); }
+}
+
+function suDone() {
+  // TEST MODE — does not save. Shows welcome screen.
+  document.getElementById('bkAuthContent').innerHTML = `
+    <div class="su-welcome">
+      <div class="su-welcome-icon">🎉</div>
+      <div class="su-welcome-title">Welcome, ${escH(suData.businessName)||'there'}!</div>
+      <div class="su-welcome-sub">
+        Your bookkeeping dashboard is ready.<br>
+        <span style="color:var(--gold);font-size:0.78rem;">Test mode — no data has been saved yet. We are still building!</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="bk-auth-btn-primary" onclick="suShowTestDashboard()">Go to Dashboard →</button>
+        <button class="bk-login-back" onclick="showAuthScreen('signup')">🔄 Start Over</button>
+      </div>
+    </div>`;
+}
+
+function suShowTestDashboard() {
+  hideAuthScreen();
+  // Show a minimal test dashboard
+  document.getElementById('bkUserName').textContent = suData.businessName || 'Test User';
+  showDashboard();
+}
+
 // ── CONFIG ───────────────────────────────────────────────────
 const SUPABASE_URL      = 'https://ikctnljbgsmlbyrcfrsi.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrY3RubGpiZ3NtbGJ5cmNmcnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzMxOTEsImV4cCI6MjA5NzQ0OTE5MX0.wT1fALAXQcSKIR27Xkv4wa6mtULcHy54DGK5htuppNo';
@@ -670,33 +1304,42 @@ const CREDIT_NORMAL = ['capital','liability','income'];
 
 // ── INIT ─────────────────────────────────────────────────────
 (async () => {
-  const { data:{ session }, error:e } = await bkDb.auth.getSession();
+  const { data:{ session } } = await bkDb.auth.getSession();
   if (!session) {
     const { data:r } = await bkDb.auth.refreshSession();
-    if (!r.session) { window.location.href='index.html'; return; }
-    bkUser = r.session.user;
+    if (r?.session) {
+      bkUser = r.session.user;
+      hideAuthScreen();
+      await continueInit();
+    } else {
+      showAuthScreen('landing');
+    }
   } else {
     bkUser = session.user;
+    hideAuthScreen();
+    await continueInit();
   }
+})();
 
+async function continueInit() {
   const { data:profile } = await bkDb.from('profiles').select('username').eq('id',bkUser.id).single();
   const name = profile?.username
     ? profile.username.charAt(0).toUpperCase()+profile.username.slice(1)
     : bkUser.email?.split('@')[0]||'there';
   document.getElementById('bkUserName').textContent = name;
 
-  // Load currency setting
   const { data:settings } = await bkDb.from('bk_settings').select('currency').eq('user_id',bkUser.id).single();
   if (settings?.currency) {
     activeCurrency = settings.currency;
-    document.getElementById('currencySelect').value = activeCurrency;
+    const sel = document.getElementById('currencySelect');
+    if (sel) sel.value = activeCurrency;
   }
 
   await loadAccounts();
   await refreshEquation();
   buildDropdowns();
   showDashboard();
-})();
+}
 
 // ── ACCOUNTS ─────────────────────────────────────────────────
 async function loadAccounts() {
