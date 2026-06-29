@@ -1731,20 +1731,14 @@ function buildDropdowns() {
 }
 
 // ── CLOSE DROPDOWN ON OUTSIDE CLICK ──────────────────────────
-document.addEventListener('click', (e) => {
-  const dd = document.getElementById('recordsDD');
-  const nr = document.getElementById('navRecords');
-  if (!dd.contains(e.target) && e.target!==nr) dd.classList.add('hidden');
-});
+// (dropdown removed — hamburger menu handles navigation now)
 
-function toggleRecordsDD() {
-  document.getElementById('recordsDD').classList.toggle('hidden');
-  setActiveNav('navRecords');
-}
+function toggleRecordsDD() { /* nav removed — use hamburger menu */ }
 
 function setActiveNav(id) {
-  document.querySelectorAll('.bk-nav-item').forEach(el=>el.classList.remove('active'));
-  document.getElementById(id)?.classList.add('active');
+  // Nav items removed — highlight menu item in slide menu instead
+  document.querySelectorAll('.bk-menu-item').forEach(el=>el.classList.remove('active'));
+  // No-op for old nav IDs that no longer exist
 }
 
 // ── ADD ACCOUNT MODAL ─────────────────────────────────────────
@@ -1793,7 +1787,7 @@ async function openAccount(type, acct) {
   searchQuery   = '';
   dateFrom      = '';
   dateTo        = '';
-  document.getElementById('recordsDD').classList.add('hidden');
+  document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
   buildDropdowns(); // refresh active state
 
@@ -2136,7 +2130,7 @@ async function refreshEquation() {
 
 async function showDashboard() {
   setActiveNav('navDash');
-  document.getElementById('recordsDD').classList.add('hidden');
+  document.getElementById('recordsDD')?.classList.add('hidden');
   const content = document.getElementById('bkContent');
   content.innerHTML = '<div class="bk-loading">Loading dashboard…</div>';
 
@@ -2483,7 +2477,7 @@ function emptyJournalRow(order) {
 
 async function openJournal() {
   activeType=null; activeAccount=null;
-  document.getElementById('recordsDD').classList.add('hidden');
+  document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading General Journal…</div>';
 
@@ -3820,7 +3814,7 @@ async function saveJournalRow(i) {
 // ── SETTINGS PAGE ─────────────────────────────────────────────
 async function showSettings() {
   setActiveNav('navSettings');
-  document.getElementById('recordsDD').classList.add('hidden');
+  document.getElementById('recordsDD')?.classList.add('hidden');
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading settings…</div>';
 
   const [{ data:qa }, { data:profile }, { data:prods }] = await Promise.all([
@@ -4651,7 +4645,7 @@ const COA_LABELS = { capital:'Capital', liability:'Liabilities', asset:'Assets',
 let coaActiveType = 'capital';
 
 async function openChartOfAccounts() {
-  document.getElementById('recordsDD').classList.add('hidden');
+  document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading Chart of Accounts…</div>';
   await loadAccounts();
@@ -4720,7 +4714,7 @@ async function coaDeleteAccount(id,name) {
 // ── ACCOUNT SETTINGS PAGE ─────────────────────────────────────
 async function showAccountSettings() {
   setActiveNav('');
-  document.getElementById('recordsDD').classList.add('hidden');
+  document.getElementById('recordsDD')?.classList.add('hidden');
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
 
   const [{ data:bkProf },{ data:prods },{ data:settings }] = await Promise.all([
