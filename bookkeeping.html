@@ -662,9 +662,145 @@ body{padding-top:0;}
   .dash-chart-area{height:220px;}
 }
 
+
+/* ── HAMBURGER & SLIDE MENU ──────────────────────────── */
+.bk-ham-bar{display:block;width:18px;height:2px;background:var(--off);border-radius:2px;}
+#bkSlideMenu.open{left:0 !important;}
+#bkMenuOverlay.show{display:block !important;}
+.bk-menu-item{display:flex;align-items:center;gap:10px;padding:12px 20px;font-size:0.85rem;font-weight:600;color:var(--off);cursor:pointer;transition:background 0.1s,color 0.1s;user-select:none;}
+.bk-menu-item:hover,.bk-menu-item.active{background:var(--gold-dim);color:var(--gold);}
+.bk-menu-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+.bk-menu-arrow{margin-left:auto;font-size:0.9rem;transition:transform 0.2s;color:var(--muted);}
+.bk-menu-arrow.open{transform:rotate(90deg);}
+.bk-menu-parent{position:relative;}
+.bk-submenu{max-height:0;overflow:hidden;transition:max-height 0.25s ease;background:rgba(0,0,0,0.2);}
+.bk-submenu.open{max-height:400px;}
+.bk-submenu-item{padding:9px 20px 9px 50px;font-size:0.8rem;color:var(--muted);cursor:pointer;transition:color 0.1s,background 0.1s;}
+.bk-submenu-item:hover{color:var(--gold);background:var(--gold-dim);}
+
+/* ── MOBILE CHART OVERFLOW FIX ───────────────────────── */
+.dash-charts-row{min-width:0;}
+.dash-card{min-width:0;overflow:hidden;}
+.dash-chart-area canvas{max-width:100% !important;}
+.bk-main{padding-top:60px;} /* space for fixed hamburger */
+
+/* ── PRODUCTS/SERVICES PAGE ──────────────────────────── */
+.ps-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+.ps-table th{background:var(--bg);color:var(--gold);font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:9px 8px;text-align:left;border-bottom:2px solid var(--gold);white-space:nowrap;}
+.ps-table th.num{text-align:right;}
+.ps-table td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;}
+.ps-cell{width:100%;background:transparent;border:none;color:var(--white);font-size:0.8rem;font-family:inherit;padding:7px 8px;outline:none;height:36px;}
+.ps-cell:focus{background:rgba(212,175,55,0.06);}
+.ps-cell.num{text-align:right;}
+.ps-cell.ro{pointer-events:none;color:var(--gold);text-align:right;font-weight:700;}
+.ps-sn{text-align:center;color:var(--muted);font-size:0.72rem;padding:7px 4px;width:36px;}
+.ps-del-btn{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:0.75rem;padding:4px 8px;}
+.ps-del-btn:hover{color:var(--red);}
+.ps-save-btn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.95rem;font-weight:900;padding:4px 8px;}
+.ps-save-btn:hover{color:var(--white);}
+.ps-add-btn{background:none;border:1px dashed var(--border2);color:var(--muted);font-size:0.76rem;font-weight:600;padding:8px;border-radius:6px;cursor:pointer;width:100%;margin-top:8px;}
+.ps-add-btn:hover{border-color:var(--gold);color:var(--gold);}
+.ps-barcode-note{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:0.76rem;color:var(--muted);display:flex;gap:10px;align-items:flex-start;}
+
+/* Ensure main content doesn't go under hamburger on mobile */
+@media(max-width:599px){
+  .bk-main{padding-left:12px;padding-right:12px;}
+  .dash-kpi-row{grid-template-columns:1fr 1fr;}
+  .bk-eq-bar{margin-left:0;margin-right:0;}
+}
+
 </style>
 </head>
 <body>
+
+<!-- ☰ HAMBURGER BUTTON — always visible, top-left -->
+<button id="bkMenuBtn" onclick="toggleBkMenu()" aria-label="Menu"
+  style="position:fixed;top:14px;left:14px;z-index:1100;background:var(--surface);
+         border:1px solid var(--border2);border-radius:8px;padding:9px 12px;
+         cursor:pointer;display:flex;flex-direction:column;gap:5px;align-items:center;
+         box-shadow:0 2px 12px rgba(0,0,0,0.3);">
+  <span class="bk-ham-bar"></span>
+  <span class="bk-ham-bar"></span>
+  <span class="bk-ham-bar"></span>
+</button>
+
+<!-- SLIDE MENU OVERLAY -->
+<div id="bkMenuOverlay" onclick="closeBkMenu()"
+  style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1050;display:none;"></div>
+
+<!-- SLIDE MENU PANEL -->
+<div id="bkSlideMenu"
+  style="position:fixed;top:0;left:-300px;width:280px;height:100vh;
+         background:var(--surface);border-right:1px solid var(--border2);
+         z-index:1060;transition:left 0.25s ease;overflow-y:auto;
+         display:flex;flex-direction:column;">
+
+  <!-- Menu header -->
+  <div style="padding:20px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;">
+    <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Butterfly Dynamix</div>
+    <div style="font-size:1.05rem;font-weight:800;color:var(--white);">Bookkeeping</div>
+  </div>
+
+  <!-- Menu items -->
+  <nav style="flex:1;padding:12px 0;">
+    <!-- Dashboard -->
+    <div class="bk-menu-item" onclick="showDashboard();closeBkMenu()" id="mnu-dashboard">
+      <span class="bk-menu-icon">📊</span> Dashboard
+    </div>
+
+    <!-- Products & Services -->
+    <div class="bk-menu-item bk-menu-parent" onclick="toggleSubMenu('sub-ps')">
+      <span class="bk-menu-icon">📦</span> Products & Services
+      <span class="bk-menu-arrow" id="arrow-ps">›</span>
+    </div>
+    <div class="bk-submenu" id="sub-ps">
+      <div class="bk-submenu-item" onclick="showProductsPage('products');closeBkMenu()">📦 Products</div>
+      <div class="bk-submenu-item" onclick="showProductsPage('services');closeBkMenu()">🛠 Services</div>
+    </div>
+
+    <!-- Records -->
+    <div class="bk-menu-item bk-menu-parent" onclick="toggleSubMenu('sub-records')">
+      <span class="bk-menu-icon">📒</span> Records
+      <span class="bk-menu-arrow" id="arrow-records">›</span>
+    </div>
+    <div class="bk-submenu" id="sub-records">
+      <div class="bk-submenu-item" onclick="openChartOfAccounts();closeBkMenu()">📋 Chart of Accounts</div>
+      <div class="bk-submenu-item" onclick="openJournal();closeBkMenu()">📒 Master Records</div>
+      <div class="bk-submenu-item" onclick="showReport('trial');closeBkMenu()">⚖ Trial Balance</div>
+      <div style="padding:6px 20px;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);">Ledgers</div>
+      <div class="bk-submenu-item" onclick="openFirstAccount('capital');closeBkMenu()">Capital Records</div>
+      <div class="bk-submenu-item" onclick="openFirstAccount('liability');closeBkMenu()">Liability Records</div>
+      <div class="bk-submenu-item" onclick="openFirstAccount('asset');closeBkMenu()">Assets Records</div>
+      <div class="bk-submenu-item" onclick="openFirstAccount('income');closeBkMenu()">Income Records</div>
+      <div class="bk-submenu-item" onclick="openFirstAccount('expenditure');closeBkMenu()">Expenditure Records</div>
+    </div>
+
+    <!-- Reports -->
+    <div class="bk-menu-item bk-menu-parent" onclick="toggleSubMenu('sub-reports')">
+      <span class="bk-menu-icon">📈</span> Reports
+      <span class="bk-menu-arrow" id="arrow-reports">›</span>
+    </div>
+    <div class="bk-submenu" id="sub-reports">
+      <div class="bk-submenu-item" onclick="showReport('pl');closeBkMenu()">📊 Profit or Loss</div>
+      <div class="bk-submenu-item" onclick="showReport('bs');closeBkMenu()">🏛 Balance Sheet</div>
+      <div class="bk-submenu-item" onclick="showReport('cf');closeBkMenu()">💸 Cash Flow</div>
+      <div class="bk-submenu-item" onclick="showReport('eq');closeBkMenu()">💼 Equity</div>
+    </div>
+
+    <!-- Settings -->
+    <div class="bk-menu-item" onclick="showAccountSettings();closeBkMenu()">
+      <span class="bk-menu-icon">⚙️</span> Settings
+    </div>
+  </nav>
+
+  <!-- Menu footer -->
+  <div style="padding:16px 20px;border-top:1px solid var(--border);flex-shrink:0;">
+    <div id="bkMenuUserName" style="font-size:0.8rem;font-weight:700;color:var(--off);margin-bottom:2px;">—</div>
+    <div id="bkMenuUserEmail" style="font-size:0.7rem;color:var(--muted);">—</div>
+    <button onclick="bkSignOut()" style="margin-top:10px;background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.74rem;padding:6px 14px;border-radius:6px;cursor:pointer;width:100%;">Sign Out</button>
+  </div>
+</div>
+
 
 <!-- AUTH SCREEN — shown to unauthenticated users, hidden when logged in -->
 <div id="bkAuthScreen" class="bk-auth-screen hidden">
@@ -679,7 +815,7 @@ body{padding-top:0;}
   <p class="bk-welcome">Welcome,
     <strong id="bkUserName" onclick="showAccountSettings()"
       title="Account Settings"
-      style="cursor:pointer;border-bottom:1px dotted var(--gold);">—</strong>
+      style="cursor:pointer;">—</strong>
   </p>
 
   <div class="bk-eq-bar">
@@ -701,46 +837,6 @@ body{padding-top:0;}
       </div>
     </div>
     <div class="bk-eq-check" id="eqCheck">Loading…</div>
-  </div>
-
-  <div class="bk-nav-wrap" id="bkNavWrap">
-    <nav class="bk-nav">
-      <span class="bk-nav-item" id="navDash" onclick="showDashboard()">Dashboard</span>
-      <span class="bk-nav-item" id="navRecords" onclick="toggleRecordsDD()">Records ▾</span>
-      <span class="bk-nav-item" id="navTrial" onclick="showReport('trial')">Trial Balance</span>
-      <span class="bk-nav-item" id="navPL" onclick="showReport('pl')">Profitable</span>
-      <span class="bk-nav-item" id="navBS" onclick="showReport('bs')">Balance Sheet</span>
-      <span class="bk-nav-item" id="navSettings" onclick="showSettings()">Settings</span>
-    </nav>
-
-    <div class="bk-dd hidden" id="recordsDD">
-      <div class="bk-dd-cat" onclick="openChartOfAccounts()" style="color:#60a5fa;font-weight:700;border-bottom:1px solid var(--border);">
-        📋 Chart of Accounts
-      </div>
-      <div class="bk-dd-cat" id="catJournal" onclick="openJournal()" style="color:var(--gold);font-weight:800;border-bottom:2px solid var(--gold);">
-        📒 Master Records (General Journal)
-      </div>
-      <div class="bk-dd-cat" id="catCapital">
-        Capital <span class="arrow">▶</span>
-        <div class="bk-dd-sub" id="subCapital"></div>
-      </div>
-      <div class="bk-dd-cat" id="catLiability">
-        Liability <span class="arrow">▶</span>
-        <div class="bk-dd-sub" id="subLiability"></div>
-      </div>
-      <div class="bk-dd-cat" id="catAsset">
-        Assets <span class="arrow">▶</span>
-        <div class="bk-dd-sub" id="subAsset"></div>
-      </div>
-      <div class="bk-dd-cat" id="catIncome">
-        Income <span class="arrow">▶</span>
-        <div class="bk-dd-sub" id="subIncome"></div>
-      </div>
-      <div class="bk-dd-cat" id="catExpenditure">
-        Expenditure <span class="arrow">▶</span>
-        <div class="bk-dd-sub" id="subExpenditure"></div>
-      </div>
-    </div>
   </div>
 
   <!-- QUICK INPUT -->
@@ -2194,24 +2290,7 @@ async function showDashboard() {
       plugins:{legend:{display:false}}}});
 }
 // ── REPORTS ──────────────────────────────────────────────────
-async function showReport(type) {
-  const navMap={ trial:'navTrial', pl:'navPL', bs:'navBS' };
-  setActiveNav(navMap[type]);
-  document.getElementById('recordsDD').classList.add('hidden');
-  document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
 
-  const { data } = await bkDb.from('bk_transactions')
-    .select('record_type,debit,credit').eq('user_id',bkUser.id);
-  const totals={capital:{dr:0,cr:0},liability:{dr:0,cr:0},asset:{dr:0,cr:0},income:{dr:0,cr:0},expenditure:{dr:0,cr:0}};
-  (data||[]).forEach(r=>{
-    totals[r.record_type].dr+=parseFloat(r.debit)||0;
-    totals[r.record_type].cr+=parseFloat(r.credit)||0;
-  });
-
-  if (type==='trial') renderTrialBalance(totals);
-  if (type==='pl')    renderPL(totals);
-  if (type==='bs')    renderBS(totals);
-}
 
 function renderTrialBalance(t) {
   const totalDr=Object.values(t).reduce((a,v)=>a+v.dr,0);
@@ -4724,6 +4803,209 @@ async function bkSignOut() {
   await bkDb.auth.signOut();
   bkUser=null;
   showAuthScreen('landing');
+}
+
+
+// ── HAMBURGER MENU ────────────────────────────────────────────
+let bkMenuOpen = false;
+function toggleBkMenu() { bkMenuOpen ? closeBkMenu() : openBkMenu(); }
+function openBkMenu() {
+  bkMenuOpen=true;
+  document.getElementById('bkSlideMenu').classList.add('open');
+  document.getElementById('bkMenuOverlay').classList.add('show');
+  const name=document.getElementById('bkUserName')?.textContent;
+  const mn=document.getElementById('bkMenuUserName'); if(mn) mn.textContent=name||'—';
+  const me=document.getElementById('bkMenuUserEmail'); if(me) me.textContent=bkUser?.email||'—';
+}
+function closeBkMenu() {
+  bkMenuOpen=false;
+  document.getElementById('bkSlideMenu').classList.remove('open');
+  document.getElementById('bkMenuOverlay').classList.remove('show');
+}
+function toggleSubMenu(id) {
+  const sub=document.getElementById(id);
+  const arrow=document.getElementById('arrow-'+id.replace('sub-',''));
+  if(!sub) return;
+  const isOpen=sub.classList.contains('open');
+  document.querySelectorAll('.bk-submenu').forEach(s=>s.classList.remove('open'));
+  document.querySelectorAll('.bk-menu-arrow').forEach(a=>a.classList.remove('open'));
+  if(!isOpen){ sub.classList.add('open'); if(arrow) arrow.classList.add('open'); }
+}
+function openFirstAccount(type) {
+  const accts=accounts[type];
+  if(accts&&accts.length>0) openAccount(type,accts[0]);
+}
+
+// ── PRODUCTS & SERVICES PAGE ──────────────────────────────────
+let psRows=[], psType='products';
+
+async function showProductsPage(type) {
+  psType=type||'products';
+  document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
+  const { data }=await bkDb.from('bk_products').select('*')
+    .eq('user_id',bkUser.id).eq('is_service',psType==='services').eq('is_active',true).order('product_name');
+  psRows=(data||[]).map(r=>({id:r.id,name:r.product_name||'',cost_price:parseFloat(r.cost_price)||0,
+    sell_price:parseFloat(r.price)||0,qty:parseFloat(r.qty_in_stock)||0,unit:r.unit||'unit',saved:true}));
+  renderProductsPage();
+}
+
+function renderProductsPage() {
+  const isSvc=psType==='services';
+  const colLabel=isSvc?'Service Type':'Product Type';
+  document.getElementById('bkContent').innerHTML=`
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">${isSvc?'SERVICES':'PRODUCTS'}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${isSvc?'Track services, pricing and availability.':'Track products, pricing and stock levels.'}</div>
+      </div>
+      <div class="bk-header-actions">
+        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showProductsPage('${isSvc?'products':'services'}')">
+          Switch to ${isSvc?'Products':'Services'}</button>
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+      </div>
+    </div>
+    <div class="ps-barcode-note" style="margin:0;border-radius:0;border-left:none;border-right:none;">
+      <span style="font-size:1.2rem;">📱</span>
+      <span>Barcode scanner coming soon — scan any product barcode and it will auto-populate here, updating automatically with every sale and purchase.</span>
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+      <table class="ps-table" style="min-width:700px;">
+        <thead><tr>
+          <th style="width:36px;">S/N</th>
+          <th>${colLabel}</th>
+          <th class="num" style="width:110px;">Cost Price</th>
+          <th class="num" style="width:110px;">Selling Price</th>
+          <th class="num" style="width:90px;">${isSvc?'Sessions':'Qty in Stock'}</th>
+          <th class="num" style="width:120px;">At Cost (Total)</th>
+          <th class="num" style="width:120px;">At Selling (Total)</th>
+          <th style="width:32px;"></th>
+          <th style="width:28px;"></th>
+        </tr></thead>
+        <tbody id="psBody">
+          ${psRows.map((r,i)=>{
+            const atCost=r.cost_price*r.qty, atSell=r.sell_price*r.qty;
+            return `<tr id="psRow_${i}">
+              <td class="ps-sn">${i+1}</td>
+              <td><input class="ps-cell" type="text" value="${escH(r.name)}" placeholder="${colLabel}…"
+                oninput="psRows[${i}].name=this.value;psRows[${i}].saved=false"/></td>
+              <td><input class="ps-cell num" type="number" value="${r.cost_price||''}" placeholder="0"
+                oninput="psRows[${i}].cost_price=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>
+              <td><input class="ps-cell num" type="number" value="${r.sell_price||''}" placeholder="0"
+                oninput="psRows[${i}].sell_price=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>
+              <td><input class="ps-cell num" type="number" value="${r.qty||''}" placeholder="0"
+                oninput="psRows[${i}].qty=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>
+              <td><div id="psAtCost_${i}" class="ps-cell ro">${atCost>0?fmt(atCost):''}</div></td>
+              <td><div id="psAtSell_${i}" class="ps-cell ro">${atSell>0?fmt(atSell):''}</div></td>
+              <td><button class="ps-del-btn" onclick="psDeleteRow(${i})">✕</button></td>
+              <td><button class="ps-save-btn" onclick="psSaveRow(${i})" title="Save">›</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:10px 16px;">
+      <button class="ps-add-btn" onclick="psAddRow()">+ Add ${isSvc?'Service':'Product'}</button>
+    </div>`;
+}
+
+function psUpdateTotals(i) {
+  const r=psRows[i];
+  const ac=document.getElementById(`psAtCost_${i}`), as_=document.getElementById(`psAtSell_${i}`);
+  if(ac) ac.textContent=r.cost_price*r.qty>0?fmt(r.cost_price*r.qty):'';
+  if(as_) as_.textContent=r.sell_price*r.qty>0?fmt(r.sell_price*r.qty):'';
+}
+
+function psAddRow() {
+  psRows.push({id:null,name:'',cost_price:0,sell_price:0,qty:0,unit:'unit',saved:false});
+  renderProductsPage();
+  setTimeout(()=>{ document.querySelectorAll('#psBody tr').item(psRows.length-1)?.querySelector('input')?.focus(); },40);
+}
+
+async function psDeleteRow(i) {
+  if(psRows[i].id) await bkDb.from('bk_products').update({is_active:false}).eq('id',psRows[i].id).eq('user_id',bkUser.id);
+  psRows.splice(i,1); renderProductsPage();
+}
+
+async function psSaveRow(i) {
+  const r=psRows[i]; const btn=document.querySelector(`#psRow_${i} .ps-save-btn`);
+  if(!r.name.trim()) return;
+  if(!r.id) {
+    const {data,error}=await bkDb.from('bk_products').insert({
+      user_id:bkUser.id,product_name:r.name.trim(),price:r.sell_price,cost_price:r.cost_price,
+      qty_in_stock:r.qty,unit:r.unit,is_service:psType==='services',is_active:true,
+    }).select().single();
+    if(!error&&data){psRows[i].id=data.id;psRows[i].saved=true;}
+  } else {
+    await bkDb.from('bk_products').update({product_name:r.name.trim(),price:r.sell_price,
+      cost_price:r.cost_price,qty_in_stock:r.qty,updated_at:new Date().toISOString()})
+      .eq('id',r.id).eq('user_id',bkUser.id);
+    psRows[i].saved=true;
+  }
+  if(btn){btn.textContent='✓';btn.style.color='var(--green)';setTimeout(()=>{btn.textContent='›';btn.style.color='';},1500);}
+}
+
+// ── EXTENDED REPORTS ─────────────────────────────────────────
+async function showReport(type) {
+  document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
+  const {data}=await bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date').eq('user_id',bkUser.id);
+  const T=data||[];
+  const tots={capital:{dr:0,cr:0},liability:{dr:0,cr:0},asset:{dr:0,cr:0},income:{dr:0,cr:0},expenditure:{dr:0,cr:0}};
+  T.forEach(r=>{tots[r.record_type].dr+=parseFloat(r.debit)||0;tots[r.record_type].cr+=parseFloat(r.credit)||0;});
+  if(type==='trial') renderTrialBalance(tots);
+  else if(type==='pl')  renderPL(tots);
+  else if(type==='bs')  renderBS(tots);
+  else if(type==='cf')  renderCashFlow(T,tots);
+  else if(type==='eq')  renderEquity(tots);
+}
+
+function renderCashFlow(T,tots) {
+  const cashNames=(accounts['asset']||[]).filter(a=>a.account_name.toLowerCase().includes('cash')||a.account_name.toLowerCase().includes('bank')).map(a=>a.account_name);
+  const cashIn=T.filter(r=>r.record_type==='asset'&&cashNames.includes(r.account_name)).reduce((a,r)=>a+(parseFloat(r.debit)||0),0);
+  const cashOut=T.filter(r=>r.record_type==='asset'&&cashNames.includes(r.account_name)).reduce((a,r)=>a+(parseFloat(r.credit)||0),0);
+  const incRec=tots.income.cr-tots.income.dr, expPaid=tots.expenditure.dr-tots.expenditure.cr;
+  const capIn=tots.capital.cr-tots.capital.dr, loanIn=tots.liability.cr-tots.liability.dr;
+  const loanRep=Math.max(0,tots.liability.dr-tots.liability.cr);
+  document.getElementById('bkContent').innerHTML=`
+    <div class="bk-content-header"><div class="bk-content-title">CASH FLOW STATEMENT</div>
+      <div class="bk-header-actions"><button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button><button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button></div>
+    </div>
+    <div class="report-wrap"><table class="report-table">
+      <thead><tr><th>Activity</th><th class="num">Amount (${CURRENCIES[activeCurrency].symbol})</th></tr></thead>
+      <tbody>
+        <tr class="section-hdr"><td colspan="2">Operating Activities</td></tr>
+        <tr><td>Income Received</td><td class="num" style="color:#4ade80;">${fmt(incRec)}</td></tr>
+        <tr><td>Expenses Paid</td><td class="num" style="color:#f87171;">(${fmt(expPaid)})</td></tr>
+        <tr><td><strong>Net from Operations</strong></td><td class="num"><strong>${fmt(incRec-expPaid)}</strong></td></tr>
+        <tr class="section-hdr"><td colspan="2">Financing Activities</td></tr>
+        <tr><td>Capital Contributions</td><td class="num" style="color:#4ade80;">${fmt(capIn)}</td></tr>
+        <tr><td>Loans Received</td><td class="num" style="color:#4ade80;">${fmt(loanIn)}</td></tr>
+        <tr><td>Loan Repayments</td><td class="num" style="color:#f87171;">(${fmt(loanRep)})</td></tr>
+        <tr class="total-row"><td>NET CASH MOVEMENT</td><td class="num">${fmt(cashIn-cashOut)}</td></tr>
+      </tbody>
+    </table></div>`;
+}
+
+function renderEquity(tots) {
+  const openCap=tots.capital.cr-tots.capital.dr;
+  const netProfit=(tots.income.cr-tots.income.dr)-(tots.expenditure.dr-tots.expenditure.cr);
+  const closing=openCap+netProfit;
+  document.getElementById('bkContent').innerHTML=`
+    <div class="bk-content-header"><div class="bk-content-title">STATEMENT OF EQUITY</div>
+      <div class="bk-header-actions"><button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button><button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button></div>
+    </div>
+    <div class="report-wrap"><table class="report-table">
+      <thead><tr><th>Component</th><th class="num">Amount (${CURRENCIES[activeCurrency].symbol})</th></tr></thead>
+      <tbody>
+        <tr class="section-hdr"><td colspan="2">Equity Movement</td></tr>
+        <tr><td>Opening Capital / Equity</td><td class="num">${fmt(openCap)}</td></tr>
+        <tr><td>Add: Net ${netProfit>=0?'Profit':'Loss'}</td><td class="num" style="color:${netProfit>=0?'#4ade80':'#f87171'};">${netProfit<0?'-':''}${fmt(Math.abs(netProfit))}</td></tr>
+        <tr class="${netProfit>=0?'profit-row':'loss-row'} total-row"><td>CLOSING EQUITY</td><td class="num">${fmt(closing)}</td></tr>
+        <tr class="section-hdr"><td colspan="2">Capital Sub-accounts</td></tr>
+        ${(accounts['capital']||[]).map(a=>`<tr><td>${escH(a.account_name)}</td><td class="num">—</td></tr>`).join('')}
+      </tbody>
+    </table>
+    <p style="font-size:0.74rem;color:var(--muted);margin-top:14px;">ℹ Full equity breakdown requires transactions posted to specific equity sub-accounts.</p>
+    </div>`;
 }
 
 // ── SETTINGS — ADD BUSINESS PROFILE SECTION ───────────────────
