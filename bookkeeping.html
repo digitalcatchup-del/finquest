@@ -2258,7 +2258,7 @@ async function refreshEquation() {
   const { data:accts } = await bkDb.from('bk_accounts')
     .select('record_type,opening_balance').eq('user_id',bkUser.id);
 
-  let rev=0, exp=0;
+  let cap=0, lia=0, ast=0, rev=0, exp=0;
   (accts||[]).forEach(a=>{
     const ob=parseFloat(a.opening_balance)||0;
     if(a.record_type==='capital')   cap+=ob;
