@@ -709,6 +709,51 @@ body{padding-top:0;}
   .bk-eq-bar{margin-left:0;margin-right:0;}
 }
 
+/* ── STAFF PAGE ──────────────────────────────────────── */
+.staff-welcome{text-align:center;padding:60px 20px 40px;}
+.staff-welcome-title{font-size:2rem;font-weight:900;color:var(--white);margin-bottom:6px;}
+.staff-welcome-sub{font-size:0.85rem;color:var(--muted);margin-bottom:40px;}
+.staff-record-btn{background:var(--gold);border:none;color:#000;font-size:1.1rem;font-weight:900;padding:22px 56px;border-radius:14px;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.3);transition:all 0.15s;}
+.staff-record-btn:hover{opacity:0.88;}
+.staff-choice{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding:40px 20px;}
+.staff-choice-btn{flex:1;min-width:140px;max-width:220px;background:var(--surface);border:2px solid var(--border2);border-radius:14px;padding:30px 20px;cursor:pointer;text-align:center;transition:all 0.15s;}
+.staff-choice-btn:hover{border-color:var(--gold);background:var(--gold-dim);}
+.staff-choice-icon{font-size:2.2rem;margin-bottom:10px;}
+.staff-choice-label{font-size:1rem;font-weight:800;color:var(--white);}
+.staff-choice-desc{font-size:0.74rem;color:var(--muted);margin-top:4px;}
+.staff-sheet-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 0 20px;}
+.staff-customer-block{margin-bottom:20px;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.staff-customer-header{background:var(--surface2);display:flex;align-items:center;border-bottom:2px solid var(--border);}
+.staff-customer-name{flex:1;font-size:0.88rem;font-weight:800;color:var(--white);padding:10px 14px;cursor:text;border:none;background:transparent;font-family:inherit;outline:none;}
+.staff-customer-name:focus{background:rgba(212,175,55,0.07);}
+.staff-cust-btns{display:flex;gap:4px;padding:6px 8px;flex-shrink:0;}
+.staff-cust-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;}
+.staff-cust-btn:hover{border-color:var(--gold);color:var(--gold);}
+.staff-cust-btn.del:hover{border-color:var(--red);color:var(--red);}
+.staff-table{width:100%;border-collapse:collapse;font-size:0.76rem;min-width:900px;}
+.staff-table th{background:var(--bg);color:var(--gold);font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:7px 5px;text-align:left;border-bottom:2px solid var(--gold);white-space:nowrap;}
+.staff-table td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;}
+.staff-cell{width:100%;background:transparent;border:none;color:var(--white);font-size:0.76rem;font-family:inherit;padding:6px 5px;outline:none;height:33px;min-width:60px;}
+.staff-cell:focus{background:rgba(212,175,55,0.06);}
+.staff-cell.num{text-align:right;}
+.staff-cell.ro{pointer-events:none;color:var(--gold);font-weight:700;text-align:right;display:block;padding:6px 5px;}
+.staff-sn{text-align:center;color:var(--muted);font-size:0.7rem;padding:6px 4px;width:28px;}
+.staff-save-btn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;font-weight:900;padding:4px 7px;min-height:33px;}
+.staff-save-btn:hover{color:var(--white);}
+.staff-del-btn{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:0.8rem;padding:4px 7px;min-height:33px;}
+.staff-del-btn:hover{color:var(--red);}
+.staff-add-col{position:relative;}
+.staff-add-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px 7px;min-height:33px;width:100%;}
+.staff-add-btn:hover{color:var(--gold);}
+.staff-total-row td{background:rgba(212,175,55,0.06);font-weight:700;padding:7px 5px;color:var(--gold);}
+.staff-add-cust-btn{background:none;border:1px dashed var(--border2);color:var(--muted);font-size:0.8rem;font-weight:600;padding:10px;border-radius:8px;cursor:pointer;width:100%;margin-top:4px;}
+.staff-add-cust-btn:hover{border-color:var(--gold);color:var(--gold);}
+.row-add-pop{position:absolute;right:0;top:110%;background:var(--surface);border:1px solid var(--border2);border-radius:7px;z-index:300;min-width:150px;box-shadow:0 4px 16px rgba(0,0,0,0.4);overflow:hidden;}
+.row-add-pop div{padding:9px 14px;font-size:0.78rem;color:var(--off);cursor:pointer;border-bottom:1px solid var(--border);}
+.row-add-pop div:last-child{border-bottom:none;}
+.row-add-pop div:hover{background:var(--gold-dim);color:var(--gold);}
+.staff-test-badge{background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;font-size:0.65rem;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:0.06em;text-transform:uppercase;}
+
 </style>
 </head>
 <body>
@@ -746,6 +791,11 @@ body{padding-top:0;}
     <!-- Dashboard -->
     <div class="bk-menu-item" onclick="showDashboard();closeBkMenu()" id="mnu-dashboard">
       <span class="bk-menu-icon">📊</span> Dashboard
+    </div>
+
+    <!-- Staff -->
+    <div class="bk-menu-item" onclick="showStaffPage();closeBkMenu()" id="mnu-staff">
+      <span class="bk-menu-icon">👷</span> Staff
     </div>
 
     <!-- Products & Services -->
@@ -2820,23 +2870,6 @@ function renderJournal() {
       </div>
     </div>
 
-    <!-- ✨ SMART ENTRY PANEL -->
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;margin-bottom:14px;">
-      <div style="font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">✨ Smart Entry — Describe What Happened</div>
-      <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;">
-        <input type="text" id="smartEntryInput"
-          style="flex:1;min-width:200px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:9px 12px;font-size:0.85rem;font-family:inherit;outline:none;"
-          placeholder='e.g. "Paid rent ₦80,000 cash" or "Sold goods ₦50,000 on credit"'
-          onkeydown="if(event.key==='Enter')smartEntry()"
-          oninput="smartEntryHint(this.value)"/>
-        <button onclick="smartEntry()" id="smartEntryBtn"
-          style="background:var(--gold);border:none;color:#000;font-size:0.8rem;font-weight:800;padding:9px 20px;border-radius:7px;cursor:pointer;white-space:nowrap;flex-shrink:0;">
-          ✨ Generate Entry
-        </button>
-      </div>
-      <div id="smartEntryHint" style="font-size:0.7rem;color:var(--muted);margin-top:6px;min-height:14px;"></div>
-      <div id="smartEntryResult" style="display:none;margin-top:10px;padding:10px;background:var(--surface2);border-radius:7px;border:1px solid var(--border2);"></div>
-    </div>
     <div class="bk-sheet-wrap">
       <table class="bk-sheet" id="journalTable">
         <thead><tr>
@@ -5763,6 +5796,319 @@ function renderEquity(tots) {
     </table>
     <p style="font-size:0.74rem;color:var(--muted);margin-top:14px;">ℹ Full equity breakdown requires transactions posted to specific equity sub-accounts.</p>
     </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// STAFF PAGE — TEST RUN (no data saved to Supabase)
+// ══════════════════════════════════════════════════════════════
+const LAUNDRY_SERVICES=['Wash, Dry, Iron','Wash, Dry','Wash Only','Iron Only','Express Dry Cleaning'];
+const LAUNDRY_ITEMS=['Shirt','Trouser','Full Suit','Up and Down','Duvet','Bed Spread','Bed Spread with Pillow Case'];
+const LAUNDRY_PRICES={
+  'Wash, Dry, Iron':{Shirt:1500,Trouser:1500,'Full Suit':4000,'Up and Down':3000,Duvet:5000,'Bed Spread':3000,'Bed Spread with Pillow Case':4000},
+  'Wash, Dry':{Shirt:1200,Trouser:1200,'Full Suit':3000,'Up and Down':2500,Duvet:4000,'Bed Spread':2500,'Bed Spread with Pillow Case':3000},
+  'Wash Only':{Shirt:800,Trouser:800,'Full Suit':2000,'Up and Down':1500,Duvet:3000,'Bed Spread':1500,'Bed Spread with Pillow Case':2000},
+  'Iron Only':{Shirt:500,Trouser:500,'Full Suit':1500,'Up and Down':1000,Duvet:2000,'Bed Spread':1000,'Bed Spread with Pillow Case':1500},
+  'Express Dry Cleaning':{Shirt:2500,Trouser:2500,'Full Suit':7000,'Up and Down':5000,Duvet:8000,'Bed Spread':5000,'Bed Spread with Pillow Case':6000},
+};
+
+let staffCustomers=[],staffExpRows=[],staffDateFmt='dd/mm/yyyy',_custIdSeq=0;
+
+function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_custIdSeq}`,rows:[staffEmptyRow(1),staffEmptyRow(2),staffEmptyRow(3)]};}
+function staffEmptyRow(sn){return{sn,date:'',service:'',item:'',unit_price:0,qty:1,total:0,status1:'',status2:'',date2:'',paid:''};}
+function staffEmptyExpRow(sn){return{sn,date:'',narration:'',unit_price:0,qty:1,total:0};}
+
+function showStaffPage(){
+  document.getElementById('bkContent').innerHTML=`
+    <div class="staff-welcome">
+      <div class="staff-welcome-title">Welcome, Staff 👋</div>
+      <div class="staff-welcome-sub"><span class="staff-test-badge">Test Run — no data saved</span></div>
+      <button class="staff-record-btn" onclick="showStaffChoice()">📝 Record</button>
+    </div>`;
+}
+
+function showStaffChoice(){
+  document.getElementById('bkContent').innerHTML=`
+    <div class="bk-content-header">
+      <div class="bk-content-title">STAFF RECORD</div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">← Back</button>
+    </div>
+    <div class="staff-choice">
+      <div class="staff-choice-btn" onclick="showStaffSales()">
+        <div class="staff-choice-icon">🛒</div>
+        <div class="staff-choice-label">Sales</div>
+        <div class="staff-choice-desc">Record customer transactions</div>
+      </div>
+      <div class="staff-choice-btn" onclick="showStaffExpenses()">
+        <div class="staff-choice-icon">💸</div>
+        <div class="staff-choice-label">Expenses</div>
+        <div class="staff-choice-desc">Record business expenses</div>
+      </div>
+    </div>`;
+}
+
+function showStaffSales(){
+  if(staffCustomers.length===0) staffCustomers=[staffNewCustomer()];
+  renderStaffSales();
+}
+
+function renderStaffSales(){
+  const fmtOpts=['dd/mm/yyyy','mm/dd/yyyy','dd/mm/yy'].map(f=>`<option value="${f}" ${staffDateFmt===f?'selected':''}>${f}</option>`).join('');
+  document.getElementById('bkContent').innerHTML=`
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">SALES RECORD</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap;">
+          <span class="staff-test-badge">Test Run</span>
+          <label style="font-size:0.7rem;color:var(--muted);">Date format:
+            <select class="staff-cell" style="height:auto;padding:2px 6px;width:auto;min-width:100px;"
+              onchange="staffDateFmt=this.value;renderStaffSales()">${fmtOpts}</select>
+          </label>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">← Back</button>
+      </div>
+    </div>
+    <div id="staffSalesBody" style="padding:0 0 16px;"></div>`;
+  renderAllCustomers();
+}
+
+function renderAllCustomers(){
+  const body=document.getElementById('staffSalesBody');
+  if(!body) return;
+  body.innerHTML=staffCustomers.map(c=>renderCustomerBlock(c)).join('')+
+    `<button class="staff-add-cust-btn" onclick="addStaffCustomer()">+ Add Customer</button>`;
+}
+
+function renderCustomerBlock(cust){
+  const totalQty=cust.rows.reduce((a,r)=>a+(parseFloat(r.qty)||0),0);
+  const totalAmt=cust.rows.reduce((a,r)=>a+(parseFloat(r.total)||0),0);
+
+  // Build rows using string concatenation — avoids triple-nested template literals
+  let rowsHtml = '';
+  cust.rows.forEach(function(row, ri) {
+    // Service options
+    let svcOpts = '<option value="">Select\u2026</option>';
+    LAUNDRY_SERVICES.forEach(function(s) {
+      svcOpts += '<option value="' + s + '"' + (row.service===s?' selected':'') + '>' + s + '</option>';
+    });
+    // Item options
+    let itemOpts = '<option value="">Select\u2026</option>';
+    LAUNDRY_ITEMS.forEach(function(i) {
+      itemOpts += '<option value="' + i + '"' + (row.item===i?' selected':'') + '>' + i + '</option>';
+    });
+    const cid = cust.id;
+    const upVal = row.unit_price > 0 ? row.unit_price.toLocaleString('en-NG') : '';
+    const totVal = row.total > 0 ? row.total.toLocaleString('en-NG') : '';
+
+    rowsHtml += '<tr id="srow_' + cid + '_' + ri + '">'
+      + '<td class="staff-sn">' + (ri+1) + '</td>'
+      + '<td><input class="staff-cell" type="date" value="' + row.date + '"'
+      + ' onchange="staffSaleChange(' + cid + ',' + ri + ',\'date\',this.value)"/></td>'
+      + '<td><select class="staff-cell" onchange="staffSvcChange(' + cid + ',' + ri + ',this.value)">'
+      + svcOpts + '</select></td>'
+      + '<td><select class="staff-cell" onchange="staffItemChange(' + cid + ',' + ri + ',this.value)">'
+      + itemOpts + '</select></td>'
+      + '<td><input class="staff-cell num" type="text" inputmode="decimal" value="' + upVal + '" placeholder="0"'
+      + ' oninput="staffNumChange(' + cid + ',' + ri + ',\'unit_price\',this.value)"/></td>'
+      + '<td><input class="staff-cell num" type="number" value="' + (row.qty||1) + '" min="1" style="width:55px;"'
+      + ' oninput="staffNumChange(' + cid + ',' + ri + ',\'qty\',this.value)"/></td>'
+      + '<td><div class="staff-cell ro" id="stotal_' + cid + '_' + ri + '">' + totVal + '</div></td>'
+      + '<td><select class="staff-cell" onchange="staffSaleChange(' + cid + ',' + ri + ',\'status1\',this.value)">'
+      + '<option value="">&#8212;</option>'
+      + '<option value="Ready"' + (row.status1==='Ready'?' selected':'') + '>Ready</option>'
+      + '<option value="Not Ready"' + (row.status1==='Not Ready'?' selected':'') + '>Not Ready</option>'
+      + '</select></td>'
+      + '<td><select class="staff-cell" onchange="staffSaleChange(' + cid + ',' + ri + ',\'status2\',this.value)">'
+      + '<option value="">&#8212;</option>'
+      + '<option value="Collected"' + (row.status2==='Collected'?' selected':'') + '>Collected</option>'
+      + '<option value="Not Collected"' + (row.status2==='Not Collected'?' selected':'') + '>Not Collected</option>'
+      + '</select></td>'
+      + '<td><input class="staff-cell" type="date" value="' + row.date2 + '"'
+      + ' onchange="staffSaleChange(' + cid + ',' + ri + ',\'date2\',this.value)"/></td>'
+      + '<td><select class="staff-cell" onchange="staffSaleChange(' + cid + ',' + ri + ',\'paid\',this.value)">'
+      + '<option value="">&#8212;</option>'
+      + '<option value="Not Paid"' + (row.paid==='Not Paid'?' selected':'') + '>Not Paid</option>'
+      + '<option value="Paid"' + (row.paid==='Paid'?' selected':'') + '>Paid</option>'
+      + '</select></td>'
+      + '<td><button class="staff-save-btn" onclick="staffSaveRow(' + cid + ',' + ri + ')">&#8250;</button></td>'
+      + '<td><button class="staff-del-btn" onclick="staffDelRow(' + cid + ',' + ri + ')">&#x2715;</button></td>'
+      + '<td class="staff-add-col" style="position:relative;">'
+      + '<button class="staff-add-btn" onclick="staffShowAddMenu(this,' + cid + ',' + ri + ')">&#xFF0B;</button>'
+      + '</td></tr>';
+  });
+
+  return '<div class="staff-customer-block">'
+    + '<div class="staff-customer-header">'
+    + '<input class="staff-customer-name" type="text" value="' + escH(cust.name) + '"'
+    + ' onchange="staffCustRename(' + cust.id + ',this.value)" placeholder="Customer name\u2026"/>'
+    + '<div class="staff-cust-btns">'
+    + '<button class="staff-cust-btn" onclick="staffAddRowToCustomer(' + cust.id + ')">+ Row</button>'
+    + '<button class="staff-cust-btn del" onclick="staffDeleteCustomer(' + cust.id + ')">&#x2715;</button>'
+    + '</div></div>'
+    + '<div class="staff-sheet-wrap"><table class="staff-table">'
+    + '<thead><tr>'
+    + '<th>S/N</th><th>Date</th><th>Service</th><th>Item</th>'
+    + '<th>Unit Price</th><th>Qty</th><th>Total</th>'
+    + '<th>Status 1</th><th>Status 2</th><th>Collection Date</th>'
+    + '<th>Payment</th><th>&#8250;</th><th>&#x2715;</th><th>&#xFF0B;</th>'
+    + '</tr></thead>'
+    + '<tbody>' + rowsHtml + '</tbody>'
+    + '<tfoot><tr class="staff-total-row">'
+    + '<td colspan="5" style="padding:7px 5px;">Total</td>'
+    + '<td style="text-align:right;padding:7px 5px;">' + (totalQty||'') + '</td>'
+    + '<td style="text-align:right;padding:7px 5px;">' + (totalAmt>0?totalAmt.toLocaleString('en-NG'):'') + '</td>'
+    + '<td colspan="7"></td>'
+    + '</tr></tfoot>'
+    + '</table></div></div>';
+}
+
+function staffGetCust(id){return staffCustomers.find(c=>c.id===id);}
+function staffSaleChange(custId,ri,field,val){const c=staffGetCust(custId);if(c)c.rows[ri][field]=val;}
+function staffCustRename(custId,name){const c=staffGetCust(custId);if(c)c.name=name;}
+
+function staffSvcChange(custId,ri,svc){
+  const c=staffGetCust(custId);if(!c)return;
+  c.rows[ri].service=svc;
+  const item=c.rows[ri].item;
+  if(item&&LAUNDRY_PRICES[svc]?.[item]){c.rows[ri].unit_price=LAUNDRY_PRICES[svc][item];staffCalcTotal(custId,ri);renderAllCustomers();}
+}
+
+function staffItemChange(custId,ri,item){
+  const c=staffGetCust(custId);if(!c)return;
+  c.rows[ri].item=item;
+  const svc=c.rows[ri].service;
+  if(svc&&LAUNDRY_PRICES[svc]?.[item]){c.rows[ri].unit_price=LAUNDRY_PRICES[svc][item];staffCalcTotal(custId,ri);renderAllCustomers();}
+}
+
+function staffNumChange(custId,ri,field,val){
+  const c=staffGetCust(custId);if(!c)return;
+  c.rows[ri][field]=parseFloat(String(val).replace(/,/g,''))||0;
+  staffCalcTotal(custId,ri);
+  const el=document.getElementById(`stotal_${custId}_${ri}`);
+  if(el)el.textContent=c.rows[ri].total>0?c.rows[ri].total.toLocaleString('en-NG'):'';
+}
+
+function staffCalcTotal(custId,ri){
+  const c=staffGetCust(custId);if(!c)return;
+  const r=c.rows[ri];r.total=(r.unit_price||0)*(r.qty||1);
+}
+
+function staffSaveRow(custId,ri){
+  const btn=document.querySelector(`#srow_${custId}_${ri} .staff-save-btn`);
+  if(btn){btn.textContent='✓';btn.style.color='var(--green)';setTimeout(()=>{btn.textContent='›';btn.style.color='';},1500);}
+}
+
+function staffDelRow(custId,ri){
+  const c=staffGetCust(custId);if(!c||c.rows.length<=1)return;
+  c.rows.splice(ri,1);c.rows.forEach((r,i)=>r.sn=i+1);renderAllCustomers();
+}
+
+function addStaffCustomer(){
+  staffCustomers.push(staffNewCustomer());
+  renderAllCustomers();
+  setTimeout(()=>{const b=document.querySelectorAll('.staff-customer-block');b[b.length-1]?.scrollIntoView({behavior:'smooth',block:'start'});},80);
+}
+
+function staffDeleteCustomer(custId){
+  if(staffCustomers.length<=1){return;}
+  staffCustomers=staffCustomers.filter(c=>c.id!==custId);renderAllCustomers();
+}
+
+function staffAddRowToCustomer(custId){
+  const c=staffGetCust(custId);if(!c)return;
+  c.rows.push(staffEmptyRow(c.rows.length+1));renderAllCustomers();
+}
+
+function staffShowAddMenu(btn,custId,ri){
+  document.querySelectorAll('.row-add-pop').forEach(p=>p.remove());
+  const pop=document.createElement('div');pop.className='row-add-pop';
+  pop.innerHTML=`
+    <div onclick="staffInsertRow(${custId},${ri},'above');this.closest('.row-add-pop').remove()">Add row above</div>
+    <div onclick="staffInsertRow(${custId},${ri},'below');this.closest('.row-add-pop').remove()">Add row below</div>`;
+  btn.closest('.staff-add-col').appendChild(pop);
+  setTimeout(()=>document.addEventListener('click',()=>pop.remove(),{once:true}),10);
+}
+
+function staffInsertRow(custId,ri,where){
+  const c=staffGetCust(custId);if(!c)return;
+  c.rows.splice(where==='above'?ri:ri+1,0,staffEmptyRow(0));
+  c.rows.forEach((r,i)=>r.sn=i+1);renderAllCustomers();
+}
+
+// Expenses
+function showStaffExpenses(){
+  if(staffExpRows.length===0)staffExpRows=[1,2,3,4,5].map(n=>staffEmptyExpRow(n));
+  renderStaffExpenses();
+}
+
+function renderStaffExpenses(){
+  const rows=staffExpRows.map((r,i)=>`
+    <tr>
+      <td class="staff-sn">${i+1}</td>
+      <td><input class="staff-cell" type="date" value="${r.date}" onchange="staffExpRows[${i}].date=this.value"/></td>
+      <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="Description…"
+        oninput="staffExpRows[${i}].narration=this.value"/></td>
+      <td><input class="staff-cell num" type="text" inputmode="decimal"
+        value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
+        oninput="staffExpNumChange(${i},'unit_price',this.value)"/></td>
+      <td><input class="staff-cell num" type="number" value="${r.qty||1}" min="1" style="width:55px;"
+        oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
+      <td><div class="staff-cell ro" id="etotal_${i}">${r.total>0?r.total.toLocaleString('en-NG'):''}</div></td>
+      <td><button class="staff-save-btn" onclick="staffExpSave(${i})">›</button></td>
+      <td><button class="staff-del-btn" onclick="staffExpDel(${i})">✕</button></td>
+    </tr>`).join('');
+  const totalExp=staffExpRows.reduce((a,r)=>a+(r.total||0),0);
+  document.getElementById('bkContent').innerHTML=`
+    <div class="bk-content-header">
+      <div><div class="bk-content-title">EXPENSES RECORD</div><span class="staff-test-badge">Test Run</span></div>
+      <div style="display:flex;gap:8px;">
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">← Back</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+      <table class="staff-table" style="min-width:560px;">
+        <thead><tr>
+          <th>S/N</th><th>Date</th><th>Narration / Description</th>
+          <th>Unit Price</th><th>Qty</th><th>Total</th><th>›</th><th>✕</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr class="staff-total-row">
+          <td colspan="5" style="padding:7px 5px;">Total</td>
+          <td style="text-align:right;padding:7px 5px;" id="expGrandTotal">${totalExp>0?totalExp.toLocaleString('en-NG'):''}</td>
+          <td colspan="2"></td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <button class="staff-add-cust-btn" onclick="staffExpAddRow()" style="margin-top:8px;">+ Add Row</button>`;
+}
+
+function staffExpNumChange(i,field,val){
+  staffExpRows[i][field]=parseFloat(String(val).replace(/,/g,''))||0;
+  staffExpRows[i].total=staffExpRows[i].unit_price*(staffExpRows[i].qty||1);
+  const el=document.getElementById(`etotal_${i}`);
+  if(el)el.textContent=staffExpRows[i].total>0?staffExpRows[i].total.toLocaleString('en-NG'):'';
+  const totalExp=staffExpRows.reduce((a,r)=>a+(r.total||0),0);
+  const grand=document.getElementById('expGrandTotal');
+  if(grand)grand.textContent=totalExp>0?totalExp.toLocaleString('en-NG'):'';
+}
+
+function staffExpSave(i){
+  const rows=document.querySelectorAll('#bkContent tbody tr');
+  const btn=rows[i]?.querySelector('.staff-save-btn');
+  if(btn){btn.textContent='✓';btn.style.color='var(--green)';setTimeout(()=>{btn.textContent='›';btn.style.color='';},1500);}
+}
+
+function staffExpDel(i){
+  if(staffExpRows.length<=1)return;
+  staffExpRows.splice(i,1);staffExpRows.forEach((r,idx)=>r.sn=idx+1);renderStaffExpenses();
+}
+
+function staffExpAddRow(){
+  staffExpRows.push(staffEmptyExpRow(staffExpRows.length+1));renderStaffExpenses();
+  setTimeout(()=>{const rows=document.querySelectorAll('#bkContent tbody tr');rows[rows.length-1]?.querySelector('input')?.focus();},60);
 }
 
 // ── SETTINGS — ADD BUSINESS PROFILE SECTION ───────────────────
