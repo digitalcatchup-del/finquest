@@ -736,7 +736,7 @@ body{padding-top:0;}
          display:flex;flex-direction:column;">
 
   <!-- Menu header -->
-  <div style="padding:20px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;">
+  <div style="padding:20px 20px 12px 62px;border-bottom:1px solid var(--border);flex-shrink:0;">
     <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Butterfly Dynamix</div>
     <div style="font-size:1.05rem;font-weight:800;color:var(--white);">Bookkeeping</div>
   </div>
@@ -1241,11 +1241,11 @@ function renderSuStep() {
       <div class="su-heading">What industry are you in?</div>
       <input class="su-search" type="text" placeholder="Search industry…"
         id="suIndSearch" value="${suData._indSearch||''}"
-        oninput="suData._indSearch=this.value;renderSuStep()"/>
-      <div class="su-industry-grid" style="max-height:180px;overflow-y:auto;margin-bottom:16px;">
-        ${filtered.map(ind=>`
+        oninput="suFilterIndustries(this.value)"/>
+      <div class="su-industry-grid" id="suIndGrid" style="max-height:180px;overflow-y:auto;margin-bottom:16px;">
+        ${filtered.map((ind,ii)=>`
         <div class="su-industry-item ${suData.industry===ind?'sel':''}"
-          onclick="suData.industry='${ind}';suData.bizTypes=[];renderSuStep()">
+          data-ii="${ii}" onclick="suSelectIndustryByIndex(this)">
           ${ind}
         </div>`).join('')}
       </div>
@@ -1254,14 +1254,14 @@ function renderSuStep() {
           Select your business type(s) — up to 5
         </div>
         <div class="su-selected-count">
-          <span>${selectedBizTypes.length}</span>/5 selected
+          <span id="suBizCount">${selectedBizTypes.length}</span>/5 selected
         </div>
-        <div class="su-biz-type-grid">
-          ${bizTypes.map(bt=>{
+        <div class="su-biz-type-grid" id="suBizTypeGrid">
+          ${bizTypes.map((bt,bi)=>{
             const isSel = selectedBizTypes.includes(bt);
             const isMaxed = !isSel && selectedBizTypes.length >= 5;
             return `<div class="su-biz-type-item ${isSel?'sel':''} ${isMaxed?'disabled-max':''}"
-              onclick="${isMaxed?'':`suToggleBizType('${bt.replace(/'/g,"\\'")}');renderSuStep()`}">
+              data-bi="${bi}" onclick="suToggleBizTypeByIndex(this,${bi})">
               ${isSel?'✓ ':''}${bt}
             </div>`;
           }).join('')}
@@ -1273,7 +1273,7 @@ function renderSuStep() {
           <button class="su-next-btn" style="padding:10px 16px;white-space:nowrap;"
             onclick="suAddCustomBizType()">Add</button>
         </div>
-        <button class="su-next-btn" style="width:100%;margin-top:12px;" onclick="suNext()"
+        <button class="su-next-btn" id="suNextBtn5" style="width:100%;margin-top:12px;" onclick="suNext()"
           ${selectedBizTypes.length===0?'disabled style="opacity:0.4;width:100%;margin-top:12px;"':''}>
           Continue with ${selectedBizTypes.length} business type${selectedBizTypes.length!==1?'s':''} →
         </button>
@@ -1447,6 +1447,113 @@ function suToggleBizType(bt) {
   else if (suData.bizTypes.length<5) suData.bizTypes.push(bt);
 }
 
+// ── No-re-render business type toggle ─────────────────────────
+// Uses index into the current industry's bizTypes array — no string escaping
+function suToggleBizTypeByIndex(el, idx) {
+  const industry  = suData.industry;
+  const bizTypes  = INDUSTRY_BUSINESS_TYPES[industry] || [];
+  const bt        = bizTypes[idx];
+  if (!bt) return;
+
+  const alreadySel = suData.bizTypes.includes(bt);
+  if (!alreadySel && suData.bizTypes.length >= 5) { suBizTypeMaxed(); return; }
+
+  suToggleBizType(bt);
+  const isSel = suData.bizTypes.includes(bt);
+  el.classList.toggle('sel', isSel);
+  el.textContent = (isSel ? '✓ ' : '') + bt;
+
+  // Update count
+  const countEl = document.getElementById('suBizCount');
+  if (countEl) countEl.textContent = suData.bizTypes.length;
+
+  // Update disabled state on all non-selected items
+  const maxed = suData.bizTypes.length >= 5;
+  document.querySelectorAll('#suBizTypeGrid .su-biz-type-item').forEach(item => {
+    if (!item.classList.contains('sel')) {
+      item.classList.toggle('disabled-max', maxed);
+    }
+  });
+
+  // Update continue button
+  const btn = document.getElementById('suNextBtn5');
+  if (btn) {
+    const n = suData.bizTypes.length;
+    btn.disabled = n === 0;
+    btn.style.opacity = n === 0 ? '0.4' : '1';
+    btn.textContent = `Continue with ${n} business type${n!==1?'s':''} →`;
+  }
+}
+
+function suToggleBizTypeUI(el, bt) { /* kept for compatibility */ suToggleBizType(bt); }
+
+function suBizTypeMaxed() {
+  const countEl = document.getElementById('suBizCount');
+  if (countEl) {
+    countEl.style.color = 'var(--red)';
+    setTimeout(()=>{ countEl.style.color=''; }, 1000);
+  }
+}
+
+// ── Industry search — targeted grid update (no full re-render) ─
+function suFilterIndustries(val) {
+  suData._indSearch = val;
+  const industries = Object.keys(INDUSTRY_BUSINESS_TYPES);
+  const q = val.toLowerCase();
+  const filtered = q ? industries.filter(i=>i.toLowerCase().includes(q)) : industries;
+  const grid = document.getElementById('suIndGrid');
+  if (!grid) return;
+  grid.innerHTML = filtered.map((ind,ii)=>`
+    <div class="su-industry-item ${suData.industry===ind?'sel':''}"
+      data-ii="${ii}" onclick="suSelectIndustryByIndex(this)">
+      ${ind}
+    </div>`).join('');
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="color:var(--muted);font-size:0.8rem;padding:8px;grid-column:1/-1;">
+      No match — <button onclick="suData.industry=document.getElementById('suIndSearch').value;suData.bizTypes=[];renderSuStep()"
+        style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.8rem;">Use "${val}" as custom industry →</button>
+    </div>`;
+  }
+}
+
+function suSelectIndustry(ind) {
+  suData.industry = ind;
+  suData.bizTypes = [];
+  renderSuStep(); // Full re-render here is OK — user deliberately chose an industry
+}
+
+// ── Ledger sub-account switcher ────────────────────────────────
+async function switchLedgerAccount(accountId) {
+  const acct = (accounts[activeType]||[]).find(a=>a.id===accountId);
+  if (acct) await openAccount(activeType, acct);
+}
+
+// ── COA: sub-account links to its ledger ──────────────────────
+function coaOpenRecord(id, type) {
+  const acct = (accounts[type]||[]).find(a=>a.id===id);
+  if (acct) { openAccount(type, acct); closeBkMenu(); }
+}
+
+// ── Save signup products to bk_products (if logged in) ────────
+async function saveSignupProducts() {
+  if (!bkUser || !suData.products || suData.products.length === 0) return;
+  const inserts = suData.products
+    .filter(p => p.name && p.name.trim())
+    .map(p => ({
+      user_id:      bkUser.id,
+      product_name: p.name.trim(),
+      price:        p.price || 0,
+      cost_price:   0,
+      qty_in_stock: 0,
+      unit:         'unit',
+      is_service:   p.offering === 'service',
+      is_active:    true,
+    }));
+  if (inserts.length > 0) {
+    await bkDb.from('bk_products').insert(inserts);
+  }
+}
+
 function suAddCustomBizType() {
   const input = document.getElementById('customBizTypeInput');
   if (!input) return;
@@ -1536,8 +1643,9 @@ function suSaveProdRow(i) {
   if (btn) { btn.textContent='✓'; btn.style.color='var(--green)'; setTimeout(()=>{btn.textContent='›';btn.style.color='';},1200); }
 }
 
-function suDone() {
-  // TEST MODE — does not save. Shows welcome screen.
+async function suDone() {
+  // Save products if user is logged in (test mode for profile, real save for products)
+  await saveSignupProducts();
   document.getElementById('bkAuthContent').innerHTML = `
     <div class="su-welcome">
       <div class="su-welcome-icon">🎉</div>
@@ -1843,8 +1951,16 @@ function renderLedger() {
   content.innerHTML = `
     <div class="bk-content-header">
       <div>
-        <div class="bk-content-title">${typeLabel.toUpperCase()} — ${activeAccount.account_name.toUpperCase()}</div>
-        ${ob ? `<div style="font-size:0.72rem;color:var(--gold);margin-top:2px;">Opening Balance: ${fmt(ob)}</div>` : ''}
+        <div class="bk-content-title">${typeLabel.toUpperCase()}</div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <label style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Account:</label>
+          <select style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:4px 10px;font-size:0.8rem;font-family:inherit;outline:none;cursor:pointer;"
+            onchange="switchLedgerAccount(this.value)">
+            ${(accounts[activeType]||[]).map(a=>`
+            <option value="${a.id}" ${a.id===activeAccount.id?'selected':''}>${a.account_name}</option>`).join('')}
+          </select>
+          ${ob ? `<span style="font-size:0.72rem;color:var(--gold);">Opening Balance: ${fmt(ob)}</span>` : ''}
+        </div>
       </div>
       <div class="bk-header-actions">
         <span class="bk-save-msg" id="saveMsg"></span>
@@ -1899,16 +2015,16 @@ function renderRows(displayRows) {
   if (!tbody) return;
   const ob = parseFloat(activeAccount?.opening_balance)||0;
 
-  // Opening balance row at the top
-  const obRow = ob !== 0 ? `
+  // Opening balance row — always show at top of every ledger
+  const obRow = `
     <tr class="ob-row" id="row_ob">
       <td colspan="4" style="padding:8px 10px;font-size:0.78rem;font-weight:700;color:var(--gold);">Opening Balance</td>
       <td style="text-align:right;padding:8px 10px;font-size:0.78rem;color:var(--muted);">—</td>
       <td style="text-align:right;padding:8px 10px;font-size:0.78rem;color:var(--muted);">—</td>
-      <td style="text-align:right;padding:8px 10px;font-size:0.82rem;font-weight:800;color:var(--gold);">${fmt(ob)}</td>
+      <td style="text-align:right;padding:8px 10px;font-size:0.82rem;font-weight:800;color:var(--gold);">${ob!==0?fmt(ob):fmt(0)}</td>
       <td style="text-align:center;padding:8px 10px;font-size:0.72rem;color:var(--muted);">—</td>
       <td></td>
-    </tr>` : '';
+    </tr>`;
 
   tbody.innerHTML = obRow + (displayRows||rows).map((row, i) => {
     const realIdx = rows.indexOf(row);
@@ -3381,7 +3497,7 @@ function renderQI() {
         <div class="qi-product-grid">
           ${filtered.map(p=>`
           <div class="qi-product-item ${qiState.product?.n===p.n?'selected':''}"
-            onclick="qiSelectProduct(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+            data-qi="${filtered.indexOf(p)}" onclick="qiSelectByIndex(this)" style="cursor:pointer;">
             <div class="qi-product-name">${escH(p.n)}</div>
             <div class="qi-product-price">${p.p>0?sym+p.p.toLocaleString():'Set price'}</div>
           </div>`).join('')}
@@ -3525,6 +3641,12 @@ function qiSetType(type) {
     qiState.step = 'product';
   }
   renderQI();
+}
+
+function qiSelectByIndex(el) {
+  const idx = parseInt(el.dataset.qi);
+  const prods = window._qiFilteredProds || [];
+  if (prods[idx]) qiSelectProduct(prods[idx]);
 }
 
 function qiSelectProduct(product) {
@@ -4676,11 +4798,12 @@ function renderCOA() {
           <div><span class="coa-section-title">${COA_LABELS[active]}</span><span class="coa-section-code">${base}.xx</span></div>
           <span style="font-size:0.72rem;color:var(--muted);">${accts.length} account${accts.length!==1?'s':''}</span>
         </div>
-        ${accts.map((a,i)=>`<div class="coa-account-row">
+        ${accts.map((a,i)=>`<div class="coa-account-row" style="cursor:pointer;"
+          onclick="coaOpenRecord('${a.id}','${active}')">
           <span class="coa-account-num">${base+i+1}</span>
-          <span class="coa-account-name">${escH(a.account_name)}</span>
+          <span class="coa-account-name" title="Click to open ${escH(a.account_name)} records">${escH(a.account_name)}</span>
           <span class="coa-account-type">${active==='asset'||active==='expenditure'?'Dr normal':'Cr normal'}</span>
-          <button class="coa-del-btn" onclick="coaDeleteAccount('${a.id}','${escH(a.account_name)}')" title="Delete">✕</button>
+          <button class="coa-del-btn" onclick="event.stopPropagation();coaDeleteAccount('${a.id}','${escH(a.account_name)}')" title="Delete">✕</button>
         </div>`).join('')}
         ${accts.length===0?'<div style="padding:20px;text-align:center;color:var(--muted);font-size:0.8rem;">No sub-accounts yet. Add one below.</div>':''}
         <div class="coa-add-row">
