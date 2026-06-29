@@ -2819,6 +2819,24 @@ function renderJournal() {
         <span class="bk-save-msg" id="journalSaveMsg"></span>
       </div>
     </div>
+
+    <!-- ✨ SMART ENTRY PANEL -->
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;margin-bottom:14px;">
+      <div style="font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">✨ Smart Entry — Describe What Happened</div>
+      <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;">
+        <input type="text" id="smartEntryInput"
+          style="flex:1;min-width:200px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:9px 12px;font-size:0.85rem;font-family:inherit;outline:none;"
+          placeholder='e.g. "Paid rent ₦80,000 cash" or "Sold goods ₦50,000 on credit"'
+          onkeydown="if(event.key==='Enter')smartEntry()"
+          oninput="smartEntryHint(this.value)"/>
+        <button onclick="smartEntry()" id="smartEntryBtn"
+          style="background:var(--gold);border:none;color:#000;font-size:0.8rem;font-weight:800;padding:9px 20px;border-radius:7px;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+          ✨ Generate Entry
+        </button>
+      </div>
+      <div id="smartEntryHint" style="font-size:0.7rem;color:var(--muted);margin-top:6px;min-height:14px;"></div>
+      <div id="smartEntryResult" style="display:none;margin-top:10px;padding:10px;background:var(--surface2);border-radius:7px;border:1px solid var(--border2);"></div>
+    </div>
     <div class="bk-sheet-wrap">
       <table class="bk-sheet" id="journalTable">
         <thead><tr>
@@ -3067,89 +3085,486 @@ function exportJournalPDF(){
 // ── AI ACCOUNT SUGGESTION ─────────────────────────────────────
 let aiSuggestTimer = null;
 
+// ══════════════════════════════════════════════════════════════
+// ACCOUNTING INTELLIGENCE ENGINE
+// Knows how to treat every common transaction type
+// ══════════════════════════════════════════════════════════════
+
+const ACCOUNTING_RULES = [
+  // ── SALES & REVENUE ───────────────────────────────────────
+  { id:'cash_sale',
+    keys:['cash sale','sold for cash','received cash','cash received','cash receipt','paid cash'],
+    debit:'Cash and Bank', credit:'Sales Revenue',
+    principle:'Cash Sales: Cash (asset) increases on the debit side; Revenue (income) increases on the credit side.',
+    type:'income' },
+  { id:'credit_sale',
+    keys:['credit sale','sold on credit','invoice','accounts receivable','debtor','owed by'],
+    debit:'Accounts Receivable', credit:'Sales Revenue',
+    principle:'Credit Sales: A debtor (asset) is created on the debit side; Revenue earned on the credit side.',
+    type:'income' },
+  { id:'service_income',
+    keys:['service income','service fee','consultation','professional fee','service rendered','service charge'],
+    debit:'Cash and Bank', credit:'Service Income',
+    principle:'Service Income: Cash received (debit); Revenue earned (credit).',
+    type:'income' },
+  { id:'rent_received',
+    keys:['rent received','rental income','received rent'],
+    debit:'Cash and Bank', credit:'Rental Income',
+    principle:'Rent Received: Cash increases (debit); Rental income earned (credit).',
+    type:'income' },
+  { id:'interest_received',
+    keys:['interest received','bank interest','interest income','interest earned'],
+    debit:'Cash and Bank', credit:'Interest Received',
+    principle:'Interest Received: Cash increases (debit); Interest income earned (credit).',
+    type:'income' },
+  { id:'debtor_payment',
+    keys:['received from debtor','debtor paid','customer paid','payment received','settled invoice'],
+    debit:'Cash and Bank', credit:'Accounts Receivable',
+    principle:'Debtor Collection: Cash increases (debit); Accounts Receivable decreases as debt is cleared (credit).',
+    type:'asset' },
+
+  // ── PURCHASES & INVENTORY ─────────────────────────────────
+  { id:'cash_purchase',
+    keys:['purchased goods','bought goods','cash purchase','bought stock','purchased stock','purchase of goods','bought inventory'],
+    debit:'Purchases', credit:'Cash and Bank',
+    principle:'Cash Purchase: Purchases (expense) increases on debit; Cash (asset) decreases on credit.',
+    type:'expenditure' },
+  { id:'credit_purchase',
+    keys:['credit purchase','bought on credit','accounts payable','creditor','owe supplier','from supplier'],
+    debit:'Purchases', credit:'Accounts Payable',
+    principle:'Credit Purchase: Purchases (expense) increases on debit; A creditor liability is created on credit.',
+    type:'expenditure' },
+  { id:'creditor_payment',
+    keys:['paid supplier','paid creditor','settled creditor','cleared creditor','payment to supplier'],
+    debit:'Accounts Payable', credit:'Cash and Bank',
+    principle:'Creditor Payment: Accounts Payable (liability) decreases on debit; Cash decreases on credit.',
+    type:'liability' },
+  { id:'inventory',
+    keys:['inventory','stock adjustment','closing stock','opening stock','stocktake','stock count'],
+    debit:'Inventory/Stock', credit:'Purchases',
+    principle:'Inventory Adjustment: Stock (asset) increases on debit; Purchases adjusted on credit.',
+    type:'asset' },
+  { id:'cogs',
+    keys:['cost of goods sold','cost of sales','cogs','goods sold'],
+    debit:'Cost of Goods Sold', credit:'Inventory/Stock',
+    principle:'COGS: Cost of Goods Sold (expense) increases on debit; Inventory (asset) decreases on credit.',
+    type:'expenditure' },
+
+  // ── OPERATING EXPENSES ────────────────────────────────────
+  { id:'salary',
+    keys:['salary','salaries','wages','staff pay','payroll','paid staff','employee pay','barber pay','worker pay'],
+    debit:'Salaries and Wages', credit:'Cash and Bank',
+    principle:'Salary Payment: Salaries Expense increases on debit (cost to business); Cash decreases on credit.',
+    type:'expenditure' },
+  { id:'rent',
+    keys:['rent paid','paid rent','shop rent','office rent','rental payment','rent expense'],
+    debit:'Rent Expense', credit:'Cash and Bank',
+    principle:'Rent Paid: Rent Expense (expenditure) increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+  { id:'electricity',
+    keys:['electricity','light bill','power bill','nepa','ekedc','ikedc','phcn','utility bill'],
+    debit:'Utilities Expense', credit:'Cash and Bank',
+    principle:'Utility Bill: Utilities Expense increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+  { id:'water',
+    keys:['water bill','water rate'],
+    debit:'Utilities Expense', credit:'Cash and Bank',
+    principle:'Water Bill: Utilities Expense increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+  { id:'transport',
+    keys:['transport','fuel','diesel','petrol','delivery','logistics','courier','dispatch'],
+    debit:'Transport Expense', credit:'Cash and Bank',
+    principle:'Transport Cost: Transport Expense increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+  { id:'marketing',
+    keys:['advertising','marketing','promotion','social media','flyers','advert','print'],
+    debit:'Marketing Expense', credit:'Cash and Bank',
+    principle:'Marketing: Marketing Expense increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+  { id:'repairs',
+    keys:['repairs','maintenance','fix','service machine','equipment repair','generator repair'],
+    debit:'Repairs and Maintenance', credit:'Cash and Bank',
+    principle:'Repairs: Repairs Expense increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+  { id:'stationery',
+    keys:['stationery','office supplies','printing','paper','pen','office materials'],
+    debit:'Office and Admin Expense', credit:'Cash and Bank',
+    principle:'Office Supplies: Admin Expense increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+  { id:'bank_charges',
+    keys:['bank charge','bank fee','transaction fee','transfer charge','sms charge','account maintenance'],
+    debit:'Bank Charges', credit:'Cash and Bank',
+    principle:'Bank Charges: Bank Charges Expense increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+  { id:'insurance',
+    keys:['insurance','premium','policy'],
+    debit:'Insurance Expense', credit:'Cash and Bank',
+    principle:'Insurance: Insurance Expense increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+  { id:'depreciation',
+    keys:['depreciation','amortisation','amortization','write down','write off asset'],
+    debit:'Depreciation Expense', credit:'Accumulated Depreciation',
+    principle:'Depreciation: Depreciation Expense (debit) reflects asset usage; Accumulated Depreciation (credit) reduces the asset book value.',
+    type:'expenditure' },
+  { id:'bad_debt',
+    keys:['bad debt','irrecoverable','written off debtor','uncollectable','defaulted debt'],
+    debit:'Bad Debts Expense', credit:'Accounts Receivable',
+    principle:'Bad Debt: Bad Debts Expense increases on debit; Accounts Receivable decreases as the debt is written off.',
+    type:'expenditure' },
+  { id:'petty_cash',
+    keys:['petty cash','small expenses','miscellaneous','sundry','incidentals'],
+    debit:'Miscellaneous Expense', credit:'Petty Cash',
+    principle:'Petty Cash Payment: Expense increases on debit; Petty Cash (asset) decreases on credit.',
+    type:'expenditure' },
+
+  // ── TAX TRANSACTIONS ──────────────────────────────────────
+  { id:'vat_collected',
+    keys:['vat collected','vat received','vat on sales','value added tax collected'],
+    debit:'Cash and Bank', credit:'VAT Payable',
+    principle:'VAT Collected: Cash received on debit; VAT is a liability owed to FIRS — credit VAT Payable.',
+    type:'liability' },
+  { id:'vat_paid',
+    keys:['vat paid','vat on purchases','input vat','vat claimable'],
+    debit:'VAT Receivable', credit:'Cash and Bank',
+    principle:'VAT on Purchases: VAT Receivable (asset) increases on debit — you can reclaim it from FIRS.',
+    type:'asset' },
+  { id:'tax_payment',
+    keys:['income tax','company tax','cita','tax payment','paye','withholding tax','wht'],
+    debit:'Tax Expense', credit:'Cash and Bank',
+    principle:'Tax Payment: Tax Expense increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+
+  // ── ASSET TRANSACTIONS ────────────────────────────────────
+  { id:'asset_purchase_cash',
+    keys:['bought equipment','purchased equipment','bought machine','purchased asset','bought vehicle','bought furniture','bought computer','bought laptop'],
+    debit:'Equipment', credit:'Cash and Bank',
+    principle:'Asset Purchase (Cash): The asset (debit) increases the business\'s resources; Cash (credit) decreases.',
+    type:'asset' },
+  { id:'asset_purchase_loan',
+    keys:['equipment on loan','asset financed','hire purchase','bought on loan','financed asset'],
+    debit:'Equipment', credit:'Loan Payable',
+    principle:'Asset Purchase (Loan): Asset increases on debit; A loan liability is created on credit.',
+    type:'asset' },
+  { id:'asset_disposal',
+    keys:['sold asset','disposed asset','sold equipment','sold vehicle','scrapped'],
+    debit:'Cash and Bank', credit:'Equipment',
+    principle:'Asset Disposal: Cash received on debit; Asset account decreases on credit.',
+    type:'asset' },
+
+  // ── LOAN TRANSACTIONS ─────────────────────────────────────
+  { id:'loan_received',
+    keys:['loan received','borrowed','bank loan','took loan','received loan','credit facility'],
+    debit:'Cash and Bank', credit:'Bank Loan',
+    principle:'Loan Received: Cash (asset) increases on debit; Bank Loan (liability) increases on credit.',
+    type:'liability' },
+  { id:'loan_repayment',
+    keys:['loan repayment','repaid loan','loan payment','paid loan','principal repayment','bank repayment'],
+    debit:'Bank Loan', credit:'Cash and Bank',
+    principle:'Loan Repayment: Bank Loan (liability) decreases on debit; Cash decreases on credit.',
+    type:'liability' },
+  { id:'interest_paid',
+    keys:['interest paid','interest expense','loan interest','overdraft interest'],
+    debit:'Interest Expense', credit:'Cash and Bank',
+    principle:'Interest Paid: Interest Expense (debit) is the cost of borrowing; Cash (credit) decreases.',
+    type:'expenditure' },
+
+  // ── CAPITAL TRANSACTIONS ──────────────────────────────────
+  { id:'capital_injection',
+    keys:['capital introduced','owner introduced','invested capital','started business with','initial capital','capital contribution','invested in business'],
+    debit:'Cash and Bank', credit:'Owner\'s Capital',
+    principle:'Capital Injection: Cash (asset) increases on debit; Owner\'s Capital (equity) increases on credit.',
+    type:'capital' },
+  { id:'drawings',
+    keys:['drawings','owner withdrew','personal withdrawal','took cash','owner took','proprietor withdrew'],
+    debit:'Owner\'s Drawings', credit:'Cash and Bank',
+    principle:'Drawings: Owner\'s Drawings (reduces equity) on debit; Cash decreases on credit. Drawings reduce the owner\'s capital.',
+    type:'capital' },
+  { id:'retained_profit',
+    keys:['retained profit','transfer profit','profit transferred','retained earnings'],
+    debit:'Profit and Loss Account', credit:'Retained Earnings',
+    principle:'Profit Transfer: P&L Account cleared on debit; Retained Earnings (equity) increases on credit.',
+    type:'capital' },
+
+  // ── BANKING ───────────────────────────────────────────────
+  { id:'bank_deposit',
+    keys:['deposited into bank','cash to bank','lodged into bank','bank deposit','deposited cash'],
+    debit:'Cash and Bank', credit:'Cash in Hand',
+    principle:'Bank Deposit: Bank balance (debit) increases; Cash in Hand (credit) decreases.',
+    type:'asset' },
+  { id:'bank_withdrawal',
+    keys:['withdrew from bank','bank withdrawal','cash from bank','atm withdrawal'],
+    debit:'Cash in Hand', credit:'Cash and Bank',
+    principle:'Bank Withdrawal: Cash in Hand (debit) increases; Bank balance (credit) decreases.',
+    type:'asset' },
+  { id:'transfer',
+    keys:['bank transfer','transferred to','wire transfer','electronic transfer','nip transfer'],
+    debit:'Accounts Payable', credit:'Cash and Bank',
+    principle:'Bank Transfer Payment: Liability reduced on debit; Cash/Bank decreases on credit.',
+    type:'liability' },
+
+  // ── BARBING/LAUNDRY SPECIFIC ──────────────────────────────
+  { id:'haircut',
+    keys:['haircut','hair cut','shave','beard trim','cut','barbing','lining','shape up'],
+    debit:'Cash and Bank', credit:'Barbing Revenue',
+    principle:'Service Revenue: Cash received on debit; Barbing Revenue (income) earned on credit.',
+    type:'income' },
+  { id:'laundry',
+    keys:['laundry','washing','dry clean','ironing','laundered','washed clothes','laundromat'],
+    debit:'Cash and Bank', credit:'Laundry Revenue',
+    principle:'Service Revenue: Cash received on debit; Laundry Revenue (income) earned on credit.',
+    type:'income' },
+  { id:'detergent',
+    keys:['detergent','washing powder','soap','softener','bleach','cleaning supplies'],
+    debit:'Laundry Supplies Expense', credit:'Cash and Bank',
+    principle:'Supplies Purchase: Supplies Expense increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+  { id:'clipper',
+    keys:['clipper','razor','blade','barber supplies','shaving cream','clippers'],
+    debit:'Barbing Supplies Expense', credit:'Cash and Bank',
+    principle:'Supplies Purchase: Supplies Expense increases on debit; Cash decreases on credit.',
+    type:'expenditure' },
+];
+
+// ── Match narration text to accounting rules ─────────────────
+function matchAccountingRule(text) {
+  if (!text || text.length < 3) return null;
+  const lower = text.toLowerCase();
+  let bestMatch = null, bestScore = 0;
+
+  for (const rule of ACCOUNTING_RULES) {
+    let score = 0;
+    for (const key of rule.keys) {
+      if (lower.includes(key)) {
+        score += key.length; // longer keyword match = more specific = higher score
+      }
+    }
+    if (score > bestScore) { bestScore = score; bestMatch = rule; }
+  }
+  return bestMatch;
+}
+
+// ── Resolve rule account names to actual user accounts ───────
+function resolveAccount(ruleName, preferredType) {
+  // Try to find a matching account in the user's chart of accounts
+  const allAccts = [];
+  Object.entries(accounts).forEach(([type, list]) => {
+    (list||[]).forEach(a => allAccts.push({ name:a.account_name, type }));
+  });
+
+  const lower = ruleName.toLowerCase();
+  // Exact match first
+  let match = allAccts.find(a => a.name.toLowerCase() === lower);
+  if (match) return match.name;
+  // Partial match
+  match = allAccts.find(a => a.name.toLowerCase().includes(lower.split(' ')[0]));
+  if (match) return match.name;
+  // Return rule name as-is (will need to be created)
+  return ruleName;
+}
+
+// ── Smart Entry hint (shows as user types) ───────────────────
+function smartEntryHint(val) {
+  const hint = document.getElementById('smartEntryHint');
+  if (!hint) return;
+  if (!val.trim()) { hint.textContent = ''; return; }
+  const rule = matchAccountingRule(val);
+  if (rule) {
+    hint.innerHTML = `<span style="color:var(--gold);">Detected: ${rule.id.replace(/_/g,' ').toUpperCase()}</span> — Dr: <b>${rule.debit}</b> / Cr: <b>${rule.credit}</b>`;
+  } else {
+    hint.innerHTML = '<span style="color:var(--muted);">Tip: mention the transaction type, e.g. "paid rent", "sold goods", "received loan"</span>';
+  }
+}
+
+// ── Smart Entry: generate full journal entry from description ─
+async function smartEntry() {
+  const input  = document.getElementById('smartEntryInput');
+  const result = document.getElementById('smartEntryResult');
+  const btn    = document.getElementById('smartEntryBtn');
+  const text   = input?.value.trim();
+  if (!text) { input?.focus(); return; }
+
+  btn.textContent = '⏳ Thinking…'; btn.disabled = true;
+  result.style.display = 'none';
+
+  // Step 1: Try rules engine first (instant)
+  const rule = matchAccountingRule(text);
+
+  // Step 2: Extract amount from description
+  const amtMatch = text.match(/[₦$£€]?\s*([\d,]+(?:\.\d{1,2})?)/);
+  const amount   = amtMatch ? parseFloat(amtMatch[1].replace(/,/g,'')) : 0;
+
+  if (rule && amount > 0) {
+    // Rules engine found it — show result immediately
+    showSmartResult(rule, amount, text, rule.principle);
+    btn.textContent = '✨ Generate Entry'; btn.disabled = false;
+    return;
+  }
+
+  // Step 3: Fall back to AI for complex/unusual transactions
+  const accountList = Object.entries(accounts)
+    .flatMap(([type, list]) => (list||[]).map(a => `${type}: ${a.account_name}`))
+    .join('\n');
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ message:
+        `You are an expert Nigerian accountant. A business owner described this transaction: "${text}"
+
+Their chart of accounts:
+${accountList || 'Cash and Bank, Sales Revenue, Purchases, Expenses'}
+
+Extract:
+1. The amount (if mentioned)
+2. The correct debit account (from their chart or suggest a standard one)
+3. The correct credit account (from their chart or suggest a standard one)
+4. A brief plain-English explanation of the accounting treatment (1 sentence)
+
+Respond ONLY with valid JSON, no other text:
+{"debit":"account name","credit":"account name","amount":0,"reason":"one sentence explanation"}` })
+    });
+    const d  = await res.json();
+    const txt = (d.content?.[0]?.text || '').trim();
+    const json = JSON.parse(txt.replace(/```json|```/g,'').trim());
+    const fakeRule = {
+      debit: json.debit, credit: json.credit,
+      principle: json.reason,
+      id: 'ai_suggested'
+    };
+    showSmartResult(fakeRule, json.amount||amount||0, text, json.reason);
+  } catch(e) {
+    result.style.display = 'block';
+    result.innerHTML = `<span style="color:var(--red);">Could not analyse — please describe the transaction more clearly or type the entry manually.</span>`;
+  }
+
+  btn.textContent = '✨ Generate Entry'; btn.disabled = false;
+}
+
+function showSmartResult(rule, amount, narration, principle) {
+  const result = document.getElementById('smartEntryResult');
+  if (!result) return;
+
+  const drAcct = resolveAccount(rule.debit, 'asset');
+  const crAcct = resolveAccount(rule.credit, 'income');
+
+  result.style.display = 'block';
+  result.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+      <div style="flex:1;">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px;">Suggested Journal Entry</div>
+        <div style="font-size:0.8rem;color:var(--off);">${escH(narration)}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+      <div style="background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:6px;padding:10px;">
+        <div style="font-size:0.65rem;font-weight:700;color:#4ade80;text-transform:uppercase;margin-bottom:3px;">DEBIT</div>
+        <div style="font-size:0.82rem;font-weight:700;color:var(--white);">${escH(drAcct)}</div>
+        <div style="font-size:0.78rem;color:var(--gold);">${amount>0?fmt(amount):'Enter amount'}</div>
+      </div>
+      <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:6px;padding:10px;">
+        <div style="font-size:0.65rem;font-weight:700;color:#f87171;text-transform:uppercase;margin-bottom:3px;">CREDIT</div>
+        <div style="font-size:0.82rem;font-weight:700;color:var(--white);">${escH(crAcct)}</div>
+        <div style="font-size:0.78rem;color:var(--gold);">${amount>0?fmt(amount):'Enter amount'}</div>
+      </div>
+    </div>
+    <div style="background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.15);border-radius:6px;padding:8px 10px;margin-bottom:10px;">
+      <div style="font-size:0.68rem;font-weight:700;color:var(--gold);margin-bottom:2px;">📚 Accounting Principle</div>
+      <div style="font-size:0.75rem;color:var(--off);line-height:1.5;">${escH(principle)}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="applySmartEntry('${escH(drAcct)}','${escH(crAcct)}',${amount},'${escH(narration)}')"
+        style="background:var(--gold);border:none;color:#000;font-size:0.78rem;font-weight:700;padding:8px 18px;border-radius:6px;cursor:pointer;">
+        ✓ Add to Journal
+      </button>
+      <button onclick="document.getElementById('smartEntryResult').style.display='none';document.getElementById('smartEntryInput').value='';document.getElementById('smartEntryHint').textContent=''"
+        style="background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.78rem;font-weight:600;padding:8px 16px;border-radius:6px;cursor:pointer;">
+        Cancel
+      </button>
+    </div>`;
+}
+
+function applySmartEntry(debitAcct, creditAcct, amount, narration) {
+  // Find the first empty row
+  const emptyIdx = journalRows.findIndex(r =>
+    !r.narration && !r.debit_amount && !r.credit_amount
+  );
+  const targetIdx = emptyIdx >= 0 ? emptyIdx : journalRows.length;
+
+  if (targetIdx >= journalRows.length) {
+    journalRows.push(emptyJournalRow(journalRows.length));
+  }
+
+  journalRows[targetIdx] = {
+    ...journalRows[targetIdx],
+    txn_date:           today(),
+    narration:          narration,
+    debit_account_name: debitAcct,
+    credit_account_name:creditAcct,
+    debit_amount:       amount,
+    credit_amount:      amount,
+    saved:              false,
+  };
+
+  // Hide smart entry result
+  document.getElementById('smartEntryResult').style.display = 'none';
+  document.getElementById('smartEntryInput').value = '';
+  document.getElementById('smartEntryHint').textContent = '';
+
+  // Re-render journal and scroll to the row
+  renderJournalRows();
+  setTimeout(() => {
+    const rows = document.querySelectorAll('#journalBody tr');
+    rows[targetIdx]?.scrollIntoView({ behavior:'smooth', block:'center' });
+    rows[targetIdx]?.querySelector('.bk-cell')?.focus();
+  }, 100);
+}
+
+// ── Enhanced AI suggest for individual rows ───────────────────
 async function aiSuggestAccounts(rowIdx) {
-  const narration = journalRows[rowIdx]?.narration?.trim();
+  const row      = journalRows[rowIdx];
+  const narration = row?.narration?.trim();
   if (!narration) {
     showAiMsg(rowIdx, 'Type a narration first, then click ✨', false);
     return;
   }
 
+  // Try rules engine first — instant, no API call
+  const rule = matchAccountingRule(narration);
+  if (rule) {
+    const drAcct = resolveAccount(rule.debit);
+    const crAcct = resolveAccount(rule.credit);
+    applyAiSuggestion(rowIdx, drAcct, crAcct, rule.principle);
+    return;
+  }
+
+  // Fall back to AI
   const btn = document.getElementById(`aibtn_${rowIdx}`);
   if (btn) { btn.classList.add('loading'); btn.textContent = '⏳'; }
 
-  // Build account list for the AI
-  const accountList = [];
-  ['capital','liability','asset','income','expenditure'].forEach(type => {
-    (accounts[type]||[]).forEach(a => {
-      accountList.push(`${type}: ${a.account_name}`);
-    });
-  });
-
-  const prompt = `You are an expert accountant. A user has entered this transaction description: "${narration}"
-
-Available accounts:
-${accountList.join('\n')}
-
-Suggest the most appropriate debit and credit accounts from the list above.
-Reply ONLY with valid JSON in this exact format, no other text:
-{"debit":"exact account name from list","credit":"exact account name from list","reason":"one short sentence"}`;
+  const accountList = Object.entries(accounts)
+    .flatMap(([type, list]) => (list||[]).map(a => `${a.account_name} (${type})`))
+    .join(', ');
 
   try {
-    const { data:{ session } } = await bkDb.auth.getSession();
     const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: prompt }],
-        system: 'You are an accounting expert. Always respond with valid JSON only.',
-      }),
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ message:
+        `You are an expert Nigerian accountant. Transaction: "${narration}"
+Chart of accounts: ${accountList}
+Which debit and credit accounts? Reply ONLY with JSON:
+{"debit":"exact account name","credit":"exact account name","reason":"one sentence"}` })
     });
-
-    const json = await res.json();
-    const rawText = json.reply || json.content || '';
-
-    // Extract JSON from response
-    const jsonMatch = rawText.match(/\{[^}]+\}/);
-    if (!jsonMatch) throw new Error('No JSON in response');
-    const suggestion = JSON.parse(jsonMatch[0]);
-
-    // Find matching accounts
-    const allAccts = getAllAccounts();
-    const debitMatch  = allAccts.find(a => a.name.toLowerCase() === suggestion.debit?.toLowerCase());
-    const creditMatch = allAccts.find(a => a.name.toLowerCase() === suggestion.credit?.toLowerCase());
-
-    if (debitMatch) {
-      journalRows[rowIdx].debit_account_name = debitMatch.name;
-      journalRows[rowIdx].debit_record_type  = debitMatch.type;
-    }
-    if (creditMatch) {
-      journalRows[rowIdx].credit_account_name = creditMatch.name;
-      journalRows[rowIdx].credit_record_type  = creditMatch.type;
-    }
-
-    journalRows[rowIdx].saved = false;
-    renderJournalRows();
-
-    // Highlight the suggested row
-    const tr = document.getElementById(`jrow_${rowIdx}`);
-    if (tr) {
-      tr.querySelectorAll('select').forEach(s => s.classList.add('ai-suggested'));
-      setTimeout(() => tr.querySelectorAll('select').forEach(s => s.classList.remove('ai-suggested')), 3000);
-    }
-
-    if (suggestion.reason) {
-      showAiMsg(rowIdx, `✨ ${suggestion.reason}`, true);
-    }
-
-  } catch (err) {
-    console.error('AI suggest error:', err);
-    showAiMsg(rowIdx, 'Could not suggest — check narration and try again', false);
-  } finally {
-    if (btn) { btn.classList.remove('loading'); btn.textContent = '✨'; }
+    const d    = await res.json();
+    const text = (d.content?.[0]?.text||'').trim();
+    const json = JSON.parse(text.replace(/```json|```/g,'').trim());
+    applyAiSuggestion(rowIdx, json.debit, json.credit, json.reason);
+  } catch(e) {
+    showAiMsg(rowIdx, 'Could not suggest — try typing more detail', false);
   }
+
+  if (btn) { btn.classList.remove('loading'); btn.textContent = '✨'; }
 }
 
 function showAiMsg(rowIdx, msg, positive) {
