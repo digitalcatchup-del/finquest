@@ -6,6 +6,91 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Bookkeeping — Butterfly Dynamix</title>
 <style>html,body{background:#0f1117!important;}
+/* ── LANDING PAGE TYPOGRAPHY ─────────────────────────── */
+.bk-land-small{font-size:0.85rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:8px;}
+.bk-land-big{font-size:3.2rem;font-weight:900;color:var(--white);letter-spacing:-0.02em;line-height:1.05;text-align:center;margin-bottom:16px;}
+.bk-land-big span{color:var(--gold);}
+.bk-land-sub{font-size:0.82rem;color:var(--muted);text-align:center;line-height:1.65;}
+
+/* ── NO SPINNERS ON NUMBER INPUTS (global) ───────────── */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;}
+
+/* ── MOBILE FIRST ─────────────────────────────────────── */
+/* Base (mobile): single column, large tap targets */
+.su-options{grid-template-columns:1fr;}
+.su-industry-grid{grid-template-columns:1fr 1fr;}
+.su-biz-type-grid{grid-template-columns:1fr;}
+.su-row{grid-template-columns:1fr;}
+.bk-auth-btns{flex-direction:column;align-items:stretch;gap:12px;}
+.bk-auth-btn-primary,.bk-auth-btn-secondary{width:100%;padding:16px;font-size:1rem;}
+.bk-land-big{font-size:2.2rem;}
+.bk-auth-box{padding:28px 16px;}
+
+/* Tablet (≥600px): 2 columns where useful */
+@media(min-width:600px){
+  .su-options{grid-template-columns:1fr 1fr;}
+  .su-biz-type-grid{grid-template-columns:1fr 1fr;}
+  .su-row{grid-template-columns:1fr 1fr;}
+  .bk-auth-btns{flex-direction:row;align-items:center;}
+  .bk-auth-btn-primary,.bk-auth-btn-secondary{width:auto;}
+  .bk-land-big{font-size:2.8rem;}
+  .bk-auth-box{padding:40px 24px;}
+}
+
+/* Desktop (≥1024px): full layout */
+@media(min-width:1024px){
+  .bk-land-big{font-size:3.2rem;}
+}
+
+/* ── APP MOBILE ───────────────────────────────────────── */
+.bk-main{padding:20px 12px;}
+.bk-think{font-size:1.8rem;}
+.bk-nav{gap:12px;padding:12px 14px;flex-wrap:wrap;}
+.bk-nav-item{font-size:0.78rem;padding:8px 4px;}
+.bk-toolbar{padding:6px 10px;gap:3px;}
+.tb-btn{padding:6px 8px;font-size:0.72rem;}
+.dashboard-grid{grid-template-columns:1fr;}
+.summary-cards{grid-template-columns:1fr 1fr;}
+.chart-wrap{height:180px;}
+.bk-eq-value{font-size:1.1rem;}
+.bk-equation{gap:8px;}
+.bk-eq-bar{padding:16px 16px;}
+.qi-modal{max-width:100%;border-radius:16px 16px 0 0;}
+.qi-product-grid{grid-template-columns:1fr 1fr;}
+.bk-content-header{padding:12px 14px;}
+.bk-sheet-wrap{-webkit-overflow-scrolling:touch;}
+.bk-add-row{padding:8px 14px;}
+/* Bigger tap targets throughout */
+.del-btn,.save-row-btn{min-height:40px;}
+.bk-btn,.bk-nav-item,.tb-btn{min-height:36px;}
+select.bk-cell,input.bk-cell{min-height:34px;}
+
+@media(min-width:600px){
+  .bk-main{padding:28px 20px;}
+  .bk-think{font-size:2.2rem;}
+  .bk-nav{gap:24px;}
+  .dashboard-grid{grid-template-columns:1fr 1fr;}
+  .summary-cards{grid-template-columns:repeat(3,1fr);}
+  .chart-wrap{height:220px;}
+}
+@media(min-width:1024px){
+  .bk-main{padding:32px 24px;}
+  .bk-think{font-size:2.6rem;}
+  .bk-nav{gap:40px;}
+  .summary-cards{grid-template-columns:repeat(3,1fr);}
+}
+
+/* Quick input — slides up on mobile */
+@media(max-width:599px){
+  .qi-overlay{align-items:flex-end;}
+  .qi-modal{border-radius:16px 16px 0 0;max-height:90vh;}
+  .qi-type-grid{grid-template-columns:1fr 1fr;}
+  .qi-product-grid{grid-template-columns:1fr 1fr;}
+  .qi-pay-grid{grid-template-columns:1fr 1fr;}
+}
+
 /* ── AUTH SCREEN ──────────────────────────────────────── */
 .bk-auth-screen{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;align-items:center;justify-content:center;overflow-y:auto;}
 .bk-auth-screen.hidden{display:none;}
@@ -699,10 +784,10 @@ const INDUSTRY_BUSINESS_TYPES = {
   'Manufacturing':['Food & Beverage Manufacturing','Textile/Garment Factory','Furniture Manufacturing','Plastics Manufacturing','Chemical Production','Electronics Assembly','Paper/Packaging','Soap & Detergent Production','Cosmetics Manufacturing','Metal Fabrication','Printing Press','Pharmaceutical Manufacturing','Paint Manufacturing','Shoe Manufacturing'],
   'Oil & Gas':['Petroleum Retail (Filling Station)','Gas Distribution','Oil Trading','Lubricant Supply','Drilling Services','Pipeline Services','Oil Field Equipment Supply','Environmental Services','LPG/Cooking Gas Retail','Petroleum Haulage'],
   'Personal & Beauty Services':['Barbing Salon/Barbershop','Beauty Salon/Hair Salon','Nail Studio','Laundromat/Dry Cleaner','Tailoring/Fashion Design','Shoe Repair/Cobbler','Spa & Massage Centre','Makeup Artist','Event Styling','Lace & Fabric Sales','Wig Making/Wig Store','Tattoo & Piercing Studio','Photo Printing/Framing'],
-  'Retail & E-commerce':['Supermarket/Grocery Store','Pharmacy/Chemist','Fashion/Clothing Store','Electronics Store','Hardware Store','Cosmetics/Beauty Products Store','Bookshop/Stationery Store','Food & Beverage Store','Automobile Parts Store','Shoe Store','Furniture Store','Jewelry Store','Kiosk/Convenience Store','Wholesale/Distribution','Online Store','Agricultural Input Store','Baby/Children Products Store','Sports Equipment Store','Phone Accessories Store'],
+  'Retail & E-commerce':['Supermarket/Grocery Store','Pharmacy/Chemist','Fashion/Clothing Store','Electronics Store','Hardware Store','Cosmetics/Beauty Products Store','Bookshop/Stationery Store','Food & Beverage Store','Automobile Parts Store','Shoe Store','Furniture Store','Jewelry Store','Kiosk/Convenience Store','Wholesale/Distribution','Online Store','Agricultural Input Store','Baby/Children Products Store','Sports Equipment Store','Phone Accessories Store','Barbing Salon/Barbershop','Laundromat/Dry Cleaner'],
   'Sports & Fitness':['Gym/Fitness Centre','Sports Academy','Football Club','Swimming Pool','Martial Arts Studio','Yoga Studio','Sports Equipment Store','Sports Event Management','Personal Training Service','Dance Studio','Sports Nutrition/Supplement Store','Cycling Centre'],
   'Transportation & Logistics':['Road Haulage','Logistics & Warehousing','Courier Service','Car Hire/Rental','Ride Sharing/Taxi Service','Shipping & Freight','Moving/Relocation Service','Bus/Coach Service','Motorcycle Dispatch','Cold Chain Logistics','Customs Clearing Agent','Vehicle Tracking Service'],
-  'Other':['Consulting','Non-Profit/NGO','Government Agency','Religious Organisation','Community Association','Mixed/Multiple Industries','Professional Services'],
+  'Other':['Consulting','Non-Profit/NGO','Government Agency','Religious Organisation','Community Association','Mixed/Multiple Industries','Professional Services','Barbing Salon/Barbershop','Laundromat/Dry Cleaner','Beauty Salon/Hair Salon','Nail Studio','Spa & Massage Centre','Tailoring/Fashion Design'],
 };
 
 // ── BUSINESS TYPE → DEFAULT PRODUCTS/SERVICES ─────────────────
@@ -827,17 +912,14 @@ function showAuthScreen(view) {
 
   if (view==='landing') {
     content.innerHTML = `
-      <div class="bk-auth-think">
-        <div class="bk-auth-think-1">THINK <span style="color:var(--gold)">FINANCE</span></div>
+      <div style="text-align:center;margin-bottom:32px;">
+        <div class="bk-land-small">Think Finance</div>
+        <div class="bk-land-big">Think <span>Butterfly</span> Dynamix</div>
+        <div class="bk-land-sub">Professional bookkeeping for every business.<br>Built for Nigeria. Designed for growth.</div>
       </div>
-      <div class="bk-auth-think-2">Think Butterfly Dynamix</div>
       <div class="bk-auth-btns">
         <button class="bk-auth-btn-primary" onclick="showAuthScreen('signup')">Sign Up</button>
         <button class="bk-auth-btn-secondary" onclick="showAuthScreen('login')">Log In</button>
-      </div>
-      <div class="bk-auth-tagline">
-        Professional bookkeeping for every business.<br>
-        Built for Nigeria. Designed for growth.
       </div>`;
 
   } else if (view==='login') {
@@ -1010,7 +1092,15 @@ function renderSuStep() {
             </div>`;
           }).join('')}
         </div>
-        <button class="su-next-btn" onclick="suNext()" ${selectedBizTypes.length===0?'disabled style="opacity:0.4;"':''}>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <input class="su-search" type="text" id="customBizTypeInput"
+            placeholder="Not listed? Type your business type here…"
+            style="margin-bottom:0;flex:1;" />
+          <button class="su-next-btn" style="padding:10px 16px;white-space:nowrap;"
+            onclick="suAddCustomBizType()">Add</button>
+        </div>
+        <button class="su-next-btn" style="width:100%;margin-top:12px;" onclick="suNext()"
+          ${selectedBizTypes.length===0?'disabled style="opacity:0.4;width:100%;margin-top:12px;"':''}>
           Continue with ${selectedBizTypes.length} business type${selectedBizTypes.length!==1?'s':''} →
         </button>
       `:''} `;
@@ -1089,12 +1179,13 @@ function renderSuStep() {
           <div style="font-size:0.78rem;font-weight:700;color:var(--white);">Both</div>
         </div>
       </div>
-      <div style="overflow-x:auto;">
-        <table class="su-prod-table">
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <table class="su-prod-table" style="min-width:520px;">
           <thead><tr>
-            <th style="width:32px;">S/N</th>
-            <th>Product / Service Type</th>
-            <th class="num" style="width:130px;">
+            <th style="width:36px;">S/N</th>
+            <th style="width:90px;">Offering</th>
+            <th>Type</th>
+            <th style="width:150px;">
               Unit Price
               <select class="su-curr-select" onchange="suData.prodCurrency=this.value;renderSuStep()">
                 ${Object.entries(CURRENCIES).map(([k,v])=>`<option value="${k}" ${suData.prodCurrency===k?'selected':''}>${v.symbol} ${k}</option>`).join('')}
@@ -1107,10 +1198,27 @@ function renderSuStep() {
             ${rows.map((r,i)=>`
             <tr>
               <td class="su-prod-sn">${i+1}</td>
+              <td>
+                <select class="su-prod-cell" style="font-size:0.75rem;padding:4px 4px;"
+                  onchange="suData.products[${i}].offering=this.value">
+                  <option value="service" ${(r.offering||'service')==='service'?'selected':''}>Service</option>
+                  <option value="product" ${(r.offering||'service')==='product'?'selected':''}>Product</option>
+                </select>
+              </td>
               <td><input class="su-prod-cell" type="text" value="${escH(r.name)}"
+                placeholder="Enter type…"
                 oninput="suData.products[${i}].name=this.value"/></td>
-              <td><input class="su-prod-cell num" type="number" value="${r.price||''}" placeholder="0"
-                oninput="suData.products[${i}].price=parseFloat(this.value)||0"/></td>
+              <td>
+                <div style="display:flex;align-items:center;padding:0 4px;gap:3px;">
+                  <span style="color:var(--gold);font-size:0.78rem;flex-shrink:0;">${CURRENCIES[suData.prodCurrency]?.symbol||'₦'}</span>
+                  <input class="su-prod-cell" type="text" inputmode="decimal"
+                    style="text-align:right;padding:4px 2px;"
+                    value="${r.price>0?r.price.toLocaleString('en-NG'):''}"
+                    placeholder="0"
+                    oninput="suPriceInput(this,${i})"
+                    onfocus="this.select()"/>
+                </div>
+              </td>
               <td class="su-prod-del"><button class="su-prod-del-btn" onclick="suDelProd(${i})">✕</button></td>
               <td><button class="su-prod-save-btn" onclick="suSaveProdRow(${i})" title="Save row">›</button></td>
             </tr>`).join('')}
@@ -1140,7 +1248,13 @@ function suNext() {
     suData.products = [];
     suData.bizTypes.forEach(bt=>{
       const prods = BIZ_TYPE_PRODUCTS[bt] || BIZ_TYPE_PRODUCTS['default'];
-      prods.forEach(p=>suData.products.push({name:p.n, price:p.p, currency:suData.prodCurrency, bizType:bt}));
+      prods.forEach(p=>suData.products.push({
+        name: p.n,
+        price: p.p,
+        currency: suData.prodCurrency,
+        bizType: bt,
+        offering: p.svc ? 'service' : 'product',
+      }));
     });
   }
   suStep++;
@@ -1157,6 +1271,43 @@ function suToggleBizType(bt) {
   const idx = suData.bizTypes.indexOf(bt);
   if (idx>=0) suData.bizTypes.splice(idx,1);
   else if (suData.bizTypes.length<5) suData.bizTypes.push(bt);
+}
+
+function suAddCustomBizType() {
+  const input = document.getElementById('customBizTypeInput');
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) { input.style.borderColor='var(--red)'; return; }
+  if (suData.bizTypes.length >= 5) {
+    input.style.borderColor='var(--red)';
+    input.placeholder = 'Maximum 5 business types selected';
+    return;
+  }
+  if (!suData.bizTypes.includes(val)) {
+    suData.bizTypes.push(val);
+    // Also add to the industry list so it appears selected
+    if (!INDUSTRY_BUSINESS_TYPES[suData.industry]) INDUSTRY_BUSINESS_TYPES[suData.industry]=[];
+    if (!INDUSTRY_BUSINESS_TYPES[suData.industry].includes(val)) {
+      INDUSTRY_BUSINESS_TYPES[suData.industry].push(val);
+    }
+  }
+  input.value = '';
+  renderSuStep();
+  setTimeout(()=>{ document.getElementById('customBizTypeInput')?.focus(); }, 30);
+}
+
+function suPriceInput(el, i) {
+  // Strip non-numeric, format with commas
+  const raw = el.value.replace(/[^0-9.]/g, '');
+  const num = parseFloat(raw) || 0;
+  suData.products[i].price = num;
+  // Format display with commas
+  const parts = raw.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const pos = el.selectionStart;
+  el.value = parts.join('.');
+  // Restore cursor position approximately
+  try { el.setSelectionRange(pos, pos); } catch(e) {}
 }
 
 function suRefreshState() {
