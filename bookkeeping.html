@@ -450,6 +450,10 @@ select.bk-cell {
 .sched-val{text-align:right;font-size:0.82rem;color:var(--off);white-space:nowrap;}
 .sched-total-col{font-weight:700;color:var(--white);}
 .sched-foot-row td{background:rgba(212,175,55,0.06);font-weight:700;padding:10px 12px;border-top:2px solid var(--border);font-size:0.82rem;color:var(--gold);}
+.sched-below-table{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 0 8px;}
+.sched-subacct-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+.sched-subacct-label{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+.sched-subacct-select{min-width:200px;}
 .bk-cell-ro{width:100%;height:34px;background:transparent;border:none;color:var(--off);font-size:0.8rem;font-family:inherit;padding:0 8px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .bk-cell-ro.num{text-align:right;}
 
@@ -2164,9 +2168,7 @@ async function confirmAddAccount() {
 
 // ── OPEN ACCOUNT LEDGER ───────────────────────────────────────
 async function openAccount(type, acct) {
-  staffShowChrome();
-  showExtEqToggle();
-  hideDashToolbar();
+  recordsPageChrome();
   activeType    = type;
   activeAccount = acct;
   isDirty       = false;
@@ -2230,22 +2232,13 @@ function renderLedger() {
     <div class="bk-content-header">
       <div>
         <div class="bk-content-title">${typeLabel.toUpperCase()}</div>
-        <div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <label style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Sub Accounts:</label>
-          <select style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:4px 10px;font-size:0.8rem;font-family:inherit;outline:none;cursor:pointer;"
-            onchange="switchLedgerAccount(this.value)">
-            ${(accounts[activeType]||[]).map(a=>`
-            <option value="${a.id}" ${a.id===activeAccount.id?'selected':''}>${a.account_name}</option>`).join('')}
-          </select>
-          ${ob ? `<span style="font-size:0.72rem;color:var(--gold);">Opening Balance: ${fmt(ob)}</span>` : ''}
+        <div style="margin-top:4px;">
+          <span class="sched-badge" style="background:${SCHEDULE_META[activeType]?.color+'22'||'rgba(212,175,55,0.13)'};color:${SCHEDULE_META[activeType]?.color||'var(--gold)'};border:1px solid ${SCHEDULE_META[activeType]?.color+'44'||'rgba(212,175,55,0.3)'};">
+            ${typeLabel} Records ${SCHEDULE_META[activeType]?.num||''}–${parseInt(SCHEDULE_META[activeType]?.num||0)+999}
+          </span>
         </div>
       </div>
-      <div class="bk-header-actions">
-        <span class="bk-save-msg" id="saveMsg"></span>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showSchedule('${activeType}')">← Schedule</button>
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
-        <button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button>
-      </div>
+      <span class="bk-save-msg" id="saveMsg"></span>
     </div>
 
     <div class="ledger-readonly-banner">
@@ -2269,8 +2262,21 @@ function renderLedger() {
         <tbody id="ledgerBody"></tbody>
       </table>
     </div>
-    <div class="bk-add-row">
-      <button class="bk-add-row-btn" onclick="addRow()">+ Add another row</button>
+
+    <div class="sched-below-table">
+      <div class="sched-subacct-wrap">
+        <label class="sched-subacct-label">Sub Accounts</label>
+        <select class="acct-input sched-subacct-select"
+          onchange="switchLedgerAccount(this.value)">
+          ${(accounts[activeType]||[]).map(a=>`<option value="${a.id}" ${a.id===activeAccount.id?'selected':''}>${a.account_name}</option>`).join('')}
+        </select>
+        ${ob ? `<span style="font-size:0.72rem;color:var(--gold);">Opening Balance: ${fmt(ob)}</span>` : ''}
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+        <button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showSchedule('${activeType}')">← Schedule</button>
+      </div>
     </div>`;
 
   renderRows(displayRows);
@@ -3025,9 +3031,7 @@ function emptyJournalRow(order) {
 }
 
 async function openJournal() {
-  staffShowChrome();
-  showExtEqToggle();
-  hideDashToolbar();
+  recordsPageChrome();
   activeType=null; activeAccount=null;
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
@@ -5679,9 +5683,7 @@ const COA_LABELS = { capital:'Capital', liability:'Liabilities', asset:'Assets',
 let coaActiveType = 'capital';
 
 async function openChartOfAccounts() {
-  staffShowChrome();
-  showExtEqToggle();
-  hideDashToolbar();
+  recordsPageChrome();
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading Chart of Accounts…</div>';
@@ -5889,9 +5891,7 @@ const SCHEDULE_META = {
 };
 
 async function showSchedule(type) {
-  staffShowChrome();
-  showExtEqToggle();
-  hideDashToolbar();
+  recordsPageChrome();
   setActiveNav('navRecords');
   document.getElementById('recordsDD')?.classList.add('hidden');
 
@@ -5966,27 +5966,14 @@ async function showSchedule(type) {
         <div class="bk-content-title">${meta.icon} ${meta.label.toUpperCase()} SCHEDULE</div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${meta.desc}</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
-        <span class="sched-badge" style="background:${meta.color}22;color:${meta.color};border:1px solid ${meta.color}44;">
-          Account ${meta.num}–${parseInt(meta.num)+999}
-        </span>
-      </div>
+      <span class="sched-badge" style="background:${meta.color}22;color:${meta.color};border:1px solid ${meta.color}44;">
+        ${meta.label} Records ${meta.num}–${parseInt(meta.num)+999}
+      </span>
     </div>
 
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
-      <div class="sched-total-banner" style="border-left:4px solid ${meta.color};flex:1;margin-bottom:0;">
-        <div class="sched-total-label">Total ${meta.label}</div>
-        <div class="sched-total-val" style="color:${meta.color};">${totalText}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;">
-        <label style="font-size:0.68rem;color:var(--muted);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">Sub Accounts</label>
-        <select class="acct-input" style="min-width:200px;"
-          onchange="if(this.value){openAccountById('${type}',parseInt(this.value));this.value='';}">
-          <option value="">Jump to sub-account…</option>
-          ${subOpts}
-        </select>
-      </div>
+    <div class="sched-total-banner" style="border-left:4px solid ${meta.color};margin-bottom:14px;">
+      <div class="sched-total-label">Total ${meta.label}</div>
+      <div class="sched-total-val" style="color:${meta.color};">${totalText}</div>
     </div>
 
     <div class="bk-sheet-wrap">
@@ -6013,10 +6000,19 @@ async function showSchedule(type) {
       </table>
     </div>
 
-    <div style="padding:12px 0 4px;">
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="openChartOfAccounts()">
-        ← Chart of Accounts
-      </button>
+    <div class="sched-below-table">
+      <div class="sched-subacct-wrap">
+        <label class="sched-subacct-label">Sub Accounts</label>
+        <select class="acct-input sched-subacct-select" id="subAcctSelect_${type}"
+          onchange="var v=this.value;if(v){this.value='';openAccountById('${type}',parseInt(v));}">
+          <option value="">Jump to sub-account\u2026</option>
+          ${subOpts}
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="openChartOfAccounts()">← Chart of Accounts</button>
+      </div>
     </div>`;
 }
 
@@ -6287,6 +6283,24 @@ function hideEqAndToolbar(){
   const toolbar = document.getElementById('bkToolbar');
   if (chrome)  chrome.style.display  = 'none';
   if (toolbar) toolbar.style.display = 'none';
+}
+
+function hideGlobalHero(){
+  const hero = document.getElementById('bkGlobalHero');
+  if (hero) hero.style.display = 'none';
+}
+function showGlobalHero(){
+  const hero = document.getElementById('bkGlobalHero');
+  if (hero) hero.style.display = '';
+}
+
+// ── Applied to all Records pages (schedule, ledger, journal, COA) ──
+// Shows equation bar, hides toolbar, hides the Welcome/THINK header
+function recordsPageChrome(){
+  staffShowChrome();   // restore chrome + hero fully first
+  hideGlobalHero();    // then hide the hero
+  hideDashToolbar();   // hide toolbar (not needed on records pages)
+  showExtEqToggle();   // keep equation visible
 }
 
 // ── The collapsible toolbar (search, dates, undo/redo, decimals, etc.)
