@@ -715,6 +715,8 @@ body{padding-top:0;}
 .staff-welcome-sub{font-size:0.85rem;color:var(--muted);margin-bottom:40px;}
 .staff-record-btn{background:var(--gold);border:none;color:#000;font-size:1.1rem;font-weight:900;padding:22px 56px;border-radius:14px;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.3);transition:all 0.15s;}
 .staff-record-btn:hover{opacity:0.88;}
+.staff-homepage-btn{background:none;border:2px solid var(--border2);color:var(--off);font-size:0.85rem;font-weight:700;padding:12px 36px;border-radius:10px;cursor:pointer;margin-top:16px;transition:all 0.15s;}
+.staff-homepage-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-choice{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding:40px 20px;}
 .staff-choice-btn{flex:1;min-width:140px;max-width:220px;background:var(--surface);border:2px solid var(--border2);border-radius:14px;padding:30px 20px;cursor:pointer;text-align:center;transition:all 0.15s;}
 .staff-choice-btn:hover{border-color:var(--gold);background:var(--gold-dim);}
@@ -5998,6 +6000,91 @@ function showStaffPage(){
       <div class="staff-welcome-title">Welcome, Staff \uD83D\uDC4B</div>
       <div class="staff-welcome-sub"><span class="staff-test-badge">Test Run \u2014 no data saved</span></div>
       <button class="staff-record-btn" onclick="showStaffChoice()">\uD83D\uDCDD Record</button>
+      <button class="staff-homepage-btn" onclick="showStaffDashboard()">\uD83C\uDFE0 Homepage</button>
+    </div>`;
+}
+
+// ── STAFF DASHBOARD — summarises this session's recorded data ──
+function showStaffDashboard(){
+  staffHideChrome();
+
+  const custCount   = staffCustomers.length;
+  const totalSales  = staffCustomers.reduce(function(sum,c){
+    return sum + c.rows.reduce(function(a,r){ return a + (parseFloat(r.total)||0); }, 0);
+  }, 0);
+  const totalExp    = staffExpRows.reduce(function(a,r){ return a + (parseFloat(r.total)||0); }, 0);
+  const netAmount   = totalSales - totalExp;
+  const rowCount    = staffCustomers.reduce(function(sum,c){ return sum + c.rows.filter(function(r){ return r.total>0; }).length; }, 0);
+
+  // Build a quick customer-by-customer breakdown
+  const custRows = staffCustomers.map(function(c){
+    const ctotal = c.rows.reduce(function(a,r){ return a+(parseFloat(r.total)||0); }, 0);
+    const citems = c.rows.filter(function(r){ return r.total>0; }).length;
+    return { name: c.name || 'Unnamed', serial: c.serial||'', total: ctotal, items: citems };
+  }).filter(function(c){ return c.total > 0; }).sort(function(a,b){ return b.total - a.total; });
+
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">STAFF HOMEPAGE</div>
+        <div style="margin-top:4px;"><span class="staff-test-badge">Test Run \u2014 this session only</span></div>
+      </div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
+    </div>
+
+    <div class="dash-kpi-row" style="padding:16px 16px 0;">
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-label">Total Sales <span class="dash-kpi-icon">\uD83D\uDED2</span></div>
+        <div class="dash-kpi-value" style="color:#4ade80;">${staffFmtAmt(totalSales)||staffSym()+'0'}</div>
+        <div class="dash-kpi-change neutral">${rowCount} item${rowCount!==1?'s':''} recorded</div>
+      </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-label">Total Expenses <span class="dash-kpi-icon">\uD83D\uDCB8</span></div>
+        <div class="dash-kpi-value" style="color:#f87171;">${staffFmtAmt(totalExp)||staffSym()+'0'}</div>
+        <div class="dash-kpi-change neutral">${staffExpRows.filter(function(r){return r.total>0;}).length} entr${staffExpRows.filter(function(r){return r.total>0;}).length!==1?'ies':'y'}</div>
+      </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-label">Net <span class="dash-kpi-icon">${netAmount>=0?'\uD83D\uDCC8':'\uD83D\uDCC9'}</span></div>
+        <div class="dash-kpi-value" style="color:${netAmount>=0?'#4ade80':'#f87171'};">${staffFmtAmt(Math.abs(netAmount))||staffSym()+'0'}</div>
+        <div class="dash-kpi-change neutral">Sales minus expenses</div>
+      </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-label">Customers <span class="dash-kpi-icon">\uD83D\uDC65</span></div>
+        <div class="dash-kpi-value" style="color:var(--gold);">${custCount}</div>
+        <div class="dash-kpi-change neutral">${custRows.length} with recorded sales</div>
+      </div>
+    </div>
+
+    <div style="padding:16px 16px 0;">
+      <div class="dash-card">
+        <div class="dash-card-title" style="margin-bottom:12px;">Customers by Total</div>
+        ${custRows.length===0
+          ? '<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.8rem;">No sales recorded yet this session.</div>'
+          : custRows.map(function(c){
+              const pct = totalSales>0 ? Math.min(100, Math.round(c.total/totalSales*100)) : 0;
+              return '<div class="dash-acct-balance">'
+                + '<div style="flex:1;min-width:0;">'
+                + '<div class="dash-acct-name">'+escH(c.name)+(c.serial?' <span style="color:var(--muted);font-weight:400;font-size:0.72rem;">(S/N '+escH(c.serial)+')</span>':'')+'</div>'
+                + '<div class="dash-acct-bar"><div class="dash-acct-bar-fill" style="width:'+pct+'%;"></div></div>'
+                + '</div>'
+                + '<div class="dash-acct-val" style="margin-left:16px;">'+staffFmtAmt(c.total)+'</div>'
+                + '</div>';
+            }).join('')
+        }
+      </div>
+    </div>
+
+    <div style="padding:16px 16px 20px;">
+      <div class="dash-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div class="dash-card-title" style="margin-bottom:0;">Quick Actions</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+          <button class="bk-btn bk-btn-gold" onclick="showStaffSales()">\uD83D\uDED2 Go to Sales</button>
+          <button class="bk-btn bk-btn-outline" onclick="showStaffExpenses()">\uD83D\uDCB8 Go to Expenses</button>
+          <button class="bk-btn bk-btn-outline" onclick="showStaffSettings()">\u2699\uFE0F Settings</button>
+        </div>
+      </div>
     </div>`;
 }
 
