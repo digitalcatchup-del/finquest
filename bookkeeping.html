@@ -2195,7 +2195,9 @@ async function openAccount(type, acct) {
     balance:parseFloat(r.balance)||0, row_order:r.row_order, saved:true
   }));
 
-  while (rows.length < 20) rows.push(emptyRow(rows.length));
+  // Show saved rows plus 3 empty rows for new entries
+  const savedCount = rows.filter(r => r.id).length;
+  while (rows.length < savedCount + 3) rows.push(emptyRow(rows.length));
   recalcBalances();
   renderLedger();
 }
