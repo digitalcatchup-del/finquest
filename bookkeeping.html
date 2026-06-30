@@ -5840,13 +5840,6 @@ function renderEquity(tots) {
 // ══════════════════════════════════════════════════════════════
 const LAUNDRY_SERVICES=['Wash, Dry, Iron','Wash, Dry','Wash Only','Iron Only','Express Dry Cleaning'];
 const LAUNDRY_ITEMS=['Shirt','Trouser','Full Suit','Up and Down','Duvet','Bed Spread','Bed Spread with Pillow Case'];
-const LAUNDRY_PRICES={
-  'Wash, Dry, Iron':{Shirt:1500,Trouser:1500,'Full Suit':4000,'Up and Down':3000,Duvet:5000,'Bed Spread':3000,'Bed Spread with Pillow Case':4000},
-  'Wash, Dry':{Shirt:1200,Trouser:1200,'Full Suit':3000,'Up and Down':2500,Duvet:4000,'Bed Spread':2500,'Bed Spread with Pillow Case':3000},
-  'Wash Only':{Shirt:800,Trouser:800,'Full Suit':2000,'Up and Down':1500,Duvet:3000,'Bed Spread':1500,'Bed Spread with Pillow Case':2000},
-  'Iron Only':{Shirt:500,Trouser:500,'Full Suit':1500,'Up and Down':1000,Duvet:2000,'Bed Spread':1000,'Bed Spread with Pillow Case':1500},
-  'Express Dry Cleaning':{Shirt:2500,Trouser:2500,'Full Suit':7000,'Up and Down':5000,Duvet:8000,'Bed Spread':5000,'Bed Spread with Pillow Case':6000},
-};
 
 let staffCustomers=[],staffExpRows=[],staffDateFmt='dd/mm/yyyy',_custIdSeq=0;
 
@@ -6145,23 +6138,13 @@ function staffRefreshDateDisp(input){
 function staffSvcChange(custId,ri,svc){
   const c=staffGetCust(custId);if(!c)return;
   c.rows[ri].service=svc;
-  const item=c.rows[ri].item;
-  if(item&&LAUNDRY_PRICES[svc]&&LAUNDRY_PRICES[svc][item]){
-    c.rows[ri].unit_price=LAUNDRY_PRICES[svc][item];
-    staffCalcTotal(custId,ri);
-    renderAllCustomers();
-  }
+  renderAllCustomers();
 }
 
 function staffItemChange(custId,ri,item){
   const c=staffGetCust(custId);if(!c)return;
   c.rows[ri].item=item;
-  const svc=c.rows[ri].service;
-  if(svc&&LAUNDRY_PRICES[svc]&&LAUNDRY_PRICES[svc][item]){
-    c.rows[ri].unit_price=LAUNDRY_PRICES[svc][item];
-    staffCalcTotal(custId,ri);
-    renderAllCustomers();
-  }
+  renderAllCustomers();
 }
 
 function staffNumChange(custId,ri,field,val){
