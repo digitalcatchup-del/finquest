@@ -716,6 +716,7 @@ body{padding-top:0;}
 .staff-record-btn{background:var(--gold);border:none;color:#000;font-size:1.1rem;font-weight:900;padding:22px 56px;border-radius:14px;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.3);transition:all 0.15s;}
 .staff-record-btn:hover{opacity:0.88;}
 .staff-homepage-btn{background:none;border:2px solid var(--border2);color:var(--off);font-size:0.85rem;font-weight:700;padding:12px 36px;border-radius:10px;cursor:pointer;margin-top:16px;transition:all 0.15s;}
+.staff-summary-cell{padding:8px 6px;color:var(--off);cursor:default;height:auto;min-height:33px;display:flex;align-items:center;}
 .staff-homepage-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-choice{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding:40px 20px;}
 .staff-choice-btn{flex:1;min-width:140px;max-width:220px;background:var(--surface);border:2px solid var(--border2);border-radius:14px;padding:30px 20px;cursor:pointer;text-align:center;transition:all 0.15s;}
@@ -6015,13 +6016,9 @@ function showStaffDashboard(){
   const totalExp    = staffExpRows.reduce(function(a,r){ return a + (parseFloat(r.total)||0); }, 0);
   const netAmount   = totalSales - totalExp;
   const rowCount    = staffCustomers.reduce(function(sum,c){ return sum + c.rows.filter(function(r){ return r.total>0; }).length; }, 0);
-
-  // Build a quick customer-by-customer breakdown
-  const custRows = staffCustomers.map(function(c){
-    const ctotal = c.rows.reduce(function(a,r){ return a+(parseFloat(r.total)||0); }, 0);
-    const citems = c.rows.filter(function(r){ return r.total>0; }).length;
-    return { name: c.name || 'Unnamed', serial: c.serial||'', total: ctotal, items: citems };
-  }).filter(function(c){ return c.total > 0; }).sort(function(a,b){ return b.total - a.total; });
+  const custWithSales = staffCustomers.filter(function(c){
+    return c.rows.some(function(r){ return r.total>0; });
+  }).length;
 
   document.getElementById('bkContent').innerHTML = `
     <div class="bk-content-header">
@@ -6051,27 +6048,14 @@ function showStaffDashboard(){
       <div class="dash-kpi-card">
         <div class="dash-kpi-label">Customers <span class="dash-kpi-icon">\uD83D\uDC65</span></div>
         <div class="dash-kpi-value" style="color:var(--gold);">${custCount}</div>
-        <div class="dash-kpi-change neutral">${custRows.length} with recorded sales</div>
+        <div class="dash-kpi-change neutral">${custWithSales} with recorded sales</div>
       </div>
     </div>
 
     <div style="padding:16px 16px 0;">
-      <div class="dash-card">
-        <div class="dash-card-title" style="margin-bottom:12px;">Customers by Total</div>
-        ${custRows.length===0
-          ? '<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.8rem;">No sales recorded yet this session.</div>'
-          : custRows.map(function(c){
-              const pct = totalSales>0 ? Math.min(100, Math.round(c.total/totalSales*100)) : 0;
-              return '<div class="dash-acct-balance">'
-                + '<div style="flex:1;min-width:0;">'
-                + '<div class="dash-acct-name">'+escH(c.name)+(c.serial?' <span style="color:var(--muted);font-weight:400;font-size:0.72rem;">(S/N '+escH(c.serial)+')</span>':'')+'</div>'
-                + '<div class="dash-acct-bar"><div class="dash-acct-bar-fill" style="width:'+pct+'%;"></div></div>'
-                + '</div>'
-                + '<div class="dash-acct-val" style="margin-left:16px;">'+staffFmtAmt(c.total)+'</div>'
-                + '</div>';
-            }).join('')
-        }
-      </div>
+      <div class="dash-card-title" style="margin-bottom:2px;">Sales Summary</div>
+      <div class="dash-card-sub">One row per customer \u2014 read-only. Edit in Record Sales.</div>
+      ${buildSalesSummarySpreadsheet()}
     </div>
 
     <div style="padding:16px 16px 20px;">
@@ -6086,6 +6070,133 @@ function showStaffDashboard(){
         </div>
       </div>
     </div>`;
+
+  initStaffSwipe();
+}
+
+// ── Build one summarised row per customer from their Record Sales rows ──
+function staffSummariseCustomer(c){
+  const dataRows = c.rows.filter(function(r){
+    return r.service || r.item || r.total>0 || r.status1 || r.status2 || r.paid || r.payMode || r.date;
+  });
+
+  // Date: first non-empty date found across this customer's rows
+  let date = '';
+  for (var i=0;i<c.rows.length;i++){ if (c.rows[i].date){ date = c.rows[i].date; break; } }
+
+  // Service: combine every distinct Service + Item mentioned across all rows
+  const seen = {};
+  const serviceParts = [];
+  c.rows.forEach(function(r){
+    if (r.service && !seen[r.service]) { seen[r.service]=1; serviceParts.push(r.service); }
+    if (r.item && !seen[r.item])       { seen[r.item]=1;    serviceParts.push(r.item); }
+  });
+
+  const total = c.rows.reduce(function(a,r){ return a+(parseFloat(r.total)||0); }, 0);
+
+  // Status fields: collect distinct non-empty values across rows
+  function distinctJoin(field){
+    const vals = [];
+    const s = {};
+    c.rows.forEach(function(r){
+      if (r[field] && !s[r[field]]) { s[r[field]]=1; vals.push(r[field]); }
+    });
+    return vals.join(', ');
+  }
+
+  return {
+    date: date,
+    customer: c.name || 'Unnamed',
+    serial: c.serial || '',
+    service: serviceParts.join(', '),
+    total: total,
+    payment: distinctJoin('paid'),
+    mode: distinctJoin('payMode'),
+    status1: distinctJoin('status1'),
+    status2: distinctJoin('status2'),
+  };
+}
+
+function buildSalesSummarySpreadsheet(){
+  if (staffCustomers.length === 0) {
+    return '<div class="dash-card"><div style="text-align:center;padding:24px;color:var(--muted);font-size:0.8rem;">No customers in Record Sales yet.</div></div>';
+  }
+
+  const w = { sn:34, date:130, customer:130, serial:90, service:220, total:110, payment:100, mode:140, status1:100, status2:140 };
+  const headerDefs = [
+    ['sn','S/N'], ['date','Date'], ['customer','Customer'], ['serial','Serial Number'],
+    ['service','Service'], ['total','Total'], ['payment','Payment'],
+    ['mode','Mode of Payment'], ['status1','Status 1'], ['status2','Status 2'],
+  ];
+  const allKeys = headerDefs.map(function(h){ return h[0]; });
+
+  const summaryRows = staffCustomers.map(function(c){ return staffSummariseCustomer(c); });
+
+  function buildHeaderRow(keys){
+    return '<tr>' + keys.map(function(k){
+      const def = headerDefs.find(function(h){ return h[0]===k; });
+      return '<th style="width:'+w[k]+'px;">'+def[1]+'</th>';
+    }).join('') + '</tr>';
+  }
+
+  function cellFor(row, ri, k){
+    let val = '';
+    if (k==='sn')        val = String(ri+1);
+    else if (k==='date')     val = row.date ? staffFormatDate(row.date, staffDateFmt) : '\u2014';
+    else if (k==='customer') val = row.customer;
+    else if (k==='serial')   val = row.serial || '\u2014';
+    else if (k==='service')  val = row.service || '\u2014';
+    else if (k==='total')    val = staffFmtAmt(row.total) || (staffSym()+'0');
+    else if (k==='payment')  val = row.payment || '\u2014';
+    else if (k==='mode')     val = row.mode || '\u2014';
+    else if (k==='status1')  val = row.status1 || '\u2014';
+    else if (k==='status2')  val = row.status2 || '\u2014';
+    return '<td style="width:'+w[k]+'px;"><div class="staff-cell staff-summary-cell">'+escH(val)+'</div></td>';
+  }
+
+  function buildBodyRows(keys){
+    return summaryRows.map(function(row, ri){
+      return '<tr>' + keys.map(function(k){ return cellFor(row, ri, k); }).join('') + '</tr>';
+    }).join('');
+  }
+
+  // Desktop: one wide scrollable table
+  const desktopTable =
+    '<div class="staff-sheet-wrap staff-desktop-only">'
+    + '<table class="staff-table" style="table-layout:fixed;">'
+    + '<thead>'+buildHeaderRow(allKeys)+'</thead>'
+    + '<tbody>'+buildBodyRows(allKeys)+'</tbody>'
+    + '</table></div>';
+
+  // Mobile/Tablet: dynamic panes sized to fit the screen, swipeable
+  const availW = Math.max(280, (window.innerWidth || 375) - 28);
+  const groups = [];
+  let cur = [], curW = 0;
+  allKeys.forEach(function(k){
+    const cw = w[k] || 80;
+    if (curW + cw > availW && cur.length > 0) { groups.push(cur); cur=[]; curW=0; }
+    cur.push(k); curW += cw;
+  });
+  if (cur.length > 0) groups.push(cur);
+
+  let paneHtml = '';
+  groups.forEach(function(keys){
+    paneHtml += '<div class="staff-swipe-pane">'
+      + '<table class="staff-table" style="table-layout:fixed;"><thead>'+buildHeaderRow(keys)+'</thead>'
+      + '<tbody>'+buildBodyRows(keys)+'</tbody></table></div>';
+  });
+  let dotsHtml = '';
+  groups.forEach(function(_, gi){
+    dotsHtml += '<span class="staff-swipe-dot'+(gi===0?' active':'')+'" data-pane="'+gi+'"></span>';
+  });
+
+  const mobilePanes =
+    '<div class="staff-swipe-wrap staff-mobile-only" data-custid="salessummary" data-panecount="'+groups.length+'">'
+      + '<div class="staff-swipe-track" style="width:'+(groups.length*100)+'%;">' + paneHtml + '</div>'
+      + '<div class="staff-swipe-dots">' + dotsHtml + '</div>'
+    + '</div>';
+
+  return desktopTable + mobilePanes;
 }
 
 function showStaffChoice(){
