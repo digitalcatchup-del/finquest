@@ -200,9 +200,9 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .bk-main{max-width:1320px;margin:0 auto;padding:32px 24px;}
 
 /* HERO */
-.bk-think{font-size:2.6rem;font-weight:900;color:var(--white);text-align:center;letter-spacing:-0.02em;margin-bottom:4px;}
+.bk-think{font-size:2.6rem;font-weight:900;color:var(--white);text-align:center;letter-spacing:-0.02em;margin-bottom:28px;}
 .bk-think span{color:var(--gold);}
-.bk-welcome{font-size:0.95rem;color:var(--muted);text-align:center;margin-bottom:28px;}
+.bk-welcome{font-size:0.95rem;color:var(--muted);text-align:center;margin-bottom:4px;}
 .bk-welcome strong{color:var(--white);}
 
 /* EQUATION BAR */
@@ -928,13 +928,13 @@ body{padding-top:0;}
 
 
 <main class="bk-main">
-  <h1 class="bk-think" onclick="showDashboard()" title="Go to Dashboard"
-      style="cursor:pointer;user-select:none;">THINK <span>FINANCE</span></h1>
-  <p class="bk-welcome">Welcome,
+  <p class="bk-welcome" style="margin-bottom:4px;">Welcome,
     <strong id="bkUserName" onclick="showAccountSettings()"
       title="Account Settings"
       style="cursor:pointer;">—</strong>
   </p>
+  <h1 class="bk-think" onclick="showDashboard()" title="Go to Dashboard"
+      style="cursor:pointer;user-select:none;">THINK <span>FINANCE</span></h1>
 
   <div id="bkMainChrome">
   <div class="bk-eq-bar">
@@ -958,7 +958,7 @@ body{padding-top:0;}
     </div>
 
     <!-- Extended equation toggle -->
-    <div style="text-align:center;margin-top:10px;">
+    <div id="extEqToggleWrap" style="text-align:center;margin-top:10px;">
       <button onclick="toggleExtEq()" id="extEqBtn"
         style="background:none;border:none;color:var(--muted);font-size:0.68rem;font-weight:600;cursor:pointer;letter-spacing:0.04em;padding:4px 8px;border-radius:4px;transition:color 0.15s;">
         ▸ Show Extended Equation
@@ -998,14 +998,6 @@ body{padding-top:0;}
     </div>
 
     <div class="bk-eq-check" id="eqCheck">Loading…</div>
-  </div>
-
-  <!-- QUICK INPUT -->
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-    <button class="bk-btn bk-btn-gold" style="padding:9px 28px;font-size:0.88rem;font-weight:800;letter-spacing:0.04em;" onclick="openQuickInput()">
-      ⚡ Input
-    </button>
-    <span style="font-size:0.75rem;color:var(--muted);">Quick-record a transaction</span>
   </div>
   </div>
 
@@ -1342,11 +1334,15 @@ function renderSuStep() {
         <div class="su-option-title">Business Owner</div>
         <div class="su-option-desc">I own or co-own this business</div>
       </div>
-      <div class="su-option disabled">
+      <div class="su-option ${suData.whoAreYou==='manager'?'sel':''}" onclick="suData.whoAreYou='manager';renderSuStep()">
+        <div class="su-option-icon">🗂️</div>
+        <div class="su-option-title">Manager</div>
+        <div class="su-option-desc">I manage this business</div>
+      </div>
+      <div class="su-option ${suData.whoAreYou==='employee'?'sel':''}" onclick="suData.whoAreYou='employee';renderSuStep()">
         <div class="su-option-icon">👷</div>
         <div class="su-option-title">Employee / Staff</div>
         <div class="su-option-desc">I work here and record transactions</div>
-        <div class="su-option-badge">Coming Soon</div>
       </div>
     </div>
     <button class="su-next-btn" onclick="suNext()">Continue →</button>`;
@@ -2440,6 +2436,19 @@ function toggleExtEq() {
   if (btn) btn.textContent = open ? '▸ Show Extended Equation' : '▾ Hide Extended Equation';
 }
 
+// ── Show/hide the "Show Extended Equation" collapsible — hidden on the
+//    Dashboard specifically, visible on every other page ──
+function hideExtEqToggle(){
+  const wrap  = document.getElementById('extEqToggleWrap');
+  const panel = document.getElementById('extEqPanel');
+  if (wrap)  wrap.style.display  = 'none';
+  if (panel) panel.style.display = 'none'; // also collapse it if it was open
+}
+function showExtEqToggle(){
+  const wrap = document.getElementById('extEqToggleWrap');
+  if (wrap) wrap.style.display = '';
+}
+
 // ── SMART ERROR DETECTION ─────────────────────────────────────
 async function smartErrorDetect(diff) {
   const check = document.getElementById('eqCheck');
@@ -2561,6 +2570,7 @@ async function smartAutoCorrect(journalId, drAmt, crAmt) {
 
 async function showDashboard() {
   staffShowChrome();
+  hideExtEqToggle();
   setActiveNav('navDash');
   document.getElementById('recordsDD')?.classList.add('hidden');
   const content = document.getElementById('bkContent');
@@ -2909,6 +2919,7 @@ function emptyJournalRow(order) {
 
 async function openJournal() {
   staffShowChrome();
+  showExtEqToggle();
   activeType=null; activeAccount=null;
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
@@ -5513,6 +5524,7 @@ let coaActiveType = 'capital';
 
 async function openChartOfAccounts() {
   staffShowChrome();
+  showExtEqToggle();
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading Chart of Accounts…</div>';
@@ -5583,6 +5595,7 @@ async function coaDeleteAccount(id,name) {
 // ── ACCOUNT SETTINGS PAGE ─────────────────────────────────────
 async function showAccountSettings() {
   staffShowChrome();
+  showExtEqToggle();
   setActiveNav('');
   document.getElementById('recordsDD')?.classList.add('hidden');
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
@@ -5705,6 +5718,7 @@ let psRows=[], psType='products';
 
 async function showProductsPage(type) {
   staffShowChrome();
+  showExtEqToggle();
   psType=type||'products';
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const { data }=await bkDb.from('bk_products').select('*')
@@ -5812,6 +5826,7 @@ async function psSaveRow(i) {
 // ── EXTENDED REPORTS ─────────────────────────────────────────
 async function showReport(type) {
   staffShowChrome();
+  showExtEqToggle();
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const {data}=await bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date').eq('user_id',bkUser.id);
   const T=data||[];
@@ -6158,7 +6173,7 @@ function buildSalesSummarySpreadsheet(){
   }
 
   // Narrow widths chosen so all 4 columns comfortably fit in a single mobile pane
-  const w = { sn:30, customer:150, total:90, payment:80 };
+  const w = { sn:24, customer:110, total:76, payment:64 };
   const headerDefs = [
     ['sn','S/N'], ['customer','Customer'], ['total','Total'], ['payment','Payment'],
   ];
