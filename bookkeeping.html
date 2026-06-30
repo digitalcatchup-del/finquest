@@ -2228,7 +2228,20 @@ function renderLedger() {
     });
   }
 
+  // Compute the closing balance: last saved row's balance, else opening balance
+  const dataRows = rows.filter(r => r.id && (r.debit > 0 || r.credit > 0));
+  const closingBal = dataRows.length > 0
+    ? parseFloat(dataRows[dataRows.length-1].balance) || ob
+    : ob;
+  const meta  = SCHEDULE_META[activeType] || { color:'var(--gold)' };
+  const color = meta.color || 'var(--gold)';
+  const balText = fmt(Math.abs(closingBal));
+
   content.innerHTML = `
+    <div class="sched-total-banner" style="border-left:4px solid ${color};margin-bottom:12px;">
+      <div class="sched-total-label">Total ${activeAccount.account_name}</div>
+      <div class="sched-total-val" style="color:${color};">${balText}</div>
+    </div>
     <div class="ledger-readonly-banner">
       <span>📖</span>
       <span>View only — all transactions are entered through <button onclick="openJournal()" style="background:none;border:none;color:var(--gold);font-weight:700;cursor:pointer;font-size:inherit;padding:0;">Master Records</button> and posted here automatically.</span>
