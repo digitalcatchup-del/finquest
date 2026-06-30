@@ -279,7 +279,7 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .ob-row td{padding:8px 10px;font-size:0.78rem;color:var(--gold);font-weight:700;}
 
 /* SPREADSHEET */
-.bk-sheet-wrap{overflow-x:auto;max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scroll-behavior:smooth;cursor:grab;}
+.bk-sheet-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-behavior:smooth;cursor:grab;}
 .bk-sheet-wrap:active{cursor:grabbing;}
 .bk-sheet{border-collapse:collapse;table-layout:fixed;white-space:nowrap;}
 .bk-sheet td, .bk-sheet th{white-space:nowrap;}
@@ -449,8 +449,6 @@ select.bk-cell {
 .sched-txn-count{display:block;font-size:0.68rem;color:var(--muted);margin-top:2px;}
 .sched-val{text-align:right;font-size:0.82rem;color:var(--off);white-space:nowrap;}
 .sched-total-col{font-weight:700;color:var(--white);}
-.sched-arrow{text-align:center;color:var(--muted);font-size:0.9rem;width:28px;}
-.sched-row:hover .sched-arrow{color:var(--gold);}
 .sched-foot-row td{background:rgba(212,175,55,0.06);font-weight:700;padding:10px 12px;border-top:2px solid var(--border);font-size:0.82rem;color:var(--gold);}
 .bk-cell-ro{width:100%;height:34px;background:transparent;border:none;color:var(--off);font-size:0.8rem;font-family:inherit;padding:0 8px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .bk-cell-ro.num{text-align:right;}
@@ -2233,7 +2231,7 @@ function renderLedger() {
       <div>
         <div class="bk-content-title">${typeLabel.toUpperCase()}</div>
         <div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <label style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Account:</label>
+          <label style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Sub Accounts:</label>
           <select style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:4px 10px;font-size:0.8rem;font-family:inherit;outline:none;cursor:pointer;"
             onchange="switchLedgerAccount(this.value)">
             ${(accounts[activeType]||[]).map(a=>`
@@ -2244,6 +2242,7 @@ function renderLedger() {
       </div>
       <div class="bk-header-actions">
         <span class="bk-save-msg" id="saveMsg"></span>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showSchedule('${activeType}')">← Schedule</button>
         <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
         <button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button>
       </div>
@@ -2254,7 +2253,7 @@ function renderLedger() {
       <span>View only — all transactions are entered through <button onclick="openJournal()" style="background:none;border:none;color:var(--gold);font-weight:700;cursor:pointer;font-size:inherit;padding:0;">Master Records</button> and posted here automatically.</span>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="bk-sheet" id="ledgerTable" style="min-width:1164px;">
+      <table class="bk-sheet" id="ledgerTable" style="min-width:1072px;">
         <thead>
           <tr>
             <th class="col-date"><span class="th-help-text" onclick="showColumnHelp(this,'Date')">Date</span></th>
@@ -2265,9 +2264,6 @@ function renderLedger() {
             <th class="col-cr num"><span class="th-help-text" onclick="showColumnHelp(this,'Credit')">Credit (${CURRENCIES[activeCurrency].symbol})</span></th>
             <th class="col-bal num"><span class="th-help-text" onclick="showColumnHelp(this,'Balance')">Balance (${CURRENCIES[activeCurrency].symbol})</span></th>
             <th class="col-sn num"><span class="th-help-text" onclick="showColumnHelp(this,'S/N')">S/N</span></th>
-            <th class="col-del"></th>
-            <th class="col-save"></th>
-            <th class="col-drag"></th>
           </tr>
         </thead>
         <tbody id="ledgerBody"></tbody>
@@ -2293,7 +2289,6 @@ function renderRows(displayRows) {
       <td style="text-align:right;padding:8px 10px;font-size:0.78rem;color:var(--muted);">—</td>
       <td style="text-align:right;padding:8px 10px;font-size:0.82rem;font-weight:800;color:var(--gold);">${ob!==0?fmt(ob):fmt(0)}</td>
       <td style="text-align:center;padding:8px 10px;font-size:0.72rem;color:var(--muted);">—</td>
-      <td></td>
     </tr>`;
 
   tbody.innerHTML = obRow + (displayRows||rows).map((row, i) => {
@@ -5926,27 +5921,33 @@ async function showSchedule(type) {
   const sym = CURRENCIES[activeCurrency]?.symbol || '₦';
   const fmt = (n) => n ? sym + Math.abs(n).toLocaleString('en-NG', {minimumFractionDigits:decimalPlaces, maximumFractionDigits:decimalPlaces}) : '—';
 
-  // Build schedule rows
+  // Build schedule rows — only include accounts that have transactions OR an opening balance
   let scheduleTotal = 0;
-  const rows = accts.map(function(acct, i){
+  const allRows = accts.map(function(acct, i){
     const t   = totals[acct.account_name] || { dr:0, cr:0, lastBalance:0, count:0 };
     const ob  = parseFloat(acct.opening_balance)||0;
-    // Balance: for debit-normal, balance = OB + dr - cr; for credit-normal, OB + cr - dr
     const bal = isDebitNormal ? ob + t.dr - t.cr : ob + t.cr - t.dr;
     scheduleTotal += bal;
     const acctNum = parseInt(meta.num) + 10 + i * 10;
     return { acct, bal, t, ob, acctNum };
   });
+  // Only show accounts that have at least one transaction or a non-zero opening balance
+  const rows = allRows.filter(function(r){ return r.t.count > 0 || r.ob !== 0; });
 
-  // Rows HTML — no template literals inside loops to avoid nesting issues
+  // Build sub-accounts dropdown options (all accounts, not just non-empty, for navigation)
+  const subOpts = accts.map(function(acct){
+    return '<option value="' + acct.id + '">' + escH(acct.account_name) + '</option>';
+  }).join('');
+
+  // Rows HTML
   let rowsHtml = '';
   rows.forEach(function(r){
     const balText = r.bal !== 0 ? fmt(r.bal) : '—';
     const drText  = r.t.dr > 0 ? fmt(r.t.dr) : '—';
     const crText  = r.t.cr > 0 ? fmt(r.t.cr) : '—';
     const obText  = r.ob > 0 ? fmt(r.ob) : '—';
-    const txnText = r.t.count > 0 ? r.t.count + ' txn' + (r.t.count !== 1 ? 's' : '') : 'No entries';
-    rowsHtml += '<tr class="sched-row" onclick="openAccountById(\'' + type + '\',' + r.acct.id + ')" title="Open ' + escH(r.acct.account_name) + ' ledger">'
+    const txnText = r.t.count > 0 ? r.t.count + ' txn' + (r.t.count !== 1 ? 's' : '') : 'Opening bal only';
+    rowsHtml += '<tr class="sched-row" onclick="openAccountById(\'' + type + '\',' + r.acct.id + ')">'
       + '<td class="sched-num">' + r.acctNum + '</td>'
       + '<td class="sched-name"><span class="sched-name-text">' + escH(r.acct.account_name) + '</span>'
       + '<span class="sched-txn-count">' + txnText + '</span></td>'
@@ -5954,7 +5955,6 @@ async function showSchedule(type) {
       + '<td class="sched-val">' + drText + '</td>'
       + '<td class="sched-val">' + crText + '</td>'
       + '<td class="sched-val sched-total-col">' + balText + '</td>'
-      + '<td class="sched-arrow">›</td>'
       + '</tr>';
   });
 
@@ -5974,32 +5974,40 @@ async function showSchedule(type) {
       </div>
     </div>
 
-    <div class="sched-total-banner" style="border-left:4px solid ${meta.color};">
-      <div class="sched-total-label">Total ${meta.label}</div>
-      <div class="sched-total-val" style="color:${meta.color};">${totalText}</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <div class="sched-total-banner" style="border-left:4px solid ${meta.color};flex:1;margin-bottom:0;">
+        <div class="sched-total-label">Total ${meta.label}</div>
+        <div class="sched-total-val" style="color:${meta.color};">${totalText}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:0.68rem;color:var(--muted);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">Sub Accounts</label>
+        <select class="acct-input" style="min-width:200px;"
+          onchange="if(this.value){openAccountById('${type}',parseInt(this.value));this.value='';}">
+          <option value="">Jump to sub-account…</option>
+          ${subOpts}
+        </select>
+      </div>
     </div>
 
-    <div class="bk-sheet-wrap" style="max-height:none;">
-      <table class="bk-sheet sched-table" style="min-width:640px;">
+    <div class="bk-sheet-wrap">
+      <table class="bk-sheet sched-table" style="min-width:580px;">
         <thead>
           <tr>
             <th style="width:60px;">No.</th>
-            <th>Account Name</th>
-            <th class="num" style="width:130px;">Opening Bal.</th>
-            <th class="num" style="width:120px;">Total Debit</th>
-            <th class="num" style="width:120px;">Total Credit</th>
-            <th class="num" style="width:140px;">Balance</th>
-            <th style="width:28px;"></th>
+            <th style="min-width:200px;">Account Name</th>
+            <th class="num" style="width:120px;">Opening Bal.</th>
+            <th class="num" style="width:110px;">Total Debit</th>
+            <th class="num" style="width:110px;">Total Credit</th>
+            <th class="num" style="width:130px;">Balance</th>
           </tr>
         </thead>
         <tbody>
-          ${rowsHtml || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No accounts yet. Add one via Chart of Accounts.</td></tr>'}
+          ${rowsHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No activity yet. Transactions will appear here once entered.</td></tr>'}
         </tbody>
         <tfoot>
           <tr class="sched-foot-row">
             <td colspan="5">Total ${meta.label}</td>
             <td class="num" style="color:${meta.color};font-weight:800;">${totalText}</td>
-            <td></td>
           </tr>
         </tfoot>
       </table>
