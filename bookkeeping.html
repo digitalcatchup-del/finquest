@@ -754,6 +754,42 @@ body{padding-top:0;}
 .row-add-pop div:hover{background:var(--gold-dim);color:var(--gold);}
 .staff-test-badge{background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;font-size:0.65rem;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:0.06em;text-transform:uppercase;}
 
+/* ── Word-wrap inside cells (Excel-style) ──────────────────── */
+.staff-cell, .staff-table select, .staff-table input{white-space:normal;word-break:break-word;overflow-wrap:break-word;line-height:1.25;}
+.staff-table td, .staff-table th{white-space:normal;word-break:break-word;overflow-wrap:break-word;vertical-align:top;}
+.staff-wrap-cell{white-space:normal;word-break:break-word;}
+.staff-date-disp{font-size:0.76rem;color:var(--white);padding:6px 5px;cursor:pointer;white-space:normal;word-break:break-word;line-height:1.25;min-height:33px;display:flex;align-items:center;}
+.staff-date-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+
+/* ── Resizable column handle ────────────────────────────────── */
+.staff-col-resize{position:absolute;right:-3px;top:0;bottom:0;width:14px;cursor:col-resize;z-index:5;touch-action:none;}
+.staff-col-resize::after{content:'';position:absolute;right:5px;top:20%;bottom:20%;width:3px;background:var(--border2);border-radius:2px;transition:background 0.15s;}
+.staff-col-resize:hover::after,.staff-col-resize:active::after{background:var(--gold);}
+.staff-table th{position:relative;}
+
+/* ── Static Save button below each customer block ───────────── */
+.staff-save-static-wrap{display:flex;justify-content:center;padding:12px 0 4px;background:var(--surface);border-top:1px solid var(--border);}
+.staff-save-static-btn{background:var(--gold);border:none;color:#000;font-size:0.85rem;font-weight:800;padding:9px 36px;border-radius:8px;cursor:pointer;transition:all 0.15s;}
+.staff-save-static-btn:hover{opacity:0.88;}
+
+/* ── Desktop vs Mobile table display ─────────────────────────── */
+.staff-desktop-only{display:block;}
+.staff-mobile-only{display:none;}
+
+/* ── Swipeable panes (mobile/tablet) ─────────────────────────── */
+.staff-swipe-wrap{overflow:hidden;position:relative;border-bottom:1px solid var(--border);}
+.staff-swipe-track{display:flex;width:300%;transition:transform 0.25s ease;}
+.staff-swipe-pane{width:33.333%;flex-shrink:0;overflow-x:hidden;}
+.staff-swipe-pane .staff-table{width:100%;min-width:0;table-layout:fixed;}
+.staff-swipe-dots{display:flex;justify-content:center;gap:6px;padding:8px 0;background:var(--surface2);}
+.staff-swipe-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);cursor:pointer;transition:background 0.15s;}
+.staff-swipe-dot.active{background:var(--gold);}
+
+@media(max-width:899px){
+  .staff-desktop-only{display:none;}
+  .staff-mobile-only{display:block;}
+}
+
 </style>
 </head>
 <body>
@@ -5814,15 +5850,41 @@ const LAUNDRY_PRICES={
 let staffCustomers=[],staffExpRows=[],staffDateFmt='dd/mm/yyyy',_custIdSeq=0;
 
 function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_custIdSeq}`,rows:[staffEmptyRow(1),staffEmptyRow(2),staffEmptyRow(3)]};}
-function staffEmptyRow(sn){return{sn,date:'',service:'',item:'',unit_price:0,qty:1,total:0,status1:'',status2:'',date2:'',paid:''};}
-function staffEmptyExpRow(sn){return{sn,date:'',narration:'',unit_price:0,qty:1,total:0};}
+function staffEmptyRow(sn){return{sn,date:'',service:'',item:'',unit_price:0,qty:1,total:0,status1:'',status2:'',date2:'',paid:'',payMode:''};}
+
+// ── Column widths (resizable, shared across all customer blocks) ──
+let staffColWidths = { sn:34, date:108, service:120, item:110, price:90, qty:55, total:90, status1:90, status2:100, todate:120, paid:90, paymode:110, del:34 };
+
+// ── Date formatting ──────────────────────────────────────────
+function staffFormatDate(dateStr, fmt) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d)) return dateStr;
+  const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const day = d.getDate();
+  const ord = (n) => {
+    if (n>3 && n<21) return n+'th';
+    switch(n%10){case 1:return n+'st';case 2:return n+'nd';case 3:return n+'rd';default:return n+'th';}
+  };
+  if (fmt === 'day_date_year') {
+    return days[d.getDay()]+'/'+ord(day)+'/'+months[d.getMonth()]+'/'+d.getFullYear();
+  }
+  if (fmt === 'month_day_year') {
+    return months[d.getMonth()]+'/'+ord(day)+'/'+d.getFullYear();
+  }
+  if (fmt === 'dd/mm/yyyy') return String(day).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+  if (fmt === 'mm/dd/yyyy') return String(d.getMonth()+1).padStart(2,'0')+'/'+String(day).padStart(2,'0')+'/'+d.getFullYear();
+  if (fmt === 'dd/mm/yy')   return String(day).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);
+  return dateStr;
+}
 
 function showStaffPage(){
   document.getElementById('bkContent').innerHTML=`
     <div class="staff-welcome">
-      <div class="staff-welcome-title">Welcome, Staff 👋</div>
-      <div class="staff-welcome-sub"><span class="staff-test-badge">Test Run — no data saved</span></div>
-      <button class="staff-record-btn" onclick="showStaffChoice()">📝 Record</button>
+      <div class="staff-welcome-title">Welcome, Staff \uD83D\uDC4B</div>
+      <div class="staff-welcome-sub"><span class="staff-test-badge">Test Run \u2014 no data saved</span></div>
+      <button class="staff-record-btn" onclick="showStaffChoice()">\uD83D\uDCDD Record</button>
     </div>`;
 }
 
@@ -5830,16 +5892,16 @@ function showStaffChoice(){
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
       <div class="bk-content-title">STAFF RECORD</div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">← Back</button>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
     </div>
     <div class="staff-choice">
       <div class="staff-choice-btn" onclick="showStaffSales()">
-        <div class="staff-choice-icon">🛒</div>
+        <div class="staff-choice-icon">\uD83D\uDED2</div>
         <div class="staff-choice-label">Sales</div>
         <div class="staff-choice-desc">Record customer transactions</div>
       </div>
       <div class="staff-choice-btn" onclick="showStaffExpenses()">
-        <div class="staff-choice-icon">💸</div>
+        <div class="staff-choice-icon">\uD83D\uDCB8</div>
         <div class="staff-choice-label">Expenses</div>
         <div class="staff-choice-desc">Record business expenses</div>
       </div>
@@ -5852,7 +5914,14 @@ function showStaffSales(){
 }
 
 function renderStaffSales(){
-  const fmtOpts=['dd/mm/yyyy','mm/dd/yyyy','dd/mm/yy'].map(f=>`<option value="${f}" ${staffDateFmt===f?'selected':''}>${f}</option>`).join('');
+  const fmtOpts = [
+    ['dd/mm/yyyy','DD/MM/YYYY'],
+    ['mm/dd/yyyy','MM/DD/YYYY'],
+    ['dd/mm/yy','DD/MM/YY'],
+    ['day_date_year','Day/Date/Year \u2014 e.g. Tue/30th/June/2026'],
+    ['month_day_year','Month-Day-Year \u2014 e.g. Jun/30th/2026'],
+  ].map(([v,l])=>'<option value="'+v+'"'+(staffDateFmt===v?' selected':'')+'>'+l+'</option>').join('');
+
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
       <div>
@@ -5860,14 +5929,14 @@ function renderStaffSales(){
         <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap;">
           <span class="staff-test-badge">Test Run</span>
           <label style="font-size:0.7rem;color:var(--muted);">Date format:
-            <select class="staff-cell" style="height:auto;padding:2px 6px;width:auto;min-width:100px;"
-              onchange="staffDateFmt=this.value;renderStaffSales()">${fmtOpts}</select>
+            <select class="staff-cell" style="height:auto;padding:2px 6px;width:auto;min-width:140px;"
+              onchange="staffDateFmt=this.value;renderAllCustomers()">${fmtOpts}</select>
           </label>
         </div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">← Back</button>
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">\uD83D\uDDA8 Print</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">\u2190 Back</button>
       </div>
     </div>
     <div id="staffSalesBody" style="padding:0 0 16px;"></div>`;
@@ -5878,116 +5947,212 @@ function renderAllCustomers(){
   const body=document.getElementById('staffSalesBody');
   if(!body) return;
   body.innerHTML=staffCustomers.map(c=>renderCustomerBlock(c)).join('')+
-    `<button class="staff-add-cust-btn" onclick="addStaffCustomer()">+ Add Customer</button>`;
+    '<button class="staff-add-cust-btn" onclick="addStaffCustomer()">+ Add Customer</button>';
+  // Re-init swipe panes and resize handles after render
+  initStaffSwipe();
+  initStaffColResize();
 }
 
+// ── Build one customer block: header, 3 swipeable panes (mobile) /
+//    one scrollable table (desktop), static Save button, live totals ──
 function renderCustomerBlock(cust){
-  const totalQty=cust.rows.reduce((a,r)=>a+(parseFloat(r.qty)||0),0);
-  const totalAmt=cust.rows.reduce((a,r)=>a+(parseFloat(r.total)||0),0);
+  const totalQty = cust.rows.reduce((a,r)=>a+(parseFloat(r.qty)||0),0);
+  const totalAmt = cust.rows.reduce((a,r)=>a+(parseFloat(r.total)||0),0);
+  const cid = cust.id;
+  const w = staffColWidths;
 
-  // Build rows using string concatenation — avoids triple-nested template literals
-  let rowsHtml = '';
-  cust.rows.forEach(function(row, ri) {
-    // Service options
-    let svcOpts = '<option value="">Select\u2026</option>';
-    LAUNDRY_SERVICES.forEach(function(s) {
-      svcOpts += '<option value="' + s + '"' + (row.service===s?' selected':'') + '>' + s + '</option>';
-    });
-    // Item options
-    let itemOpts = '<option value="">Select\u2026</option>';
-    LAUNDRY_ITEMS.forEach(function(i) {
-      itemOpts += '<option value="' + i + '"' + (row.item===i?' selected':'') + '>' + i + '</option>';
-    });
-    const cid = cust.id;
-    const upVal = row.unit_price > 0 ? row.unit_price.toLocaleString('en-NG') : '';
+  // Build the option lists once
+  function svcSelect(ri, current) {
+    let h = '<select class="staff-cell" onchange="staffSvcChange('+cid+','+ri+',this.value)">';
+    h += '<option value="">Select\u2026</option>';
+    LAUNDRY_SERVICES.forEach(function(s){ h += '<option value="'+s+'"'+(current===s?' selected':'')+'>'+s+'</option>'; });
+    h += '</select>';
+    return h;
+  }
+  function itemSelect(ri, current) {
+    let h = '<select class="staff-cell" onchange="staffItemChange('+cid+','+ri+',this.value)">';
+    h += '<option value="">Select\u2026</option>';
+    LAUNDRY_ITEMS.forEach(function(i){ h += '<option value="'+i+'"'+(current===i?' selected':'')+'>'+i+'</option>'; });
+    h += '</select>';
+    return h;
+  }
+
+  // Build each row's cells as named pieces, so we can arrange them into
+  // panes for mobile (swipe) or one wide table for desktop (scroll)
+  const cellsByRow = cust.rows.map(function(row, ri) {
+    const upVal  = row.unit_price > 0 ? row.unit_price.toLocaleString('en-NG') : '';
     const totVal = row.total > 0 ? row.total.toLocaleString('en-NG') : '';
+    const dateDisp = row.date ? staffFormatDate(row.date, staffDateFmt) : '';
 
-    rowsHtml += '<tr id="srow_' + cid + '_' + ri + '">'
-      + '<td class="staff-sn">' + (ri+1) + '</td>'
-      + '<td><input class="staff-cell" type="date" value="' + row.date + '"'
-      + ' onchange="staffSaleChange(' + cid + ',' + ri + ',\'date\',this.value)"/></td>'
-      + '<td><select class="staff-cell" onchange="staffSvcChange(' + cid + ',' + ri + ',this.value)">'
-      + svcOpts + '</select></td>'
-      + '<td><select class="staff-cell" onchange="staffItemChange(' + cid + ',' + ri + ',this.value)">'
-      + itemOpts + '</select></td>'
-      + '<td><input class="staff-cell num" type="text" inputmode="decimal" value="' + upVal + '" placeholder="0"'
-      + ' oninput="staffNumChange(' + cid + ',' + ri + ',\'unit_price\',this.value)"/></td>'
-      + '<td><input class="staff-cell num" type="number" value="' + (row.qty||1) + '" min="1" style="width:55px;"'
-      + ' oninput="staffNumChange(' + cid + ',' + ri + ',\'qty\',this.value)"/></td>'
-      + '<td><div class="staff-cell ro" id="stotal_' + cid + '_' + ri + '">' + totVal + '</div></td>'
-      + '<td><select class="staff-cell" onchange="staffSaleChange(' + cid + ',' + ri + ',\'status1\',this.value)">'
-      + '<option value="">&#8212;</option>'
-      + '<option value="Ready"' + (row.status1==='Ready'?' selected':'') + '>Ready</option>'
-      + '<option value="Not Ready"' + (row.status1==='Not Ready'?' selected':'') + '>Not Ready</option>'
-      + '</select></td>'
-      + '<td><select class="staff-cell" onchange="staffSaleChange(' + cid + ',' + ri + ',\'status2\',this.value)">'
-      + '<option value="">&#8212;</option>'
-      + '<option value="Collected"' + (row.status2==='Collected'?' selected':'') + '>Collected</option>'
-      + '<option value="Not Collected"' + (row.status2==='Not Collected'?' selected':'') + '>Not Collected</option>'
-      + '</select></td>'
-      + '<td><input class="staff-cell" type="date" value="' + row.date2 + '"'
-      + ' onchange="staffSaleChange(' + cid + ',' + ri + ',\'date2\',this.value)"/></td>'
-      + '<td><select class="staff-cell" onchange="staffSaleChange(' + cid + ',' + ri + ',\'paid\',this.value)">'
-      + '<option value="">&#8212;</option>'
-      + '<option value="Not Paid"' + (row.paid==='Not Paid'?' selected':'') + '>Not Paid</option>'
-      + '<option value="Paid"' + (row.paid==='Paid'?' selected':'') + '>Paid</option>'
-      + '</select></td>'
-      + '<td><button class="staff-save-btn" onclick="staffSaveRow(' + cid + ',' + ri + ')">&#8250;</button></td>'
-      + '<td><button class="staff-del-btn" onclick="staffDelRow(' + cid + ',' + ri + ')">&#x2715;</button></td>'
-      + '<td class="staff-add-col" style="position:relative;">'
-      + '<button class="staff-add-btn" onclick="staffShowAddMenu(this,' + cid + ',' + ri + ')">&#xFF0B;</button>'
-      + '</td></tr>';
+    return {
+      sn:  '<td class="staff-sn" style="width:'+w.sn+'px;">'+(ri+1)+'</td>',
+      date:'<td style="width:'+w.date+'px;"><div class="staff-wrap-cell">'
+           + '<input class="staff-cell staff-date-hidden" type="date" value="'+row.date+'"'
+           + ' onchange="staffSaleChange('+cid+','+ri+',\'date\',this.value);staffRefreshDateDisp(this)"/>'
+           + '<div class="staff-date-disp" onclick="this.previousElementSibling.showPicker?this.previousElementSibling.showPicker():this.previousElementSibling.focus()">'+(dateDisp||'Select date')+'</div>'
+           + '</div></td>',
+      service:'<td style="width:'+w.service+'px;">'+svcSelect(ri,row.service)+'</td>',
+      item:'<td style="width:'+w.item+'px;">'+itemSelect(ri,row.item)+'</td>',
+      price:'<td style="width:'+w.price+'px;"><input class="staff-cell num" type="text" inputmode="decimal" value="'+upVal+'" placeholder="0"'
+           + ' oninput="staffNumChange('+cid+','+ri+',\'unit_price\',this.value)"/></td>',
+      qty:'<td style="width:'+w.qty+'px;"><input class="staff-cell num" type="number" value="'+(row.qty||1)+'" min="1"'
+           + ' oninput="staffNumChange('+cid+','+ri+',\'qty\',this.value)"/></td>',
+      total:'<td style="width:'+w.total+'px;"><div class="staff-cell ro" id="stotal_'+cid+'_'+ri+'">'+totVal+'</div></td>',
+      status1:'<td style="width:'+w.status1+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'status1\',this.value)">'
+           + '<option value="">\u2014</option>'
+           + '<option value="Ready"'+(row.status1==='Ready'?' selected':'')+'>Ready</option>'
+           + '<option value="Not Ready"'+(row.status1==='Not Ready'?' selected':'')+'>Not Ready</option>'
+           + '</select></td>',
+      status2:'<td style="width:'+w.status2+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'status2\',this.value)">'
+           + '<option value="">\u2014</option>'
+           + '<option value="Collected"'+(row.status2==='Collected'?' selected':'')+'>Collected</option>'
+           + '<option value="Not Collected"'+(row.status2==='Not Collected'?' selected':'')+'>Not Collected</option>'
+           + '</select></td>',
+      todate:'<td style="width:'+w.todate+'px;"><input class="staff-cell" type="date" value="'+row.date2+'"'
+           + ' onchange="staffSaleChange('+cid+','+ri+',\'date2\',this.value)"/></td>',
+      paid:'<td style="width:'+w.paid+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'paid\',this.value)">'
+           + '<option value="">\u2014</option>'
+           + '<option value="Not Paid"'+(row.paid==='Not Paid'?' selected':'')+'>Not Paid</option>'
+           + '<option value="Paid"'+(row.paid==='Paid'?' selected':'')+'>Paid</option>'
+           + '</select></td>',
+      paymode:'<td style="width:'+w.paymode+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'payMode\',this.value)">'
+           + '<option value="">\u2014</option>'
+           + '<option value="Cash"'+(row.payMode==='Cash'?' selected':'')+'>Cash</option>'
+           + '<option value="Card"'+(row.payMode==='Card'?' selected':'')+'>Card</option>'
+           + '<option value="Bank Transfer"'+(row.payMode==='Bank Transfer'?' selected':'')+'>Bank Transfer</option>'
+           + '</select></td>',
+      del:'<td style="width:'+w.del+'px;"><button class="staff-del-btn" onclick="staffDelRow('+cid+','+ri+')">&#x2715;</button></td>',
+    };
   });
+
+  const headerDefs = [
+    ['sn','S/N'], ['date','Date'], ['service','Service'], ['item','Item'],
+    ['price','Unit Price'], ['qty','Qty'], ['total','Total'],
+    ['status1','Status 1'], ['status2','Status 2'], ['todate','To collect when?'],
+    ['paid','Payment'], ['paymode','Mode of Payment'], ['del','']
+  ];
+
+  function buildResizeHandle(key) {
+    return '<span class="staff-col-resize" data-colkey="'+key+'"></span>';
+  }
+  function buildHeaderRow(keys) {
+    return '<tr>' + keys.map(function(k){
+      const def = headerDefs.find(function(h){return h[0]===k;});
+      return '<th style="width:'+w[k]+'px;position:relative;">'+def[1]+buildResizeHandle(k)+'</th>';
+    }).join('') + '</tr>';
+  }
+  function buildBodyRows(keys) {
+    return cellsByRow.map(function(cells, ri){
+      return '<tr id="srow_'+cid+'_'+ri+'">' + keys.map(function(k){return cells[k];}).join('') + '</tr>';
+    }).join('');
+  }
+  function buildFootRow(keys, isPane1) {
+    let h = '<tr class="staff-total-row">';
+    keys.forEach(function(k){
+      if (k==='sn')      h += '<td style="width:'+w.sn+'px;">'+(isPane1?'Total':'')+'</td>';
+      else if (k==='qty')   h += '<td style="width:'+w.qty+'px;text-align:right;" id="totQty_'+cid+'">'+(totalQty||'')+'</td>';
+      else if (k==='total') h += '<td style="width:'+w.total+'px;text-align:right;" id="totAmt_'+cid+'">'+(totalAmt>0?totalAmt.toLocaleString('en-NG'):'')+'</td>';
+      else h += '<td style="width:'+(w[k]||80)+'px;"></td>';
+    });
+    h += '</tr>';
+    return h;
+  }
+
+  const allKeys = headerDefs.map(function(h){return h[0];});
+
+  // Desktop: one wide scrollable table with all columns
+  const desktopTable =
+    '<div class="staff-sheet-wrap staff-desktop-only">'
+    + '<table class="staff-table" data-custid="'+cid+'">'
+    + '<thead>'+buildHeaderRow(allKeys)+'</thead>'
+    + '<tbody>'+buildBodyRows(allKeys)+'</tbody>'
+    + '<tfoot>'+buildFootRow(allKeys,true)+'</tfoot>'
+    + '</table></div>';
+
+  // Mobile/Tablet: 3 swipeable panes
+  const pane1Keys = ['sn','date','service'];
+  const pane2Keys = ['item','price','qty','total'];
+  const pane3Keys = ['status1','status2','todate','paid','paymode','del'];
+
+  const mobilePanes =
+    '<div class="staff-swipe-wrap staff-mobile-only" data-custid="'+cid+'">'
+      + '<div class="staff-swipe-track">'
+        + '<div class="staff-swipe-pane">'
+          + '<table class="staff-table"><thead>'+buildHeaderRow(pane1Keys)+'</thead>'
+          + '<tbody>'+buildBodyRows(pane1Keys)+'</tbody>'
+          + '<tfoot>'+buildFootRow(pane1Keys,true)+'</tfoot></table></div>'
+        + '<div class="staff-swipe-pane">'
+          + '<table class="staff-table"><thead>'+buildHeaderRow(pane2Keys)+'</thead>'
+          + '<tbody>'+buildBodyRows(pane2Keys)+'</tbody>'
+          + '<tfoot>'+buildFootRow(pane2Keys,false)+'</tfoot></table></div>'
+        + '<div class="staff-swipe-pane">'
+          + '<table class="staff-table"><thead>'+buildHeaderRow(pane3Keys)+'</thead>'
+          + '<tbody>'+buildBodyRows(pane3Keys)+'</tbody>'
+          + '<tfoot>'+buildFootRow(pane3Keys,false)+'</tfoot></table></div>'
+      + '</div>'
+      + '<div class="staff-swipe-dots">'
+        + '<span class="staff-swipe-dot active" data-pane="0"></span>'
+        + '<span class="staff-swipe-dot" data-pane="1"></span>'
+        + '<span class="staff-swipe-dot" data-pane="2"></span>'
+      + '</div>'
+    + '</div>';
 
   return '<div class="staff-customer-block">'
     + '<div class="staff-customer-header">'
-    + '<input class="staff-customer-name" type="text" value="' + escH(cust.name) + '"'
-    + ' onchange="staffCustRename(' + cust.id + ',this.value)" placeholder="Customer name\u2026"/>'
+    + '<input class="staff-customer-name" type="text" value="'+escH(cust.name)+'"'
+    + ' onchange="staffCustRename('+cid+',this.value)" placeholder="Customer name\u2026"/>'
     + '<div class="staff-cust-btns">'
-    + '<button class="staff-cust-btn" onclick="staffAddRowToCustomer(' + cust.id + ')">+ Row</button>'
-    + '<button class="staff-cust-btn del" onclick="staffDeleteCustomer(' + cust.id + ')">&#x2715;</button>'
+    + '<button class="staff-cust-btn" onclick="staffAddRowToCustomer('+cid+')">+ Row</button>'
+    + '<button class="staff-cust-btn del" onclick="staffDeleteCustomer('+cid+')">&#x2715;</button>'
     + '</div></div>'
-    + '<div class="staff-sheet-wrap"><table class="staff-table">'
-    + '<thead><tr>'
-    + '<th>S/N</th><th>Date</th><th>Service</th><th>Item</th>'
-    + '<th>Unit Price</th><th>Qty</th><th>Total</th>'
-    + '<th>Status 1</th><th>Status 2</th><th>Collection Date</th>'
-    + '<th>Payment</th><th>&#8250;</th><th>&#x2715;</th><th>&#xFF0B;</th>'
-    + '</tr></thead>'
-    + '<tbody>' + rowsHtml + '</tbody>'
-    + '<tfoot><tr class="staff-total-row">'
-    + '<td colspan="5" style="padding:7px 5px;">Total</td>'
-    + '<td style="text-align:right;padding:7px 5px;">' + (totalQty||'') + '</td>'
-    + '<td style="text-align:right;padding:7px 5px;">' + (totalAmt>0?totalAmt.toLocaleString('en-NG'):'') + '</td>'
-    + '<td colspan="7"></td>'
-    + '</tr></tfoot>'
-    + '</table></div></div>';
+    + desktopTable
+    + mobilePanes
+    + '<div class="staff-save-static-wrap">'
+    + '<button class="staff-save-static-btn" onclick="staffSaveCustomer('+cid+')">&#8250; Save</button>'
+    + '</div>'
+    + '</div>';
 }
 
 function staffGetCust(id){return staffCustomers.find(c=>c.id===id);}
 function staffSaleChange(custId,ri,field,val){const c=staffGetCust(custId);if(c)c.rows[ri][field]=val;}
 function staffCustRename(custId,name){const c=staffGetCust(custId);if(c)c.name=name;}
 
+function staffRefreshDateDisp(input){
+  const disp = input.nextElementSibling;
+  if (disp) disp.textContent = input.value ? staffFormatDate(input.value, staffDateFmt) : 'Select date';
+}
+
 function staffSvcChange(custId,ri,svc){
   const c=staffGetCust(custId);if(!c)return;
   c.rows[ri].service=svc;
   const item=c.rows[ri].item;
-  if(item&&LAUNDRY_PRICES[svc]?.[item]){c.rows[ri].unit_price=LAUNDRY_PRICES[svc][item];staffCalcTotal(custId,ri);renderAllCustomers();}
+  if(item&&LAUNDRY_PRICES[svc]&&LAUNDRY_PRICES[svc][item]){
+    c.rows[ri].unit_price=LAUNDRY_PRICES[svc][item];
+    staffCalcTotal(custId,ri);
+    renderAllCustomers();
+  }
 }
 
 function staffItemChange(custId,ri,item){
   const c=staffGetCust(custId);if(!c)return;
   c.rows[ri].item=item;
   const svc=c.rows[ri].service;
-  if(svc&&LAUNDRY_PRICES[svc]?.[item]){c.rows[ri].unit_price=LAUNDRY_PRICES[svc][item];staffCalcTotal(custId,ri);renderAllCustomers();}
+  if(svc&&LAUNDRY_PRICES[svc]&&LAUNDRY_PRICES[svc][item]){
+    c.rows[ri].unit_price=LAUNDRY_PRICES[svc][item];
+    staffCalcTotal(custId,ri);
+    renderAllCustomers();
+  }
 }
 
 function staffNumChange(custId,ri,field,val){
   const c=staffGetCust(custId);if(!c)return;
   c.rows[ri][field]=parseFloat(String(val).replace(/,/g,''))||0;
   staffCalcTotal(custId,ri);
-  const el=document.getElementById(`stotal_${custId}_${ri}`);
-  if(el)el.textContent=c.rows[ri].total>0?c.rows[ri].total.toLocaleString('en-NG'):'';
+  // Update this row's total cell live (may exist in multiple panes + desktop table)
+  document.querySelectorAll('#stotal_'+custId+'_'+ri).forEach(function(el){
+    el.textContent = c.rows[ri].total>0 ? c.rows[ri].total.toLocaleString('en-NG') : '';
+  });
+  staffRefreshCustomerTotals(custId);
 }
 
 function staffCalcTotal(custId,ri){
@@ -5995,9 +6160,28 @@ function staffCalcTotal(custId,ri){
   const r=c.rows[ri];r.total=(r.unit_price||0)*(r.qty||1);
 }
 
-function staffSaveRow(custId,ri){
-  const btn=document.querySelector(`#srow_${custId}_${ri} .staff-save-btn`);
-  if(btn){btn.textContent='✓';btn.style.color='var(--green)';setTimeout(()=>{btn.textContent='›';btn.style.color='';},1500);}
+// Live-update the footer totals (Qty + Total) without a full re-render
+function staffRefreshCustomerTotals(custId){
+  const c=staffGetCust(custId);if(!c)return;
+  const totalQty=c.rows.reduce((a,r)=>a+(parseFloat(r.qty)||0),0);
+  const totalAmt=c.rows.reduce((a,r)=>a+(parseFloat(r.total)||0),0);
+  document.querySelectorAll('#totQty_'+custId).forEach(function(el){ el.textContent = totalQty||''; });
+  document.querySelectorAll('#totAmt_'+custId).forEach(function(el){ el.textContent = totalAmt>0?totalAmt.toLocaleString('en-NG'):''; });
+}
+
+function staffSaveCustomer(custId){
+  const block = document.querySelector('.staff-customer-block [data-custid="'+custId+'"]');
+  const btn = document.querySelector('.staff-customer-block .staff-save-static-btn');
+  // Find the right button by searching all blocks
+  document.querySelectorAll('.staff-save-static-btn').forEach(function(b){
+    if (b.getAttribute('onclick')==='staffSaveCustomer('+custId+')') {
+      const orig = b.textContent;
+      b.textContent = '\u2713 Saved';
+      b.style.background = 'var(--green)';
+      setTimeout(function(){ b.textContent = orig; b.style.background=''; }, 1500);
+    }
+  });
+  // TEST MODE — no Supabase save
 }
 
 function staffDelRow(custId,ri){
@@ -6024,9 +6208,8 @@ function staffAddRowToCustomer(custId){
 function staffShowAddMenu(btn,custId,ri){
   document.querySelectorAll('.row-add-pop').forEach(p=>p.remove());
   const pop=document.createElement('div');pop.className='row-add-pop';
-  pop.innerHTML=`
-    <div onclick="staffInsertRow(${custId},${ri},'above');this.closest('.row-add-pop').remove()">Add row above</div>
-    <div onclick="staffInsertRow(${custId},${ri},'below');this.closest('.row-add-pop').remove()">Add row below</div>`;
+  pop.innerHTML='<div onclick="staffInsertRow('+custId+','+ri+',\'above\');this.closest(\'.row-add-pop\').remove()">Add row above</div>'
+    + '<div onclick="staffInsertRow('+custId+','+ri+',\'below\');this.closest(\'.row-add-pop\').remove()">Add row below</div>';
   btn.closest('.staff-add-col').appendChild(pop);
   setTimeout(()=>document.addEventListener('click',()=>pop.remove(),{once:true}),10);
 }
@@ -6035,6 +6218,96 @@ function staffInsertRow(custId,ri,where){
   const c=staffGetCust(custId);if(!c)return;
   c.rows.splice(where==='above'?ri:ri+1,0,staffEmptyRow(0));
   c.rows.forEach((r,i)=>r.sn=i+1);renderAllCustomers();
+}
+
+// ── SWIPE: mobile/tablet pane navigation ──────────────────────
+function initStaffSwipe(){
+  document.querySelectorAll('.staff-swipe-wrap').forEach(function(wrap){
+    const track = wrap.querySelector('.staff-swipe-track');
+    const dots  = wrap.querySelectorAll('.staff-swipe-dot');
+    let startX = 0, currentPane = 0, isDragging = false;
+
+    function goToPane(idx){
+      currentPane = Math.max(0, Math.min(2, idx));
+      track.style.transform = 'translateX(-' + (currentPane*100) + '%)';
+      dots.forEach(function(d,i){ d.classList.toggle('active', i===currentPane); });
+    }
+    dots.forEach(function(d,i){ d.addEventListener('click', function(){ goToPane(i); }); });
+
+    track.addEventListener('touchstart', function(e){
+      startX = e.touches[0].clientX; isDragging = true;
+      track.style.transition = 'none';
+    }, {passive:true});
+
+    track.addEventListener('touchmove', function(e){
+      if (!isDragging) return;
+      const dx = e.touches[0].clientX - startX;
+      const pct = (dx / wrap.offsetWidth) * 100;
+      track.style.transform = 'translateX(calc(-' + (currentPane*100) + '% + ' + pct + '%))';
+    }, {passive:true});
+
+    track.addEventListener('touchend', function(e){
+      isDragging = false;
+      track.style.transition = 'transform 0.25s ease';
+      const dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) > 50) {
+        if (dx < 0) goToPane(currentPane+1); else goToPane(currentPane-1);
+      } else {
+        goToPane(currentPane);
+      }
+    });
+
+    goToPane(0);
+  });
+}
+
+// ── RESIZABLE COLUMNS (touch + mouse) ──────────────────────────
+function initStaffColResize(){
+  document.querySelectorAll('.staff-col-resize').forEach(function(handle){
+    let startX = 0, startWidth = 0, key = handle.dataset.colkey;
+
+    function onMove(clientX){
+      const delta = clientX - startX;
+      const newWidth = Math.max(40, startWidth + delta);
+      staffColWidths[key] = newWidth;
+      // Update all cells with this column key live (across panes + desktop)
+      document.querySelectorAll('th[style*="width:"], td[style*="width:"]').forEach(function(){});
+      // Simpler: just re-render after resize ends — see onEnd below
+      handle.parentElement.style.width = newWidth + 'px';
+    }
+
+    function startResize(clientX){
+      startX = clientX;
+      startWidth = staffColWidths[key];
+      document.body.style.userSelect = 'none';
+    }
+    function endResize(){
+      document.body.style.userSelect = '';
+      renderAllCustomers(); // apply new width across all rows/panes/desktop table
+    }
+
+    handle.addEventListener('mousedown', function(e){
+      e.preventDefault(); e.stopPropagation();
+      startResize(e.clientX);
+      function onMouseMove(ev){ onMove(ev.clientX); }
+      function onMouseUp(){ endResize(); document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+
+    handle.addEventListener('touchstart', function(e){
+      e.stopPropagation();
+      startResize(e.touches[0].clientX);
+    }, {passive:true});
+    handle.addEventListener('touchmove', function(e){
+      e.stopPropagation();
+      onMove(e.touches[0].clientX);
+    }, {passive:true});
+    handle.addEventListener('touchend', function(e){
+      e.stopPropagation();
+      endResize();
+    });
+  });
 }
 
 // Expenses
