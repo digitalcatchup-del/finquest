@@ -2229,18 +2229,6 @@ function renderLedger() {
   }
 
   content.innerHTML = `
-    <div class="bk-content-header">
-      <div>
-        <div class="bk-content-title">${typeLabel.toUpperCase()}</div>
-        <div style="margin-top:4px;">
-          <span class="sched-badge" style="background:${SCHEDULE_META[activeType]?.color+'22'||'rgba(212,175,55,0.13)'};color:${SCHEDULE_META[activeType]?.color||'var(--gold)'};border:1px solid ${SCHEDULE_META[activeType]?.color+'44'||'rgba(212,175,55,0.3)'};">
-            ${typeLabel} Records ${SCHEDULE_META[activeType]?.num||''}–${parseInt(SCHEDULE_META[activeType]?.num||0)+999}
-          </span>
-        </div>
-      </div>
-      <span class="bk-save-msg" id="saveMsg"></span>
-    </div>
-
     <div class="ledger-readonly-banner">
       <span>📖</span>
       <span>View only — all transactions are entered through <button onclick="openJournal()" style="background:none;border:none;color:var(--gold);font-weight:700;cursor:pointer;font-size:inherit;padding:0;">Master Records</button> and posted here automatically.</span>
@@ -2271,11 +2259,6 @@ function renderLedger() {
           ${(accounts[activeType]||[]).map(a=>`<option value="${a.id}" ${a.id===activeAccount.id?'selected':''}>${a.account_name}</option>`).join('')}
         </select>
         ${ob ? `<span style="font-size:0.72rem;color:var(--gold);">Opening Balance: ${fmt(ob)}</span>` : ''}
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
-        <button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showSchedule('${activeType}')">← Schedule</button>
       </div>
     </div>`;
 
@@ -5961,16 +5944,6 @@ async function showSchedule(type) {
   const totalText = fmt(Math.abs(scheduleTotal));
 
   content.innerHTML = `
-    <div class="bk-content-header">
-      <div>
-        <div class="bk-content-title">${meta.icon} ${meta.label.toUpperCase()} SCHEDULE</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${meta.desc}</div>
-      </div>
-      <span class="sched-badge" style="background:${meta.color}22;color:${meta.color};border:1px solid ${meta.color}44;">
-        ${meta.label} Records ${meta.num}–${parseInt(meta.num)+999}
-      </span>
-    </div>
-
     <div class="sched-total-banner" style="border-left:4px solid ${meta.color};margin-bottom:14px;">
       <div class="sched-total-label">Total ${meta.label}</div>
       <div class="sched-total-val" style="color:${meta.color};">${totalText}</div>
@@ -6008,10 +5981,6 @@ async function showSchedule(type) {
           <option value="">Jump to sub-account\u2026</option>
           ${subOpts}
         </select>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="openChartOfAccounts()">← Chart of Accounts</button>
       </div>
     </div>`;
 }
