@@ -279,7 +279,7 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .ob-row td{padding:8px 10px;font-size:0.78rem;color:var(--gold);font-weight:700;}
 
 /* SPREADSHEET */
-.bk-sheet-wrap{overflow-x:auto;max-height:520px;overflow-y:auto;}
+.bk-sheet-wrap{overflow-x:auto;max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-behavior:smooth;}
 .bk-sheet{width:100%;border-collapse:collapse;table-layout:fixed;}
 .bk-sheet thead th{background:var(--bg);color:var(--gold);font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:10px 8px;text-align:left;border-bottom:2px solid var(--gold);border-right:1px solid var(--border);position:sticky;top:0;z-index:2;white-space:nowrap;}
 .bk-sheet thead th.num{text-align:right;}
@@ -813,7 +813,7 @@ body{padding-top:0;}
 .staff-price-wrap{display:flex;align-items:center;gap:2px;padding:0 2px;}
 .staff-curr-prefix{color:var(--gold);font-size:0.74rem;font-weight:700;flex-shrink:0;}
 .staff-price-wrap .staff-cell{padding-left:2px;}
-.staff-welcome-centered{min-height:calc(100vh - 140px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+.staff-welcome-centered{min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
 .staff-settings-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:1rem;padding:6px 11px;border-radius:7px;cursor:pointer;transition:all 0.15s;}
 .staff-settings-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-save-static-btn{background:var(--gold);border:none;color:#000;font-size:0.85rem;font-weight:800;padding:9px 36px;border-radius:8px;cursor:pointer;transition:all 0.15s;}
@@ -958,6 +958,7 @@ body{padding-top:0;}
 
 
 <main class="bk-main">
+  <div id="bkGlobalHero">
   <p class="bk-welcome" style="margin-bottom:4px;">Welcome,
     <strong id="bkUserName" onclick="showAccountSettings()"
       title="Account Settings"
@@ -965,6 +966,7 @@ body{padding-top:0;}
   </p>
   <h1 class="bk-think" onclick="showDashboard()" title="Go to Dashboard"
       style="cursor:pointer;user-select:none;">THINK <span>FINANCE</span></h1>
+  </div>
 
   <div id="bkMainChrome">
   <div class="bk-eq-bar">
@@ -1044,10 +1046,6 @@ body{padding-top:0;}
     </div>
     <input class="tb-date" type="date" id="tbDateFrom" title="From date" onchange="dateFrom=this.value;applyFilter()"/>
     <input class="tb-date" type="date" id="tbDateTo" title="To date" onchange="dateTo=this.value;applyFilter()"/>
-    <select class="date-fmt-select" id="dateFmtSel" onchange="setDateFormat(this.value)" title="Date format">
-      <option value="dd/mm/yyyy">DD/MM/YYYY</option>
-      <option value="dd/mm">DD/MM</option>
-    </select>
     <div class="tb-sep"></div>
     <button class="tb-btn" id="tbUndo" onclick="undoAction()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
     <button class="tb-btn" id="tbRedo" onclick="redoAction()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
@@ -1756,6 +1754,24 @@ async function saveSignupProducts() {
   }
 }
 
+// ── Save role + business profile for real ──────────────────────
+// Routing at every future login depends on this — must persist even
+// though the products spreadsheet above stays test-run for now.
+async function saveSignupProfile() {
+  if (!bkUser) return;
+  await bkDb.from('bk_business_profiles').upsert({
+    user_id:       bkUser.id,
+    business_name: suData.businessName || null,
+    industry:      suData.industry || null,
+    business_type: (suData.bizTypes||[]).join(', ') || null,
+    country:       suData.country || null,
+    state_province:suData.state || null,
+    lga:           suData.lga || null,
+    role:          suData.whoAreYou || 'owner', // 'owner' | 'manager' | 'employee'
+    updated_at:    new Date().toISOString(),
+  }, { onConflict:'user_id' });
+}
+
 function suAddCustomBizType() {
   const input = document.getElementById('customBizTypeInput');
   if (!input) return;
@@ -1846,8 +1862,10 @@ function suSaveProdRow(i) {
 }
 
 async function suDone() {
-  // Save products if user is logged in (test mode for profile, real save for products)
+  // Save products if user is logged in (test mode for spreadsheet, real save for products)
   await saveSignupProducts();
+  // Save role + business profile for real — needed so future logins route correctly
+  await saveSignupProfile();
   const isEmployee = suData.whoAreYou === 'employee';
 
   document.getElementById('bkAuthContent').innerHTML = `
@@ -4669,6 +4687,11 @@ function formatDateDisplay(isoDate) {
   const [y,m,d] = isoDate.split('-');
   if (!y||!m||!d) return isoDate;
   if (dateFormat === 'dd/mm') return `${d}/${m}`;
+  if (dateFormat === 'month_day_year' || dateFormat === 'day_date_year') {
+    return staffFormatDate(isoDate, dateFormat); // reuse the same Month/Day/Year formatter
+  }
+  if (dateFormat === 'mm/dd/yyyy') return `${m}/${d}/${y}`;
+  if (dateFormat === 'dd/mm/yy')   return `${d}/${m}/${y.slice(-2)}`;
   return `${d}/${m}/${y}`;
 }
 
@@ -5719,6 +5742,17 @@ async function showAccountSettings() {
             <option value="0" ${decimalPlaces===0?'selected':''}>0 — e.g. ₦1,500</option>
             <option value="2" ${decimalPlaces===2?'selected':''}>2 — e.g. ₦1,500.00</option>
           </select></div>
+        <div class="acct-field"><label class="acct-label">Date Format</label>
+          <select class="acct-input" onchange="setDateFormat(this.value)">
+            <option value="dd/mm/yyyy" ${dateFormat==='dd/mm/yyyy'?'selected':''}>DD/MM/YYYY</option>
+            <option value="mm/dd/yyyy" ${dateFormat==='mm/dd/yyyy'?'selected':''}>MM/DD/YYYY</option>
+            <option value="dd/mm/yy" ${dateFormat==='dd/mm/yy'?'selected':''}>DD/MM/YY</option>
+            <option value="dd/mm" ${dateFormat==='dd/mm'?'selected':''}>DD/MM</option>
+            <option value="month_day_year" ${dateFormat==='month_day_year'?'selected':''}>Month-Day-Year — e.g. Jun/30th/2026</option>
+            <option value="day_date_year" ${dateFormat==='day_date_year'?'selected':''}>Day/Date/Year — e.g. Tue/30th/June/2026</option>
+          </select>
+          <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">Applies to Master Records and all ledgers.</div>
+        </div>
         <div style="margin-top:14px;font-size:0.75rem;color:var(--muted);">Logged in as:<br>
           <span style="color:var(--off);">${bkUser?.email||''}</span></div>
       </div>
@@ -5804,8 +5838,7 @@ let psRows=[], psType='products';
 
 async function showProductsPage(type) {
   staffShowChrome();
-  showExtEqToggle();
-  showDashToolbar();
+  hideEqAndToolbar();
   psType=type||'products';
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const { data }=await bkDb.from('bk_products').select('*')
@@ -6035,14 +6068,28 @@ function staffFormatDate(dateStr, fmt) {
 function staffHideChrome(){
   const chrome  = document.getElementById('bkMainChrome');
   const toolbar = document.getElementById('bkToolbar');
+  const hero    = document.getElementById('bkGlobalHero');
   if (chrome)  chrome.style.display  = 'none';
   if (toolbar) toolbar.style.display = 'none';
+  if (hero)    hero.style.display    = 'none';
 }
 function staffShowChrome(){
   const chrome  = document.getElementById('bkMainChrome');
   const toolbar = document.getElementById('bkToolbar');
+  const hero    = document.getElementById('bkGlobalHero');
   if (chrome)  chrome.style.display  = '';
   if (toolbar) toolbar.style.display = '';
+  if (hero)    hero.style.display    = '';
+}
+
+// ── For owner-facing pages (e.g. Products & Services) that want the
+//    equation bar + toolbar hidden, but should KEEP the normal
+//    "Welcome / THINK FINANCE" header visible ──
+function hideEqAndToolbar(){
+  const chrome  = document.getElementById('bkMainChrome');
+  const toolbar = document.getElementById('bkToolbar');
+  if (chrome)  chrome.style.display  = 'none';
+  if (toolbar) toolbar.style.display = 'none';
 }
 
 // ── The collapsible toolbar (search, dates, undo/redo, decimals, etc.)
