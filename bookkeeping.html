@@ -431,6 +431,27 @@ select.bk-cell {
 .qi-success-icon{font-size:3rem;margin-bottom:12px;}
 /* READ-ONLY LEDGER */
 .ledger-readonly-banner{background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:10px 16px;font-size:0.78rem;color:var(--muted);margin-bottom:0;display:flex;align-items:center;gap:8px;}
+
+/* ── Schedule View ─────────────────────────────────────────── */
+.sched-total-banner{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.sched-total-label{font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+.sched-total-val{font-size:1.4rem;font-weight:900;}
+.sched-badge{font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:5px;letter-spacing:0.06em;}
+.sched-table{width:100%;}
+.sched-table thead th{background:var(--bg);color:var(--gold);font-size:0.62rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:9px 12px;border-bottom:2px solid var(--gold);white-space:nowrap;}
+.sched-table tbody td{border-bottom:1px solid var(--border);padding:10px 12px;vertical-align:middle;}
+.sched-row{cursor:pointer;transition:background 0.12s;}
+.sched-row:hover{background:rgba(212,175,55,0.05);}
+.sched-row:hover .sched-name-text{color:var(--gold);}
+.sched-num{color:var(--muted);font-size:0.72rem;width:60px;}
+.sched-name{min-width:160px;}
+.sched-name-text{display:block;font-weight:600;color:var(--off);font-size:0.85rem;}
+.sched-txn-count{display:block;font-size:0.68rem;color:var(--muted);margin-top:2px;}
+.sched-val{text-align:right;font-size:0.82rem;color:var(--off);white-space:nowrap;}
+.sched-total-col{font-weight:700;color:var(--white);}
+.sched-arrow{text-align:center;color:var(--muted);font-size:0.9rem;width:28px;}
+.sched-row:hover .sched-arrow{color:var(--gold);}
+.sched-foot-row td{background:rgba(212,175,55,0.06);font-weight:700;padding:10px 12px;border-top:2px solid var(--border);font-size:0.82rem;color:var(--gold);}
 .bk-cell-ro{width:100%;height:34px;background:transparent;border:none;color:var(--off);font-size:0.8rem;font-family:inherit;padding:0 8px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .bk-cell-ro.num{text-align:right;}
 
@@ -5861,9 +5882,144 @@ function toggleSubMenu(id) {
   document.querySelectorAll('.bk-menu-arrow').forEach(a=>a.classList.remove('open'));
   if(!isOpen){ sub.classList.add('open'); if(arrow) arrow.classList.add('open'); }
 }
+// ── SCHEDULE VIEW ─────────────────────────────────────────────
+// Shows all sub-accounts for a type with their balances, clickable
+// to drill into that account's ledger.
+const SCHEDULE_META = {
+  capital:     { label:'Capital',     icon:'🏦', num:'1000', color:'#a78bfa', desc:'Owner equity, share capital and retained earnings' },
+  liability:   { label:'Liabilities', icon:'📋', num:'2000', color:'#f87171', desc:'Amounts owed to creditors and other parties' },
+  asset:       { label:'Assets',      icon:'🏛️',  num:'3000', color:'#4ade80', desc:'Resources owned or controlled by the business' },
+  income:      { label:'Income',      icon:'📈', num:'4000', color:'#34d399', desc:'Revenue earned from business activities' },
+  expenditure: { label:'Expenditure', icon:'📉', num:'5000', color:'#fb923c', desc:'Costs and expenses incurred by the business' },
+};
+
+async function showSchedule(type) {
+  staffShowChrome();
+  showExtEqToggle();
+  hideDashToolbar();
+  setActiveNav('navRecords');
+  document.getElementById('recordsDD')?.classList.add('hidden');
+
+  const meta  = SCHEDULE_META[type];
+  const accts = accounts[type] || [];
+  const content = document.getElementById('bkContent');
+  content.innerHTML = '<div class="bk-loading">Loading schedule…</div>';
+
+  // Fetch transaction totals for every account in this category
+  let totals = {}; // { account_name: { dr:0, cr:0, balance:0 } }
+  try {
+    const { data } = await bkDb.from('bk_transactions')
+      .select('account_name, debit, credit, balance')
+      .eq('user_id', bkUser.id)
+      .eq('record_type', type);
+    (data||[]).forEach(function(r){
+      const n = r.account_name;
+      if (!totals[n]) totals[n] = { dr:0, cr:0, lastBalance:0, count:0 };
+      totals[n].dr  += parseFloat(r.debit)||0;
+      totals[n].cr  += parseFloat(r.credit)||0;
+      totals[n].lastBalance = parseFloat(r.balance)||0;
+      totals[n].count++;
+    });
+  } catch(e) { /* show zeros */ }
+
+  const isDebitNormal = DEBIT_NORMAL.includes(type);
+  const sym = CURRENCIES[activeCurrency]?.symbol || '₦';
+  const fmt = (n) => n ? sym + Math.abs(n).toLocaleString('en-NG', {minimumFractionDigits:decimalPlaces, maximumFractionDigits:decimalPlaces}) : '—';
+
+  // Build schedule rows
+  let scheduleTotal = 0;
+  const rows = accts.map(function(acct, i){
+    const t   = totals[acct.account_name] || { dr:0, cr:0, lastBalance:0, count:0 };
+    const ob  = parseFloat(acct.opening_balance)||0;
+    // Balance: for debit-normal, balance = OB + dr - cr; for credit-normal, OB + cr - dr
+    const bal = isDebitNormal ? ob + t.dr - t.cr : ob + t.cr - t.dr;
+    scheduleTotal += bal;
+    const acctNum = parseInt(meta.num) + 10 + i * 10;
+    return { acct, bal, t, ob, acctNum };
+  });
+
+  // Rows HTML — no template literals inside loops to avoid nesting issues
+  let rowsHtml = '';
+  rows.forEach(function(r){
+    const balText = r.bal !== 0 ? fmt(r.bal) : '—';
+    const drText  = r.t.dr > 0 ? fmt(r.t.dr) : '—';
+    const crText  = r.t.cr > 0 ? fmt(r.t.cr) : '—';
+    const obText  = r.ob > 0 ? fmt(r.ob) : '—';
+    const txnText = r.t.count > 0 ? r.t.count + ' txn' + (r.t.count !== 1 ? 's' : '') : 'No entries';
+    rowsHtml += '<tr class="sched-row" onclick="openAccountById(\'' + type + '\',' + r.acct.id + ')" title="Open ' + escH(r.acct.account_name) + ' ledger">'
+      + '<td class="sched-num">' + r.acctNum + '</td>'
+      + '<td class="sched-name"><span class="sched-name-text">' + escH(r.acct.account_name) + '</span>'
+      + '<span class="sched-txn-count">' + txnText + '</span></td>'
+      + '<td class="sched-val">' + obText + '</td>'
+      + '<td class="sched-val">' + drText + '</td>'
+      + '<td class="sched-val">' + crText + '</td>'
+      + '<td class="sched-val sched-total-col">' + balText + '</td>'
+      + '<td class="sched-arrow">›</td>'
+      + '</tr>';
+  });
+
+  const totalText = fmt(Math.abs(scheduleTotal));
+
+  content.innerHTML = `
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">${meta.icon} ${meta.label.toUpperCase()} SCHEDULE</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${meta.desc}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+        <span class="sched-badge" style="background:${meta.color}22;color:${meta.color};border:1px solid ${meta.color}44;">
+          Account ${meta.num}–${parseInt(meta.num)+999}
+        </span>
+      </div>
+    </div>
+
+    <div class="sched-total-banner" style="border-left:4px solid ${meta.color};">
+      <div class="sched-total-label">Total ${meta.label}</div>
+      <div class="sched-total-val" style="color:${meta.color};">${totalText}</div>
+    </div>
+
+    <div class="bk-sheet-wrap" style="max-height:none;">
+      <table class="bk-sheet sched-table" style="min-width:640px;">
+        <thead>
+          <tr>
+            <th style="width:60px;">No.</th>
+            <th>Account Name</th>
+            <th class="num" style="width:130px;">Opening Bal.</th>
+            <th class="num" style="width:120px;">Total Debit</th>
+            <th class="num" style="width:120px;">Total Credit</th>
+            <th class="num" style="width:140px;">Balance</th>
+            <th style="width:28px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No accounts yet. Add one via Chart of Accounts.</td></tr>'}
+        </tbody>
+        <tfoot>
+          <tr class="sched-foot-row">
+            <td colspan="5">Total ${meta.label}</td>
+            <td class="num" style="color:${meta.color};font-weight:800;">${totalText}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div style="padding:12px 0 4px;">
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="openChartOfAccounts()">
+        ← Chart of Accounts
+      </button>
+    </div>`;
+}
+
 function openFirstAccount(type) {
-  const accts=accounts[type];
-  if(accts&&accts.length>0) openAccount(type,accts[0]);
+  showSchedule(type);
+}
+
+function openAccountById(type, id) {
+  const accts = accounts[type] || [];
+  const acct  = accts.find(function(a){ return a.id === id; });
+  if (acct) openAccount(type, acct);
 }
 
 // ── PRODUCTS & SERVICES PAGE ──────────────────────────────────
@@ -7054,13 +7210,7 @@ function staffExpAddRow(){
 
 // ── SETTINGS — ADD BUSINESS PROFILE SECTION ───────────────────
 function eqNav(type) {
-  const typeAccounts = accounts[type];
-  if (typeAccounts && typeAccounts.length > 0) {
-    openAccount(type, typeAccounts[0]);
-  } else {
-    // No accounts yet — open the records dropdown
-    toggleRecordsDD();
-  }
+  showSchedule(type);
 }
 
 // ── COLUMN HELP DEFINITIONS ───────────────────────────────────
