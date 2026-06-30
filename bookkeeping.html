@@ -1744,7 +1744,7 @@ function suSelectIndustryByIndex(el) {
 
 // ── Ledger sub-account switcher ────────────────────────────────
 async function switchLedgerAccount(accountId) {
-  const acct = (accounts[activeType]||[]).find(a=>a.id===accountId);
+  const acct = (accounts[activeType]||[]).find(a=>String(a.id)===String(accountId));
   if (acct) await openAccount(activeType, acct);
 }
 
@@ -5930,7 +5930,7 @@ async function showSchedule(type) {
     const crText  = r.t.cr > 0 ? fmt(r.t.cr) : '—';
     const obText  = r.ob > 0 ? fmt(r.ob) : '—';
     const txnText = r.t.count > 0 ? r.t.count + ' txn' + (r.t.count !== 1 ? 's' : '') : 'Opening bal only';
-    rowsHtml += '<tr class="sched-row" onclick="openAccountById(\'' + type + '\',' + r.acct.id + ')">'
+    rowsHtml += '<tr class="sched-row" onclick="openAccountById(\'' + type + '\',\'' + r.acct.id + '\')">'
       + '<td class="sched-num">' + r.acctNum + '</td>'
       + '<td class="sched-name"><span class="sched-name-text">' + escH(r.acct.account_name) + '</span>'
       + '<span class="sched-txn-count">' + txnText + '</span></td>'
@@ -5977,7 +5977,7 @@ async function showSchedule(type) {
       <div class="sched-subacct-wrap">
         <label class="sched-subacct-label">Sub Accounts</label>
         <select class="acct-input sched-subacct-select" id="subAcctSelect_${type}"
-          onchange="var v=this.value;if(v){this.value='';openAccountById('${type}',parseInt(v));}">
+          onchange="var v=this.value;if(v){this.value='';openAccountById('${type}',v);}">
           <option value="">Jump to sub-account\u2026</option>
           ${subOpts}
         </select>
@@ -5991,8 +5991,9 @@ function openFirstAccount(type) {
 
 function openAccountById(type, id) {
   const accts = accounts[type] || [];
-  const acct  = accts.find(function(a){ return a.id === id; });
+  const acct  = accts.find(function(a){ return String(a.id) === String(id); });
   if (acct) openAccount(type, acct);
+  else console.warn('openAccountById: no account found for id', id, 'in', type, accts.map(a=>a.id));
 }
 
 // ── PRODUCTS & SERVICES PAGE ──────────────────────────────────
