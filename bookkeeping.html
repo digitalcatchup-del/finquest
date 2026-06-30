@@ -3,6 +3,9 @@
 <html lang="en" style="background:#0f1117;">
 <head>
 <meta charset="UTF-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Bookkeeping — Butterfly Dynamix</title>
 <style>html,body{background:#0f1117!important;}
@@ -206,7 +209,7 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .bk-welcome strong{color:var(--white);}
 
 /* EQUATION BAR */
-.bk-eq-bar{max-width:760px;margin:0 auto 32px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 28px;}
+.bk-eq-bar{max-width:760px;margin:0 auto 32px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 28px;position:relative;}
 .bk-eq-title{font-size:0.65rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:14px;}
 .bk-equation{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
 .bk-eq-block{text-align:center;}
@@ -718,6 +721,16 @@ body{padding-top:0;}
 .staff-homepage-btn{background:none;border:2px solid var(--border2);color:var(--off);font-size:0.85rem;font-weight:700;padding:12px 36px;border-radius:10px;cursor:pointer;margin-top:16px;transition:all 0.15s;}
 .staff-summary-cell{padding:8px 6px;color:var(--off);cursor:default;height:auto;min-height:33px;display:flex;align-items:center;}
 .staff-summary-row{cursor:pointer;transition:background 0.12s;}
+.staff-dir-row{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all 0.15s;}
+.staff-dir-row:hover{border-color:var(--gold);background:var(--gold-dim);}
+.staff-dir-avatar{font-size:1.6rem;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:50%;flex-shrink:0;}
+.staff-dir-name{font-size:0.9rem;font-weight:700;color:var(--white);}
+.staff-dir-pos{font-size:0.76rem;color:var(--muted);margin-top:2px;}
+.staff-dir-chat-icon{font-size:1.1rem;opacity:0.6;flex-shrink:0;}
+.staff-chat-log{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;min-height:200px;max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+.staff-chat-bubble{max-width:75%;padding:9px 14px;border-radius:14px;font-size:0.84rem;line-height:1.4;word-break:break-word;}
+.staff-chat-bubble.me{align-self:flex-end;background:var(--gold);color:#000;border-bottom-right-radius:4px;}
+.staff-chat-bubble.them{align-self:flex-start;background:var(--surface2);color:var(--off);border-bottom-left-radius:4px;}
 .staff-summary-row:hover{background:rgba(212,175,55,0.06);}
 .staff-summary-row:hover .staff-summary-cell{color:var(--gold);}
 
@@ -861,9 +874,14 @@ body{padding-top:0;}
       <span class="bk-menu-icon">📊</span> Dashboard
     </div>
 
-    <!-- Staff -->
-    <div class="bk-menu-item" onclick="showStaffPage();closeBkMenu()" id="mnu-staff">
-      <span class="bk-menu-icon">👷</span> Staff
+    <!-- Staff (owner/manager directory) -->
+    <div class="bk-menu-item" onclick="showStaffDirectory();closeBkMenu()" id="mnu-staff-directory">
+      <span class="bk-menu-icon">👥</span> Staff
+    </div>
+
+    <!-- Staff Pages — the staff-facing area (Record/Homepage/Sales/Expenses) -->
+    <div class="bk-menu-item" onclick="showStaffPage();closeBkMenu()" id="mnu-staff-pages">
+      <span class="bk-menu-icon">👷</span> Staff Pages
     </div>
 
     <!-- Products & Services -->
@@ -938,7 +956,10 @@ body{padding-top:0;}
 
   <div id="bkMainChrome">
   <div class="bk-eq-bar">
+    <button id="eqCollapseBtn" onclick="toggleEqBar()" title="Collapse equation"
+      style="position:absolute;top:10px;right:14px;background:none;border:none;color:var(--muted);font-size:0.85rem;cursor:pointer;padding:4px 6px;transition:color 0.15s;">▾</button>
     <!-- Main equation: Assets = Capital + Liabilities -->
+    <div id="eqBarBody">
     <div class="bk-eq-title">Assets = Capital + Liabilities</div>
     <div class="bk-equation">
       <div class="bk-eq-block" onclick="eqNav('asset')" style="cursor:pointer;" title="Go to Assets Records">
@@ -998,6 +1019,7 @@ body{padding-top:0;}
     </div>
 
     <div class="bk-eq-check" id="eqCheck">Loading…</div>
+    </div>
   </div>
   </div>
 
@@ -2425,6 +2447,16 @@ async function refreshEquation() {
     check.innerHTML=`<span style="cursor:pointer;" onclick="smartErrorDetect(${diff.toFixed(2)})">⚠ Difference of ${fmt(diff)} — tap here to find &amp; fix the problem ✨</span>`;
     check.className='bk-eq-check unbalanced';
   }
+}
+
+// ── Collapse/expand the entire equation widget ────────────────
+function toggleEqBar(){
+  const body = document.getElementById('eqBarBody');
+  const btn  = document.getElementById('eqCollapseBtn');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  if (btn) btn.textContent = open ? '▸' : '▾';
 }
 
 function toggleExtEq() {
@@ -6046,6 +6078,96 @@ function staffSetCurrency(code){
     msg.textContent = '\u2713 Currency set to ' + code + ' (' + staffSym() + ') \u2014 applies to Sales & Expenses';
     setTimeout(function(){ msg.textContent=''; }, 2500);
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+// OWNER/MANAGER-FACING STAFF DIRECTORY
+// Lists registered staff and their position; click to open a chat.
+// Test mode — sample data, chat messages are not persisted.
+// ══════════════════════════════════════════════════════════════
+const STAFF_DIRECTORY = [
+  { id:1, name:'John Smith',  position:'Manager', avatar:'👔' },
+  { id:2, name:'Alex Williams', position:'Barber', avatar:'💈' },
+  { id:3, name:'Grace Okafor',  position:'Laundry Attendant', avatar:'🧺' },
+];
+let staffChatTarget = null;
+let staffChatLog = {}; // {staffId: [{from:'me'|'them', text, time}]}
+
+function showStaffDirectory(){
+  staffShowChrome(); showDashToolbar(); showExtEqToggle();
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">STAFF</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Your registered staff and their roles.</div>
+      </div>
+      <span class="staff-test-badge">Test Data</span>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:560px;">
+      ${STAFF_DIRECTORY.map(function(s){
+        return '<div class="staff-dir-row" onclick="openStaffChat('+s.id+')">'
+          + '<div class="staff-dir-avatar">'+s.avatar+'</div>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div class="staff-dir-name">'+escH(s.name)+'</div>'
+          + '<div class="staff-dir-pos">'+escH(s.position)+'</div>'
+          + '</div>'
+          + '<div class="staff-dir-chat-icon" title="Chat">\uD83D\uDCAC</div>'
+          + '</div>';
+      }).join('')}
+    </div>`;
+}
+
+function openStaffChat(staffId){
+  staffChatTarget = STAFF_DIRECTORY.find(function(s){ return s.id===staffId; });
+  if (!staffChatTarget) return;
+  if (!staffChatLog[staffId]) staffChatLog[staffId] = [];
+
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="staff-dir-avatar" style="margin:0;">${staffChatTarget.avatar}</div>
+        <div>
+          <div class="bk-content-title" style="font-size:0.92rem;">${escH(staffChatTarget.name)}</div>
+          <div style="font-size:0.72rem;color:var(--muted);">${escH(staffChatTarget.position)}</div>
+        </div>
+      </div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffDirectory()">\u2190 Back</button>
+    </div>
+    <div style="max-width:560px;padding:16px;">
+      <div id="staffChatLog" class="staff-chat-log"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <input type="text" id="staffChatInput" class="acct-input" placeholder="Type a message\u2026"
+          style="flex:1;" onkeydown="if(event.key==='Enter')sendStaffChat()"/>
+        <button class="bk-btn bk-btn-gold" onclick="sendStaffChat()">Send</button>
+      </div>
+      <p style="font-size:0.7rem;color:var(--muted);margin-top:10px;">
+        <span class="staff-test-badge">Test Mode</span>
+        &nbsp;Messages are not saved or delivered yet \u2014 chat backend coming soon.
+      </p>
+    </div>`;
+  renderStaffChatLog();
+}
+
+function renderStaffChatLog(){
+  const log = document.getElementById('staffChatLog');
+  if (!log || !staffChatTarget) return;
+  const msgs = staffChatLog[staffChatTarget.id] || [];
+  log.innerHTML = msgs.length===0
+    ? '<div style="text-align:center;color:var(--muted);font-size:0.8rem;padding:20px;">No messages yet. Say hello!</div>'
+    : msgs.map(function(m){
+        return '<div class="staff-chat-bubble '+(m.from==='me'?'me':'them')+'">'+escH(m.text)+'</div>';
+      }).join('');
+  log.scrollTop = log.scrollHeight;
+}
+
+function sendStaffChat(){
+  const input = document.getElementById('staffChatInput');
+  const text = input?.value.trim();
+  if (!text || !staffChatTarget) return;
+  if (!staffChatLog[staffChatTarget.id]) staffChatLog[staffChatTarget.id] = [];
+  staffChatLog[staffChatTarget.id].push({ from:'me', text:text, time:Date.now() });
+  input.value = '';
+  renderStaffChatLog();
 }
 
 function showStaffPage(){
