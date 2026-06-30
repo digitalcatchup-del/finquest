@@ -2570,7 +2570,7 @@ async function smartAutoCorrect(journalId, drAmt, crAmt) {
 
 async function showDashboard() {
   staffShowChrome();
-  hideExtEqToggle();
+  hideDashToolbar();
   setActiveNav('navDash');
   document.getElementById('recordsDD')?.classList.add('hidden');
   const content = document.getElementById('bkContent');
@@ -2920,6 +2920,7 @@ function emptyJournalRow(order) {
 async function openJournal() {
   staffShowChrome();
   showExtEqToggle();
+  showDashToolbar();
   activeType=null; activeAccount=null;
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
@@ -5525,6 +5526,7 @@ let coaActiveType = 'capital';
 async function openChartOfAccounts() {
   staffShowChrome();
   showExtEqToggle();
+  showDashToolbar();
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading Chart of Accounts…</div>';
@@ -5596,6 +5598,7 @@ async function coaDeleteAccount(id,name) {
 async function showAccountSettings() {
   staffShowChrome();
   showExtEqToggle();
+  showDashToolbar();
   setActiveNav('');
   document.getElementById('recordsDD')?.classList.add('hidden');
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
@@ -5719,6 +5722,7 @@ let psRows=[], psType='products';
 async function showProductsPage(type) {
   staffShowChrome();
   showExtEqToggle();
+  showDashToolbar();
   psType=type||'products';
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const { data }=await bkDb.from('bk_products').select('*')
@@ -5827,6 +5831,7 @@ async function psSaveRow(i) {
 async function showReport(type) {
   staffShowChrome();
   showExtEqToggle();
+  showDashToolbar();
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const {data}=await bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date').eq('user_id',bkUser.id);
   const T=data||[];
@@ -5954,6 +5959,18 @@ function staffShowChrome(){
   const chrome  = document.getElementById('bkMainChrome');
   const toolbar = document.getElementById('bkToolbar');
   if (chrome)  chrome.style.display  = '';
+  if (toolbar) toolbar.style.display = '';
+}
+
+// ── The collapsible toolbar (search, dates, undo/redo, decimals, etc.)
+//    sits just under the equation bar — hidden on the Dashboard only,
+//    visible on every other page ──
+function hideDashToolbar(){
+  const toolbar = document.getElementById('bkToolbar');
+  if (toolbar) toolbar.style.display = 'none';
+}
+function showDashToolbar(){
+  const toolbar = document.getElementById('bkToolbar');
   if (toolbar) toolbar.style.display = '';
 }
 
