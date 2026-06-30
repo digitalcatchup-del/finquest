@@ -1041,13 +1041,8 @@ body{padding-top:0;}
 
   <!-- TOOLBAR -->
   <div class="bk-toolbar" id="bkToolbar">
-    <div class="tb-search-wrap">
-      <input class="tb-search-input" id="tbSearch" placeholder="🔍 Search narration, payee, payer…"
-        onkeydown="if(event.key==='Enter') tbDoSearch()"/>
-      <button class="tb-search-btn" onclick="tbDoSearch()" title="Search">⌕</button>
-    </div>
-    <input class="tb-date" type="date" id="tbDateFrom" title="From date" onchange="dateFrom=this.value;applyFilter()"/>
-    <input class="tb-date" type="date" id="tbDateTo" title="To date" onchange="dateTo=this.value;applyFilter()"/>
+    <button class="tb-btn" id="tbUndo" onclick="undoAction()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
+    <button class="tb-btn" id="tbRedo" onclick="redoAction()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
     <div class="tb-sep"></div>
     <button class="tb-btn" id="tbUndo" onclick="undoAction()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
     <button class="tb-btn" id="tbRedo" onclick="redoAction()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
@@ -2150,6 +2145,9 @@ async function confirmAddAccount() {
 
 // ── OPEN ACCOUNT LEDGER ───────────────────────────────────────
 async function openAccount(type, acct) {
+  staffShowChrome();
+  showExtEqToggle();
+  hideDashToolbar();
   activeType    = type;
   activeAccount = acct;
   isDirty       = false;
@@ -2228,16 +2226,6 @@ function renderLedger() {
         <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
         <button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button>
       </div>
-    </div>
-
-    <div class="bk-search-bar" style="padding:12px 24px 0;">
-      <input class="bk-search-input" type="text" id="searchInput" placeholder="Search narration, payee, payer…"
-        value="${escH(searchQuery)}" oninput="onSearchInput(this.value)"/>
-      <input class="bk-date-input" type="date" id="dateFromInput" value="${dateFrom}" title="From date"
-        onchange="dateFrom=this.value;applyFilter()"/>
-      <input class="bk-date-input" type="date" id="dateToInput" value="${dateTo}" title="To date"
-        onchange="dateTo=this.value;applyFilter()"/>
-      <button class="bk-search-clear" onclick="searchQuery='';dateFrom='';dateTo='';document.getElementById('searchInput').value='';document.getElementById('dateFromInput').value='';document.getElementById('dateToInput').value='';applyFilter()">Clear</button>
     </div>
 
     <div class="ledger-readonly-banner">
@@ -3023,7 +3011,7 @@ function emptyJournalRow(order) {
 async function openJournal() {
   staffShowChrome();
   showExtEqToggle();
-  showDashToolbar();
+  hideDashToolbar();
   activeType=null; activeAccount=null;
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
@@ -5677,7 +5665,7 @@ let coaActiveType = 'capital';
 async function openChartOfAccounts() {
   staffShowChrome();
   showExtEqToggle();
-  showDashToolbar();
+  hideDashToolbar();
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading Chart of Accounts…</div>';
