@@ -723,17 +723,17 @@ body{padding-top:0;}
 .staff-choice-desc{font-size:0.74rem;color:var(--muted);margin-top:4px;}
 .staff-sheet-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 0 20px;}
 .staff-customer-block{margin-bottom:20px;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-.staff-customer-header{background:var(--surface2);display:flex;align-items:center;border-bottom:2px solid var(--border);}
-.staff-customer-name{flex:1;font-size:0.88rem;font-weight:800;color:var(--white);padding:10px 14px;cursor:text;border:none;background:transparent;font-family:inherit;outline:none;}
+.staff-customer-header{background:var(--surface2);display:flex;align-items:center;flex-wrap:wrap;border-bottom:2px solid var(--border);}
+.staff-customer-name{flex:1 1 140px;min-width:0;font-size:0.88rem;font-weight:800;color:var(--white);padding:10px 14px;cursor:text;border:none;background:transparent;font-family:inherit;outline:none;}
 .staff-customer-name:focus{background:rgba(212,175,55,0.07);}
-.staff-customer-serial{width:70px;flex-shrink:0;font-size:0.78rem;font-weight:600;color:var(--gold);padding:10px 10px;border:none;border-left:1px solid var(--border);background:transparent;font-family:inherit;outline:none;text-align:center;}
+.staff-customer-serial{width:64px;flex:0 0 64px;font-size:0.78rem;font-weight:600;color:var(--gold);padding:10px 8px;border:none;border-left:1px solid var(--border);background:transparent;font-family:inherit;outline:none;text-align:center;}
 .staff-customer-serial:focus{background:rgba(212,175,55,0.07);}
 .staff-customer-serial::placeholder{color:var(--muted2);}
-.staff-cust-btns{display:flex;gap:4px;padding:6px 8px;flex-shrink:0;}
-.staff-cust-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;}
+.staff-cust-btns{display:flex;gap:4px;padding:6px 8px;flex-shrink:0;flex-wrap:nowrap;}
+.staff-cust-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .staff-cust-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-cust-btn.del:hover{border-color:var(--red);color:var(--red);}
-.staff-table{width:100%;border-collapse:collapse;font-size:0.76rem;min-width:900px;}
+.staff-table{width:100%;border-collapse:collapse;font-size:0.76rem;min-width:900px;table-layout:fixed;}
 .staff-table th{background:var(--bg);color:var(--gold);font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:7px 5px;text-align:left;border-bottom:2px solid var(--gold);white-space:nowrap;}
 .staff-table td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;}
 .staff-cell{width:100%;background:transparent;border:none;color:var(--white);font-size:0.76rem;font-family:inherit;padding:6px 5px;outline:none;height:33px;min-width:60px;}
@@ -765,10 +765,7 @@ body{padding-top:0;}
 .staff-date-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
 
 /* ── Resizable column handle ────────────────────────────────── */
-.staff-col-resize{position:absolute;right:-3px;top:0;bottom:0;width:14px;cursor:col-resize;z-index:5;touch-action:none;}
-.staff-col-resize::after{content:'';position:absolute;right:5px;top:20%;bottom:20%;width:3px;background:var(--border2);border-radius:2px;transition:background 0.15s;}
-.staff-col-resize:hover::after,.staff-col-resize:active::after{background:var(--gold);}
-.staff-table th{position:relative;}
+/* (column resize feature removed) */
 
 /* ── Static Save button below each customer block ───────────── */
 .staff-save-static-wrap{display:flex;justify-content:center;padding:12px 0 4px;background:var(--surface);border-top:1px solid var(--border);}
@@ -5951,9 +5948,8 @@ function renderAllCustomers(){
   if(!body) return;
   body.innerHTML=staffCustomers.map(c=>renderCustomerBlock(c)).join('')+
     '<button class="staff-add-cust-btn" onclick="addStaffCustomer()">+ Add Customer</button>';
-  // Re-init swipe panes and resize handles after render
+  // Re-init swipe panes after render
   initStaffSwipe();
-  initStaffColResize();
 }
 
 // ── Build one customer block: header, 3 swipeable panes (mobile) /
@@ -6036,7 +6032,7 @@ function renderCustomerBlock(cust){
   ];
 
   function buildResizeHandle(key) {
-    return '<span class="staff-col-resize" data-colkey="'+key+'"></span>';
+    return '';
   }
   function buildHeaderRow(keys) {
     return '<tr>' + keys.map(function(k){
@@ -6228,19 +6224,25 @@ function staffInsertRow(custId,ri,where){
 }
 
 // ── SWIPE: mobile/tablet pane navigation ──────────────────────
+// Remembers which pane each customer's swipe view was on, across re-renders
+let staffActivePaneByCust = {};
+
 function initStaffSwipe(){
   document.querySelectorAll('.staff-swipe-wrap').forEach(function(wrap){
-    const track = wrap.querySelector('.staff-swipe-track');
-    const dots  = wrap.querySelectorAll('.staff-swipe-dot');
-    let startX = 0, currentPane = 0, isDragging = false;
+    const track  = wrap.querySelector('.staff-swipe-track');
+    const dots   = wrap.querySelectorAll('.staff-swipe-dot');
+    const custId = wrap.dataset.custid;
+    let startX = 0, isDragging = false;
+    let currentPane = staffActivePaneByCust[custId] || 0;
 
-    function goToPane(idx){
+    function goToPane(idx, animate){
       currentPane = Math.max(0, Math.min(2, idx));
-      // translateX % is relative to the TRACK's own width (300%), so one pane = 100/3 %
+      staffActivePaneByCust[custId] = currentPane; // remember for next re-render
+      track.style.transition = animate ? 'transform 0.25s ease' : 'none';
       track.style.transform = 'translateX(-' + (currentPane*(100/3)) + '%)';
       dots.forEach(function(d,i){ d.classList.toggle('active', i===currentPane); });
     }
-    dots.forEach(function(d,i){ d.addEventListener('click', function(){ track.style.transition='transform 0.25s ease'; goToPane(i); }); });
+    dots.forEach(function(d,i){ d.addEventListener('click', function(){ goToPane(i, true); }); });
 
     track.addEventListener('touchstart', function(e){
       startX = e.touches[0].clientX; isDragging = true;
@@ -6250,71 +6252,22 @@ function initStaffSwipe(){
     track.addEventListener('touchmove', function(e){
       if (!isDragging) return;
       const dx = e.touches[0].clientX - startX;
-      const pct = (dx / wrap.offsetWidth) * (100/3); // scale drag delta into one-pane percentage units
+      const pct = (dx / wrap.offsetWidth) * (100/3);
       track.style.transform = 'translateX(calc(-' + (currentPane*(100/3)) + '% + ' + pct + '%))';
     }, {passive:true});
 
     track.addEventListener('touchend', function(e){
       isDragging = false;
-      track.style.transition = 'transform 0.25s ease';
       const dx = e.changedTouches[0].clientX - startX;
       if (Math.abs(dx) > 50) {
-        if (dx < 0) goToPane(currentPane+1); else goToPane(currentPane-1);
+        if (dx < 0) goToPane(currentPane+1, true); else goToPane(currentPane-1, true);
       } else {
-        goToPane(currentPane);
+        goToPane(currentPane, true);
       }
     });
 
-    goToPane(0);
-  });
-}
-
-// ── RESIZABLE COLUMNS (touch + mouse) ──────────────────────────
-function initStaffColResize(){
-  document.querySelectorAll('.staff-col-resize').forEach(function(handle){
-    let startX = 0, startWidth = 0, key = handle.dataset.colkey;
-
-    function onMove(clientX){
-      const delta = clientX - startX;
-      const newWidth = Math.max(40, startWidth + delta);
-      staffColWidths[key] = newWidth;
-      // Update all cells with this column key live (across panes + desktop)
-      document.querySelectorAll('th[style*="width:"], td[style*="width:"]').forEach(function(){});
-      // Simpler: just re-render after resize ends — see onEnd below
-      handle.parentElement.style.width = newWidth + 'px';
-    }
-
-    function startResize(clientX){
-      startX = clientX;
-      startWidth = staffColWidths[key];
-      document.body.style.userSelect = 'none';
-    }
-    function endResize(){
-      document.body.style.userSelect = '';
-      renderAllCustomers(); // apply new width across all rows/panes/desktop table
-    }
-
-    handle.addEventListener('mousedown', function(e){
-      e.preventDefault(); e.stopPropagation();
-      startResize(e.clientX);
-      function onMouseMove(ev){ onMove(ev.clientX); }
-      function onMouseUp(){ endResize(); document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    });
-
-    handle.addEventListener('touchstart', function(e){
-      e.stopPropagation();
-      startResize(e.touches[0].clientX);
-    }, {passive:true});
-    handle.addEventListener('touchmove', function(e){
-      e.stopPropagation();
-      onMove(e.touches[0].clientX);
-    }, {passive:true});
-    handle.addEventListener('touchend', function(e){
-      e.stopPropagation();
-      endResize();
-    });
+    // Restore to whatever pane this customer was on — no animation, instant
+    goToPane(currentPane, false);
   });
 }
 
