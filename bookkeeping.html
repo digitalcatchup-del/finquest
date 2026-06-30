@@ -5855,7 +5855,7 @@ function renderEquity(tots) {
 const LAUNDRY_SERVICES=['Wash, Dry, Iron','Wash, Dry','Wash Only','Iron Only','Express Dry Cleaning'];
 const LAUNDRY_ITEMS=['Shirt','Trouser','Full Suit','Up and Down','Duvet','Bed Spread','Bed Spread with Pillow Case'];
 
-let staffCustomers=[],staffExpRows=[],staffDateFmt='dd/mm/yyyy',_custIdSeq=0;
+let staffCustomers=[],staffExpRows=[],staffDateFmt='month_day_year',_custIdSeq=0;
 let staffCurrency='NGN'; // independent of the main app's currency setting
 
 function staffSym(){ return CURRENCIES[staffCurrency]?.symbol || '₦'; }
@@ -5871,6 +5871,14 @@ function staffEmptyRow(sn){return{sn,date:'',service:'',item:'',unit_price:0,qty
 let staffColWidths = { sn:34, date:120, service:130, item:130, price:100, qty:58, total:110, status1:100, status2:140, todate:140, paid:100, paymode:140, del:38 };
 
 // ── Date formatting ──────────────────────────────────────────
+// Places the cursor at the end of the field's current value, so an
+// existing 0 or number can be deleted from the right with backspace
+// rather than the user having to first move the cursor manually.
+function staffCursorEnd(el){
+  const len = el.value ? el.value.length : 0;
+  try { el.setSelectionRange(len, len); } catch(e) { /* some input types don't support this */ }
+}
+
 function staffFormatDate(dateStr, fmt) {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
@@ -5916,6 +5924,14 @@ function showStaffSettings(){
     return '<option value="'+k+'"'+(staffCurrency===k?' selected':'')+'>'+v.symbol+' '+k+' \u2014 '+v.name+'</option>';
   }).join('');
 
+  const dateFmtOpts = [
+    ['month_day_year','Month-Day-Year \u2014 e.g. Jun/30th/2026'],
+    ['day_date_year','Day/Date/Year \u2014 e.g. Tue/30th/June/2026'],
+    ['dd/mm/yyyy','DD/MM/YYYY'],
+    ['mm/dd/yyyy','MM/DD/YYYY'],
+    ['dd/mm/yy','DD/MM/YY'],
+  ].map(function([v,l]){ return '<option value="'+v+'"'+(staffDateFmt===v?' selected':'')+'>'+l+'</option>'; }).join('');
+
   document.getElementById('bkContent').innerHTML = `
     <div class="bk-content-header">
       <div class="bk-content-title">STAFF SETTINGS</div>
@@ -5936,11 +5952,34 @@ function showStaffSettings(){
         </div>
         <div id="staffCurrMsg" style="font-size:0.74rem;color:var(--gold);margin-top:8px;min-height:16px;"></div>
       </div>
+      <div class="acct-card" style="margin-top:16px;">
+        <div class="acct-card-title">Date Format</div>
+        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;line-height:1.55;">
+          Applies to the Date and "To collect when?" columns in Sales.
+          Default is Month-Day-Year.
+        </p>
+        <div class="acct-field">
+          <label class="acct-label">Date Format</label>
+          <select class="acct-input" id="staffDateFmtSelect" onchange="staffSetDateFmt(this.value)">
+            ${dateFmtOpts}
+          </select>
+        </div>
+        <div id="staffDateFmtMsg" style="font-size:0.74rem;color:var(--gold);margin-top:8px;min-height:16px;"></div>
+      </div>
       <p style="font-size:0.7rem;color:var(--muted);margin-top:14px;">
         <span class="staff-test-badge">Test Run</span>
         &nbsp;This setting is not saved \u2014 it resets if you leave this session.
       </p>
     </div>`;
+}
+
+function staffSetDateFmt(fmt){
+  staffDateFmt = fmt;
+  const msg = document.getElementById('staffDateFmtMsg');
+  if (msg) {
+    msg.textContent = '\u2713 Date format updated \u2014 applies next time you open Sales';
+    setTimeout(function(){ msg.textContent=''; }, 2500);
+  }
 }
 
 function staffSetCurrency(code){
@@ -5993,24 +6032,12 @@ function showStaffSales(){
 }
 
 function renderStaffSales(){
-  const fmtOpts = [
-    ['dd/mm/yyyy','DD/MM/YYYY'],
-    ['mm/dd/yyyy','MM/DD/YYYY'],
-    ['dd/mm/yy','DD/MM/YY'],
-    ['day_date_year','Day/Date/Year \u2014 e.g. Tue/30th/June/2026'],
-    ['month_day_year','Month-Day-Year \u2014 e.g. Jun/30th/2026'],
-  ].map(([v,l])=>'<option value="'+v+'"'+(staffDateFmt===v?' selected':'')+'>'+l+'</option>').join('');
-
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
       <div>
-        <div class="bk-content-title">SALES RECORD</div>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap;">
+        <div class="bk-content-title">RECORD SALES</div>
+        <div style="margin-top:4px;">
           <span class="staff-test-badge">Test Run</span>
-          <label style="font-size:0.7rem;color:var(--muted);">Date format:
-            <select class="staff-cell" style="height:auto;padding:2px 6px;width:auto;min-width:140px;"
-              onchange="staffDateFmt=this.value;renderAllCustomers()">${fmtOpts}</select>
-          </label>
         </div>
       </div>
       <div style="display:flex;gap:8px;">
@@ -6076,8 +6103,10 @@ function renderCustomerBlock(cust){
       price:'<td style="width:'+w.price+'px;"><div class="staff-price-wrap">'
            + '<span class="staff-curr-prefix">'+staffSym()+'</span>'
            + '<input class="staff-cell num" type="text" inputmode="decimal" value="'+upVal+'" placeholder="0"'
+           + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
            + ' oninput="staffNumChange('+cid+','+ri+',\'unit_price\',this.value)"/></div></td>',
-      qty:'<td style="width:'+w.qty+'px;"><input class="staff-cell num" type="number" value="'+(row.qty||1)+'" min="1"'
+      qty:'<td style="width:'+w.qty+'px;"><input class="staff-cell num" type="text" inputmode="numeric" value="'+(row.qty||1)+'"'
+           + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
            + ' oninput="staffNumChange('+cid+','+ri+',\'qty\',this.value)"/></td>',
       total:'<td style="width:'+w.total+'px;"><div class="staff-cell ro" id="stotal_'+cid+'_'+ri+'">'+totVal+'</div></td>',
       status1:'<td style="width:'+w.status1+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'status1\',this.value)">'
@@ -6380,8 +6409,10 @@ function renderStaffExpenses(){
         <span class="staff-curr-prefix">${staffSym()}</span>
         <input class="staff-cell num" type="text" inputmode="decimal"
         value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
+        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
         oninput="staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
-      <td><input class="staff-cell num" type="number" value="${r.qty||1}" min="1" style="width:55px;"
+      <td><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}" style="width:55px;"
+        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
         oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
       <td><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
       <td><button class="staff-save-btn" onclick="staffExpSave(${i})">›</button></td>
