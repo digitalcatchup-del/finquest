@@ -717,6 +717,28 @@ body{padding-top:0;}
 .staff-record-btn:hover{opacity:0.88;}
 .staff-homepage-btn{background:none;border:2px solid var(--border2);color:var(--off);font-size:0.85rem;font-weight:700;padding:12px 36px;border-radius:10px;cursor:pointer;margin-top:16px;transition:all 0.15s;}
 .staff-summary-cell{padding:8px 6px;color:var(--off);cursor:default;height:auto;min-height:33px;display:flex;align-items:center;}
+.staff-summary-row{cursor:pointer;transition:background 0.12s;}
+.staff-summary-row:hover{background:rgba(212,175,55,0.06);}
+.staff-summary-row:hover .staff-summary-cell{color:var(--gold);}
+
+.staff-lock-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.95rem;padding:6px 10px;border-radius:7px;cursor:pointer;flex-shrink:0;margin:6px 0 6px 8px;transition:all 0.15s;}
+.staff-lock-btn:hover{border-color:var(--gold);color:var(--gold);}
+.staff-locked-block .staff-lock-btn{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+.staff-locked-block .staff-customer-header{background:rgba(212,175,55,0.04);}
+.staff-locked-block .staff-cell:disabled,
+.staff-locked-block select:disabled,
+.staff-locked-block input:disabled{opacity:0.55;cursor:not-allowed;}
+.staff-locked-disp{opacity:0.55;cursor:not-allowed;}
+.staff-locked-block .staff-customer-name:disabled,
+.staff-locked-block .staff-customer-serial:disabled{opacity:0.65;cursor:not-allowed;}
+.staff-locked-block .staff-cust-btn:disabled,
+.staff-locked-block .staff-del-btn:disabled{opacity:0.3;cursor:not-allowed;}
+
+@keyframes staffJumpFlash{
+  0%{box-shadow:0 0 0 0 rgba(212,175,55,0.6);}
+  100%{box-shadow:0 0 0 8px rgba(212,175,55,0);}
+}
+.staff-jump-highlight{animation:staffJumpFlash 1.2s ease-out;border-color:var(--gold) !important;}
 .staff-homepage-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-choice{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding:40px 20px;}
 .staff-choice-btn{flex:1;min-width:140px;max-width:220px;background:var(--surface);border:2px solid var(--border2);border-radius:14px;padding:30px 20px;cursor:pointer;text-align:center;transition:all 0.15s;}
@@ -5867,7 +5889,7 @@ function staffFmtAmt(n){
   return staffSym() + n.toLocaleString('en-NG');
 }
 
-function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_custIdSeq}`,serial:'',rows:[staffEmptyRow(1),staffEmptyRow(2),staffEmptyRow(3)]};}
+function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_custIdSeq}`,serial:'',locked:false,rows:[staffEmptyRow(1),staffEmptyRow(2),staffEmptyRow(3)]};}
 function staffEmptyRow(sn){return{sn,date:'',service:'',item:'',unit_price:0,qty:1,total:0,status1:'',status2:'',date2:'',paid:'',payMode:''};}
 
 // ── Column min-widths (px) — sized so every dropdown option fits fully ──
@@ -6075,6 +6097,19 @@ function showStaffDashboard(){
 }
 
 // ── Build one summarised row per customer from their Record Sales rows ──
+// ── Clicking a Sales Summary row opens Record Sales and scrolls to that customer ──
+function staffJumpToCustomer(custId){
+  showStaffSales();
+  setTimeout(function(){
+    const block = document.querySelector('.staff-customer-block[data-custid="'+custId+'"]');
+    if (block) {
+      block.scrollIntoView({ behavior:'smooth', block:'start' });
+      block.classList.add('staff-jump-highlight');
+      setTimeout(function(){ block.classList.remove('staff-jump-highlight'); }, 1400);
+    }
+  }, 80);
+}
+
 function staffSummariseCustomer(c){
   const dataRows = c.rows.filter(function(r){
     return r.service || r.item || r.total>0 || r.status1 || r.status2 || r.paid || r.payMode || r.date;
@@ -6122,15 +6157,18 @@ function buildSalesSummarySpreadsheet(){
     return '<div class="dash-card"><div style="text-align:center;padding:24px;color:var(--muted);font-size:0.8rem;">No customers in Record Sales yet.</div></div>';
   }
 
-  const w = { sn:34, date:130, customer:130, serial:90, service:220, total:110, payment:100, mode:140, status1:100, status2:140 };
+  // Narrow widths chosen so all 4 columns comfortably fit in a single mobile pane
+  const w = { sn:30, customer:150, total:90, payment:80 };
   const headerDefs = [
-    ['sn','S/N'], ['date','Date'], ['customer','Customer'], ['serial','Serial Number'],
-    ['service','Service'], ['total','Total'], ['payment','Payment'],
-    ['mode','Mode of Payment'], ['status1','Status 1'], ['status2','Status 2'],
+    ['sn','S/N'], ['customer','Customer'], ['total','Total'], ['payment','Payment'],
   ];
   const allKeys = headerDefs.map(function(h){ return h[0]; });
 
-  const summaryRows = staffCustomers.map(function(c){ return staffSummariseCustomer(c); });
+  const summaryRows = staffCustomers.map(function(c){
+    const s = staffSummariseCustomer(c);
+    s.custId = c.id;
+    return s;
+  });
 
   function buildHeaderRow(keys){
     return '<tr>' + keys.map(function(k){
@@ -6141,22 +6179,17 @@ function buildSalesSummarySpreadsheet(){
 
   function cellFor(row, ri, k){
     let val = '';
-    if (k==='sn')        val = String(ri+1);
-    else if (k==='date')     val = row.date ? staffFormatDate(row.date, staffDateFmt) : '\u2014';
-    else if (k==='customer') val = row.customer;
-    else if (k==='serial')   val = row.serial || '\u2014';
-    else if (k==='service')  val = row.service || '\u2014';
-    else if (k==='total')    val = staffFmtAmt(row.total) || (staffSym()+'0');
-    else if (k==='payment')  val = row.payment || '\u2014';
-    else if (k==='mode')     val = row.mode || '\u2014';
-    else if (k==='status1')  val = row.status1 || '\u2014';
-    else if (k==='status2')  val = row.status2 || '\u2014';
+    if (k==='sn')             val = String(ri+1);
+    else if (k==='customer')  val = row.customer + (row.serial ? ' ('+row.serial+')' : '');
+    else if (k==='total')     val = staffFmtAmt(row.total) || (staffSym()+'0');
+    else if (k==='payment')   val = row.payment || '\u2014';
     return '<td style="width:'+w[k]+'px;"><div class="staff-cell staff-summary-cell">'+escH(val)+'</div></td>';
   }
 
   function buildBodyRows(keys){
     return summaryRows.map(function(row, ri){
-      return '<tr>' + keys.map(function(k){ return cellFor(row, ri, k); }).join('') + '</tr>';
+      return '<tr class="staff-summary-row" onclick="staffJumpToCustomer('+row.custId+')" title="Open this customer\u2019s spreadsheet">'
+        + keys.map(function(k){ return cellFor(row, ri, k); }).join('') + '</tr>';
     }).join('');
   }
 
@@ -6168,7 +6201,8 @@ function buildSalesSummarySpreadsheet(){
     + '<tbody>'+buildBodyRows(allKeys)+'</tbody>'
     + '</table></div>';
 
-  // Mobile/Tablet: dynamic panes sized to fit the screen, swipeable
+  // Mobile/Tablet: dynamic panes — with these 4 narrow columns this naturally
+  // produces a single pane on most phones, but still adapts if the screen is very small
   const availW = Math.max(280, (window.innerWidth || 375) - 28);
   const groups = [];
   let cur = [], curW = 0;
@@ -6263,17 +6297,19 @@ function renderCustomerBlock(cust){
   const totalAmt = cust.rows.reduce((a,r)=>a+(parseFloat(r.total)||0),0);
   const cid = cust.id;
   const w = staffColWidths;
+  const locked = !!cust.locked;
+  const lockAttr = locked ? ' disabled' : ''; // applied to every input/select/button that edits data
 
   // Build the option lists once
   function svcSelect(ri, current) {
-    let h = '<select class="staff-cell" onchange="staffSvcChange('+cid+','+ri+',this.value)">';
+    let h = '<select class="staff-cell" onchange="staffSvcChange('+cid+','+ri+',this.value)"'+lockAttr+'>';
     h += '<option value="">Select\u2026</option>';
     LAUNDRY_SERVICES.forEach(function(s){ h += '<option value="'+s+'"'+(current===s?' selected':'')+'>'+s+'</option>'; });
     h += '</select>';
     return h;
   }
   function itemSelect(ri, current) {
-    let h = '<select class="staff-cell" onchange="staffItemChange('+cid+','+ri+',this.value)">';
+    let h = '<select class="staff-cell" onchange="staffItemChange('+cid+','+ri+',this.value)"'+lockAttr+'>';
     h += '<option value="">Select\u2026</option>';
     LAUNDRY_ITEMS.forEach(function(i){ h += '<option value="'+i+'"'+(current===i?' selected':'')+'>'+i+'</option>'; });
     h += '</select>';
@@ -6288,52 +6324,53 @@ function renderCustomerBlock(cust){
     const dateDisp = row.date ? staffFormatDate(row.date, staffDateFmt) : '';
 
     const toDateDisp = row.date2 ? staffFormatDate(row.date2, staffDateFmt) : '';
+    const dateClickAttr = locked ? '' : ' onclick="this.previousElementSibling.showPicker?this.previousElementSibling.showPicker():this.previousElementSibling.focus()"';
 
     return {
       sn:  '<td class="staff-sn" style="width:'+w.sn+'px;">'+(ri+1)+'</td>',
       date:'<td style="width:'+w.date+'px;"><div class="staff-wrap-cell">'
-           + '<input class="staff-cell staff-date-hidden" type="date" value="'+row.date+'"'
+           + '<input class="staff-cell staff-date-hidden" type="date" value="'+row.date+'"'+lockAttr
            + ' onchange="staffSaleChange('+cid+','+ri+',\'date\',this.value);staffRefreshDateDisp(this)"/>'
-           + '<div class="staff-date-disp" onclick="this.previousElementSibling.showPicker?this.previousElementSibling.showPicker():this.previousElementSibling.focus()">'+(dateDisp||'Select date')+'</div>'
+           + '<div class="staff-date-disp'+(locked?' staff-locked-disp':'')+'"'+dateClickAttr+'>'+(dateDisp||'Select date')+'</div>'
            + '</div></td>',
       service:'<td style="width:'+w.service+'px;">'+svcSelect(ri,row.service)+'</td>',
       item:'<td style="width:'+w.item+'px;">'+itemSelect(ri,row.item)+'</td>',
       price:'<td style="width:'+w.price+'px;"><div class="staff-price-wrap">'
            + '<span class="staff-curr-prefix">'+staffSym()+'</span>'
-           + '<input class="staff-cell num" type="text" inputmode="decimal" value="'+upVal+'" placeholder="0"'
+           + '<input class="staff-cell num" type="text" inputmode="decimal" value="'+upVal+'" placeholder="0"'+lockAttr
            + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
            + ' oninput="staffNumChange('+cid+','+ri+',\'unit_price\',this.value)"/></div></td>',
-      qty:'<td style="width:'+w.qty+'px;"><input class="staff-cell num" type="text" inputmode="numeric" value="'+(row.qty||1)+'"'
+      qty:'<td style="width:'+w.qty+'px;"><input class="staff-cell num" type="text" inputmode="numeric" value="'+(row.qty||1)+'"'+lockAttr
            + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
            + ' oninput="staffNumChange('+cid+','+ri+',\'qty\',this.value)"/></td>',
       total:'<td style="width:'+w.total+'px;"><div class="staff-cell ro" id="stotal_'+cid+'_'+ri+'">'+totVal+'</div></td>',
-      status1:'<td style="width:'+w.status1+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'status1\',this.value)">'
+      status1:'<td style="width:'+w.status1+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'status1\',this.value)"'+lockAttr+'>'
            + '<option value="">\u2014</option>'
            + '<option value="Ready"'+(row.status1==='Ready'?' selected':'')+'>Ready</option>'
            + '<option value="Not Ready"'+(row.status1==='Not Ready'?' selected':'')+'>Not Ready</option>'
            + '</select></td>',
-      status2:'<td style="width:'+w.status2+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'status2\',this.value)">'
+      status2:'<td style="width:'+w.status2+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'status2\',this.value)"'+lockAttr+'>'
            + '<option value="">\u2014</option>'
            + '<option value="Collected"'+(row.status2==='Collected'?' selected':'')+'>Collected</option>'
            + '<option value="Not Collected"'+(row.status2==='Not Collected'?' selected':'')+'>Not Collected</option>'
            + '</select></td>',
       todate:'<td style="width:'+w.todate+'px;"><div class="staff-wrap-cell">'
-           + '<input class="staff-cell staff-date-hidden" type="date" value="'+row.date2+'"'
+           + '<input class="staff-cell staff-date-hidden" type="date" value="'+row.date2+'"'+lockAttr
            + ' onchange="staffSaleChange('+cid+','+ri+',\'date2\',this.value);staffRefreshDateDisp(this)"/>'
-           + '<div class="staff-date-disp" onclick="this.previousElementSibling.showPicker?this.previousElementSibling.showPicker():this.previousElementSibling.focus()">'+(toDateDisp||'Select date')+'</div>'
+           + '<div class="staff-date-disp'+(locked?' staff-locked-disp':'')+'"'+dateClickAttr+'>'+(toDateDisp||'Select date')+'</div>'
            + '</div></td>',
-      paid:'<td style="width:'+w.paid+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'paid\',this.value)">'
+      paid:'<td style="width:'+w.paid+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'paid\',this.value)"'+lockAttr+'>'
            + '<option value="">\u2014</option>'
            + '<option value="Not Paid"'+(row.paid==='Not Paid'?' selected':'')+'>Not Paid</option>'
            + '<option value="Paid"'+(row.paid==='Paid'?' selected':'')+'>Paid</option>'
            + '</select></td>',
-      paymode:'<td style="width:'+w.paymode+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'payMode\',this.value)">'
+      paymode:'<td style="width:'+w.paymode+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'payMode\',this.value)"'+lockAttr+'>'
            + '<option value="">\u2014</option>'
            + '<option value="Cash"'+(row.payMode==='Cash'?' selected':'')+'>Cash</option>'
            + '<option value="Card"'+(row.payMode==='Card'?' selected':'')+'>Card</option>'
            + '<option value="Bank Transfer"'+(row.payMode==='Bank Transfer'?' selected':'')+'>Bank Transfer</option>'
            + '</select></td>',
-      del:'<td style="width:'+w.del+'px;"><button class="staff-del-btn" onclick="staffDelRow('+cid+','+ri+')">&#x2715;</button></td>',
+      del:'<td style="width:'+w.del+'px;"><button class="staff-del-btn" onclick="staffDelRow('+cid+','+ri+')"'+lockAttr+'>&#x2715;</button></td>',
     };
   });
 
@@ -6419,16 +6456,19 @@ function renderCustomerBlock(cust){
       + '</div>'
     + '</div>';
 
-  return '<div class="staff-customer-block">'
+  return '<div class="staff-customer-block'+(locked?' staff-locked-block':'')+'" data-custid="'+cid+'">'
     + '<div class="staff-customer-header">'
-    + '<input class="staff-customer-name" type="text" value="'+escH(cust.name)+'"'
+    + '<button class="staff-lock-btn" onclick="staffToggleLock('+cid+')" title="'+(locked?'Unlock to edit':'Lock to prevent editing')+'">'
+    + (locked ? '&#128274;' : '&#128275;')
+    + '</button>'
+    + '<input class="staff-customer-name" type="text" value="'+escH(cust.name)+'"'+lockAttr
     + ' onchange="staffCustRename('+cid+',this.value)" placeholder="Customer name\u2026"/>'
-    + '<input class="staff-customer-serial" type="text" value="'+escH(cust.serial||'')+'"'
+    + '<input class="staff-customer-serial" type="text" value="'+escH(cust.serial||'')+'"'+lockAttr
     + ' onchange="staffCustSerialChange('+cid+',this.value)" placeholder="S/N"'
     + ' title="Customer Serial Number"/>'
     + '<div class="staff-cust-btns">'
-    + '<button class="staff-cust-btn" onclick="staffAddRowToCustomer('+cid+')">+ Row</button>'
-    + '<button class="staff-cust-btn del" onclick="staffDeleteCustomer('+cid+')">&#x2715;</button>'
+    + '<button class="staff-cust-btn" onclick="staffAddRowToCustomer('+cid+')"'+lockAttr+'>+ Row</button>'
+    + '<button class="staff-cust-btn del" onclick="staffDeleteCustomer('+cid+')"'+lockAttr+'>&#x2715;</button>'
     + '</div></div>'
     + desktopTable
     + mobilePanes
@@ -6517,6 +6557,17 @@ function addStaffCustomer(){
 function staffDeleteCustomer(custId){
   if(staffCustomers.length<=1){return;}
   staffCustomers=staffCustomers.filter(c=>c.id!==custId);renderAllCustomers();
+}
+
+// ── Lock/unlock a customer's spreadsheet ─────────────────────
+// Locked: every input/select/structural button is disabled — but the
+// spreadsheet remains swipeable on mobile/tablet since swiping is purely
+// navigation and is handled independently of the form controls.
+function staffToggleLock(custId){
+  const c = staffGetCust(custId);
+  if (!c) return;
+  c.locked = !c.locked;
+  renderAllCustomers();
 }
 
 function staffAddRowToCustomer(custId){
