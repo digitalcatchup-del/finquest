@@ -3100,8 +3100,6 @@ function renderJournalRows() {
         <input class="bk-cell" type="text" value="${escH(row.narration)}" placeholder="Describe transaction…"
           oninput="jCellChange(${i},'narration',this.value)"
           id="jnarr_${i}"/>
-        <button class="ai-suggest-btn" id="aibtn_${i}"
-          onclick="aiSuggestAccounts(${i})" title="✨ AI suggest accounts">✨</button>
       </td>
       <td><select class="bk-cell" 
         onchange="jAccountChange(${i},'debit',this.value)">
