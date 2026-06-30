@@ -726,6 +726,9 @@ body{padding-top:0;}
 .staff-customer-header{background:var(--surface2);display:flex;align-items:center;border-bottom:2px solid var(--border);}
 .staff-customer-name{flex:1;font-size:0.88rem;font-weight:800;color:var(--white);padding:10px 14px;cursor:text;border:none;background:transparent;font-family:inherit;outline:none;}
 .staff-customer-name:focus{background:rgba(212,175,55,0.07);}
+.staff-customer-serial{width:70px;flex-shrink:0;font-size:0.78rem;font-weight:600;color:var(--gold);padding:10px 10px;border:none;border-left:1px solid var(--border);background:transparent;font-family:inherit;outline:none;text-align:center;}
+.staff-customer-serial:focus{background:rgba(212,175,55,0.07);}
+.staff-customer-serial::placeholder{color:var(--muted2);}
 .staff-cust-btns{display:flex;gap:4px;padding:6px 8px;flex-shrink:0;}
 .staff-cust-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;}
 .staff-cust-btn:hover{border-color:var(--gold);color:var(--gold);}
@@ -5849,7 +5852,7 @@ const LAUNDRY_PRICES={
 
 let staffCustomers=[],staffExpRows=[],staffDateFmt='dd/mm/yyyy',_custIdSeq=0;
 
-function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_custIdSeq}`,rows:[staffEmptyRow(1),staffEmptyRow(2),staffEmptyRow(3)]};}
+function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_custIdSeq}`,serial:'',rows:[staffEmptyRow(1),staffEmptyRow(2),staffEmptyRow(3)]};}
 function staffEmptyRow(sn){return{sn,date:'',service:'',item:'',unit_price:0,qty:1,total:0,status1:'',status2:'',date2:'',paid:'',payMode:''};}
 
 // ── Column widths (resizable, shared across all customer blocks) ──
@@ -6101,6 +6104,9 @@ function renderCustomerBlock(cust){
     + '<div class="staff-customer-header">'
     + '<input class="staff-customer-name" type="text" value="'+escH(cust.name)+'"'
     + ' onchange="staffCustRename('+cid+',this.value)" placeholder="Customer name\u2026"/>'
+    + '<input class="staff-customer-serial" type="text" value="'+escH(cust.serial||'')+'"'
+    + ' onchange="staffCustSerialChange('+cid+',this.value)" placeholder="S/N"'
+    + ' title="Customer Serial Number"/>'
     + '<div class="staff-cust-btns">'
     + '<button class="staff-cust-btn" onclick="staffAddRowToCustomer('+cid+')">+ Row</button>'
     + '<button class="staff-cust-btn del" onclick="staffDeleteCustomer('+cid+')">&#x2715;</button>'
@@ -6116,6 +6122,7 @@ function renderCustomerBlock(cust){
 function staffGetCust(id){return staffCustomers.find(c=>c.id===id);}
 function staffSaleChange(custId,ri,field,val){const c=staffGetCust(custId);if(c)c.rows[ri][field]=val;}
 function staffCustRename(custId,name){const c=staffGetCust(custId);if(c)c.name=name;}
+function staffCustSerialChange(custId,serial){const c=staffGetCust(custId);if(c)c.serial=serial;}
 
 function staffRefreshDateDisp(input){
   const disp = input.nextElementSibling;
@@ -6229,10 +6236,11 @@ function initStaffSwipe(){
 
     function goToPane(idx){
       currentPane = Math.max(0, Math.min(2, idx));
-      track.style.transform = 'translateX(-' + (currentPane*100) + '%)';
+      // translateX % is relative to the TRACK's own width (300%), so one pane = 100/3 %
+      track.style.transform = 'translateX(-' + (currentPane*(100/3)) + '%)';
       dots.forEach(function(d,i){ d.classList.toggle('active', i===currentPane); });
     }
-    dots.forEach(function(d,i){ d.addEventListener('click', function(){ goToPane(i); }); });
+    dots.forEach(function(d,i){ d.addEventListener('click', function(){ track.style.transition='transform 0.25s ease'; goToPane(i); }); });
 
     track.addEventListener('touchstart', function(e){
       startX = e.touches[0].clientX; isDragging = true;
@@ -6242,8 +6250,8 @@ function initStaffSwipe(){
     track.addEventListener('touchmove', function(e){
       if (!isDragging) return;
       const dx = e.touches[0].clientX - startX;
-      const pct = (dx / wrap.offsetWidth) * 100;
-      track.style.transform = 'translateX(calc(-' + (currentPane*100) + '% + ' + pct + '%))';
+      const pct = (dx / wrap.offsetWidth) * (100/3); // scale drag delta into one-pane percentage units
+      track.style.transform = 'translateX(calc(-' + (currentPane*(100/3)) + '% + ' + pct + '%))';
     }, {passive:true});
 
     track.addEventListener('touchend', function(e){
