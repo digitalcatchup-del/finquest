@@ -3,9 +3,6 @@
 <html lang="en" style="background:#0f1117;">
 <head>
 <meta charset="UTF-8"/>
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
-<meta http-equiv="Pragma" content="no-cache"/>
-<meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Bookkeeping — Butterfly Dynamix</title>
 <style>html,body{background:#0f1117!important;}
@@ -203,13 +200,13 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .bk-main{max-width:1320px;margin:0 auto;padding:32px 24px;}
 
 /* HERO */
-.bk-think{font-size:2.6rem;font-weight:900;color:var(--white);text-align:center;letter-spacing:-0.02em;margin-bottom:28px;}
+.bk-think{font-size:2.6rem;font-weight:900;color:var(--white);text-align:center;letter-spacing:-0.02em;margin-bottom:4px;}
 .bk-think span{color:var(--gold);}
-.bk-welcome{font-size:0.95rem;color:var(--muted);text-align:center;margin-bottom:4px;}
+.bk-welcome{font-size:0.95rem;color:var(--muted);text-align:center;margin-bottom:28px;}
 .bk-welcome strong{color:var(--white);}
 
 /* EQUATION BAR */
-.bk-eq-bar{max-width:760px;margin:0 auto 32px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 28px;position:relative;}
+.bk-eq-bar{max-width:760px;margin:0 auto 32px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 28px;}
 .bk-eq-title{font-size:0.65rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:14px;}
 .bk-equation{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
 .bk-eq-block{text-align:center;}
@@ -279,10 +276,8 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .ob-row td{padding:8px 10px;font-size:0.78rem;color:var(--gold);font-weight:700;}
 
 /* SPREADSHEET */
-.bk-sheet-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-behavior:smooth;cursor:grab;}
-.bk-sheet-wrap:active{cursor:grabbing;}
-.bk-sheet{border-collapse:collapse;table-layout:fixed;white-space:nowrap;}
-.bk-sheet td, .bk-sheet th{white-space:nowrap;}
+.bk-sheet-wrap{overflow-x:auto;max-height:520px;overflow-y:auto;}
+.bk-sheet{width:100%;border-collapse:collapse;table-layout:fixed;}
 .bk-sheet thead th{background:var(--bg);color:var(--gold);font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:10px 8px;text-align:left;border-bottom:2px solid var(--gold);border-right:1px solid var(--border);position:sticky;top:0;z-index:2;white-space:nowrap;}
 .bk-sheet thead th.num{text-align:right;}
 .bk-sheet thead th:last-child{border-right:none;}
@@ -431,29 +426,6 @@ select.bk-cell {
 .qi-success-icon{font-size:3rem;margin-bottom:12px;}
 /* READ-ONLY LEDGER */
 .ledger-readonly-banner{background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:10px 16px;font-size:0.78rem;color:var(--muted);margin-bottom:0;display:flex;align-items:center;gap:8px;}
-
-/* ── Schedule View ─────────────────────────────────────────── */
-.sched-total-banner{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.sched-total-label{font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
-.sched-total-val{font-size:1.4rem;font-weight:900;}
-.sched-badge{font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:5px;letter-spacing:0.06em;}
-.sched-table{width:100%;table-layout:auto;}
-.sched-table thead th{background:var(--bg);color:var(--gold);font-size:0.62rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:9px 12px;border-bottom:2px solid var(--gold);white-space:nowrap;}
-.sched-table tbody td{border-bottom:1px solid var(--border);padding:10px 12px;vertical-align:middle;}
-.sched-row{cursor:pointer;transition:background 0.12s;}
-.sched-row:hover{background:rgba(212,175,55,0.05);}
-.sched-row:hover .sched-name-text{color:var(--gold);}
-.sched-num{color:var(--muted);font-size:0.72rem;width:60px;}
-.sched-name{min-width:200px;width:auto;}
-.sched-name-text{display:block;font-weight:600;color:var(--off);font-size:0.85rem;white-space:nowrap;}
-.sched-txn-count{display:block;font-size:0.68rem;color:var(--muted);margin-top:2px;}
-.sched-val{text-align:right;font-size:0.82rem;color:var(--off);white-space:nowrap;}
-.sched-total-col{font-weight:700;color:var(--white);}
-.sched-foot-row td{background:rgba(212,175,55,0.06);font-weight:700;padding:10px 12px;border-top:2px solid var(--border);font-size:0.82rem;color:var(--gold);}
-.sched-below-table{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 0 8px;}
-.sched-subacct-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
-.sched-subacct-label{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
-.sched-subacct-select{min-width:200px;}
 .bk-cell-ro{width:100%;height:34px;background:transparent;border:none;color:var(--off);font-size:0.8rem;font-family:inherit;padding:0 8px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .bk-cell-ro.num{text-align:right;}
 
@@ -740,46 +712,9 @@ body{padding-top:0;}
 /* ── STAFF PAGE ──────────────────────────────────────── */
 .staff-welcome{text-align:center;padding:60px 20px 40px;}
 .staff-welcome-title{font-size:2rem;font-weight:900;color:var(--white);margin-bottom:6px;}
-.staff-welcome-think{font-size:1.2rem;font-weight:800;color:var(--white);margin-bottom:18px;cursor:pointer;user-select:none;letter-spacing:-0.01em;}
-.staff-welcome-think span{color:var(--gold);}
 .staff-welcome-sub{font-size:0.85rem;color:var(--muted);margin-bottom:40px;}
 .staff-record-btn{background:var(--gold);border:none;color:#000;font-size:1.1rem;font-weight:900;padding:22px 56px;border-radius:14px;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.3);transition:all 0.15s;}
 .staff-record-btn:hover{opacity:0.88;}
-.staff-homepage-btn{background:none;border:2px solid var(--border2);color:var(--off);font-size:0.85rem;font-weight:700;padding:12px 36px;border-radius:10px;cursor:pointer;margin-top:16px;transition:all 0.15s;}
-.staff-summary-cell{padding:8px 6px;color:var(--off);cursor:default;height:auto;min-height:33px;display:flex;align-items:center;}
-.staff-summary-row{cursor:pointer;transition:background 0.12s;}
-.staff-dir-row{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all 0.15s;}
-.staff-dir-row:hover{border-color:var(--gold);background:var(--gold-dim);}
-.staff-dir-avatar{font-size:1.6rem;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:50%;flex-shrink:0;}
-.staff-dir-name{font-size:0.9rem;font-weight:700;color:var(--white);}
-.staff-dir-pos{font-size:0.76rem;color:var(--muted);margin-top:2px;}
-.staff-dir-chat-icon{font-size:1.1rem;opacity:0.6;flex-shrink:0;}
-.staff-chat-log{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;min-height:200px;max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
-.staff-chat-bubble{max-width:75%;padding:9px 14px;border-radius:14px;font-size:0.84rem;line-height:1.4;word-break:break-word;}
-.staff-chat-bubble.me{align-self:flex-end;background:var(--gold);color:#000;border-bottom-right-radius:4px;}
-.staff-chat-bubble.them{align-self:flex-start;background:var(--surface2);color:var(--off);border-bottom-left-radius:4px;}
-.staff-summary-row:hover{background:rgba(212,175,55,0.06);}
-.staff-summary-row:hover .staff-summary-cell{color:var(--gold);}
-
-.staff-lock-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.95rem;padding:6px 10px;border-radius:7px;cursor:pointer;flex-shrink:0;margin:6px 0 6px 8px;transition:all 0.15s;}
-.staff-lock-btn:hover{border-color:var(--gold);color:var(--gold);}
-.staff-locked-block .staff-lock-btn{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
-.staff-locked-block .staff-customer-header{background:rgba(212,175,55,0.04);}
-.staff-locked-block .staff-cell:disabled,
-.staff-locked-block select:disabled,
-.staff-locked-block input:disabled{opacity:0.55;cursor:not-allowed;}
-.staff-locked-disp{opacity:0.55;cursor:not-allowed;}
-.staff-locked-block .staff-customer-name:disabled,
-.staff-locked-block .staff-customer-serial:disabled{opacity:0.65;cursor:not-allowed;}
-.staff-locked-block .staff-cust-btn:disabled,
-.staff-locked-block .staff-del-btn:disabled{opacity:0.3;cursor:not-allowed;}
-
-@keyframes staffJumpFlash{
-  0%{box-shadow:0 0 0 0 rgba(212,175,55,0.6);}
-  100%{box-shadow:0 0 0 8px rgba(212,175,55,0);}
-}
-.staff-jump-highlight{animation:staffJumpFlash 1.2s ease-out;border-color:var(--gold) !important;}
-.staff-homepage-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-choice{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding:40px 20px;}
 .staff-choice-btn{flex:1;min-width:140px;max-width:220px;background:var(--surface);border:2px solid var(--border2);border-radius:14px;padding:30px 20px;cursor:pointer;text-align:center;transition:all 0.15s;}
 .staff-choice-btn:hover{border-color:var(--gold);background:var(--gold-dim);}
@@ -788,17 +723,14 @@ body{padding-top:0;}
 .staff-choice-desc{font-size:0.74rem;color:var(--muted);margin-top:4px;}
 .staff-sheet-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 0 20px;}
 .staff-customer-block{margin-bottom:20px;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-.staff-customer-header{background:var(--surface2);display:flex;align-items:center;flex-wrap:wrap;border-bottom:2px solid var(--border);}
-.staff-customer-name{flex:1 1 140px;min-width:0;font-size:0.88rem;font-weight:800;color:var(--white);padding:10px 14px;cursor:text;border:none;background:transparent;font-family:inherit;outline:none;}
+.staff-customer-header{background:var(--surface2);display:flex;align-items:center;border-bottom:2px solid var(--border);}
+.staff-customer-name{flex:1;font-size:0.88rem;font-weight:800;color:var(--white);padding:10px 14px;cursor:text;border:none;background:transparent;font-family:inherit;outline:none;}
 .staff-customer-name:focus{background:rgba(212,175,55,0.07);}
-.staff-customer-serial{width:64px;flex:0 0 64px;font-size:0.78rem;font-weight:600;color:var(--gold);padding:10px 8px;border:none;border-left:1px solid var(--border);background:transparent;font-family:inherit;outline:none;text-align:center;}
-.staff-customer-serial:focus{background:rgba(212,175,55,0.07);}
-.staff-customer-serial::placeholder{color:var(--muted2);}
-.staff-cust-btns{display:flex;gap:4px;padding:6px 8px;flex-shrink:0;flex-wrap:nowrap;}
-.staff-cust-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.staff-cust-btns{display:flex;gap:4px;padding:6px 8px;flex-shrink:0;}
+.staff-cust-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;}
 .staff-cust-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-cust-btn.del:hover{border-color:var(--red);color:var(--red);}
-.staff-table{width:100%;border-collapse:collapse;font-size:0.76rem;min-width:900px;table-layout:fixed;}
+.staff-table{width:100%;border-collapse:collapse;font-size:0.76rem;min-width:900px;}
 .staff-table th{background:var(--bg);color:var(--gold);font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:7px 5px;text-align:left;border-bottom:2px solid var(--gold);white-space:nowrap;}
 .staff-table td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;}
 .staff-cell{width:100%;background:transparent;border:none;color:var(--white);font-size:0.76rem;font-family:inherit;padding:6px 5px;outline:none;height:33px;min-width:60px;}
@@ -821,46 +753,6 @@ body{padding-top:0;}
 .row-add-pop div:last-child{border-bottom:none;}
 .row-add-pop div:hover{background:var(--gold-dim);color:var(--gold);}
 .staff-test-badge{background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;font-size:0.65rem;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:0.06em;text-transform:uppercase;}
-
-/* ── Word-wrap inside cells (Excel-style) ──────────────────── */
-.staff-cell, .staff-table select, .staff-table input{white-space:normal;word-break:break-word;overflow-wrap:break-word;line-height:1.25;}
-.staff-table td, .staff-table th{white-space:normal;word-break:break-word;overflow-wrap:break-word;vertical-align:top;}
-.staff-wrap-cell{white-space:normal;word-break:break-word;}
-.staff-date-disp{font-size:0.76rem;color:var(--white);padding:6px 5px;cursor:pointer;white-space:normal;word-break:break-word;line-height:1.25;min-height:33px;display:flex;align-items:center;}
-.staff-date-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
-
-/* ── Resizable column handle ────────────────────────────────── */
-/* (column resize feature removed) */
-
-/* ── Static Save button below each customer block ───────────── */
-.staff-save-static-wrap{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 0 4px;background:var(--surface);border-top:1px solid var(--border);}
-.staff-static-total{font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.02em;}
-.staff-price-wrap{display:flex;align-items:center;gap:2px;padding:0 2px;}
-.staff-curr-prefix{color:var(--gold);font-size:0.74rem;font-weight:700;flex-shrink:0;}
-.staff-price-wrap .staff-cell{padding-left:2px;}
-.staff-welcome-centered{min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
-.staff-settings-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:1rem;padding:6px 11px;border-radius:7px;cursor:pointer;transition:all 0.15s;}
-.staff-settings-btn:hover{border-color:var(--gold);color:var(--gold);}
-.staff-save-static-btn{background:var(--gold);border:none;color:#000;font-size:0.85rem;font-weight:800;padding:9px 36px;border-radius:8px;cursor:pointer;transition:all 0.15s;}
-.staff-save-static-btn:hover{opacity:0.88;}
-
-/* ── Desktop vs Mobile table display ─────────────────────────── */
-.staff-desktop-only{display:block;}
-.staff-mobile-only{display:none;}
-
-/* ── Swipeable panes (mobile/tablet) ─────────────────────────── */
-.staff-swipe-wrap{overflow:hidden;position:relative;border-bottom:1px solid var(--border);}
-.staff-swipe-track{display:flex;width:300%;transition:transform 0.25s ease;}
-.staff-swipe-pane{flex:1 0 0;flex-shrink:0;overflow-x:hidden;min-width:0;}
-.staff-swipe-pane .staff-table{width:100%;min-width:0;table-layout:fixed;}
-.staff-swipe-dots{display:flex;justify-content:center;gap:6px;padding:8px 0;background:var(--surface2);}
-.staff-swipe-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);cursor:pointer;transition:background 0.15s;}
-.staff-swipe-dot.active{background:var(--gold);}
-
-@media(max-width:899px){
-  .staff-desktop-only{display:none;}
-  .staff-mobile-only{display:block;}
-}
 
 </style>
 </head>
@@ -896,37 +788,32 @@ body{padding-top:0;}
 
   <!-- Menu items -->
   <nav style="flex:1;padding:12px 0;">
-    <!-- Dashboard (owner/manager only) -->
-    <div class="bk-menu-item" data-role="owner-manager" onclick="showDashboard();closeBkMenu()" id="mnu-dashboard">
+    <!-- Dashboard -->
+    <div class="bk-menu-item" onclick="showDashboard();closeBkMenu()" id="mnu-dashboard">
       <span class="bk-menu-icon">📊</span> Dashboard
     </div>
 
-    <!-- Staff directory (owner/manager only) -->
-    <div class="bk-menu-item" data-role="owner-manager" onclick="showStaffDirectory();closeBkMenu()" id="mnu-staff-directory">
-      <span class="bk-menu-icon">👥</span> Staff
+    <!-- Staff -->
+    <div class="bk-menu-item" onclick="showStaffPage();closeBkMenu()" id="mnu-staff">
+      <span class="bk-menu-icon">👷</span> Staff
     </div>
 
-    <!-- Staff Pages preview (owner/manager only) -->
-    <div class="bk-menu-item" data-role="owner-manager" onclick="showStaffPage();closeBkMenu()" id="mnu-staff-pages">
-      <span class="bk-menu-icon">👷</span> Staff Pages
-    </div>
-
-    <!-- Products & Services (owner/manager only) -->
-    <div class="bk-menu-item bk-menu-parent" data-role="owner-manager" onclick="toggleSubMenu('sub-ps')">
+    <!-- Products & Services -->
+    <div class="bk-menu-item bk-menu-parent" onclick="toggleSubMenu('sub-ps')">
       <span class="bk-menu-icon">📦</span> Products & Services
       <span class="bk-menu-arrow" id="arrow-ps">›</span>
     </div>
-    <div class="bk-submenu" data-role="owner-manager" id="sub-ps">
+    <div class="bk-submenu" id="sub-ps">
       <div class="bk-submenu-item" onclick="showProductsPage('products');closeBkMenu()">📦 Products</div>
       <div class="bk-submenu-item" onclick="showProductsPage('services');closeBkMenu()">🛠 Services</div>
     </div>
 
-    <!-- Records (owner/manager only) -->
-    <div class="bk-menu-item bk-menu-parent" data-role="owner-manager" onclick="toggleSubMenu('sub-records')">
+    <!-- Records -->
+    <div class="bk-menu-item bk-menu-parent" onclick="toggleSubMenu('sub-records')">
       <span class="bk-menu-icon">📒</span> Records
       <span class="bk-menu-arrow" id="arrow-records">›</span>
     </div>
-    <div class="bk-submenu" data-role="owner-manager" id="sub-records">
+    <div class="bk-submenu" id="sub-records">
       <div class="bk-submenu-item" onclick="openChartOfAccounts();closeBkMenu()">📋 Chart of Accounts</div>
       <div class="bk-submenu-item" onclick="openJournal();closeBkMenu()">📒 Master Records</div>
       <div class="bk-submenu-item" onclick="showReport('trial');closeBkMenu()">⚖ Trial Balance</div>
@@ -938,30 +825,20 @@ body{padding-top:0;}
       <div class="bk-submenu-item" onclick="openFirstAccount('expenditure');closeBkMenu()">Expenditure Records</div>
     </div>
 
-    <!-- Reports (owner/manager only) -->
-    <div class="bk-menu-item bk-menu-parent" data-role="owner-manager" onclick="toggleSubMenu('sub-reports')">
+    <!-- Reports -->
+    <div class="bk-menu-item bk-menu-parent" onclick="toggleSubMenu('sub-reports')">
       <span class="bk-menu-icon">📈</span> Reports
       <span class="bk-menu-arrow" id="arrow-reports">›</span>
     </div>
-    <div class="bk-submenu" data-role="owner-manager" id="sub-reports">
+    <div class="bk-submenu" id="sub-reports">
       <div class="bk-submenu-item" onclick="showReport('pl');closeBkMenu()">📊 Profit or Loss</div>
       <div class="bk-submenu-item" onclick="showReport('bs');closeBkMenu()">🏛 Balance Sheet</div>
       <div class="bk-submenu-item" onclick="showReport('cf');closeBkMenu()">💸 Cash Flow</div>
       <div class="bk-submenu-item" onclick="showReport('eq');closeBkMenu()">💼 Equity</div>
     </div>
 
-    <!-- Record (employee only) — straight into Sales/Expenses choice -->
-    <div class="bk-menu-item" data-role="employee" onclick="showStaffChoice();closeBkMenu()" id="mnu-staff-record">
-      <span class="bk-menu-icon">📝</span> Record
-    </div>
-
-    <!-- Colleagues (employee only) -->
-    <div class="bk-menu-item" data-role="employee" onclick="showColleagues();closeBkMenu()" id="mnu-colleagues">
-      <span class="bk-menu-icon">👥</span> Colleagues
-    </div>
-
-    <!-- Settings — shown to everyone, but routes differently per role -->
-    <div class="bk-menu-item" onclick="roleAwareSettings();closeBkMenu()">
+    <!-- Settings -->
+    <div class="bk-menu-item" onclick="showAccountSettings();closeBkMenu()">
       <span class="bk-menu-icon">⚙️</span> Settings
     </div>
   </nav>
@@ -983,22 +860,16 @@ body{padding-top:0;}
 
 
 <main class="bk-main">
-  <div id="bkGlobalHero">
-  <p class="bk-welcome" style="margin-bottom:4px;">Welcome,
+  <h1 class="bk-think" onclick="showDashboard()" title="Go to Dashboard"
+      style="cursor:pointer;user-select:none;">THINK <span>FINANCE</span></h1>
+  <p class="bk-welcome">Welcome,
     <strong id="bkUserName" onclick="showAccountSettings()"
       title="Account Settings"
       style="cursor:pointer;">—</strong>
   </p>
-  <h1 class="bk-think" onclick="showDashboard()" title="Go to Dashboard"
-      style="cursor:pointer;user-select:none;">THINK <span>FINANCE</span></h1>
-  </div>
 
-  <div id="bkMainChrome">
   <div class="bk-eq-bar">
-    <button id="eqCollapseBtn" onclick="toggleEqBar()" title="Collapse equation"
-      style="position:absolute;top:10px;right:14px;background:none;border:none;color:var(--muted);font-size:0.85rem;cursor:pointer;padding:4px 6px;transition:color 0.15s;">▾</button>
     <!-- Main equation: Assets = Capital + Liabilities -->
-    <div id="eqBarBody">
     <div class="bk-eq-title">Assets = Capital + Liabilities</div>
     <div class="bk-equation">
       <div class="bk-eq-block" onclick="eqNav('asset')" style="cursor:pointer;" title="Go to Assets Records">
@@ -1018,7 +889,7 @@ body{padding-top:0;}
     </div>
 
     <!-- Extended equation toggle -->
-    <div id="extEqToggleWrap" style="text-align:center;margin-top:10px;">
+    <div style="text-align:center;margin-top:10px;">
       <button onclick="toggleExtEq()" id="extEqBtn"
         style="background:none;border:none;color:var(--muted);font-size:0.68rem;font-weight:600;cursor:pointer;letter-spacing:0.04em;padding:4px 8px;border-radius:4px;transition:color 0.15s;">
         ▸ Show Extended Equation
@@ -1058,14 +929,29 @@ body{padding-top:0;}
     </div>
 
     <div class="bk-eq-check" id="eqCheck">Loading…</div>
-    </div>
   </div>
+
+  <!-- QUICK INPUT -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+    <button class="bk-btn bk-btn-gold" style="padding:9px 28px;font-size:0.88rem;font-weight:800;letter-spacing:0.04em;" onclick="openQuickInput()">
+      ⚡ Input
+    </button>
+    <span style="font-size:0.75rem;color:var(--muted);">Quick-record a transaction</span>
   </div>
 
   <!-- TOOLBAR -->
   <div class="bk-toolbar" id="bkToolbar">
-    <button class="tb-btn" id="tbUndo" onclick="undoAction()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
-    <button class="tb-btn" id="tbRedo" onclick="redoAction()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
+    <div class="tb-search-wrap">
+      <input class="tb-search-input" id="tbSearch" placeholder="🔍 Search narration, payee, payer…"
+        onkeydown="if(event.key==='Enter') tbDoSearch()"/>
+      <button class="tb-search-btn" onclick="tbDoSearch()" title="Search">⌕</button>
+    </div>
+    <input class="tb-date" type="date" id="tbDateFrom" title="From date" onchange="dateFrom=this.value;applyFilter()"/>
+    <input class="tb-date" type="date" id="tbDateTo" title="To date" onchange="dateTo=this.value;applyFilter()"/>
+    <select class="date-fmt-select" id="dateFmtSel" onchange="setDateFormat(this.value)" title="Date format">
+      <option value="dd/mm/yyyy">DD/MM/YYYY</option>
+      <option value="dd/mm">DD/MM</option>
+    </select>
     <div class="tb-sep"></div>
     <button class="tb-btn" id="tbUndo" onclick="undoAction()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
     <button class="tb-btn" id="tbRedo" onclick="redoAction()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
@@ -1386,15 +1272,11 @@ function renderSuStep() {
         <div class="su-option-title">Business Owner</div>
         <div class="su-option-desc">I own or co-own this business</div>
       </div>
-      <div class="su-option ${suData.whoAreYou==='manager'?'sel':''}" onclick="suData.whoAreYou='manager';renderSuStep()">
-        <div class="su-option-icon">🗂️</div>
-        <div class="su-option-title">Manager</div>
-        <div class="su-option-desc">I manage this business</div>
-      </div>
-      <div class="su-option ${suData.whoAreYou==='employee'?'sel':''}" onclick="suData.whoAreYou='employee';renderSuStep()">
+      <div class="su-option disabled">
         <div class="su-option-icon">👷</div>
         <div class="su-option-title">Employee / Staff</div>
         <div class="su-option-desc">I work here and record transactions</div>
+        <div class="su-option-badge">Coming Soon</div>
       </div>
     </div>
     <button class="su-next-btn" onclick="suNext()">Continue →</button>`;
@@ -1744,7 +1626,7 @@ function suSelectIndustryByIndex(el) {
 
 // ── Ledger sub-account switcher ────────────────────────────────
 async function switchLedgerAccount(accountId) {
-  const acct = (accounts[activeType]||[]).find(a=>String(a.id)===String(accountId));
+  const acct = (accounts[activeType]||[]).find(a=>a.id===accountId);
   if (acct) await openAccount(activeType, acct);
 }
 
@@ -1772,24 +1654,6 @@ async function saveSignupProducts() {
   if (inserts.length > 0) {
     await bkDb.from('bk_products').insert(inserts);
   }
-}
-
-// ── Save role + business profile for real ──────────────────────
-// Routing at every future login depends on this — must persist even
-// though the products spreadsheet above stays test-run for now.
-async function saveSignupProfile() {
-  if (!bkUser) return;
-  await bkDb.from('bk_business_profiles').upsert({
-    user_id:       bkUser.id,
-    business_name: suData.businessName || null,
-    industry:      suData.industry || null,
-    business_type: (suData.bizTypes||[]).join(', ') || null,
-    country:       suData.country || null,
-    state_province:suData.state || null,
-    lga:           suData.lga || null,
-    role:          suData.whoAreYou || 'owner', // 'owner' | 'manager' | 'employee'
-    updated_at:    new Date().toISOString(),
-  }, { onConflict:'user_id' });
 }
 
 function suAddCustomBizType() {
@@ -1882,26 +1746,18 @@ function suSaveProdRow(i) {
 }
 
 async function suDone() {
-  // Save products if user is logged in (test mode for spreadsheet, real save for products)
+  // Save products if user is logged in (test mode for profile, real save for products)
   await saveSignupProducts();
-  // Save role + business profile for real — needed so future logins route correctly
-  await saveSignupProfile();
-  const isEmployee = suData.whoAreYou === 'employee';
-
   document.getElementById('bkAuthContent').innerHTML = `
     <div class="su-welcome">
       <div class="su-welcome-icon">🎉</div>
-      <div class="su-welcome-title">Welcome, ${isEmployee ? 'there' : (escH(suData.businessName)||'there')}!</div>
+      <div class="su-welcome-title">Welcome, ${escH(suData.businessName)||'there'}!</div>
       <div class="su-welcome-sub">
-        ${isEmployee
-          ? 'Your staff page is ready.<br>'
-          : 'Your bookkeeping dashboard is ready.<br>'}
+        Your bookkeeping dashboard is ready.<br>
         <span style="color:var(--gold);font-size:0.78rem;">Test mode — no data has been saved yet. We are still building!</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <button class="bk-auth-btn-primary" onclick="${isEmployee?'suShowStaffEntry()':'suShowTestDashboard()'}">
-          ${isEmployee ? 'Go to Staff Page →' : 'Go to Dashboard →'}
-        </button>
+        <button class="bk-auth-btn-primary" onclick="suShowTestDashboard()">Go to Dashboard →</button>
         <button class="bk-login-back" onclick="showAuthScreen('signup')">🔄 Start Over</button>
       </div>
     </div>`;
@@ -1912,14 +1768,6 @@ function suShowTestDashboard() {
   // Show a minimal test dashboard
   document.getElementById('bkUserName').textContent = suData.businessName || 'Test User';
   showDashboard();
-}
-
-// Employees/staff land directly in the Staff Pages area — no main app chrome
-function suShowStaffEntry() {
-  hideAuthScreen();
-  staffHideChrome();
-  document.getElementById('bkUserName').textContent = suData.businessName || 'Test User';
-  showStaffPage();
 }
 
 // ── CONFIG ───────────────────────────────────────────────────
@@ -1970,7 +1818,7 @@ function setCurrency(code) {
 const DEFAULT_ACCOUNTS = {
   capital:     ['Share Capital','Retained Earnings','Owner\'s Equity','Drawings'],
   liability:   ['Bank Loan','Trade Creditors','Accrued Expenses','VAT Payable','PAYE Payable'],
-  asset:       ['Cash in Hand','Cash at Bank','Trade Debtors','Inventory / Stock','Equipment','Land and Buildings','Motor Vehicles','Prepaid Expenses'],
+  asset:       ['Cash and Bank','Trade Debtors','Inventory / Stock','Equipment','Land and Buildings','Motor Vehicles','Prepaid Expenses'],
   income:      ['Sales Revenue','Service Income','Interest Received','Other Income'],
   expenditure: ['Cost of Goods Sold','Salaries and Wages','Rent','Utilities','Marketing','Transport','Bank Charges','Depreciation','Professional Fees'],
 };
@@ -2013,10 +1861,6 @@ const CREDIT_NORMAL = ['capital','liability','income'];
   }
 })();
 
-let userRole = 'owner'; // 'owner' | 'manager' | 'employee' — determines which UI a logged-in user sees
-let staffDisplayName = ''; // for employee role: their own name shown on Staff Pages
-let businessDisplayName = ''; // shared: the business name, used in both UIs
-
 async function continueInit() {
   try {
     const { data:profile } = await bkDb.from('profiles')
@@ -2026,24 +1870,9 @@ async function continueInit() {
       : (bkUser.email?.split('@')[0] || 'there');
     const el = document.getElementById('bkUserName');
     if (el) el.textContent = name;
-    staffDisplayName = name;
   } catch(e) {
     const el = document.getElementById('bkUserName');
-    const fallback = bkUser.email?.split('@')[0] || 'there';
-    if (el) el.textContent = fallback;
-    staffDisplayName = fallback;
-  }
-
-  // ── Determine role + business name — decides which UI this user sees ──
-  try {
-    const { data:bizProfile } = await bkDb.from('bk_business_profiles')
-      .select('role, business_name, staff_display_name').eq('user_id', bkUser.id).maybeSingle();
-    userRole = bizProfile?.role || 'owner';
-    businessDisplayName = bizProfile?.business_name || 'Butterfly Dynamix';
-    if (bizProfile?.staff_display_name) staffDisplayName = bizProfile.staff_display_name;
-  } catch(e) {
-    userRole = 'owner'; // safest default — never accidentally lock an owner out of the full app
-    businessDisplayName = 'Butterfly Dynamix';
+    if (el) el.textContent = bkUser.email?.split('@')[0] || 'there';
   }
 
   try {
@@ -2060,14 +1889,8 @@ async function continueInit() {
   try { await refreshEquation(); } catch(e) { console.warn('refreshEquation failed:', e); }
   try { buildDropdowns(); } catch(e) { console.warn('buildDropdowns failed:', e); }
 
-  applyRoleMenu(userRole);
-
-  // Route: employees land on Staff Pages, owners/managers land on the full Dashboard
-  if (userRole === 'employee') {
-    showStaffPage();
-  } else {
-    showDashboard();
-  }
+  // Always show the dashboard — never leave the page blank
+  showDashboard();
 }
 
 // ── ACCOUNTS ─────────────────────────────────────────────────
@@ -2168,7 +1991,6 @@ async function confirmAddAccount() {
 
 // ── OPEN ACCOUNT LEDGER ───────────────────────────────────────
 async function openAccount(type, acct) {
-  recordsPageChrome();
   activeType    = type;
   activeAccount = acct;
   isDirty       = false;
@@ -2228,26 +2050,43 @@ function renderLedger() {
     });
   }
 
-  // Compute the closing balance: last saved row's balance, else opening balance
-  const dataRows = rows.filter(r => r.id && (r.debit > 0 || r.credit > 0));
-  const closingBal = dataRows.length > 0
-    ? parseFloat(dataRows[dataRows.length-1].balance) || ob
-    : ob;
-  const meta  = SCHEDULE_META[activeType] || { color:'var(--gold)' };
-  const color = meta.color || 'var(--gold)';
-  const balText = fmt(Math.abs(closingBal));
-
   content.innerHTML = `
-    <div class="sched-total-banner" style="border-left:4px solid ${color};margin-bottom:12px;">
-      <div class="sched-total-label">Total ${activeAccount.account_name}</div>
-      <div class="sched-total-val" style="color:${color};">${balText}</div>
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">${typeLabel.toUpperCase()}</div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <label style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Account:</label>
+          <select style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:4px 10px;font-size:0.8rem;font-family:inherit;outline:none;cursor:pointer;"
+            onchange="switchLedgerAccount(this.value)">
+            ${(accounts[activeType]||[]).map(a=>`
+            <option value="${a.id}" ${a.id===activeAccount.id?'selected':''}>${a.account_name}</option>`).join('')}
+          </select>
+          ${ob ? `<span style="font-size:0.72rem;color:var(--gold);">Opening Balance: ${fmt(ob)}</span>` : ''}
+        </div>
+      </div>
+      <div class="bk-header-actions">
+        <span class="bk-save-msg" id="saveMsg"></span>
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+        <button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button>
+      </div>
     </div>
+
+    <div class="bk-search-bar" style="padding:12px 24px 0;">
+      <input class="bk-search-input" type="text" id="searchInput" placeholder="Search narration, payee, payer…"
+        value="${escH(searchQuery)}" oninput="onSearchInput(this.value)"/>
+      <input class="bk-date-input" type="date" id="dateFromInput" value="${dateFrom}" title="From date"
+        onchange="dateFrom=this.value;applyFilter()"/>
+      <input class="bk-date-input" type="date" id="dateToInput" value="${dateTo}" title="To date"
+        onchange="dateTo=this.value;applyFilter()"/>
+      <button class="bk-search-clear" onclick="searchQuery='';dateFrom='';dateTo='';document.getElementById('searchInput').value='';document.getElementById('dateFromInput').value='';document.getElementById('dateToInput').value='';applyFilter()">Clear</button>
+    </div>
+
     <div class="ledger-readonly-banner">
       <span>📖</span>
       <span>View only — all transactions are entered through <button onclick="openJournal()" style="background:none;border:none;color:var(--gold);font-weight:700;cursor:pointer;font-size:inherit;padding:0;">Master Records</button> and posted here automatically.</span>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="bk-sheet" id="ledgerTable" style="min-width:1072px;">
+      <table class="bk-sheet" id="ledgerTable">
         <thead>
           <tr>
             <th class="col-date"><span class="th-help-text" onclick="showColumnHelp(this,'Date')">Date</span></th>
@@ -2258,21 +2097,16 @@ function renderLedger() {
             <th class="col-cr num"><span class="th-help-text" onclick="showColumnHelp(this,'Credit')">Credit (${CURRENCIES[activeCurrency].symbol})</span></th>
             <th class="col-bal num"><span class="th-help-text" onclick="showColumnHelp(this,'Balance')">Balance (${CURRENCIES[activeCurrency].symbol})</span></th>
             <th class="col-sn num"><span class="th-help-text" onclick="showColumnHelp(this,'S/N')">S/N</span></th>
+            <th class="col-del"></th>
+            <th class="col-save"></th>
+            <th class="col-drag"></th>
           </tr>
         </thead>
         <tbody id="ledgerBody"></tbody>
       </table>
     </div>
-
-    <div class="sched-below-table">
-      <div class="sched-subacct-wrap">
-        <label class="sched-subacct-label">Sub Accounts</label>
-        <select class="acct-input sched-subacct-select"
-          onchange="switchLedgerAccount(this.value)">
-          ${(accounts[activeType]||[]).map(a=>`<option value="${a.id}" ${a.id===activeAccount.id?'selected':''}>${a.account_name}</option>`).join('')}
-        </select>
-        ${ob ? `<span style="font-size:0.72rem;color:var(--gold);">Opening Balance: ${fmt(ob)}</span>` : ''}
-      </div>
+    <div class="bk-add-row">
+      <button class="bk-add-row-btn" onclick="addRow()">+ Add another row</button>
     </div>`;
 
   renderRows(displayRows);
@@ -2291,6 +2125,7 @@ function renderRows(displayRows) {
       <td style="text-align:right;padding:8px 10px;font-size:0.78rem;color:var(--muted);">—</td>
       <td style="text-align:right;padding:8px 10px;font-size:0.82rem;font-weight:800;color:var(--gold);">${ob!==0?fmt(ob):fmt(0)}</td>
       <td style="text-align:center;padding:8px 10px;font-size:0.72rem;color:var(--muted);">—</td>
+      <td></td>
     </tr>`;
 
   tbody.innerHTML = obRow + (displayRows||rows).map((row, i) => {
@@ -2526,16 +2361,6 @@ async function refreshEquation() {
   }
 }
 
-// ── Collapse/expand the entire equation widget ────────────────
-function toggleEqBar(){
-  const body = document.getElementById('eqBarBody');
-  const btn  = document.getElementById('eqCollapseBtn');
-  if (!body) return;
-  const open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : '';
-  if (btn) btn.textContent = open ? '▸' : '▾';
-}
-
 function toggleExtEq() {
   const panel = document.getElementById('extEqPanel');
   const btn   = document.getElementById('extEqBtn');
@@ -2543,19 +2368,6 @@ function toggleExtEq() {
   const open = panel.style.display !== 'none';
   panel.style.display = open ? 'none' : 'block';
   if (btn) btn.textContent = open ? '▸ Show Extended Equation' : '▾ Hide Extended Equation';
-}
-
-// ── Show/hide the "Show Extended Equation" collapsible — hidden on the
-//    Dashboard specifically, visible on every other page ──
-function hideExtEqToggle(){
-  const wrap  = document.getElementById('extEqToggleWrap');
-  const panel = document.getElementById('extEqPanel');
-  if (wrap)  wrap.style.display  = 'none';
-  if (panel) panel.style.display = 'none'; // also collapse it if it was open
-}
-function showExtEqToggle(){
-  const wrap = document.getElementById('extEqToggleWrap');
-  if (wrap) wrap.style.display = '';
 }
 
 // ── SMART ERROR DETECTION ─────────────────────────────────────
@@ -2678,8 +2490,6 @@ async function smartAutoCorrect(journalId, drAmt, crAmt) {
 // showDashboard is defined above in the COA/settings section
 
 async function showDashboard() {
-  staffShowChrome();
-  hideDashToolbar();
   setActiveNav('navDash');
   document.getElementById('recordsDD')?.classList.add('hidden');
   const content = document.getElementById('bkContent');
@@ -3027,7 +2837,6 @@ function emptyJournalRow(order) {
 }
 
 async function openJournal() {
-  recordsPageChrome();
   activeType=null; activeAccount=null;
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
@@ -3062,7 +2871,7 @@ function renderJournal() {
     </div>
 
     <div class="bk-sheet-wrap">
-      <table class="bk-sheet" id="journalTable" style="min-width:1214px;">
+      <table class="bk-sheet" id="journalTable">
         <thead><tr>
           <th style="width:110px;"><span class="th-help-text" onclick="showColumnHelp(this,'Date')">Date</span></th>
           <th style="width:120px;"><span class="th-help-text" onclick="showColumnHelp(this,'Payee')">Payee</span></th>
@@ -3104,6 +2913,8 @@ function renderJournalRows() {
         <input class="bk-cell" type="text" value="${escH(row.narration)}" placeholder="Describe transaction…"
           oninput="jCellChange(${i},'narration',this.value)"
           id="jnarr_${i}"/>
+        <button class="ai-suggest-btn" id="aibtn_${i}"
+          onclick="aiSuggestAccounts(${i})" title="✨ AI suggest accounts">✨</button>
       </td>
       <td><select class="bk-cell" 
         onchange="jAccountChange(${i},'debit',this.value)">
@@ -3316,7 +3127,7 @@ const ACCOUNTING_RULES = [
   // ── SALES & REVENUE ───────────────────────────────────────
   { id:'cash_sale',
     keys:['cash sale','sold for cash','received cash','cash received','cash receipt','paid cash'],
-    debit:'Cash in Hand', credit:'Sales Revenue',
+    debit:'Cash and Bank', credit:'Sales Revenue',
     principle:'Cash Sales: Cash (asset) increases on the debit side; Revenue (income) increases on the credit side.',
     type:'income' },
   { id:'credit_sale',
@@ -3326,29 +3137,29 @@ const ACCOUNTING_RULES = [
     type:'income' },
   { id:'service_income',
     keys:['service income','service fee','consultation','professional fee','service rendered','service charge'],
-    debit:'Cash in Hand', credit:'Service Income',
+    debit:'Cash and Bank', credit:'Service Income',
     principle:'Service Income: Cash received (debit); Revenue earned (credit).',
     type:'income' },
   { id:'rent_received',
     keys:['rent received','rental income','received rent'],
-    debit:'Cash at Bank', credit:'Rental Income',
+    debit:'Cash and Bank', credit:'Rental Income',
     principle:'Rent Received: Cash increases (debit); Rental income earned (credit).',
     type:'income' },
   { id:'interest_received',
     keys:['interest received','bank interest','interest income','interest earned'],
-    debit:'Cash at Bank', credit:'Interest Received',
+    debit:'Cash and Bank', credit:'Interest Received',
     principle:'Interest Received: Cash increases (debit); Interest income earned (credit).',
     type:'income' },
   { id:'debtor_payment',
     keys:['received from debtor','debtor paid','customer paid','payment received','settled invoice'],
-    debit:'Cash at Bank', credit:'Accounts Receivable',
+    debit:'Cash and Bank', credit:'Accounts Receivable',
     principle:'Debtor Collection: Cash increases (debit); Accounts Receivable decreases as debt is cleared (credit).',
     type:'asset' },
 
   // ── PURCHASES & INVENTORY ─────────────────────────────────
   { id:'cash_purchase',
     keys:['purchased goods','bought goods','cash purchase','bought stock','purchased stock','purchase of goods','bought inventory'],
-    debit:'Purchases', credit:'Cash at Bank',
+    debit:'Purchases', credit:'Cash and Bank',
     principle:'Cash Purchase: Purchases (expense) increases on debit; Cash (asset) decreases on credit.',
     type:'expenditure' },
   { id:'credit_purchase',
@@ -3358,7 +3169,7 @@ const ACCOUNTING_RULES = [
     type:'expenditure' },
   { id:'creditor_payment',
     keys:['paid supplier','paid creditor','settled creditor','cleared creditor','payment to supplier'],
-    debit:'Accounts Payable', credit:'Cash at Bank',
+    debit:'Accounts Payable', credit:'Cash and Bank',
     principle:'Creditor Payment: Accounts Payable (liability) decreases on debit; Cash decreases on credit.',
     type:'liability' },
   { id:'inventory',
@@ -3375,52 +3186,52 @@ const ACCOUNTING_RULES = [
   // ── OPERATING EXPENSES ────────────────────────────────────
   { id:'salary',
     keys:['salary','salaries','wages','staff pay','payroll','paid staff','employee pay','barber pay','worker pay'],
-    debit:'Salaries and Wages', credit:'Cash at Bank',
+    debit:'Salaries and Wages', credit:'Cash and Bank',
     principle:'Salary Payment: Salaries Expense increases on debit (cost to business); Cash decreases on credit.',
     type:'expenditure' },
   { id:'rent',
     keys:['rent paid','paid rent','shop rent','office rent','rental payment','rent expense'],
-    debit:'Rent Expense', credit:'Cash at Bank',
+    debit:'Rent Expense', credit:'Cash and Bank',
     principle:'Rent Paid: Rent Expense (expenditure) increases on debit; Cash decreases on credit.',
     type:'expenditure' },
   { id:'electricity',
     keys:['electricity','light bill','power bill','nepa','ekedc','ikedc','phcn','utility bill'],
-    debit:'Utilities Expense', credit:'Cash at Bank',
+    debit:'Utilities Expense', credit:'Cash and Bank',
     principle:'Utility Bill: Utilities Expense increases on debit; Cash decreases on credit.',
     type:'expenditure' },
   { id:'water',
     keys:['water bill','water rate'],
-    debit:'Utilities Expense', credit:'Cash at Bank',
+    debit:'Utilities Expense', credit:'Cash and Bank',
     principle:'Water Bill: Utilities Expense increases on debit; Cash decreases on credit.',
     type:'expenditure' },
   { id:'transport',
     keys:['transport','fuel','diesel','petrol','delivery','logistics','courier','dispatch'],
-    debit:'Transport Expense', credit:'Cash at Bank',
+    debit:'Transport Expense', credit:'Cash and Bank',
     principle:'Transport Cost: Transport Expense increases on debit; Cash decreases on credit.',
     type:'expenditure' },
   { id:'marketing',
     keys:['advertising','marketing','promotion','social media','flyers','advert','print'],
-    debit:'Marketing Expense', credit:'Cash at Bank',
+    debit:'Marketing Expense', credit:'Cash and Bank',
     principle:'Marketing: Marketing Expense increases on debit; Cash decreases on credit.',
     type:'expenditure' },
   { id:'repairs',
     keys:['repairs','maintenance','fix','service machine','equipment repair','generator repair'],
-    debit:'Repairs and Maintenance', credit:'Cash at Bank',
+    debit:'Repairs and Maintenance', credit:'Cash and Bank',
     principle:'Repairs: Repairs Expense increases on debit; Cash decreases on credit.',
     type:'expenditure' },
   { id:'stationery',
     keys:['stationery','office supplies','printing','paper','pen','office materials'],
-    debit:'Office and Admin Expense', credit:'Cash at Bank',
+    debit:'Office and Admin Expense', credit:'Cash and Bank',
     principle:'Office Supplies: Admin Expense increases on debit; Cash decreases on credit.',
     type:'expenditure' },
   { id:'bank_charges',
     keys:['bank charge','bank fee','transaction fee','transfer charge','sms charge','account maintenance'],
-    debit:'Bank Charges', credit:'Cash at Bank',
+    debit:'Bank Charges', credit:'Cash and Bank',
     principle:'Bank Charges: Bank Charges Expense increases on debit; Cash decreases on credit.',
     type:'expenditure' },
   { id:'insurance',
     keys:['insurance','premium','policy'],
-    debit:'Insurance Expense', credit:'Cash at Bank',
+    debit:'Insurance Expense', credit:'Cash and Bank',
     principle:'Insurance: Insurance Expense increases on debit; Cash decreases on credit.',
     type:'expenditure' },
   { id:'depreciation',
@@ -3442,24 +3253,24 @@ const ACCOUNTING_RULES = [
   // ── TAX TRANSACTIONS ──────────────────────────────────────
   { id:'vat_collected',
     keys:['vat collected','vat received','vat on sales','value added tax collected'],
-    debit:'Cash at Bank', credit:'VAT Payable',
+    debit:'Cash and Bank', credit:'VAT Payable',
     principle:'VAT Collected: Cash received on debit; VAT is a liability owed to FIRS — credit VAT Payable.',
     type:'liability' },
   { id:'vat_paid',
     keys:['vat paid','vat on purchases','input vat','vat claimable'],
-    debit:'VAT Receivable', credit:'Cash at Bank',
+    debit:'VAT Receivable', credit:'Cash and Bank',
     principle:'VAT on Purchases: VAT Receivable (asset) increases on debit — you can reclaim it from FIRS.',
     type:'asset' },
   { id:'tax_payment',
     keys:['income tax','company tax','cita','tax payment','paye','withholding tax','wht'],
-    debit:'Tax Expense', credit:'Cash at Bank',
+    debit:'Tax Expense', credit:'Cash and Bank',
     principle:'Tax Payment: Tax Expense increases on debit; Cash decreases on credit.',
     type:'expenditure' },
 
   // ── ASSET TRANSACTIONS ────────────────────────────────────
   { id:'asset_purchase_cash',
     keys:['bought equipment','purchased equipment','bought machine','purchased asset','bought vehicle','bought furniture','bought computer','bought laptop'],
-    debit:'Equipment', credit:'Cash at Bank',
+    debit:'Equipment', credit:'Cash and Bank',
     principle:'Asset Purchase (Cash): The asset (debit) increases the business\'s resources; Cash (credit) decreases.',
     type:'asset' },
   { id:'asset_purchase_loan',
@@ -3469,37 +3280,37 @@ const ACCOUNTING_RULES = [
     type:'asset' },
   { id:'asset_disposal',
     keys:['sold asset','disposed asset','sold equipment','sold vehicle','scrapped'],
-    debit:'Cash at Bank', credit:'Equipment',
+    debit:'Cash and Bank', credit:'Equipment',
     principle:'Asset Disposal: Cash received on debit; Asset account decreases on credit.',
     type:'asset' },
 
   // ── LOAN TRANSACTIONS ─────────────────────────────────────
   { id:'loan_received',
     keys:['loan received','borrowed','bank loan','took loan','received loan','credit facility'],
-    debit:'Cash at Bank', credit:'Bank Loan',
+    debit:'Cash and Bank', credit:'Bank Loan',
     principle:'Loan Received: Cash (asset) increases on debit; Bank Loan (liability) increases on credit.',
     type:'liability' },
   { id:'loan_repayment',
     keys:['loan repayment','repaid loan','loan payment','paid loan','principal repayment','bank repayment'],
-    debit:'Bank Loan', credit:'Cash at Bank',
+    debit:'Bank Loan', credit:'Cash and Bank',
     principle:'Loan Repayment: Bank Loan (liability) decreases on debit; Cash decreases on credit.',
     type:'liability' },
   { id:'interest_paid',
     keys:['interest paid','interest expense','loan interest','overdraft interest'],
-    debit:'Interest Expense', credit:'Cash at Bank',
+    debit:'Interest Expense', credit:'Cash and Bank',
     principle:'Interest Paid: Interest Expense (debit) is the cost of borrowing; Cash (credit) decreases.',
     type:'expenditure' },
 
   // ── CAPITAL TRANSACTIONS ──────────────────────────────────
   { id:'capital_injection',
     keys:['capital introduced','owner introduced','invested capital','started business with','initial capital','capital contribution','invested in business'],
-    debit:'Cash at Bank', credit:'Owner\'s Capital',
+    debit:'Cash and Bank', credit:'Owner\'s Capital',
     principle:'Capital Injection: Cash (asset) increases on debit; Owner\'s Capital (equity) increases on credit.',
     type:'capital' },
   { id:'drawings',
     keys:['drawings','owner withdrew','personal withdrawal','took cash','owner took','proprietor withdrew'],
-    debit:'Owner\'s Drawings', credit:'Cash in Hand',
-    principle:'Drawings: Owner\'s Drawings (reduces equity) on debit; Cash in Hand decreases on credit. Drawings reduce the owner\'s capital.',
+    debit:'Owner\'s Drawings', credit:'Cash and Bank',
+    principle:'Drawings: Owner\'s Drawings (reduces equity) on debit; Cash decreases on credit. Drawings reduce the owner\'s capital.',
     type:'capital' },
   { id:'retained_profit',
     keys:['retained profit','transfer profit','profit transferred','retained earnings'],
@@ -3510,39 +3321,39 @@ const ACCOUNTING_RULES = [
   // ── BANKING ───────────────────────────────────────────────
   { id:'bank_deposit',
     keys:['deposited into bank','cash to bank','lodged into bank','bank deposit','deposited cash'],
-    debit:'Cash at Bank', credit:'Cash in Hand',
+    debit:'Cash and Bank', credit:'Cash in Hand',
     principle:'Bank Deposit: Bank balance (debit) increases; Cash in Hand (credit) decreases.',
     type:'asset' },
   { id:'bank_withdrawal',
     keys:['withdrew from bank','bank withdrawal','cash from bank','atm withdrawal'],
-    debit:'Cash in Hand', credit:'Cash at Bank',
+    debit:'Cash in Hand', credit:'Cash and Bank',
     principle:'Bank Withdrawal: Cash in Hand (debit) increases; Bank balance (credit) decreases.',
     type:'asset' },
   { id:'transfer',
     keys:['bank transfer','transferred to','wire transfer','electronic transfer','nip transfer'],
-    debit:'Accounts Payable', credit:'Cash at Bank',
+    debit:'Accounts Payable', credit:'Cash and Bank',
     principle:'Bank Transfer Payment: Liability reduced on debit; Cash/Bank decreases on credit.',
     type:'liability' },
 
   // ── BARBING/LAUNDRY SPECIFIC ──────────────────────────────
   { id:'haircut',
     keys:['haircut','hair cut','shave','beard trim','cut','barbing','lining','shape up'],
-    debit:'Cash in Hand', credit:'Barbing Revenue',
+    debit:'Cash and Bank', credit:'Barbing Revenue',
     principle:'Service Revenue: Cash received on debit; Barbing Revenue (income) earned on credit.',
     type:'income' },
   { id:'laundry',
     keys:['laundry','washing','dry clean','ironing','laundered','washed clothes','laundromat'],
-    debit:'Cash at Bank', credit:'Laundry Revenue',
+    debit:'Cash and Bank', credit:'Laundry Revenue',
     principle:'Service Revenue: Cash received on debit; Laundry Revenue (income) earned on credit.',
     type:'income' },
   { id:'detergent',
     keys:['detergent','washing powder','soap','softener','bleach','cleaning supplies'],
-    debit:'Laundry Supplies Expense', credit:'Cash at Bank',
+    debit:'Laundry Supplies Expense', credit:'Cash and Bank',
     principle:'Supplies Purchase: Supplies Expense increases on debit; Cash decreases on credit.',
     type:'expenditure' },
   { id:'clipper',
     keys:['clipper','razor','blade','barber supplies','shaving cream','clippers'],
-    debit:'Barbing Supplies Expense', credit:'Cash at Bank',
+    debit:'Barbing Supplies Expense', credit:'Cash and Bank',
     principle:'Supplies Purchase: Supplies Expense increases on debit; Cash decreases on credit.',
     type:'expenditure' },
 ];
@@ -3828,20 +3639,20 @@ let templates      = [];
 let templateTarget = null; // rowIdx that "Save as Template" will use
 
 const DEFAULT_TEMPLATES = [
-  { template_name:'Monthly Rent Payment',   debit_account_name:'Rent',              debit_record_type:'expenditure', credit_account_name:'Cash at Bank',     credit_record_type:'asset' },
-  { template_name:'Salary Payment',         debit_account_name:'Salaries and Wages',debit_record_type:'expenditure', credit_account_name:'Cash at Bank',     credit_record_type:'asset' },
-  { template_name:'Cash Sale',              debit_account_name:'Cash at Bank',      debit_record_type:'asset',       credit_account_name:'Sales Revenue',     credit_record_type:'income' },
+  { template_name:'Monthly Rent Payment',   debit_account_name:'Rent',              debit_record_type:'expenditure', credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Salary Payment',         debit_account_name:'Salaries and Wages',debit_record_type:'expenditure', credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Cash Sale',              debit_account_name:'Cash and Bank',      debit_record_type:'asset',       credit_account_name:'Sales Revenue',     credit_record_type:'income' },
   { template_name:'Credit Sale',            debit_account_name:'Trade Debtors',      debit_record_type:'asset',       credit_account_name:'Sales Revenue',     credit_record_type:'income' },
-  { template_name:'Customer Payment Received',debit_account_name:'Cash at Bank',   debit_record_type:'asset',       credit_account_name:'Trade Debtors',     credit_record_type:'asset' },
+  { template_name:'Customer Payment Received',debit_account_name:'Cash and Bank',   debit_record_type:'asset',       credit_account_name:'Trade Debtors',     credit_record_type:'asset' },
   { template_name:'Purchase Stock on Credit',debit_account_name:'Inventory / Stock',debit_record_type:'asset',       credit_account_name:'Trade Creditors',   credit_record_type:'liability' },
-  { template_name:'Pay Supplier',           debit_account_name:'Trade Creditors',    debit_record_type:'liability',   credit_account_name:'Cash at Bank',     credit_record_type:'asset' },
-  { template_name:'Owner Invests Cash',     debit_account_name:'Cash at Bank',      debit_record_type:'asset',       credit_account_name:'Share Capital',     credit_record_type:'capital' },
-  { template_name:'Bank Loan Received',     debit_account_name:'Cash at Bank',      debit_record_type:'asset',       credit_account_name:'Bank Loan',         credit_record_type:'liability' },
-  { template_name:'Loan Repayment',         debit_account_name:'Bank Loan',          debit_record_type:'liability',   credit_account_name:'Cash at Bank',     credit_record_type:'asset' },
-  { template_name:'Buy Equipment Cash',     debit_account_name:'Equipment',          debit_record_type:'asset',       credit_account_name:'Cash at Bank',     credit_record_type:'asset' },
-  { template_name:'Electricity Bill',       debit_account_name:'Utilities',          debit_record_type:'expenditure', credit_account_name:'Cash at Bank',     credit_record_type:'asset' },
-  { template_name:'Marketing Expense',      debit_account_name:'Marketing',          debit_record_type:'expenditure', credit_account_name:'Cash at Bank',     credit_record_type:'asset' },
-  { template_name:'Interest Received',      debit_account_name:'Cash at Bank',      debit_record_type:'asset',       credit_account_name:'Interest Received', credit_record_type:'income' },
+  { template_name:'Pay Supplier',           debit_account_name:'Trade Creditors',    debit_record_type:'liability',   credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Owner Invests Cash',     debit_account_name:'Cash and Bank',      debit_record_type:'asset',       credit_account_name:'Share Capital',     credit_record_type:'capital' },
+  { template_name:'Bank Loan Received',     debit_account_name:'Cash and Bank',      debit_record_type:'asset',       credit_account_name:'Bank Loan',         credit_record_type:'liability' },
+  { template_name:'Loan Repayment',         debit_account_name:'Bank Loan',          debit_record_type:'liability',   credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Buy Equipment Cash',     debit_account_name:'Equipment',          debit_record_type:'asset',       credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Electricity Bill',       debit_account_name:'Utilities',          debit_record_type:'expenditure', credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Marketing Expense',      debit_account_name:'Marketing',          debit_record_type:'expenditure', credit_account_name:'Cash and Bank',     credit_record_type:'asset' },
+  { template_name:'Interest Received',      debit_account_name:'Cash and Bank',      debit_record_type:'asset',       credit_account_name:'Interest Received', credit_record_type:'income' },
 ];
 
 async function loadTemplates() {
@@ -4105,51 +3916,6 @@ document.addEventListener('click', e => {
   const match = tr.id.match(/\d+$/);
   selectedRowIdx = match ? parseInt(match[0]) : null;
 });
-
-// ── Drag-to-scroll for sheet wraps (desktop mouse) ───────────
-// Touch devices already get momentum scrolling via CSS.
-// This adds click-and-drag horizontal scrolling on desktop.
-function initSheetDragScroll(wrap) {
-  if (!wrap || wrap._dragInited) return;
-  wrap._dragInited = true;
-  let startX = 0, scrollLeft = 0, dragging = false;
-  wrap.addEventListener('mousedown', function(e) {
-    // Only drag if click is directly on the wrap or the table, not on an input/select/button
-    if (e.target.closest('input,select,button,a')) return;
-    dragging = true;
-    startX = e.pageX - wrap.offsetLeft;
-    scrollLeft = wrap.scrollLeft;
-    wrap.style.cursor = 'grabbing';
-    e.preventDefault();
-  });
-  document.addEventListener('mousemove', function(e) {
-    if (!dragging) return;
-    const x = e.pageX - wrap.offsetLeft;
-    wrap.scrollLeft = scrollLeft - (x - startX);
-  });
-  document.addEventListener('mouseup', function() {
-    if (!dragging) return;
-    dragging = false;
-    wrap.style.cursor = '';
-  });
-}
-
-// Attach drag-scroll to any .bk-sheet-wrap that currently exists or
-// is added later (MutationObserver watches bkContent for new tables)
-function initAllSheetWraps() {
-  document.querySelectorAll('.bk-sheet-wrap').forEach(initSheetDragScroll);
-}
-const _sheetWrapObserver = new MutationObserver(initAllSheetWraps);
-function attachSheetObserver(){
-  const target = document.getElementById('bkContent') || document.body;
-  _sheetWrapObserver.observe(target, { childList:true, subtree:true });
-  initAllSheetWraps();
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', attachSheetObserver);
-} else {
-  attachSheetObserver();
-}
 
 function tbPDF() {
   if (document.getElementById('journalTable')) exportJournalPDF();
@@ -4566,7 +4332,7 @@ function qiSelectProduct(product) {
 
 // Determine accounts automatically based on transaction type
 function getQuickAccounts(txnType, payment) {
-  const creditSide = payment === 'credit' ? 'Trade Debtors' : 'Cash at Bank';
+  const creditSide = payment === 'credit' ? 'Trade Debtors' : 'Cash and Bank';
   const creditType = payment === 'credit' ? 'asset'         : 'asset';
 
   if (txnType === 'sale') {
@@ -4587,13 +4353,13 @@ function getQuickAccounts(txnType, payment) {
   }
   if (txnType === 'other') {
     return {
-      debitAccount:  'Cash at Bank',
+      debitAccount:  'Cash and Bank',
       debitType:     'asset',
       creditAccount: 'Share Capital',
       creditType:    'capital',
     };
   }
-  return { debitAccount:'Cash at Bank', debitType:'asset', creditAccount:'Sales Revenue', creditType:'income' };
+  return { debitAccount:'Cash and Bank', debitType:'asset', creditAccount:'Sales Revenue', creditType:'income' };
 }
 
 async function recordQuickInput() {
@@ -4635,7 +4401,7 @@ async function recordExpense() {
   if (!amount) { alert('Please enter an amount.'); return; }
   if (!qiState.expenseAccount) { alert('Please select an expense category.'); return; }
 
-  const creditAccount = qiState.payment === 'credit' ? 'Trade Creditors' : 'Cash at Bank';
+  const creditAccount = qiState.payment === 'credit' ? 'Trade Creditors' : 'Cash and Bank';
   const creditType    = qiState.payment === 'credit' ? 'liability'        : 'asset';
   const narration = [
     qiState.expenseAccount,
@@ -4736,11 +4502,6 @@ function formatDateDisplay(isoDate) {
   const [y,m,d] = isoDate.split('-');
   if (!y||!m||!d) return isoDate;
   if (dateFormat === 'dd/mm') return `${d}/${m}`;
-  if (dateFormat === 'month_day_year' || dateFormat === 'day_date_year') {
-    return staffFormatDate(isoDate, dateFormat); // reuse the same Month/Day/Year formatter
-  }
-  if (dateFormat === 'mm/dd/yyyy') return `${m}/${d}/${y}`;
-  if (dateFormat === 'dd/mm/yy')   return `${d}/${m}/${y.slice(-2)}`;
   return `${d}/${m}/${y}`;
 }
 
@@ -5679,7 +5440,6 @@ const COA_LABELS = { capital:'Capital', liability:'Liabilities', asset:'Assets',
 let coaActiveType = 'capital';
 
 async function openChartOfAccounts() {
-  recordsPageChrome();
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading Chart of Accounts…</div>';
@@ -5749,9 +5509,6 @@ async function coaDeleteAccount(id,name) {
 
 // ── ACCOUNT SETTINGS PAGE ─────────────────────────────────────
 async function showAccountSettings() {
-  staffShowChrome();
-  showExtEqToggle();
-  showDashToolbar();
   setActiveNav('');
   document.getElementById('recordsDD')?.classList.add('hidden');
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
@@ -5789,17 +5546,6 @@ async function showAccountSettings() {
             <option value="0" ${decimalPlaces===0?'selected':''}>0 — e.g. ₦1,500</option>
             <option value="2" ${decimalPlaces===2?'selected':''}>2 — e.g. ₦1,500.00</option>
           </select></div>
-        <div class="acct-field"><label class="acct-label">Date Format</label>
-          <select class="acct-input" onchange="setDateFormat(this.value)">
-            <option value="dd/mm/yyyy" ${dateFormat==='dd/mm/yyyy'?'selected':''}>DD/MM/YYYY</option>
-            <option value="mm/dd/yyyy" ${dateFormat==='mm/dd/yyyy'?'selected':''}>MM/DD/YYYY</option>
-            <option value="dd/mm/yy" ${dateFormat==='dd/mm/yy'?'selected':''}>DD/MM/YY</option>
-            <option value="dd/mm" ${dateFormat==='dd/mm'?'selected':''}>DD/MM</option>
-            <option value="month_day_year" ${dateFormat==='month_day_year'?'selected':''}>Month-Day-Year — e.g. Jun/30th/2026</option>
-            <option value="day_date_year" ${dateFormat==='day_date_year'?'selected':''}>Day/Date/Year — e.g. Tue/30th/June/2026</option>
-          </select>
-          <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">Applies to Master Records and all ledgers.</div>
-        </div>
         <div style="margin-top:14px;font-size:0.75rem;color:var(--muted);">Logged in as:<br>
           <span style="color:var(--off);">${bkUser?.email||''}</span></div>
       </div>
@@ -5875,146 +5621,15 @@ function toggleSubMenu(id) {
   document.querySelectorAll('.bk-menu-arrow').forEach(a=>a.classList.remove('open'));
   if(!isOpen){ sub.classList.add('open'); if(arrow) arrow.classList.add('open'); }
 }
-// ── SCHEDULE VIEW ─────────────────────────────────────────────
-// Shows all sub-accounts for a type with their balances, clickable
-// to drill into that account's ledger.
-const SCHEDULE_META = {
-  capital:     { label:'Capital',     icon:'🏦', num:'1000', color:'#a78bfa', desc:'Owner equity, share capital and retained earnings' },
-  liability:   { label:'Liabilities', icon:'📋', num:'2000', color:'#f87171', desc:'Amounts owed to creditors and other parties' },
-  asset:       { label:'Assets',      icon:'🏛️',  num:'3000', color:'#4ade80', desc:'Resources owned or controlled by the business' },
-  income:      { label:'Income',      icon:'📈', num:'4000', color:'#34d399', desc:'Revenue earned from business activities' },
-  expenditure: { label:'Expenditure', icon:'📉', num:'5000', color:'#fb923c', desc:'Costs and expenses incurred by the business' },
-};
-
-async function showSchedule(type) {
-  recordsPageChrome();
-  setActiveNav('navRecords');
-  document.getElementById('recordsDD')?.classList.add('hidden');
-
-  const meta  = SCHEDULE_META[type];
-  const accts = accounts[type] || [];
-  const content = document.getElementById('bkContent');
-  content.innerHTML = '<div class="bk-loading">Loading schedule…</div>';
-
-  // Fetch transaction totals for every account in this category
-  let totals = {}; // { account_name: { dr:0, cr:0, balance:0 } }
-  try {
-    const { data } = await bkDb.from('bk_transactions')
-      .select('account_name, debit, credit, balance')
-      .eq('user_id', bkUser.id)
-      .eq('record_type', type);
-    (data||[]).forEach(function(r){
-      const n = r.account_name;
-      if (!totals[n]) totals[n] = { dr:0, cr:0, lastBalance:0, count:0 };
-      totals[n].dr  += parseFloat(r.debit)||0;
-      totals[n].cr  += parseFloat(r.credit)||0;
-      totals[n].lastBalance = parseFloat(r.balance)||0;
-      totals[n].count++;
-    });
-  } catch(e) { /* show zeros */ }
-
-  const isDebitNormal = DEBIT_NORMAL.includes(type);
-  const sym = CURRENCIES[activeCurrency]?.symbol || '₦';
-  const fmt = (n) => n ? sym + Math.abs(n).toLocaleString('en-NG', {minimumFractionDigits:decimalPlaces, maximumFractionDigits:decimalPlaces}) : '—';
-
-  // Build schedule rows — only include accounts that have transactions OR an opening balance
-  let scheduleTotal = 0;
-  const allRows = accts.map(function(acct, i){
-    const t   = totals[acct.account_name] || { dr:0, cr:0, lastBalance:0, count:0 };
-    const ob  = parseFloat(acct.opening_balance)||0;
-    const bal = isDebitNormal ? ob + t.dr - t.cr : ob + t.cr - t.dr;
-    scheduleTotal += bal;
-    const acctNum = parseInt(meta.num) + 10 + i * 10;
-    return { acct, bal, t, ob, acctNum };
-  });
-  // Only show accounts that have at least one transaction or a non-zero opening balance
-  const rows = allRows.filter(function(r){ return r.t.count > 0 || r.ob !== 0; });
-
-  // Build sub-accounts dropdown options (all accounts, not just non-empty, for navigation)
-  const subOpts = accts.map(function(acct){
-    return '<option value="' + acct.id + '">' + escH(acct.account_name) + '</option>';
-  }).join('');
-
-  // Rows HTML
-  let rowsHtml = '';
-  rows.forEach(function(r){
-    const balText = r.bal !== 0 ? fmt(r.bal) : '—';
-    const drText  = r.t.dr > 0 ? fmt(r.t.dr) : '—';
-    const crText  = r.t.cr > 0 ? fmt(r.t.cr) : '—';
-    const obText  = r.ob > 0 ? fmt(r.ob) : '—';
-    const txnText = r.t.count > 0 ? r.t.count + ' txn' + (r.t.count !== 1 ? 's' : '') : 'Opening bal only';
-    rowsHtml += '<tr class="sched-row" onclick="openAccountById(\'' + type + '\',\'' + r.acct.id + '\')">'
-      + '<td class="sched-num">' + r.acctNum + '</td>'
-      + '<td class="sched-name"><span class="sched-name-text">' + escH(r.acct.account_name) + '</span>'
-      + '<span class="sched-txn-count">' + txnText + '</span></td>'
-      + '<td class="sched-val">' + obText + '</td>'
-      + '<td class="sched-val">' + drText + '</td>'
-      + '<td class="sched-val">' + crText + '</td>'
-      + '<td class="sched-val sched-total-col">' + balText + '</td>'
-      + '</tr>';
-  });
-
-  const totalText = fmt(Math.abs(scheduleTotal));
-
-  content.innerHTML = `
-    <div class="sched-total-banner" style="border-left:4px solid ${meta.color};margin-bottom:14px;">
-      <div class="sched-total-label">Total ${meta.label}</div>
-      <div class="sched-total-val" style="color:${meta.color};">${totalText}</div>
-    </div>
-
-    <div class="bk-sheet-wrap">
-      <table class="bk-sheet sched-table" style="min-width:580px;">
-        <thead>
-          <tr>
-            <th style="width:60px;">No.</th>
-            <th class="sched-name">Account Name</th>
-            <th class="num" style="width:120px;">Opening Bal.</th>
-            <th class="num" style="width:110px;">Total Debit</th>
-            <th class="num" style="width:110px;">Total Credit</th>
-            <th class="num" style="width:130px;">Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rowsHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No activity yet. Transactions will appear here once entered.</td></tr>'}
-        </tbody>
-        <tfoot>
-          <tr class="sched-foot-row">
-            <td colspan="5">Total ${meta.label}</td>
-            <td class="num" style="color:${meta.color};font-weight:800;">${totalText}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-
-    <div class="sched-below-table">
-      <div class="sched-subacct-wrap">
-        <label class="sched-subacct-label">Sub Accounts</label>
-        <select class="acct-input sched-subacct-select" id="subAcctSelect_${type}"
-          onchange="var v=this.value;if(v){this.value='';openAccountById('${type}',v);}">
-          <option value="">Jump to sub-account\u2026</option>
-          ${subOpts}
-        </select>
-      </div>
-    </div>`;
-}
-
 function openFirstAccount(type) {
-  showSchedule(type);
-}
-
-function openAccountById(type, id) {
-  const accts = accounts[type] || [];
-  const acct  = accts.find(function(a){ return String(a.id) === String(id); });
-  if (acct) openAccount(type, acct);
-  else console.warn('openAccountById: no account found for id', id, 'in', type, accts.map(a=>a.id));
+  const accts=accounts[type];
+  if(accts&&accts.length>0) openAccount(type,accts[0]);
 }
 
 // ── PRODUCTS & SERVICES PAGE ──────────────────────────────────
 let psRows=[], psType='products';
 
 async function showProductsPage(type) {
-  staffShowChrome();
-  hideEqAndToolbar();
   psType=type||'products';
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const { data }=await bkDb.from('bk_products').select('*')
@@ -6121,9 +5736,6 @@ async function psSaveRow(i) {
 
 // ── EXTENDED REPORTS ─────────────────────────────────────────
 async function showReport(type) {
-  staffShowChrome();
-  showExtEqToggle();
-  showDashToolbar();
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const {data}=await bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date').eq('user_id',bkUser.id);
   const T=data||[];
@@ -6191,560 +5803,43 @@ function renderEquity(tots) {
 // ══════════════════════════════════════════════════════════════
 const LAUNDRY_SERVICES=['Wash, Dry, Iron','Wash, Dry','Wash Only','Iron Only','Express Dry Cleaning'];
 const LAUNDRY_ITEMS=['Shirt','Trouser','Full Suit','Up and Down','Duvet','Bed Spread','Bed Spread with Pillow Case'];
+const LAUNDRY_PRICES={
+  'Wash, Dry, Iron':{Shirt:1500,Trouser:1500,'Full Suit':4000,'Up and Down':3000,Duvet:5000,'Bed Spread':3000,'Bed Spread with Pillow Case':4000},
+  'Wash, Dry':{Shirt:1200,Trouser:1200,'Full Suit':3000,'Up and Down':2500,Duvet:4000,'Bed Spread':2500,'Bed Spread with Pillow Case':3000},
+  'Wash Only':{Shirt:800,Trouser:800,'Full Suit':2000,'Up and Down':1500,Duvet:3000,'Bed Spread':1500,'Bed Spread with Pillow Case':2000},
+  'Iron Only':{Shirt:500,Trouser:500,'Full Suit':1500,'Up and Down':1000,Duvet:2000,'Bed Spread':1000,'Bed Spread with Pillow Case':1500},
+  'Express Dry Cleaning':{Shirt:2500,Trouser:2500,'Full Suit':7000,'Up and Down':5000,Duvet:8000,'Bed Spread':5000,'Bed Spread with Pillow Case':6000},
+};
 
-let staffCustomers=[],staffExpRows=[],staffDateFmt='month_day_year',_custIdSeq=0;
-let staffCurrency='NGN'; // independent of the main app's currency setting
+let staffCustomers=[],staffExpRows=[],staffDateFmt='dd/mm/yyyy',_custIdSeq=0;
 
-function staffSym(){ return CURRENCIES[staffCurrency]?.symbol || '₦'; }
-function staffFmtAmt(n){
-  if (!n || n<=0) return '';
-  return staffSym() + n.toLocaleString('en-NG');
-}
-
-function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_custIdSeq}`,serial:'',locked:false,rows:[staffEmptyRow(1),staffEmptyRow(2),staffEmptyRow(3)]};}
-function staffEmptyRow(sn){return{sn,date:'',service:'',item:'',unit_price:0,qty:1,total:0,status1:'',status2:'',date2:'',paid:'',payMode:''};}
-
-// ── Column min-widths (px) — sized so every dropdown option fits fully ──
-let staffColWidths = { sn:34, date:120, service:130, item:130, price:100, qty:58, total:110, status1:100, status2:140, todate:140, paid:100, paymode:140, del:38 };
-
-// ── Date formatting ──────────────────────────────────────────
-// Places the cursor at the end of the field's current value, so an
-// existing 0 or number can be deleted from the right with backspace
-// rather than the user having to first move the cursor manually.
-function staffCursorEnd(el){
-  const len = el.value ? el.value.length : 0;
-  try { el.setSelectionRange(len, len); } catch(e) { /* some input types don't support this */ }
-}
-
-function staffFormatDate(dateStr, fmt) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr + 'T00:00:00');
-  if (isNaN(d)) return dateStr;
-  const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const day = d.getDate();
-  const ord = (n) => {
-    if (n>3 && n<21) return n+'th';
-    switch(n%10){case 1:return n+'st';case 2:return n+'nd';case 3:return n+'rd';default:return n+'th';}
-  };
-  if (fmt === 'day_date_year') {
-    return days[d.getDay()]+'/'+ord(day)+'/'+months[d.getMonth()]+'/'+d.getFullYear();
-  }
-  if (fmt === 'month_day_year') {
-    return months[d.getMonth()]+'/'+ord(day)+'/'+d.getFullYear();
-  }
-  if (fmt === 'dd/mm/yyyy') return String(day).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
-  if (fmt === 'mm/dd/yyyy') return String(d.getMonth()+1).padStart(2,'0')+'/'+String(day).padStart(2,'0')+'/'+d.getFullYear();
-  if (fmt === 'dd/mm/yy')   return String(day).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);
-  return dateStr;
-}
-
-// ── Hide/show the global equation bar + quick input + toolbar
-//    so staff pages get a clean, centered, distraction-free screen ──
-function staffHideChrome(){
-  const chrome  = document.getElementById('bkMainChrome');
-  const toolbar = document.getElementById('bkToolbar');
-  const hero    = document.getElementById('bkGlobalHero');
-  if (chrome)  chrome.style.display  = 'none';
-  if (toolbar) toolbar.style.display = 'none';
-  if (hero)    hero.style.display    = 'none';
-}
-function staffShowChrome(){
-  const chrome  = document.getElementById('bkMainChrome');
-  const toolbar = document.getElementById('bkToolbar');
-  const hero    = document.getElementById('bkGlobalHero');
-  if (chrome)  chrome.style.display  = '';
-  if (toolbar) toolbar.style.display = '';
-  if (hero)    hero.style.display    = '';
-}
-
-// ── For owner-facing pages (e.g. Products & Services) that want the
-//    equation bar + toolbar hidden, but should KEEP the normal
-//    "Welcome / THINK FINANCE" header visible ──
-function hideEqAndToolbar(){
-  const chrome  = document.getElementById('bkMainChrome');
-  const toolbar = document.getElementById('bkToolbar');
-  if (chrome)  chrome.style.display  = 'none';
-  if (toolbar) toolbar.style.display = 'none';
-}
-
-function hideGlobalHero(){
-  const hero = document.getElementById('bkGlobalHero');
-  if (hero) hero.style.display = 'none';
-}
-function showGlobalHero(){
-  const hero = document.getElementById('bkGlobalHero');
-  if (hero) hero.style.display = '';
-}
-
-// ── Applied to all Records pages (schedule, ledger, journal, COA) ──
-// Shows equation bar, hides toolbar, hides the Welcome/THINK header
-function recordsPageChrome(){
-  staffShowChrome();   // restore chrome + hero fully first
-  hideGlobalHero();    // then hide the hero
-  hideDashToolbar();   // hide toolbar (not needed on records pages)
-  showExtEqToggle();   // keep equation visible
-}
-
-// ── The collapsible toolbar (search, dates, undo/redo, decimals, etc.)
-//    sits just under the equation bar — hidden on the Dashboard only,
-//    visible on every other page ──
-function hideDashToolbar(){
-  const toolbar = document.getElementById('bkToolbar');
-  if (toolbar) toolbar.style.display = 'none';
-}
-function showDashToolbar(){
-  const toolbar = document.getElementById('bkToolbar');
-  if (toolbar) toolbar.style.display = '';
-}
-
-// ── STAFF SETTINGS — currency only, for now ────────────────────
-function showStaffSettings(){
-  staffHideChrome();
-  const currOpts = Object.entries(CURRENCIES).map(function([k,v]){
-    return '<option value="'+k+'"'+(staffCurrency===k?' selected':'')+'>'+v.symbol+' '+k+' \u2014 '+v.name+'</option>';
-  }).join('');
-
-  const dateFmtOpts = [
-    ['month_day_year','Month-Day-Year \u2014 e.g. Jun/30th/2026'],
-    ['day_date_year','Day/Date/Year \u2014 e.g. Tue/30th/June/2026'],
-    ['dd/mm/yyyy','DD/MM/YYYY'],
-    ['mm/dd/yyyy','MM/DD/YYYY'],
-    ['dd/mm/yy','DD/MM/YY'],
-  ].map(function([v,l]){ return '<option value="'+v+'"'+(staffDateFmt===v?' selected':'')+'>'+l+'</option>'; }).join('');
-
-  document.getElementById('bkContent').innerHTML = `
-    <div class="bk-content-header">
-      <div class="bk-content-title">STAFF SETTINGS</div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">\u2190 Back</button>
-    </div>
-    <div style="padding:20px;max-width:480px;">
-      <div class="acct-card">
-        <div class="acct-card-title">Currency</div>
-        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;line-height:1.55;">
-          Choose the currency used in the Sales and Expenses spreadsheets.
-          Default is Nigerian Naira (\u20A6).
-        </p>
-        <div class="acct-field">
-          <label class="acct-label">Currency</label>
-          <select class="acct-input" id="staffCurrSelect" onchange="staffSetCurrency(this.value)">
-            ${currOpts}
-          </select>
-        </div>
-        <div id="staffCurrMsg" style="font-size:0.74rem;color:var(--gold);margin-top:8px;min-height:16px;"></div>
-      </div>
-      <div class="acct-card" style="margin-top:16px;">
-        <div class="acct-card-title">Date Format</div>
-        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;line-height:1.55;">
-          Applies to the Date and "To collect when?" columns in Sales.
-          Default is Month-Day-Year.
-        </p>
-        <div class="acct-field">
-          <label class="acct-label">Date Format</label>
-          <select class="acct-input" id="staffDateFmtSelect" onchange="staffSetDateFmt(this.value)">
-            ${dateFmtOpts}
-          </select>
-        </div>
-        <div id="staffDateFmtMsg" style="font-size:0.74rem;color:var(--gold);margin-top:8px;min-height:16px;"></div>
-      </div>
-      <p style="font-size:0.7rem;color:var(--muted);margin-top:14px;">
-        <span class="staff-test-badge">Test Run</span>
-        &nbsp;This setting is not saved \u2014 it resets if you leave this session.
-      </p>
-    </div>`;
-}
-
-function staffSetDateFmt(fmt){
-  staffDateFmt = fmt;
-  const msg = document.getElementById('staffDateFmtMsg');
-  if (msg) {
-    msg.textContent = '\u2713 Date format updated \u2014 applies next time you open Sales';
-    setTimeout(function(){ msg.textContent=''; }, 2500);
-  }
-}
-
-function staffSetCurrency(code){
-  staffCurrency = code;
-  const msg = document.getElementById('staffCurrMsg');
-  if (msg) {
-    msg.textContent = '\u2713 Currency set to ' + code + ' (' + staffSym() + ') \u2014 applies to Sales & Expenses';
-    setTimeout(function(){ msg.textContent=''; }, 2500);
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-// OWNER/MANAGER-FACING STAFF DIRECTORY
-// Lists registered staff and their position; click to open a chat.
-// Test mode — sample data, chat messages are not persisted.
-// ══════════════════════════════════════════════════════════════
-const STAFF_DIRECTORY = [
-  { id:1, name:'John Smith',  position:'Manager', avatar:'👔' },
-  { id:2, name:'Alex Williams', position:'Barber', avatar:'💈' },
-  { id:3, name:'Grace Okafor',  position:'Laundry Attendant', avatar:'🧺' },
-];
-let staffChatTarget = null;
-let staffChatLog = {}; // {staffId: [{from:'me'|'them', text, time}]}
-
-// ── Show/hide menu items based on the logged-in user's role ───
-function applyRoleMenu(role){
-  const isOwnerOrManager = (role === 'owner' || role === 'manager');
-  document.querySelectorAll('[data-role="owner-manager"]').forEach(function(el){
-    el.style.display = isOwnerOrManager ? '' : 'none';
-  });
-  document.querySelectorAll('[data-role="employee"]').forEach(function(el){
-    el.style.display = isOwnerOrManager ? 'none' : '';
-  });
-}
-
-// Settings means something different depending on who's logged in
-function roleAwareSettings(){
-  if (userRole === 'employee') showStaffSettings();
-  else showAccountSettings();
-}
-
-// Colleagues — same directory data/UI as the owner's Staff page, just
-// framed for a staff member's perspective (renamed, same chat stub)
-function showColleagues(){
-  staffHideChrome();
-  document.getElementById('bkContent').innerHTML = `
-    <div class="bk-content-header">
-      <div>
-        <div class="bk-content-title">COLLEAGUES</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">People you work with at ${escH(businessDisplayName)}.</div>
-      </div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
-    </div>
-    <div style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:560px;">
-      ${STAFF_DIRECTORY.map(function(s){
-        return '<div class="staff-dir-row" onclick="openStaffChat('+s.id+')">'
-          + '<div class="staff-dir-avatar">'+s.avatar+'</div>'
-          + '<div style="flex:1;min-width:0;">'
-          + '<div class="staff-dir-name">'+escH(s.name)+'</div>'
-          + '<div class="staff-dir-pos">'+escH(s.position)+'</div>'
-          + '</div>'
-          + '<div class="staff-dir-chat-icon" title="Chat">\uD83D\uDCAC</div>'
-          + '</div>';
-      }).join('')}
-    </div>`;
-}
-
-function showStaffDirectory(){
-  staffShowChrome(); showDashToolbar(); showExtEqToggle();
-  document.getElementById('bkContent').innerHTML = `
-    <div class="bk-content-header">
-      <div>
-        <div class="bk-content-title">STAFF</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Your registered staff and their roles.</div>
-      </div>
-      <span class="staff-test-badge">Test Data</span>
-    </div>
-    <div style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:560px;">
-      ${STAFF_DIRECTORY.map(function(s){
-        return '<div class="staff-dir-row" onclick="openStaffChat('+s.id+')">'
-          + '<div class="staff-dir-avatar">'+s.avatar+'</div>'
-          + '<div style="flex:1;min-width:0;">'
-          + '<div class="staff-dir-name">'+escH(s.name)+'</div>'
-          + '<div class="staff-dir-pos">'+escH(s.position)+'</div>'
-          + '</div>'
-          + '<div class="staff-dir-chat-icon" title="Chat">\uD83D\uDCAC</div>'
-          + '</div>';
-      }).join('')}
-    </div>`;
-}
-
-function openStaffChat(staffId){
-  staffChatTarget = STAFF_DIRECTORY.find(function(s){ return s.id===staffId; });
-  if (!staffChatTarget) return;
-  if (!staffChatLog[staffId]) staffChatLog[staffId] = [];
-
-  document.getElementById('bkContent').innerHTML = `
-    <div class="bk-content-header">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="staff-dir-avatar" style="margin:0;">${staffChatTarget.avatar}</div>
-        <div>
-          <div class="bk-content-title" style="font-size:0.92rem;">${escH(staffChatTarget.name)}</div>
-          <div style="font-size:0.72rem;color:var(--muted);">${escH(staffChatTarget.position)}</div>
-        </div>
-      </div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="userRole==='employee'?showColleagues():showStaffDirectory()">\u2190 Back</button>
-    </div>
-    <div style="max-width:560px;padding:16px;">
-      <div id="staffChatLog" class="staff-chat-log"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;">
-        <input type="text" id="staffChatInput" class="acct-input" placeholder="Type a message\u2026"
-          style="flex:1;" onkeydown="if(event.key==='Enter')sendStaffChat()"/>
-        <button class="bk-btn bk-btn-gold" onclick="sendStaffChat()">Send</button>
-      </div>
-      <p style="font-size:0.7rem;color:var(--muted);margin-top:10px;">
-        <span class="staff-test-badge">Test Mode</span>
-        &nbsp;Messages are not saved or delivered yet \u2014 chat backend coming soon.
-      </p>
-    </div>`;
-  renderStaffChatLog();
-}
-
-function renderStaffChatLog(){
-  const log = document.getElementById('staffChatLog');
-  if (!log || !staffChatTarget) return;
-  const msgs = staffChatLog[staffChatTarget.id] || [];
-  log.innerHTML = msgs.length===0
-    ? '<div style="text-align:center;color:var(--muted);font-size:0.8rem;padding:20px;">No messages yet. Say hello!</div>'
-    : msgs.map(function(m){
-        return '<div class="staff-chat-bubble '+(m.from==='me'?'me':'them')+'">'+escH(m.text)+'</div>';
-      }).join('');
-  log.scrollTop = log.scrollHeight;
-}
-
-function sendStaffChat(){
-  const input = document.getElementById('staffChatInput');
-  const text = input?.value.trim();
-  if (!text || !staffChatTarget) return;
-  if (!staffChatLog[staffChatTarget.id]) staffChatLog[staffChatTarget.id] = [];
-  staffChatLog[staffChatTarget.id].push({ from:'me', text:text, time:Date.now() });
-  input.value = '';
-  renderStaffChatLog();
-}
+function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_custIdSeq}`,rows:[staffEmptyRow(1),staffEmptyRow(2),staffEmptyRow(3)]};}
+function staffEmptyRow(sn){return{sn,date:'',service:'',item:'',unit_price:0,qty:1,total:0,status1:'',status2:'',date2:'',paid:''};}
+function staffEmptyExpRow(sn){return{sn,date:'',narration:'',unit_price:0,qty:1,total:0};}
 
 function showStaffPage(){
-  staffHideChrome();
-  const name = staffDisplayName || 'Staff';
-  const biz  = businessDisplayName || 'Butterfly Dynamix';
   document.getElementById('bkContent').innerHTML=`
-    <div class="staff-welcome staff-welcome-centered">
-      <div class="staff-welcome-title">Welcome, ${escH(name)} \uD83D\uDC4B</div>
-      <div class="staff-welcome-think" onclick="showStaffDashboard()" title="Go to your dashboard">
-        THINK <span>${escH(biz)}</span>
-      </div>
-      <div class="staff-welcome-sub"><span class="staff-test-badge">Test Run \u2014 no data saved</span></div>
-      <button class="staff-record-btn" onclick="showStaffChoice()">\uD83D\uDCDD Record</button>
-      <button class="staff-homepage-btn" onclick="showStaffDashboard()">\uD83C\uDFE0 Homepage</button>
+    <div class="staff-welcome">
+      <div class="staff-welcome-title">Welcome, Staff 👋</div>
+      <div class="staff-welcome-sub"><span class="staff-test-badge">Test Run — no data saved</span></div>
+      <button class="staff-record-btn" onclick="showStaffChoice()">📝 Record</button>
     </div>`;
-}
-
-// ── STAFF DASHBOARD — summarises this session's recorded data ──
-function showStaffDashboard(){
-  staffHideChrome();
-
-  const custCount   = staffCustomers.length;
-  const totalSales  = staffCustomers.reduce(function(sum,c){
-    return sum + c.rows.reduce(function(a,r){ return a + (parseFloat(r.total)||0); }, 0);
-  }, 0);
-  const totalExp    = staffExpRows.reduce(function(a,r){ return a + (parseFloat(r.total)||0); }, 0);
-  const netAmount   = totalSales - totalExp;
-  const rowCount    = staffCustomers.reduce(function(sum,c){ return sum + c.rows.filter(function(r){ return r.total>0; }).length; }, 0);
-  const custWithSales = staffCustomers.filter(function(c){
-    return c.rows.some(function(r){ return r.total>0; });
-  }).length;
-
-  document.getElementById('bkContent').innerHTML = `
-    <div class="bk-content-header">
-      <div>
-        <div class="bk-content-title">STAFF HOMEPAGE</div>
-        <div style="margin-top:4px;"><span class="staff-test-badge">Test Run \u2014 this session only</span></div>
-      </div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
-    </div>
-
-    <div class="dash-kpi-row" style="padding:16px 16px 0;">
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Total Sales <span class="dash-kpi-icon">\uD83D\uDED2</span></div>
-        <div class="dash-kpi-value" style="color:#4ade80;">${staffFmtAmt(totalSales)||staffSym()+'0'}</div>
-        <div class="dash-kpi-change neutral">${rowCount} item${rowCount!==1?'s':''} recorded</div>
-      </div>
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Total Expenses <span class="dash-kpi-icon">\uD83D\uDCB8</span></div>
-        <div class="dash-kpi-value" style="color:#f87171;">${staffFmtAmt(totalExp)||staffSym()+'0'}</div>
-        <div class="dash-kpi-change neutral">${staffExpRows.filter(function(r){return r.total>0;}).length} entr${staffExpRows.filter(function(r){return r.total>0;}).length!==1?'ies':'y'}</div>
-      </div>
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Net <span class="dash-kpi-icon">${netAmount>=0?'\uD83D\uDCC8':'\uD83D\uDCC9'}</span></div>
-        <div class="dash-kpi-value" style="color:${netAmount>=0?'#4ade80':'#f87171'};">${staffFmtAmt(Math.abs(netAmount))||staffSym()+'0'}</div>
-        <div class="dash-kpi-change neutral">Sales minus expenses</div>
-      </div>
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Customers <span class="dash-kpi-icon">\uD83D\uDC65</span></div>
-        <div class="dash-kpi-value" style="color:var(--gold);">${custCount}</div>
-        <div class="dash-kpi-change neutral">${custWithSales} with recorded sales</div>
-      </div>
-    </div>
-
-    <div style="padding:16px 16px 0;">
-      <div class="dash-card-title" style="margin-bottom:2px;">Sales Summary</div>
-      <div class="dash-card-sub">One row per customer \u2014 read-only. Edit in Record Sales.</div>
-      ${buildSalesSummarySpreadsheet()}
-    </div>
-
-    <div style="padding:16px 16px 20px;">
-      <div class="dash-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-          <div class="dash-card-title" style="margin-bottom:0;">Quick Actions</div>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
-          <button class="bk-btn bk-btn-gold" onclick="showStaffSales()">\uD83D\uDED2 Go to Sales</button>
-          <button class="bk-btn bk-btn-outline" onclick="showStaffExpenses()">\uD83D\uDCB8 Go to Expenses</button>
-          <button class="bk-btn bk-btn-outline" onclick="showStaffSettings()">\u2699\uFE0F Settings</button>
-        </div>
-      </div>
-    </div>`;
-
-  initStaffSwipe();
-}
-
-// ── Build one summarised row per customer from their Record Sales rows ──
-// ── Clicking a Sales Summary row opens Record Sales and scrolls to that customer ──
-function staffJumpToCustomer(custId){
-  showStaffSales();
-  setTimeout(function(){
-    const block = document.querySelector('.staff-customer-block[data-custid="'+custId+'"]');
-    if (block) {
-      block.scrollIntoView({ behavior:'smooth', block:'start' });
-      block.classList.add('staff-jump-highlight');
-      setTimeout(function(){ block.classList.remove('staff-jump-highlight'); }, 1400);
-    }
-  }, 80);
-}
-
-function staffSummariseCustomer(c){
-  const dataRows = c.rows.filter(function(r){
-    return r.service || r.item || r.total>0 || r.status1 || r.status2 || r.paid || r.payMode || r.date;
-  });
-
-  // Date: first non-empty date found across this customer's rows
-  let date = '';
-  for (var i=0;i<c.rows.length;i++){ if (c.rows[i].date){ date = c.rows[i].date; break; } }
-
-  // Service: combine every distinct Service + Item mentioned across all rows
-  const seen = {};
-  const serviceParts = [];
-  c.rows.forEach(function(r){
-    if (r.service && !seen[r.service]) { seen[r.service]=1; serviceParts.push(r.service); }
-    if (r.item && !seen[r.item])       { seen[r.item]=1;    serviceParts.push(r.item); }
-  });
-
-  const total = c.rows.reduce(function(a,r){ return a+(parseFloat(r.total)||0); }, 0);
-
-  // Status fields: collect distinct non-empty values across rows
-  function distinctJoin(field){
-    const vals = [];
-    const s = {};
-    c.rows.forEach(function(r){
-      if (r[field] && !s[r[field]]) { s[r[field]]=1; vals.push(r[field]); }
-    });
-    return vals.join(', ');
-  }
-
-  return {
-    date: date,
-    customer: c.name || 'Unnamed',
-    serial: c.serial || '',
-    service: serviceParts.join(', '),
-    total: total,
-    payment: distinctJoin('paid'),
-    mode: distinctJoin('payMode'),
-    status1: distinctJoin('status1'),
-    status2: distinctJoin('status2'),
-  };
-}
-
-function buildSalesSummarySpreadsheet(){
-  if (staffCustomers.length === 0) {
-    return '<div class="dash-card"><div style="text-align:center;padding:24px;color:var(--muted);font-size:0.8rem;">No customers in Record Sales yet.</div></div>';
-  }
-
-  // Narrow widths chosen so all 4 columns comfortably fit in a single mobile pane
-  const w = { sn:24, customer:110, total:76, payment:64 };
-  const headerDefs = [
-    ['sn','S/N'], ['customer','Customer'], ['total','Total'], ['payment','Payment'],
-  ];
-  const allKeys = headerDefs.map(function(h){ return h[0]; });
-
-  const summaryRows = staffCustomers.map(function(c){
-    const s = staffSummariseCustomer(c);
-    s.custId = c.id;
-    return s;
-  });
-
-  function buildHeaderRow(keys){
-    return '<tr>' + keys.map(function(k){
-      const def = headerDefs.find(function(h){ return h[0]===k; });
-      return '<th style="width:'+w[k]+'px;">'+def[1]+'</th>';
-    }).join('') + '</tr>';
-  }
-
-  function cellFor(row, ri, k){
-    let val = '';
-    if (k==='sn')             val = String(ri+1);
-    else if (k==='customer')  val = row.customer + (row.serial ? ' ('+row.serial+')' : '');
-    else if (k==='total')     val = staffFmtAmt(row.total) || (staffSym()+'0');
-    else if (k==='payment')   val = row.payment || '\u2014';
-    return '<td style="width:'+w[k]+'px;"><div class="staff-cell staff-summary-cell">'+escH(val)+'</div></td>';
-  }
-
-  function buildBodyRows(keys){
-    return summaryRows.map(function(row, ri){
-      return '<tr class="staff-summary-row" onclick="staffJumpToCustomer('+row.custId+')" title="Open this customer\u2019s spreadsheet">'
-        + keys.map(function(k){ return cellFor(row, ri, k); }).join('') + '</tr>';
-    }).join('');
-  }
-
-  // Desktop: one wide scrollable table
-  const desktopTable =
-    '<div class="staff-sheet-wrap staff-desktop-only">'
-    + '<table class="staff-table" style="table-layout:fixed;">'
-    + '<thead>'+buildHeaderRow(allKeys)+'</thead>'
-    + '<tbody>'+buildBodyRows(allKeys)+'</tbody>'
-    + '</table></div>';
-
-  // Mobile/Tablet: dynamic panes — with these 4 narrow columns this naturally
-  // produces a single pane on most phones, but still adapts if the screen is very small
-  const availW = Math.max(280, (window.innerWidth || 375) - 28);
-  const groups = [];
-  let cur = [], curW = 0;
-  allKeys.forEach(function(k){
-    const cw = w[k] || 80;
-    if (curW + cw > availW && cur.length > 0) { groups.push(cur); cur=[]; curW=0; }
-    cur.push(k); curW += cw;
-  });
-  if (cur.length > 0) groups.push(cur);
-
-  let paneHtml = '';
-  groups.forEach(function(keys){
-    paneHtml += '<div class="staff-swipe-pane">'
-      + '<table class="staff-table" style="table-layout:fixed;"><thead>'+buildHeaderRow(keys)+'</thead>'
-      + '<tbody>'+buildBodyRows(keys)+'</tbody></table></div>';
-  });
-  let dotsHtml = '';
-  groups.forEach(function(_, gi){
-    dotsHtml += '<span class="staff-swipe-dot'+(gi===0?' active':'')+'" data-pane="'+gi+'"></span>';
-  });
-
-  const mobilePanes =
-    '<div class="staff-swipe-wrap staff-mobile-only" data-custid="salessummary" data-panecount="'+groups.length+'">'
-      + '<div class="staff-swipe-track" style="width:'+(groups.length*100)+'%;">' + paneHtml + '</div>'
-      + '<div class="staff-swipe-dots">' + dotsHtml + '</div>'
-    + '</div>';
-
-  return desktopTable + mobilePanes;
 }
 
 function showStaffChoice(){
-  staffHideChrome();
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
       <div class="bk-content-title">STAFF RECORD</div>
-      <div style="display:flex;gap:8px;">
-        <button class="staff-settings-btn" onclick="showStaffSettings()" title="Settings">\u2699\uFE0F</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
-      </div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">← Back</button>
     </div>
     <div class="staff-choice">
       <div class="staff-choice-btn" onclick="showStaffSales()">
-        <div class="staff-choice-icon">\uD83D\uDED2</div>
+        <div class="staff-choice-icon">🛒</div>
         <div class="staff-choice-label">Sales</div>
         <div class="staff-choice-desc">Record customer transactions</div>
       </div>
       <div class="staff-choice-btn" onclick="showStaffExpenses()">
-        <div class="staff-choice-icon">\uD83D\uDCB8</div>
+        <div class="staff-choice-icon">💸</div>
         <div class="staff-choice-label">Expenses</div>
         <div class="staff-choice-desc">Record business expenses</div>
       </div>
@@ -6752,23 +5847,27 @@ function showStaffChoice(){
 }
 
 function showStaffSales(){
-  staffHideChrome();
   if(staffCustomers.length===0) staffCustomers=[staffNewCustomer()];
   renderStaffSales();
 }
 
 function renderStaffSales(){
+  const fmtOpts=['dd/mm/yyyy','mm/dd/yyyy','dd/mm/yy'].map(f=>`<option value="${f}" ${staffDateFmt===f?'selected':''}>${f}</option>`).join('');
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
       <div>
-        <div class="bk-content-title">RECORD SALES</div>
-        <div style="margin-top:4px;">
+        <div class="bk-content-title">SALES RECORD</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap;">
           <span class="staff-test-badge">Test Run</span>
+          <label style="font-size:0.7rem;color:var(--muted);">Date format:
+            <select class="staff-cell" style="height:auto;padding:2px 6px;width:auto;min-width:100px;"
+              onchange="staffDateFmt=this.value;renderStaffSales()">${fmtOpts}</select>
+          </label>
         </div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">\uD83D\uDDA8 Print</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">\u2190 Back</button>
+        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">← Back</button>
       </div>
     </div>
     <div id="staffSalesBody" style="padding:0 0 16px;"></div>`;
@@ -6779,231 +5878,116 @@ function renderAllCustomers(){
   const body=document.getElementById('staffSalesBody');
   if(!body) return;
   body.innerHTML=staffCustomers.map(c=>renderCustomerBlock(c)).join('')+
-    '<button class="staff-add-cust-btn" onclick="addStaffCustomer()">+ Add Customer</button>';
-  // Re-init swipe panes after render
-  initStaffSwipe();
+    `<button class="staff-add-cust-btn" onclick="addStaffCustomer()">+ Add Customer</button>`;
 }
 
-// ── Build one customer block: header, 3 swipeable panes (mobile) /
-//    one scrollable table (desktop), static Save button, live totals ──
 function renderCustomerBlock(cust){
-  const totalQty = cust.rows.reduce((a,r)=>a+(parseFloat(r.qty)||0),0);
-  const totalAmt = cust.rows.reduce((a,r)=>a+(parseFloat(r.total)||0),0);
-  const cid = cust.id;
-  const w = staffColWidths;
-  const locked = !!cust.locked;
-  const lockAttr = locked ? ' disabled' : ''; // applied to every input/select/button that edits data
+  const totalQty=cust.rows.reduce((a,r)=>a+(parseFloat(r.qty)||0),0);
+  const totalAmt=cust.rows.reduce((a,r)=>a+(parseFloat(r.total)||0),0);
 
-  // Build the option lists once
-  function svcSelect(ri, current) {
-    let h = '<select class="staff-cell" onchange="staffSvcChange('+cid+','+ri+',this.value)"'+lockAttr+'>';
-    h += '<option value="">Select\u2026</option>';
-    LAUNDRY_SERVICES.forEach(function(s){ h += '<option value="'+s+'"'+(current===s?' selected':'')+'>'+s+'</option>'; });
-    h += '</select>';
-    return h;
-  }
-  function itemSelect(ri, current) {
-    let h = '<select class="staff-cell" onchange="staffItemChange('+cid+','+ri+',this.value)"'+lockAttr+'>';
-    h += '<option value="">Select\u2026</option>';
-    LAUNDRY_ITEMS.forEach(function(i){ h += '<option value="'+i+'"'+(current===i?' selected':'')+'>'+i+'</option>'; });
-    h += '</select>';
-    return h;
-  }
-
-  // Build each row's cells as named pieces, so we can arrange them into
-  // panes for mobile (swipe) or one wide table for desktop (scroll)
-  const cellsByRow = cust.rows.map(function(row, ri) {
-    const upVal  = row.unit_price > 0 ? row.unit_price.toLocaleString('en-NG') : '';
-    const totVal = staffFmtAmt(row.total);
-    const dateDisp = row.date ? staffFormatDate(row.date, staffDateFmt) : '';
-
-    const toDateDisp = row.date2 ? staffFormatDate(row.date2, staffDateFmt) : '';
-    const dateClickAttr = locked ? '' : ' onclick="this.previousElementSibling.showPicker?this.previousElementSibling.showPicker():this.previousElementSibling.focus()"';
-
-    return {
-      sn:  '<td class="staff-sn" style="width:'+w.sn+'px;">'+(ri+1)+'</td>',
-      date:'<td style="width:'+w.date+'px;"><div class="staff-wrap-cell">'
-           + '<input class="staff-cell staff-date-hidden" type="date" value="'+row.date+'"'+lockAttr
-           + ' onchange="staffSaleChange('+cid+','+ri+',\'date\',this.value);staffRefreshDateDisp(this)"/>'
-           + '<div class="staff-date-disp'+(locked?' staff-locked-disp':'')+'"'+dateClickAttr+'>'+(dateDisp||'Select date')+'</div>'
-           + '</div></td>',
-      service:'<td style="width:'+w.service+'px;">'+svcSelect(ri,row.service)+'</td>',
-      item:'<td style="width:'+w.item+'px;">'+itemSelect(ri,row.item)+'</td>',
-      price:'<td style="width:'+w.price+'px;"><div class="staff-price-wrap">'
-           + '<span class="staff-curr-prefix">'+staffSym()+'</span>'
-           + '<input class="staff-cell num" type="text" inputmode="decimal" value="'+upVal+'" placeholder="0"'+lockAttr
-           + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
-           + ' oninput="staffNumChange('+cid+','+ri+',\'unit_price\',this.value)"/></div></td>',
-      qty:'<td style="width:'+w.qty+'px;"><input class="staff-cell num" type="text" inputmode="numeric" value="'+(row.qty||1)+'"'+lockAttr
-           + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
-           + ' oninput="staffNumChange('+cid+','+ri+',\'qty\',this.value)"/></td>',
-      total:'<td style="width:'+w.total+'px;"><div class="staff-cell ro" id="stotal_'+cid+'_'+ri+'">'+totVal+'</div></td>',
-      status1:'<td style="width:'+w.status1+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'status1\',this.value)"'+lockAttr+'>'
-           + '<option value="">\u2014</option>'
-           + '<option value="Ready"'+(row.status1==='Ready'?' selected':'')+'>Ready</option>'
-           + '<option value="Not Ready"'+(row.status1==='Not Ready'?' selected':'')+'>Not Ready</option>'
-           + '</select></td>',
-      status2:'<td style="width:'+w.status2+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'status2\',this.value)"'+lockAttr+'>'
-           + '<option value="">\u2014</option>'
-           + '<option value="Collected"'+(row.status2==='Collected'?' selected':'')+'>Collected</option>'
-           + '<option value="Not Collected"'+(row.status2==='Not Collected'?' selected':'')+'>Not Collected</option>'
-           + '</select></td>',
-      todate:'<td style="width:'+w.todate+'px;"><div class="staff-wrap-cell">'
-           + '<input class="staff-cell staff-date-hidden" type="date" value="'+row.date2+'"'+lockAttr
-           + ' onchange="staffSaleChange('+cid+','+ri+',\'date2\',this.value);staffRefreshDateDisp(this)"/>'
-           + '<div class="staff-date-disp'+(locked?' staff-locked-disp':'')+'"'+dateClickAttr+'>'+(toDateDisp||'Select date')+'</div>'
-           + '</div></td>',
-      paid:'<td style="width:'+w.paid+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'paid\',this.value)"'+lockAttr+'>'
-           + '<option value="">\u2014</option>'
-           + '<option value="Not Paid"'+(row.paid==='Not Paid'?' selected':'')+'>Not Paid</option>'
-           + '<option value="Paid"'+(row.paid==='Paid'?' selected':'')+'>Paid</option>'
-           + '</select></td>',
-      paymode:'<td style="width:'+w.paymode+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'payMode\',this.value)"'+lockAttr+'>'
-           + '<option value="">\u2014</option>'
-           + '<option value="Cash"'+(row.payMode==='Cash'?' selected':'')+'>Cash</option>'
-           + '<option value="Card"'+(row.payMode==='Card'?' selected':'')+'>Card</option>'
-           + '<option value="Bank Transfer"'+(row.payMode==='Bank Transfer'?' selected':'')+'>Bank Transfer</option>'
-           + '</select></td>',
-      del:'<td style="width:'+w.del+'px;"><button class="staff-del-btn" onclick="staffDelRow('+cid+','+ri+')"'+lockAttr+'>&#x2715;</button></td>',
-    };
-  });
-
-  const headerDefs = [
-    ['sn','S/N'], ['date','Date'], ['service','Service'], ['item','Item'],
-    ['price','Unit Price'], ['qty','Qty'], ['total','Total'],
-    ['status1','Status 1'], ['status2','Status 2'], ['todate','To collect when?'],
-    ['paid','Payment'], ['paymode','Mode of Payment'], ['del','']
-  ];
-
-  function buildResizeHandle(key) {
-    return '';
-  }
-  function buildHeaderRow(keys) {
-    return '<tr>' + keys.map(function(k){
-      const def = headerDefs.find(function(h){return h[0]===k;});
-      return '<th style="width:'+w[k]+'px;position:relative;">'+def[1]+buildResizeHandle(k)+'</th>';
-    }).join('') + '</tr>';
-  }
-  function buildBodyRows(keys) {
-    return cellsByRow.map(function(cells, ri){
-      return '<tr id="srow_'+cid+'_'+ri+'">' + keys.map(function(k){return cells[k];}).join('') + '</tr>';
-    }).join('');
-  }
-  function buildFootRow(keys, isPane1) {
-    let h = '<tr class="staff-total-row">';
-    keys.forEach(function(k){
-      if (k==='sn')      h += '<td style="width:'+w.sn+'px;">'+(isPane1?'Total':'')+'</td>';
-      else if (k==='qty')   h += '<td style="width:'+w.qty+'px;text-align:right;" id="totQty_'+cid+'">'+(totalQty||'')+'</td>';
-      else if (k==='total') h += '<td style="width:'+w.total+'px;text-align:right;" id="totAmt_'+cid+'">'+staffFmtAmt(totalAmt)+'</td>';
-      else h += '<td style="width:'+(w[k]||80)+'px;"></td>';
+  // Build rows using string concatenation — avoids triple-nested template literals
+  let rowsHtml = '';
+  cust.rows.forEach(function(row, ri) {
+    // Service options
+    let svcOpts = '<option value="">Select\u2026</option>';
+    LAUNDRY_SERVICES.forEach(function(s) {
+      svcOpts += '<option value="' + s + '"' + (row.service===s?' selected':'') + '>' + s + '</option>';
     });
-    h += '</tr>';
-    return h;
-  }
+    // Item options
+    let itemOpts = '<option value="">Select\u2026</option>';
+    LAUNDRY_ITEMS.forEach(function(i) {
+      itemOpts += '<option value="' + i + '"' + (row.item===i?' selected':'') + '>' + i + '</option>';
+    });
+    const cid = cust.id;
+    const upVal = row.unit_price > 0 ? row.unit_price.toLocaleString('en-NG') : '';
+    const totVal = row.total > 0 ? row.total.toLocaleString('en-NG') : '';
 
-  const allKeys = headerDefs.map(function(h){return h[0];});
-
-  // Desktop: one wide scrollable table with all columns
-  const desktopTable =
-    '<div class="staff-sheet-wrap staff-desktop-only">'
-    + '<table class="staff-table" data-custid="'+cid+'">'
-    + '<thead>'+buildHeaderRow(allKeys)+'</thead>'
-    + '<tbody>'+buildBodyRows(allKeys)+'</tbody>'
-    + '<tfoot>'+buildFootRow(allKeys,true)+'</tfoot>'
-    + '</table></div>';
-
-  // ── Mobile/Tablet: DYNAMIC panes — as many as needed so every column
-  //    has its full content visible without clipping. Never forced to 3. ──
-  const availW = Math.max(280, (window.innerWidth || 375) - 28); // minus outer padding
-  const groups = [];
-  let cur = [], curW = 0;
-  allKeys.forEach(function(k){
-    const cw = w[k] || 80;
-    if (curW + cw > availW && cur.length > 0) {
-      groups.push(cur);
-      cur = []; curW = 0;
-    }
-    cur.push(k); curW += cw;
+    rowsHtml += '<tr id="srow_' + cid + '_' + ri + '">'
+      + '<td class="staff-sn">' + (ri+1) + '</td>'
+      + '<td><input class="staff-cell" type="date" value="' + row.date + '"'
+      + ' onchange="staffSaleChange(' + cid + ',' + ri + ',\'date\',this.value)"/></td>'
+      + '<td><select class="staff-cell" onchange="staffSvcChange(' + cid + ',' + ri + ',this.value)">'
+      + svcOpts + '</select></td>'
+      + '<td><select class="staff-cell" onchange="staffItemChange(' + cid + ',' + ri + ',this.value)">'
+      + itemOpts + '</select></td>'
+      + '<td><input class="staff-cell num" type="text" inputmode="decimal" value="' + upVal + '" placeholder="0"'
+      + ' oninput="staffNumChange(' + cid + ',' + ri + ',\'unit_price\',this.value)"/></td>'
+      + '<td><input class="staff-cell num" type="number" value="' + (row.qty||1) + '" min="1" style="width:55px;"'
+      + ' oninput="staffNumChange(' + cid + ',' + ri + ',\'qty\',this.value)"/></td>'
+      + '<td><div class="staff-cell ro" id="stotal_' + cid + '_' + ri + '">' + totVal + '</div></td>'
+      + '<td><select class="staff-cell" onchange="staffSaleChange(' + cid + ',' + ri + ',\'status1\',this.value)">'
+      + '<option value="">&#8212;</option>'
+      + '<option value="Ready"' + (row.status1==='Ready'?' selected':'') + '>Ready</option>'
+      + '<option value="Not Ready"' + (row.status1==='Not Ready'?' selected':'') + '>Not Ready</option>'
+      + '</select></td>'
+      + '<td><select class="staff-cell" onchange="staffSaleChange(' + cid + ',' + ri + ',\'status2\',this.value)">'
+      + '<option value="">&#8212;</option>'
+      + '<option value="Collected"' + (row.status2==='Collected'?' selected':'') + '>Collected</option>'
+      + '<option value="Not Collected"' + (row.status2==='Not Collected'?' selected':'') + '>Not Collected</option>'
+      + '</select></td>'
+      + '<td><input class="staff-cell" type="date" value="' + row.date2 + '"'
+      + ' onchange="staffSaleChange(' + cid + ',' + ri + ',\'date2\',this.value)"/></td>'
+      + '<td><select class="staff-cell" onchange="staffSaleChange(' + cid + ',' + ri + ',\'paid\',this.value)">'
+      + '<option value="">&#8212;</option>'
+      + '<option value="Not Paid"' + (row.paid==='Not Paid'?' selected':'') + '>Not Paid</option>'
+      + '<option value="Paid"' + (row.paid==='Paid'?' selected':'') + '>Paid</option>'
+      + '</select></td>'
+      + '<td><button class="staff-save-btn" onclick="staffSaveRow(' + cid + ',' + ri + ')">&#8250;</button></td>'
+      + '<td><button class="staff-del-btn" onclick="staffDelRow(' + cid + ',' + ri + ')">&#x2715;</button></td>'
+      + '<td class="staff-add-col" style="position:relative;">'
+      + '<button class="staff-add-btn" onclick="staffShowAddMenu(this,' + cid + ',' + ri + ')">&#xFF0B;</button>'
+      + '</td></tr>';
   });
-  if (cur.length > 0) groups.push(cur);
 
-  let paneHtml = '';
-  groups.forEach(function(keys, gi){
-    paneHtml += '<div class="staff-swipe-pane">'
-      + '<table class="staff-table"><thead>'+buildHeaderRow(keys)+'</thead>'
-      + '<tbody>'+buildBodyRows(keys)+'</tbody>'
-      + '<tfoot>'+buildFootRow(keys, gi===0)+'</tfoot></table></div>';
-  });
-
-  let dotsHtml = '';
-  groups.forEach(function(_, gi){
-    dotsHtml += '<span class="staff-swipe-dot'+(gi===0?' active':'')+'" data-pane="'+gi+'"></span>';
-  });
-
-  const mobilePanes =
-    '<div class="staff-swipe-wrap staff-mobile-only" data-custid="'+cid+'" data-panecount="'+groups.length+'">'
-      + '<div class="staff-swipe-track" style="width:'+(groups.length*100)+'%;">'
-        + paneHtml
-      + '</div>'
-      + '<div class="staff-swipe-dots">'
-        + dotsHtml
-      + '</div>'
-    + '</div>';
-
-  return '<div class="staff-customer-block'+(locked?' staff-locked-block':'')+'" data-custid="'+cid+'">'
+  return '<div class="staff-customer-block">'
     + '<div class="staff-customer-header">'
-    + '<button class="staff-lock-btn" onclick="staffToggleLock('+cid+')" title="'+(locked?'Unlock to edit':'Lock to prevent editing')+'">'
-    + (locked ? '&#128274;' : '&#128275;')
-    + '</button>'
-    + '<input class="staff-customer-name" type="text" value="'+escH(cust.name)+'"'+lockAttr
-    + ' onchange="staffCustRename('+cid+',this.value)" placeholder="Customer name\u2026"/>'
-    + '<input class="staff-customer-serial" type="text" value="'+escH(cust.serial||'')+'"'+lockAttr
-    + ' onchange="staffCustSerialChange('+cid+',this.value)" placeholder="S/N"'
-    + ' title="Customer Serial Number"/>'
+    + '<input class="staff-customer-name" type="text" value="' + escH(cust.name) + '"'
+    + ' onchange="staffCustRename(' + cust.id + ',this.value)" placeholder="Customer name\u2026"/>'
     + '<div class="staff-cust-btns">'
-    + '<button class="staff-cust-btn" onclick="staffAddRowToCustomer('+cid+')"'+lockAttr+'>+ Row</button>'
-    + '<button class="staff-cust-btn del" onclick="staffDeleteCustomer('+cid+')"'+lockAttr+'>&#x2715;</button>'
+    + '<button class="staff-cust-btn" onclick="staffAddRowToCustomer(' + cust.id + ')">+ Row</button>'
+    + '<button class="staff-cust-btn del" onclick="staffDeleteCustomer(' + cust.id + ')">&#x2715;</button>'
     + '</div></div>'
-    + desktopTable
-    + mobilePanes
-    + '<div class="staff-save-static-wrap">'
-    + '<button class="staff-save-static-btn" onclick="staffSaveCustomer('+cid+')">&#8250; Save</button>'
-    + '<span class="staff-static-total" id="staticTotal_'+cid+'">Total = '+(totalAmt>0?staffFmtAmt(totalAmt):staffSym()+'0')+'</span>'
-    + '</div>'
-    + '</div>';
+    + '<div class="staff-sheet-wrap"><table class="staff-table">'
+    + '<thead><tr>'
+    + '<th>S/N</th><th>Date</th><th>Service</th><th>Item</th>'
+    + '<th>Unit Price</th><th>Qty</th><th>Total</th>'
+    + '<th>Status 1</th><th>Status 2</th><th>Collection Date</th>'
+    + '<th>Payment</th><th>&#8250;</th><th>&#x2715;</th><th>&#xFF0B;</th>'
+    + '</tr></thead>'
+    + '<tbody>' + rowsHtml + '</tbody>'
+    + '<tfoot><tr class="staff-total-row">'
+    + '<td colspan="5" style="padding:7px 5px;">Total</td>'
+    + '<td style="text-align:right;padding:7px 5px;">' + (totalQty||'') + '</td>'
+    + '<td style="text-align:right;padding:7px 5px;">' + (totalAmt>0?totalAmt.toLocaleString('en-NG'):'') + '</td>'
+    + '<td colspan="7"></td>'
+    + '</tr></tfoot>'
+    + '</table></div></div>';
 }
 
 function staffGetCust(id){return staffCustomers.find(c=>c.id===id);}
 function staffSaleChange(custId,ri,field,val){const c=staffGetCust(custId);if(c)c.rows[ri][field]=val;}
 function staffCustRename(custId,name){const c=staffGetCust(custId);if(c)c.name=name;}
-function staffCustSerialChange(custId,serial){const c=staffGetCust(custId);if(c)c.serial=serial;}
-
-function staffRefreshDateDisp(input){
-  const disp = input.nextElementSibling;
-  if (disp) disp.textContent = input.value ? staffFormatDate(input.value, staffDateFmt) : 'Select date';
-}
 
 function staffSvcChange(custId,ri,svc){
   const c=staffGetCust(custId);if(!c)return;
   c.rows[ri].service=svc;
-  renderAllCustomers();
+  const item=c.rows[ri].item;
+  if(item&&LAUNDRY_PRICES[svc]?.[item]){c.rows[ri].unit_price=LAUNDRY_PRICES[svc][item];staffCalcTotal(custId,ri);renderAllCustomers();}
 }
 
 function staffItemChange(custId,ri,item){
   const c=staffGetCust(custId);if(!c)return;
   c.rows[ri].item=item;
-  renderAllCustomers();
+  const svc=c.rows[ri].service;
+  if(svc&&LAUNDRY_PRICES[svc]?.[item]){c.rows[ri].unit_price=LAUNDRY_PRICES[svc][item];staffCalcTotal(custId,ri);renderAllCustomers();}
 }
 
 function staffNumChange(custId,ri,field,val){
   const c=staffGetCust(custId);if(!c)return;
   c.rows[ri][field]=parseFloat(String(val).replace(/,/g,''))||0;
   staffCalcTotal(custId,ri);
-  // Update this row's total cell live (may exist in multiple panes + desktop table)
-  document.querySelectorAll('#stotal_'+custId+'_'+ri).forEach(function(el){
-    el.textContent = staffFmtAmt(c.rows[ri].total);
-  });
-  staffRefreshCustomerTotals(custId);
+  const el=document.getElementById(`stotal_${custId}_${ri}`);
+  if(el)el.textContent=c.rows[ri].total>0?c.rows[ri].total.toLocaleString('en-NG'):'';
 }
 
 function staffCalcTotal(custId,ri){
@@ -7011,30 +5995,9 @@ function staffCalcTotal(custId,ri){
   const r=c.rows[ri];r.total=(r.unit_price||0)*(r.qty||1);
 }
 
-// Live-update the footer totals (Qty + Total) without a full re-render
-function staffRefreshCustomerTotals(custId){
-  const c=staffGetCust(custId);if(!c)return;
-  const totalQty=c.rows.reduce((a,r)=>a+(parseFloat(r.qty)||0),0);
-  const totalAmt=c.rows.reduce((a,r)=>a+(parseFloat(r.total)||0),0);
-  document.querySelectorAll('#totQty_'+custId).forEach(function(el){ el.textContent = totalQty||''; });
-  document.querySelectorAll('#totAmt_'+custId).forEach(function(el){ el.textContent = staffFmtAmt(totalAmt); });
-  const staticTotal = document.getElementById('staticTotal_'+custId);
-  if (staticTotal) staticTotal.textContent = 'Total = ' + (totalAmt>0?staffFmtAmt(totalAmt):staffSym()+'0');
-}
-
-function staffSaveCustomer(custId){
-  const block = document.querySelector('.staff-customer-block [data-custid="'+custId+'"]');
-  const btn = document.querySelector('.staff-customer-block .staff-save-static-btn');
-  // Find the right button by searching all blocks
-  document.querySelectorAll('.staff-save-static-btn').forEach(function(b){
-    if (b.getAttribute('onclick')==='staffSaveCustomer('+custId+')') {
-      const orig = b.textContent;
-      b.textContent = '\u2713 Saved';
-      b.style.background = 'var(--green)';
-      setTimeout(function(){ b.textContent = orig; b.style.background=''; }, 1500);
-    }
-  });
-  // TEST MODE — no Supabase save
+function staffSaveRow(custId,ri){
+  const btn=document.querySelector(`#srow_${custId}_${ri} .staff-save-btn`);
+  if(btn){btn.textContent='✓';btn.style.color='var(--green)';setTimeout(()=>{btn.textContent='›';btn.style.color='';},1500);}
 }
 
 function staffDelRow(custId,ri){
@@ -7053,17 +6016,6 @@ function staffDeleteCustomer(custId){
   staffCustomers=staffCustomers.filter(c=>c.id!==custId);renderAllCustomers();
 }
 
-// ── Lock/unlock a customer's spreadsheet ─────────────────────
-// Locked: every input/select/structural button is disabled — but the
-// spreadsheet remains swipeable on mobile/tablet since swiping is purely
-// navigation and is handled independently of the form controls.
-function staffToggleLock(custId){
-  const c = staffGetCust(custId);
-  if (!c) return;
-  c.locked = !c.locked;
-  renderAllCustomers();
-}
-
 function staffAddRowToCustomer(custId){
   const c=staffGetCust(custId);if(!c)return;
   c.rows.push(staffEmptyRow(c.rows.length+1));renderAllCustomers();
@@ -7072,8 +6024,9 @@ function staffAddRowToCustomer(custId){
 function staffShowAddMenu(btn,custId,ri){
   document.querySelectorAll('.row-add-pop').forEach(p=>p.remove());
   const pop=document.createElement('div');pop.className='row-add-pop';
-  pop.innerHTML='<div onclick="staffInsertRow('+custId+','+ri+',\'above\');this.closest(\'.row-add-pop\').remove()">Add row above</div>'
-    + '<div onclick="staffInsertRow('+custId+','+ri+',\'below\');this.closest(\'.row-add-pop\').remove()">Add row below</div>';
+  pop.innerHTML=`
+    <div onclick="staffInsertRow(${custId},${ri},'above');this.closest('.row-add-pop').remove()">Add row above</div>
+    <div onclick="staffInsertRow(${custId},${ri},'below');this.closest('.row-add-pop').remove()">Add row below</div>`;
   btn.closest('.staff-add-col').appendChild(pop);
   setTimeout(()=>document.addEventListener('click',()=>pop.remove(),{once:true}),10);
 }
@@ -7084,59 +6037,8 @@ function staffInsertRow(custId,ri,where){
   c.rows.forEach((r,i)=>r.sn=i+1);renderAllCustomers();
 }
 
-// ── SWIPE: mobile/tablet pane navigation ──────────────────────
-// Remembers which pane each customer's swipe view was on, across re-renders
-let staffActivePaneByCust = {};
-
-function initStaffSwipe(){
-  document.querySelectorAll('.staff-swipe-wrap').forEach(function(wrap){
-    const track  = wrap.querySelector('.staff-swipe-track');
-    const dots   = wrap.querySelectorAll('.staff-swipe-dot');
-    const custId = wrap.dataset.custid;
-    const paneCount = parseInt(wrap.dataset.panecount) || 1;
-    const paneUnit = 100 / paneCount; // % of track width per pane
-    let startX = 0, isDragging = false;
-    let currentPane = Math.min(staffActivePaneByCust[custId] || 0, paneCount - 1);
-
-    function goToPane(idx, animate){
-      currentPane = Math.max(0, Math.min(paneCount - 1, idx));
-      staffActivePaneByCust[custId] = currentPane; // remember for next re-render
-      track.style.transition = animate ? 'transform 0.25s ease' : 'none';
-      track.style.transform = 'translateX(-' + (currentPane*paneUnit) + '%)';
-      dots.forEach(function(d,i){ d.classList.toggle('active', i===currentPane); });
-    }
-    dots.forEach(function(d,i){ d.addEventListener('click', function(){ goToPane(i, true); }); });
-
-    track.addEventListener('touchstart', function(e){
-      startX = e.touches[0].clientX; isDragging = true;
-      track.style.transition = 'none';
-    }, {passive:true});
-
-    track.addEventListener('touchmove', function(e){
-      if (!isDragging) return;
-      const dx = e.touches[0].clientX - startX;
-      const pct = (dx / wrap.offsetWidth) * paneUnit;
-      track.style.transform = 'translateX(calc(-' + (currentPane*paneUnit) + '% + ' + pct + '%))';
-    }, {passive:true});
-
-    track.addEventListener('touchend', function(e){
-      isDragging = false;
-      const dx = e.changedTouches[0].clientX - startX;
-      if (Math.abs(dx) > 50) {
-        if (dx < 0) goToPane(currentPane+1, true); else goToPane(currentPane-1, true);
-      } else {
-        goToPane(currentPane, true);
-      }
-    });
-
-    // Restore to whatever pane this customer was on — no animation, instant
-    goToPane(currentPane, false);
-  });
-}
-
 // Expenses
 function showStaffExpenses(){
-  staffHideChrome();
   if(staffExpRows.length===0)staffExpRows=[1,2,3,4,5].map(n=>staffEmptyExpRow(n));
   renderStaffExpenses();
 }
@@ -7148,16 +6050,12 @@ function renderStaffExpenses(){
       <td><input class="staff-cell" type="date" value="${r.date}" onchange="staffExpRows[${i}].date=this.value"/></td>
       <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="Description…"
         oninput="staffExpRows[${i}].narration=this.value"/></td>
-      <td><div class="staff-price-wrap">
-        <span class="staff-curr-prefix">${staffSym()}</span>
-        <input class="staff-cell num" type="text" inputmode="decimal"
+      <td><input class="staff-cell num" type="text" inputmode="decimal"
         value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
-        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-        oninput="staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
-      <td><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}" style="width:55px;"
-        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+        oninput="staffExpNumChange(${i},'unit_price',this.value)"/></td>
+      <td><input class="staff-cell num" type="number" value="${r.qty||1}" min="1" style="width:55px;"
         oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
-      <td><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
+      <td><div class="staff-cell ro" id="etotal_${i}">${r.total>0?r.total.toLocaleString('en-NG'):''}</div></td>
       <td><button class="staff-save-btn" onclick="staffExpSave(${i})">›</button></td>
       <td><button class="staff-del-btn" onclick="staffExpDel(${i})">✕</button></td>
     </tr>`).join('');
@@ -7179,7 +6077,7 @@ function renderStaffExpenses(){
         <tbody>${rows}</tbody>
         <tfoot><tr class="staff-total-row">
           <td colspan="5" style="padding:7px 5px;">Total</td>
-          <td style="text-align:right;padding:7px 5px;" id="expGrandTotal">${staffFmtAmt(totalExp)}</td>
+          <td style="text-align:right;padding:7px 5px;" id="expGrandTotal">${totalExp>0?totalExp.toLocaleString('en-NG'):''}</td>
           <td colspan="2"></td>
         </tr></tfoot>
       </table>
@@ -7191,10 +6089,10 @@ function staffExpNumChange(i,field,val){
   staffExpRows[i][field]=parseFloat(String(val).replace(/,/g,''))||0;
   staffExpRows[i].total=staffExpRows[i].unit_price*(staffExpRows[i].qty||1);
   const el=document.getElementById(`etotal_${i}`);
-  if(el)el.textContent=staffFmtAmt(staffExpRows[i].total);
+  if(el)el.textContent=staffExpRows[i].total>0?staffExpRows[i].total.toLocaleString('en-NG'):'';
   const totalExp=staffExpRows.reduce((a,r)=>a+(r.total||0),0);
   const grand=document.getElementById('expGrandTotal');
-  if(grand)grand.textContent=staffFmtAmt(totalExp);
+  if(grand)grand.textContent=totalExp>0?totalExp.toLocaleString('en-NG'):'';
 }
 
 function staffExpSave(i){
@@ -7215,7 +6113,13 @@ function staffExpAddRow(){
 
 // ── SETTINGS — ADD BUSINESS PROFILE SECTION ───────────────────
 function eqNav(type) {
-  showSchedule(type);
+  const typeAccounts = accounts[type];
+  if (typeAccounts && typeAccounts.length > 0) {
+    openAccount(type, typeAccounts[0]);
+  } else {
+    // No accounts yet — open the records dropdown
+    toggleRecordsDD();
+  }
 }
 
 // ── COLUMN HELP DEFINITIONS ───────────────────────────────────
