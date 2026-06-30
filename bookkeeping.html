@@ -1848,16 +1848,22 @@ function suSaveProdRow(i) {
 async function suDone() {
   // Save products if user is logged in (test mode for profile, real save for products)
   await saveSignupProducts();
+  const isEmployee = suData.whoAreYou === 'employee';
+
   document.getElementById('bkAuthContent').innerHTML = `
     <div class="su-welcome">
       <div class="su-welcome-icon">🎉</div>
-      <div class="su-welcome-title">Welcome, ${escH(suData.businessName)||'there'}!</div>
+      <div class="su-welcome-title">Welcome, ${isEmployee ? 'there' : (escH(suData.businessName)||'there')}!</div>
       <div class="su-welcome-sub">
-        Your bookkeeping dashboard is ready.<br>
+        ${isEmployee
+          ? 'Your staff page is ready.<br>'
+          : 'Your bookkeeping dashboard is ready.<br>'}
         <span style="color:var(--gold);font-size:0.78rem;">Test mode — no data has been saved yet. We are still building!</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <button class="bk-auth-btn-primary" onclick="suShowTestDashboard()">Go to Dashboard →</button>
+        <button class="bk-auth-btn-primary" onclick="${isEmployee?'suShowStaffEntry()':'suShowTestDashboard()'}">
+          ${isEmployee ? 'Go to Staff Page →' : 'Go to Dashboard →'}
+        </button>
         <button class="bk-login-back" onclick="showAuthScreen('signup')">🔄 Start Over</button>
       </div>
     </div>`;
@@ -1868,6 +1874,14 @@ function suShowTestDashboard() {
   // Show a minimal test dashboard
   document.getElementById('bkUserName').textContent = suData.businessName || 'Test User';
   showDashboard();
+}
+
+// Employees/staff land directly in the Staff Pages area — no main app chrome
+function suShowStaffEntry() {
+  hideAuthScreen();
+  staffHideChrome();
+  document.getElementById('bkUserName').textContent = suData.businessName || 'Test User';
+  showStaffPage();
 }
 
 // ── CONFIG ───────────────────────────────────────────────────
