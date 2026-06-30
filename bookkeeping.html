@@ -279,8 +279,10 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .ob-row td{padding:8px 10px;font-size:0.78rem;color:var(--gold);font-weight:700;}
 
 /* SPREADSHEET */
-.bk-sheet-wrap{overflow-x:auto;max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-behavior:smooth;}
-.bk-sheet{width:100%;border-collapse:collapse;table-layout:fixed;}
+.bk-sheet-wrap{overflow-x:auto;max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scroll-behavior:smooth;cursor:grab;}
+.bk-sheet-wrap:active{cursor:grabbing;}
+.bk-sheet{border-collapse:collapse;table-layout:fixed;white-space:nowrap;}
+.bk-sheet td, .bk-sheet th{white-space:nowrap;}
 .bk-sheet thead th{background:var(--bg);color:var(--gold);font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:10px 8px;text-align:left;border-bottom:2px solid var(--gold);border-right:1px solid var(--border);position:sticky;top:0;z-index:2;white-space:nowrap;}
 .bk-sheet thead th.num{text-align:right;}
 .bk-sheet thead th:last-child{border-right:none;}
@@ -2243,7 +2245,7 @@ function renderLedger() {
       <span>View only — all transactions are entered through <button onclick="openJournal()" style="background:none;border:none;color:var(--gold);font-weight:700;cursor:pointer;font-size:inherit;padding:0;">Master Records</button> and posted here automatically.</span>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="bk-sheet" id="ledgerTable">
+      <table class="bk-sheet" id="ledgerTable" style="min-width:1164px;">
         <thead>
           <tr>
             <th class="col-date"><span class="th-help-text" onclick="showColumnHelp(this,'Date')">Date</span></th>
@@ -3056,7 +3058,7 @@ function renderJournal() {
     </div>
 
     <div class="bk-sheet-wrap">
-      <table class="bk-sheet" id="journalTable">
+      <table class="bk-sheet" id="journalTable" style="min-width:1214px;">
         <thead><tr>
           <th style="width:110px;"><span class="th-help-text" onclick="showColumnHelp(this,'Date')">Date</span></th>
           <th style="width:120px;"><span class="th-help-text" onclick="showColumnHelp(this,'Payee')">Payee</span></th>
@@ -4101,6 +4103,51 @@ document.addEventListener('click', e => {
   const match = tr.id.match(/\d+$/);
   selectedRowIdx = match ? parseInt(match[0]) : null;
 });
+
+// ── Drag-to-scroll for sheet wraps (desktop mouse) ───────────
+// Touch devices already get momentum scrolling via CSS.
+// This adds click-and-drag horizontal scrolling on desktop.
+function initSheetDragScroll(wrap) {
+  if (!wrap || wrap._dragInited) return;
+  wrap._dragInited = true;
+  let startX = 0, scrollLeft = 0, dragging = false;
+  wrap.addEventListener('mousedown', function(e) {
+    // Only drag if click is directly on the wrap or the table, not on an input/select/button
+    if (e.target.closest('input,select,button,a')) return;
+    dragging = true;
+    startX = e.pageX - wrap.offsetLeft;
+    scrollLeft = wrap.scrollLeft;
+    wrap.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    const x = e.pageX - wrap.offsetLeft;
+    wrap.scrollLeft = scrollLeft - (x - startX);
+  });
+  document.addEventListener('mouseup', function() {
+    if (!dragging) return;
+    dragging = false;
+    wrap.style.cursor = '';
+  });
+}
+
+// Attach drag-scroll to any .bk-sheet-wrap that currently exists or
+// is added later (MutationObserver watches bkContent for new tables)
+function initAllSheetWraps() {
+  document.querySelectorAll('.bk-sheet-wrap').forEach(initSheetDragScroll);
+}
+const _sheetWrapObserver = new MutationObserver(initAllSheetWraps);
+function attachSheetObserver(){
+  const target = document.getElementById('bkContent') || document.body;
+  _sheetWrapObserver.observe(target, { childList:true, subtree:true });
+  initAllSheetWraps();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', attachSheetObserver);
+} else {
+  attachSheetObserver();
+}
 
 function tbPDF() {
   if (document.getElementById('journalTable')) exportJournalPDF();
