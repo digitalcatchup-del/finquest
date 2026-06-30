@@ -770,6 +770,12 @@ body{padding-top:0;}
 /* ── Static Save button below each customer block ───────────── */
 .staff-save-static-wrap{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 0 4px;background:var(--surface);border-top:1px solid var(--border);}
 .staff-static-total{font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.02em;}
+.staff-price-wrap{display:flex;align-items:center;gap:2px;padding:0 2px;}
+.staff-curr-prefix{color:var(--gold);font-size:0.74rem;font-weight:700;flex-shrink:0;}
+.staff-price-wrap .staff-cell{padding-left:2px;}
+.staff-welcome-centered{min-height:calc(100vh - 140px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+.staff-settings-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-size:1rem;padding:6px 11px;border-radius:7px;cursor:pointer;transition:all 0.15s;}
+.staff-settings-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-save-static-btn{background:var(--gold);border:none;color:#000;font-size:0.85rem;font-weight:800;padding:9px 36px;border-radius:8px;cursor:pointer;transition:all 0.15s;}
 .staff-save-static-btn:hover{opacity:0.88;}
 
@@ -905,6 +911,7 @@ body{padding-top:0;}
       style="cursor:pointer;">—</strong>
   </p>
 
+  <div id="bkMainChrome">
   <div class="bk-eq-bar">
     <!-- Main equation: Assets = Capital + Liabilities -->
     <div class="bk-eq-title">Assets = Capital + Liabilities</div>
@@ -974,6 +981,7 @@ body{padding-top:0;}
       ⚡ Input
     </button>
     <span style="font-size:0.75rem;color:var(--muted);">Quick-record a transaction</span>
+  </div>
   </div>
 
   <!-- TOOLBAR -->
@@ -2527,6 +2535,7 @@ async function smartAutoCorrect(journalId, drAmt, crAmt) {
 // showDashboard is defined above in the COA/settings section
 
 async function showDashboard() {
+  staffShowChrome();
   setActiveNav('navDash');
   document.getElementById('recordsDD')?.classList.add('hidden');
   const content = document.getElementById('bkContent');
@@ -2874,6 +2883,7 @@ function emptyJournalRow(order) {
 }
 
 async function openJournal() {
+  staffShowChrome();
   activeType=null; activeAccount=null;
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
@@ -5477,6 +5487,7 @@ const COA_LABELS = { capital:'Capital', liability:'Liabilities', asset:'Assets',
 let coaActiveType = 'capital';
 
 async function openChartOfAccounts() {
+  staffShowChrome();
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading Chart of Accounts…</div>';
@@ -5546,6 +5557,7 @@ async function coaDeleteAccount(id,name) {
 
 // ── ACCOUNT SETTINGS PAGE ─────────────────────────────────────
 async function showAccountSettings() {
+  staffShowChrome();
   setActiveNav('');
   document.getElementById('recordsDD')?.classList.add('hidden');
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
@@ -5667,6 +5679,7 @@ function openFirstAccount(type) {
 let psRows=[], psType='products';
 
 async function showProductsPage(type) {
+  staffShowChrome();
   psType=type||'products';
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const { data }=await bkDb.from('bk_products').select('*')
@@ -5773,6 +5786,7 @@ async function psSaveRow(i) {
 
 // ── EXTENDED REPORTS ─────────────────────────────────────────
 async function showReport(type) {
+  staffShowChrome();
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const {data}=await bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date').eq('user_id',bkUser.id);
   const T=data||[];
@@ -5842,6 +5856,13 @@ const LAUNDRY_SERVICES=['Wash, Dry, Iron','Wash, Dry','Wash Only','Iron Only','E
 const LAUNDRY_ITEMS=['Shirt','Trouser','Full Suit','Up and Down','Duvet','Bed Spread','Bed Spread with Pillow Case'];
 
 let staffCustomers=[],staffExpRows=[],staffDateFmt='dd/mm/yyyy',_custIdSeq=0;
+let staffCurrency='NGN'; // independent of the main app's currency setting
+
+function staffSym(){ return CURRENCIES[staffCurrency]?.symbol || '₦'; }
+function staffFmtAmt(n){
+  if (!n || n<=0) return '';
+  return staffSym() + n.toLocaleString('en-NG');
+}
 
 function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_custIdSeq}`,serial:'',rows:[staffEmptyRow(1),staffEmptyRow(2),staffEmptyRow(3)]};}
 function staffEmptyRow(sn){return{sn,date:'',service:'',item:'',unit_price:0,qty:1,total:0,status1:'',status2:'',date2:'',paid:'',payMode:''};}
@@ -5873,9 +5894,68 @@ function staffFormatDate(dateStr, fmt) {
   return dateStr;
 }
 
+// ── Hide/show the global equation bar + quick input + toolbar
+//    so staff pages get a clean, centered, distraction-free screen ──
+function staffHideChrome(){
+  const chrome  = document.getElementById('bkMainChrome');
+  const toolbar = document.getElementById('bkToolbar');
+  if (chrome)  chrome.style.display  = 'none';
+  if (toolbar) toolbar.style.display = 'none';
+}
+function staffShowChrome(){
+  const chrome  = document.getElementById('bkMainChrome');
+  const toolbar = document.getElementById('bkToolbar');
+  if (chrome)  chrome.style.display  = '';
+  if (toolbar) toolbar.style.display = '';
+}
+
+// ── STAFF SETTINGS — currency only, for now ────────────────────
+function showStaffSettings(){
+  staffHideChrome();
+  const currOpts = Object.entries(CURRENCIES).map(function([k,v]){
+    return '<option value="'+k+'"'+(staffCurrency===k?' selected':'')+'>'+v.symbol+' '+k+' \u2014 '+v.name+'</option>';
+  }).join('');
+
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div class="bk-content-title">STAFF SETTINGS</div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">\u2190 Back</button>
+    </div>
+    <div style="padding:20px;max-width:480px;">
+      <div class="acct-card">
+        <div class="acct-card-title">Currency</div>
+        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;line-height:1.55;">
+          Choose the currency used in the Sales and Expenses spreadsheets.
+          Default is Nigerian Naira (\u20A6).
+        </p>
+        <div class="acct-field">
+          <label class="acct-label">Currency</label>
+          <select class="acct-input" id="staffCurrSelect" onchange="staffSetCurrency(this.value)">
+            ${currOpts}
+          </select>
+        </div>
+        <div id="staffCurrMsg" style="font-size:0.74rem;color:var(--gold);margin-top:8px;min-height:16px;"></div>
+      </div>
+      <p style="font-size:0.7rem;color:var(--muted);margin-top:14px;">
+        <span class="staff-test-badge">Test Run</span>
+        &nbsp;This setting is not saved \u2014 it resets if you leave this session.
+      </p>
+    </div>`;
+}
+
+function staffSetCurrency(code){
+  staffCurrency = code;
+  const msg = document.getElementById('staffCurrMsg');
+  if (msg) {
+    msg.textContent = '\u2713 Currency set to ' + code + ' (' + staffSym() + ') \u2014 applies to Sales & Expenses';
+    setTimeout(function(){ msg.textContent=''; }, 2500);
+  }
+}
+
 function showStaffPage(){
+  staffHideChrome();
   document.getElementById('bkContent').innerHTML=`
-    <div class="staff-welcome">
+    <div class="staff-welcome staff-welcome-centered">
       <div class="staff-welcome-title">Welcome, Staff \uD83D\uDC4B</div>
       <div class="staff-welcome-sub"><span class="staff-test-badge">Test Run \u2014 no data saved</span></div>
       <button class="staff-record-btn" onclick="showStaffChoice()">\uD83D\uDCDD Record</button>
@@ -5883,10 +5963,14 @@ function showStaffPage(){
 }
 
 function showStaffChoice(){
+  staffHideChrome();
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
       <div class="bk-content-title">STAFF RECORD</div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
+      <div style="display:flex;gap:8px;">
+        <button class="staff-settings-btn" onclick="showStaffSettings()" title="Settings">\u2699\uFE0F</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
+      </div>
     </div>
     <div class="staff-choice">
       <div class="staff-choice-btn" onclick="showStaffSales()">
@@ -5903,6 +5987,7 @@ function showStaffChoice(){
 }
 
 function showStaffSales(){
+  staffHideChrome();
   if(staffCustomers.length===0) staffCustomers=[staffNewCustomer()];
   renderStaffSales();
 }
@@ -5974,7 +6059,7 @@ function renderCustomerBlock(cust){
   // panes for mobile (swipe) or one wide table for desktop (scroll)
   const cellsByRow = cust.rows.map(function(row, ri) {
     const upVal  = row.unit_price > 0 ? row.unit_price.toLocaleString('en-NG') : '';
-    const totVal = row.total > 0 ? row.total.toLocaleString('en-NG') : '';
+    const totVal = staffFmtAmt(row.total);
     const dateDisp = row.date ? staffFormatDate(row.date, staffDateFmt) : '';
 
     const toDateDisp = row.date2 ? staffFormatDate(row.date2, staffDateFmt) : '';
@@ -5988,8 +6073,10 @@ function renderCustomerBlock(cust){
            + '</div></td>',
       service:'<td style="width:'+w.service+'px;">'+svcSelect(ri,row.service)+'</td>',
       item:'<td style="width:'+w.item+'px;">'+itemSelect(ri,row.item)+'</td>',
-      price:'<td style="width:'+w.price+'px;"><input class="staff-cell num" type="text" inputmode="decimal" value="'+upVal+'" placeholder="0"'
-           + ' oninput="staffNumChange('+cid+','+ri+',\'unit_price\',this.value)"/></td>',
+      price:'<td style="width:'+w.price+'px;"><div class="staff-price-wrap">'
+           + '<span class="staff-curr-prefix">'+staffSym()+'</span>'
+           + '<input class="staff-cell num" type="text" inputmode="decimal" value="'+upVal+'" placeholder="0"'
+           + ' oninput="staffNumChange('+cid+','+ri+',\'unit_price\',this.value)"/></div></td>',
       qty:'<td style="width:'+w.qty+'px;"><input class="staff-cell num" type="number" value="'+(row.qty||1)+'" min="1"'
            + ' oninput="staffNumChange('+cid+','+ri+',\'qty\',this.value)"/></td>',
       total:'<td style="width:'+w.total+'px;"><div class="staff-cell ro" id="stotal_'+cid+'_'+ri+'">'+totVal+'</div></td>',
@@ -6049,7 +6136,7 @@ function renderCustomerBlock(cust){
     keys.forEach(function(k){
       if (k==='sn')      h += '<td style="width:'+w.sn+'px;">'+(isPane1?'Total':'')+'</td>';
       else if (k==='qty')   h += '<td style="width:'+w.qty+'px;text-align:right;" id="totQty_'+cid+'">'+(totalQty||'')+'</td>';
-      else if (k==='total') h += '<td style="width:'+w.total+'px;text-align:right;" id="totAmt_'+cid+'">'+(totalAmt>0?totalAmt.toLocaleString('en-NG'):'')+'</td>';
+      else if (k==='total') h += '<td style="width:'+w.total+'px;text-align:right;" id="totAmt_'+cid+'">'+staffFmtAmt(totalAmt)+'</td>';
       else h += '<td style="width:'+(w[k]||80)+'px;"></td>';
     });
     h += '</tr>';
@@ -6120,7 +6207,7 @@ function renderCustomerBlock(cust){
     + mobilePanes
     + '<div class="staff-save-static-wrap">'
     + '<button class="staff-save-static-btn" onclick="staffSaveCustomer('+cid+')">&#8250; Save</button>'
-    + '<span class="staff-static-total" id="staticTotal_'+cid+'">Total = '+(totalAmt>0?totalAmt.toLocaleString('en-NG'):'0')+'</span>'
+    + '<span class="staff-static-total" id="staticTotal_'+cid+'">Total = '+(totalAmt>0?staffFmtAmt(totalAmt):staffSym()+'0')+'</span>'
     + '</div>'
     + '</div>';
 }
@@ -6153,7 +6240,7 @@ function staffNumChange(custId,ri,field,val){
   staffCalcTotal(custId,ri);
   // Update this row's total cell live (may exist in multiple panes + desktop table)
   document.querySelectorAll('#stotal_'+custId+'_'+ri).forEach(function(el){
-    el.textContent = c.rows[ri].total>0 ? c.rows[ri].total.toLocaleString('en-NG') : '';
+    el.textContent = staffFmtAmt(c.rows[ri].total);
   });
   staffRefreshCustomerTotals(custId);
 }
@@ -6169,9 +6256,9 @@ function staffRefreshCustomerTotals(custId){
   const totalQty=c.rows.reduce((a,r)=>a+(parseFloat(r.qty)||0),0);
   const totalAmt=c.rows.reduce((a,r)=>a+(parseFloat(r.total)||0),0);
   document.querySelectorAll('#totQty_'+custId).forEach(function(el){ el.textContent = totalQty||''; });
-  document.querySelectorAll('#totAmt_'+custId).forEach(function(el){ el.textContent = totalAmt>0?totalAmt.toLocaleString('en-NG'):''; });
+  document.querySelectorAll('#totAmt_'+custId).forEach(function(el){ el.textContent = staffFmtAmt(totalAmt); });
   const staticTotal = document.getElementById('staticTotal_'+custId);
-  if (staticTotal) staticTotal.textContent = 'Total = ' + (totalAmt>0?totalAmt.toLocaleString('en-NG'):'0');
+  if (staticTotal) staticTotal.textContent = 'Total = ' + (totalAmt>0?staffFmtAmt(totalAmt):staffSym()+'0');
 }
 
 function staffSaveCustomer(custId){
@@ -6277,6 +6364,7 @@ function initStaffSwipe(){
 
 // Expenses
 function showStaffExpenses(){
+  staffHideChrome();
   if(staffExpRows.length===0)staffExpRows=[1,2,3,4,5].map(n=>staffEmptyExpRow(n));
   renderStaffExpenses();
 }
@@ -6288,12 +6376,14 @@ function renderStaffExpenses(){
       <td><input class="staff-cell" type="date" value="${r.date}" onchange="staffExpRows[${i}].date=this.value"/></td>
       <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="Description…"
         oninput="staffExpRows[${i}].narration=this.value"/></td>
-      <td><input class="staff-cell num" type="text" inputmode="decimal"
+      <td><div class="staff-price-wrap">
+        <span class="staff-curr-prefix">${staffSym()}</span>
+        <input class="staff-cell num" type="text" inputmode="decimal"
         value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
-        oninput="staffExpNumChange(${i},'unit_price',this.value)"/></td>
+        oninput="staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
       <td><input class="staff-cell num" type="number" value="${r.qty||1}" min="1" style="width:55px;"
         oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
-      <td><div class="staff-cell ro" id="etotal_${i}">${r.total>0?r.total.toLocaleString('en-NG'):''}</div></td>
+      <td><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
       <td><button class="staff-save-btn" onclick="staffExpSave(${i})">›</button></td>
       <td><button class="staff-del-btn" onclick="staffExpDel(${i})">✕</button></td>
     </tr>`).join('');
@@ -6315,7 +6405,7 @@ function renderStaffExpenses(){
         <tbody>${rows}</tbody>
         <tfoot><tr class="staff-total-row">
           <td colspan="5" style="padding:7px 5px;">Total</td>
-          <td style="text-align:right;padding:7px 5px;" id="expGrandTotal">${totalExp>0?totalExp.toLocaleString('en-NG'):''}</td>
+          <td style="text-align:right;padding:7px 5px;" id="expGrandTotal">${staffFmtAmt(totalExp)}</td>
           <td colspan="2"></td>
         </tr></tfoot>
       </table>
@@ -6327,10 +6417,10 @@ function staffExpNumChange(i,field,val){
   staffExpRows[i][field]=parseFloat(String(val).replace(/,/g,''))||0;
   staffExpRows[i].total=staffExpRows[i].unit_price*(staffExpRows[i].qty||1);
   const el=document.getElementById(`etotal_${i}`);
-  if(el)el.textContent=staffExpRows[i].total>0?staffExpRows[i].total.toLocaleString('en-NG'):'';
+  if(el)el.textContent=staffFmtAmt(staffExpRows[i].total);
   const totalExp=staffExpRows.reduce((a,r)=>a+(r.total||0),0);
   const grand=document.getElementById('expGrandTotal');
-  if(grand)grand.textContent=totalExp>0?totalExp.toLocaleString('en-NG'):'';
+  if(grand)grand.textContent=staffFmtAmt(totalExp);
 }
 
 function staffExpSave(i){
