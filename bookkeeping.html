@@ -768,7 +768,8 @@ body{padding-top:0;}
 /* (column resize feature removed) */
 
 /* ── Static Save button below each customer block ───────────── */
-.staff-save-static-wrap{display:flex;justify-content:center;padding:12px 0 4px;background:var(--surface);border-top:1px solid var(--border);}
+.staff-save-static-wrap{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 0 4px;background:var(--surface);border-top:1px solid var(--border);}
+.staff-static-total{font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.02em;}
 .staff-save-static-btn{background:var(--gold);border:none;color:#000;font-size:0.85rem;font-weight:800;padding:9px 36px;border-radius:8px;cursor:pointer;transition:all 0.15s;}
 .staff-save-static-btn:hover{opacity:0.88;}
 
@@ -5983,6 +5984,8 @@ function renderCustomerBlock(cust){
     const totVal = row.total > 0 ? row.total.toLocaleString('en-NG') : '';
     const dateDisp = row.date ? staffFormatDate(row.date, staffDateFmt) : '';
 
+    const toDateDisp = row.date2 ? staffFormatDate(row.date2, staffDateFmt) : '';
+
     return {
       sn:  '<td class="staff-sn" style="width:'+w.sn+'px;">'+(ri+1)+'</td>',
       date:'<td style="width:'+w.date+'px;"><div class="staff-wrap-cell">'
@@ -6007,8 +6010,11 @@ function renderCustomerBlock(cust){
            + '<option value="Collected"'+(row.status2==='Collected'?' selected':'')+'>Collected</option>'
            + '<option value="Not Collected"'+(row.status2==='Not Collected'?' selected':'')+'>Not Collected</option>'
            + '</select></td>',
-      todate:'<td style="width:'+w.todate+'px;"><input class="staff-cell" type="date" value="'+row.date2+'"'
-           + ' onchange="staffSaleChange('+cid+','+ri+',\'date2\',this.value)"/></td>',
+      todate:'<td style="width:'+w.todate+'px;"><div class="staff-wrap-cell">'
+           + '<input class="staff-cell staff-date-hidden" type="date" value="'+row.date2+'"'
+           + ' onchange="staffSaleChange('+cid+','+ri+',\'date2\',this.value);staffRefreshDateDisp(this)"/>'
+           + '<div class="staff-date-disp" onclick="this.previousElementSibling.showPicker?this.previousElementSibling.showPicker():this.previousElementSibling.focus()">'+(toDateDisp||'Select date')+'</div>'
+           + '</div></td>',
       paid:'<td style="width:'+w.paid+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'paid\',this.value)">'
            + '<option value="">\u2014</option>'
            + '<option value="Not Paid"'+(row.paid==='Not Paid'?' selected':'')+'>Not Paid</option>'
@@ -6121,6 +6127,7 @@ function renderCustomerBlock(cust){
     + mobilePanes
     + '<div class="staff-save-static-wrap">'
     + '<button class="staff-save-static-btn" onclick="staffSaveCustomer('+cid+')">&#8250; Save</button>'
+    + '<span class="staff-static-total" id="staticTotal_'+cid+'">Total = '+(totalAmt>0?totalAmt.toLocaleString('en-NG'):'0')+'</span>'
     + '</div>'
     + '</div>';
 }
@@ -6180,6 +6187,8 @@ function staffRefreshCustomerTotals(custId){
   const totalAmt=c.rows.reduce((a,r)=>a+(parseFloat(r.total)||0),0);
   document.querySelectorAll('#totQty_'+custId).forEach(function(el){ el.textContent = totalQty||''; });
   document.querySelectorAll('#totAmt_'+custId).forEach(function(el){ el.textContent = totalAmt>0?totalAmt.toLocaleString('en-NG'):''; });
+  const staticTotal = document.getElementById('staticTotal_'+custId);
+  if (staticTotal) staticTotal.textContent = 'Total = ' + (totalAmt>0?totalAmt.toLocaleString('en-NG'):'0');
 }
 
 function staffSaveCustomer(custId){
