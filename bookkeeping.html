@@ -2195,9 +2195,10 @@ async function openAccount(type, acct) {
     balance:parseFloat(r.balance)||0, row_order:r.row_order, saved:true
   }));
 
-  // Show saved rows plus 3 empty rows for new entries
+  // Keep only saved rows — no empty padding when there's actual data.
+  // If the account has no entries at all, rows stays empty and renderRows shows the empty state.
   const savedCount = rows.filter(r => r.id).length;
-  while (rows.length < savedCount + 3) rows.push(emptyRow(rows.length));
+  if (savedCount === 0) rows = []; // show empty state, not blank rows
   recalcBalances();
   renderLedger();
 }
@@ -2291,7 +2292,18 @@ function renderRows(displayRows) {
       <td style="text-align:center;padding:8px 10px;font-size:0.72rem;color:var(--muted);">—</td>
     </tr>`;
 
-  tbody.innerHTML = obRow + (displayRows||rows).map((row, i) => {
+  const dataRows = (displayRows||rows).filter(r => hasData(r));
+
+  if (dataRows.length === 0) {
+    tbody.innerHTML = obRow + `<tr><td colspan="8" style="text-align:center;padding:28px 12px;color:var(--muted);font-size:0.82rem;">
+      No entries yet. Transactions posted from
+      <button onclick="openJournal()" style="background:none;border:none;color:var(--gold);font-weight:700;cursor:pointer;font-size:inherit;padding:0;">Master Records</button>
+      will appear here.
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = obRow + dataRows.map((row, i) => {
     const realIdx = rows.indexOf(row);
     const idx = realIdx >= 0 ? realIdx : i;
     const bal = parseFloat(row.balance)||0;
