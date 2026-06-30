@@ -437,15 +437,15 @@ select.bk-cell {
 .sched-total-label{font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
 .sched-total-val{font-size:1.4rem;font-weight:900;}
 .sched-badge{font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:5px;letter-spacing:0.06em;}
-.sched-table{width:100%;}
+.sched-table{width:100%;table-layout:auto;}
 .sched-table thead th{background:var(--bg);color:var(--gold);font-size:0.62rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:9px 12px;border-bottom:2px solid var(--gold);white-space:nowrap;}
 .sched-table tbody td{border-bottom:1px solid var(--border);padding:10px 12px;vertical-align:middle;}
 .sched-row{cursor:pointer;transition:background 0.12s;}
 .sched-row:hover{background:rgba(212,175,55,0.05);}
 .sched-row:hover .sched-name-text{color:var(--gold);}
 .sched-num{color:var(--muted);font-size:0.72rem;width:60px;}
-.sched-name{min-width:160px;}
-.sched-name-text{display:block;font-weight:600;color:var(--off);font-size:0.85rem;}
+.sched-name{min-width:200px;width:auto;}
+.sched-name-text{display:block;font-weight:600;color:var(--off);font-size:0.85rem;white-space:nowrap;}
 .sched-txn-count{display:block;font-size:0.68rem;color:var(--muted);margin-top:2px;}
 .sched-val{text-align:right;font-size:0.82rem;color:var(--off);white-space:nowrap;}
 .sched-total-col{font-weight:700;color:var(--white);}
@@ -5994,7 +5994,7 @@ async function showSchedule(type) {
         <thead>
           <tr>
             <th style="width:60px;">No.</th>
-            <th style="min-width:200px;">Account Name</th>
+            <th class="sched-name">Account Name</th>
             <th class="num" style="width:120px;">Opening Bal.</th>
             <th class="num" style="width:110px;">Total Debit</th>
             <th class="num" style="width:110px;">Total Credit</th>
