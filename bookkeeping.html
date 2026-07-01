@@ -905,7 +905,7 @@ body{padding-top:0;}
   <nav style="flex:1;padding:12px 0;">
     <!-- Dashboard (owner/manager only) -->
     <div class="bk-menu-item" data-role="owner-manager" onclick="showDashboard();closeBkMenu()" id="mnu-dashboard">
-      <span class="bk-menu-icon">📊</span> Dashboard
+      <span class="bk-menu-icon">📊</span> Homepage
     </div>
 
     <!-- Records (owner/manager only) -->
@@ -914,15 +914,15 @@ body{padding-top:0;}
       <span class="bk-menu-arrow" id="arrow-records">›</span>
     </div>
     <div class="bk-submenu" data-role="owner-manager" id="sub-records">
-      <div class="bk-submenu-item" onclick="openChartOfAccounts();closeBkMenu()">📋 Chart of Accounts</div>
-      <div class="bk-submenu-item" onclick="openJournal();closeBkMenu()">📒 Master Records</div>
+      <div class="bk-submenu-item" onclick="openChartOfAccounts();closeBkMenu()">📋 All Records</div>
+      <div class="bk-submenu-item" onclick="openJournal();closeBkMenu()">📒 Record a Transaction</div>
       <div style="padding:6px 20px;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);">Ledgers</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('capital');closeBkMenu()">What you invested</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('liability');closeBkMenu()">What you owe</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('asset');closeBkMenu()">What the business has</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('income');closeBkMenu()">How much did you make?</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('expenditure');closeBkMenu()">How much did you spend?</div>
-      <div class="bk-submenu-item" onclick="showReport('trial');closeBkMenu()">⚖ Trial Balance</div>
+      <div class="bk-submenu-item" onclick="showReport('trial');closeBkMenu()">⚖ Balance Records</div>
     </div>
 
     <!-- Reports (owner/manager only) -->
@@ -6184,8 +6184,8 @@ async function showSchedule(type) {
             <th style="width:60px;">No.</th>
             <th class="sched-name">Account Name</th>
             <th class="num" style="width:120px;">Opening Bal.</th>
-            <th class="num" style="width:110px;">Total Debit</th>
-            <th class="num" style="width:110px;">Total Credit</th>
+            <th class="num" style="width:110px;">Total Inflow</th>
+            <th class="num" style="width:110px;">Total Outflow</th>
             <th class="num" style="width:130px;">Balance</th>
           </tr>
         </thead>
