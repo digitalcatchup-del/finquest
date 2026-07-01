@@ -6852,15 +6852,8 @@ async function sendStaffChat() {
 
 function showStaffPage(){
   staffHideChrome();
-  const name = staffDisplayName || 'Staff';
-  const biz  = businessDisplayName || 'Butterfly Dynamix';
   document.getElementById('bkContent').innerHTML=`
     <div class="staff-welcome staff-welcome-centered">
-      <div class="staff-welcome-title">Welcome, ${escH(name)} \uD83D\uDC4B</div>
-      <div class="staff-welcome-think" onclick="goToHomepage()" title="Go to dashboard">
-        THINK <span>${escH(biz)}</span>
-      </div>
-      <div class="staff-welcome-sub"></div>
       <button class="staff-record-btn" onclick="showStaffChoice()">\uD83D\uDCDD Record</button>
       <button class="staff-homepage-btn" onclick="goToHomepage()">\uD83C\uDFE0 Homepage</button>
     </div>`;
