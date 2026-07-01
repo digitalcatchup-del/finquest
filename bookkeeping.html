@@ -2034,9 +2034,9 @@ async function suDone() {
 
 function suShowTestDashboard() {
   hideAuthScreen();
-  // Show a minimal test dashboard
-  document.getElementById('bkUserName').textContent = suData.businessName || 'Test User';
-  showDashboard();
+  businessDisplayName = suData.businessName || '';
+  document.getElementById('bkUserName').textContent = suData.businessName || 'User';
+  showStaffPage();
 }
 
 // Employees/staff land directly in the Staff Pages area — no main app chrome
@@ -2188,12 +2188,9 @@ async function continueInit() {
 
   applyRoleMenu(userRole);
 
-  // Route: employees land on Staff Pages, owners/managers land on the full Dashboard
-  if (userRole === 'employee') {
-    showStaffPage();
-  } else {
-    showDashboard();
-  }
+  // Everyone lands on the Staff Pages welcome screen first.
+  // From there, Record goes to sales/expenses; Homepage goes to their role-specific dashboard.
+  showStaffPage();
 }
 
 // ── ACCOUNTS ─────────────────────────────────────────────────
@@ -2830,15 +2827,24 @@ async function showDashboard() {
   const content = document.getElementById('bkContent');
   content.innerHTML = '<div class="bk-loading">Loading dashboard…</div>';
 
-  const { data:txns } = await bkDb.from('bk_transactions')
-    .select('record_type,account_name,debit,credit,txn_date,narration')
-    .eq('user_id', bkUser.id).order('txn_date',{ascending:false});
+  let txns = [], journal = [];
+  try {
+    const [txnRes, jnlRes] = await Promise.all([
+      bkDb.from('bk_transactions')
+        .select('record_type,account_name,debit,credit,txn_date,narration')
+        .eq('user_id', bkUser.id).order('txn_date',{ascending:false}),
+      bkDb.from('bk_journal')
+        .select('*').eq('user_id',bkUser.id)
+        .order('created_at',{ascending:false}).limit(8),
+    ]);
+    txns   = txnRes.data  || [];
+    journal = jnlRes.data || [];
+  } catch(e) {
+    console.warn('Dashboard load error:', e);
+    // New user or connection issue — render an empty dashboard
+  }
 
-  const { data:journal } = await bkDb.from('bk_journal')
-    .select('*').eq('user_id',bkUser.id)
-    .order('created_at',{ascending:false}).limit(8);
-
-  const T = txns||[];
+  const T = txns;
   let income=0,expenses=0,capital=0,liabilities=0,assets=0;
   const expByAcct={};
   const thisMonth=new Date().toISOString().slice(0,7);
@@ -6427,10 +6433,10 @@ function staffFmtAmt(n){
 }
 
 function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_custIdSeq}`,serial:'',locked:false,rows:[staffEmptyRow(1),staffEmptyRow(2),staffEmptyRow(3)]};}
-function staffEmptyRow(sn){return{sn,date:'',service:'',item:'',unit_price:0,qty:1,total:0,status1:'',status2:'',date2:'',paid:'',payMode:''};}
+function staffEmptyRow(sn){return{sn,date:'',narration:'',unit_price:0,qty:1,total:0,paid:'',payMode:''};}
 
-// ── Column min-widths (px) — sized so every dropdown option fits fully ──
-let staffColWidths = { sn:34, date:120, service:130, item:130, price:100, qty:58, total:110, status1:100, status2:140, todate:140, paid:100, paymode:140, del:38 };
+// ── Column widths for generic sales spreadsheet ──────────────
+let staffColWidths = { sn:34, narration:200, price:110, qty:60, total:110, del:34 };
 
 // ── Date formatting ──────────────────────────────────────────
 // Places the cursor at the end of the field's current value, so an
@@ -6851,13 +6857,22 @@ function showStaffPage(){
   document.getElementById('bkContent').innerHTML=`
     <div class="staff-welcome staff-welcome-centered">
       <div class="staff-welcome-title">Welcome, ${escH(name)} \uD83D\uDC4B</div>
-      <div class="staff-welcome-think" onclick="showStaffDashboard()" title="Go to your dashboard">
+      <div class="staff-welcome-think" onclick="goToHomepage()" title="Go to dashboard">
         THINK <span>${escH(biz)}</span>
       </div>
       <div class="staff-welcome-sub"></div>
       <button class="staff-record-btn" onclick="showStaffChoice()">\uD83D\uDCDD Record</button>
-      <button class="staff-homepage-btn" onclick="showStaffDashboard()">\uD83C\uDFE0 Homepage</button>
+      <button class="staff-homepage-btn" onclick="goToHomepage()">\uD83C\uDFE0 Homepage</button>
     </div>`;
+}
+
+// Route Homepage button to the right dashboard based on role
+function goToHomepage() {
+  if (userRole === 'employee') {
+    showStaffDashboard();
+  } else {
+    showDashboard();
+  }
 }
 
 // ── STAFF DASHBOARD — summarises this session's recorded data ──
@@ -7123,188 +7138,66 @@ function renderAllCustomers(){
   initStaffSwipe();
 }
 
-// ── Build one customer block: header, 3 swipeable panes (mobile) /
-//    one scrollable table (desktop), static Save button, live totals ──
+// ── Generic sales block: S/N, Narration, Unit Price, Qty, Total ─
+// Fits in ONE mobile pane — no horizontal swiping needed
 function renderCustomerBlock(cust){
-  const totalQty = cust.rows.reduce((a,r)=>a+(parseFloat(r.qty)||0),0);
-  const totalAmt = cust.rows.reduce((a,r)=>a+(parseFloat(r.total)||0),0);
+  const totalAmt = cust.rows.reduce(function(a,r){ return a+(parseFloat(r.total)||0); },0);
   const cid = cust.id;
-  const w = staffColWidths;
   const locked = !!cust.locked;
-  const lockAttr = locked ? ' disabled' : ''; // applied to every input/select/button that edits data
+  const lockAttr = locked ? ' disabled' : '';
 
-  // Build the option lists once
-  function svcSelect(ri, current) {
-    let h = '<select class="staff-cell" onchange="staffSvcChange('+cid+','+ri+',this.value)"'+lockAttr+'>';
-    h += '<option value="">Select\u2026</option>';
-    LAUNDRY_SERVICES.forEach(function(s){ h += '<option value="'+s+'"'+(current===s?' selected':'')+'>'+s+'</option>'; });
-    h += '</select>';
-    return h;
-  }
-  function itemSelect(ri, current) {
-    let h = '<select class="staff-cell" onchange="staffItemChange('+cid+','+ri+',this.value)"'+lockAttr+'>';
-    h += '<option value="">Select\u2026</option>';
-    LAUNDRY_ITEMS.forEach(function(i){ h += '<option value="'+i+'"'+(current===i?' selected':'')+'>'+i+'</option>'; });
-    h += '</select>';
-    return h;
-  }
-
-  // Build each row's cells as named pieces, so we can arrange them into
-  // panes for mobile (swipe) or one wide table for desktop (scroll)
-  const cellsByRow = cust.rows.map(function(row, ri) {
+  let rowsHtml = '';
+  cust.rows.forEach(function(row, ri){
     const upVal  = row.unit_price > 0 ? row.unit_price.toLocaleString('en-NG') : '';
     const totVal = staffFmtAmt(row.total);
-    const dateDisp = row.date ? staffFormatDate(row.date, staffDateFmt) : '';
-
-    const toDateDisp = row.date2 ? staffFormatDate(row.date2, staffDateFmt) : '';
-    const dateClickAttr = locked ? '' : ' onclick="this.previousElementSibling.showPicker?this.previousElementSibling.showPicker():this.previousElementSibling.focus()"';
-
-    return {
-      sn:  '<td class="staff-sn" style="width:'+w.sn+'px;">'+(ri+1)+'</td>',
-      date:'<td style="width:'+w.date+'px;"><div class="staff-wrap-cell">'
-           + '<input class="staff-cell staff-date-hidden" type="date" value="'+row.date+'"'+lockAttr
-           + ' onchange="staffSaleChange('+cid+','+ri+',\'date\',this.value);staffRefreshDateDisp(this)"/>'
-           + '<div class="staff-date-disp'+(locked?' staff-locked-disp':'')+'"'+dateClickAttr+'>'+(dateDisp||'Select date')+'</div>'
-           + '</div></td>',
-      service:'<td style="width:'+w.service+'px;">'+svcSelect(ri,row.service)+'</td>',
-      item:'<td style="width:'+w.item+'px;">'+itemSelect(ri,row.item)+'</td>',
-      price:'<td style="width:'+w.price+'px;"><div class="staff-price-wrap">'
-           + '<span class="staff-curr-prefix">'+staffSym()+'</span>'
-           + '<input class="staff-cell num" type="text" inputmode="decimal" value="'+upVal+'" placeholder="0"'+lockAttr
-           + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
-           + ' oninput="staffNumChange('+cid+','+ri+',\'unit_price\',this.value)"/></div></td>',
-      qty:'<td style="width:'+w.qty+'px;"><input class="staff-cell num" type="text" inputmode="numeric" value="'+(row.qty||1)+'"'+lockAttr
-           + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
-           + ' oninput="staffNumChange('+cid+','+ri+',\'qty\',this.value)"/></td>',
-      total:'<td style="width:'+w.total+'px;"><div class="staff-cell ro" id="stotal_'+cid+'_'+ri+'">'+totVal+'</div></td>',
-      status1:'<td style="width:'+w.status1+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'status1\',this.value)"'+lockAttr+'>'
-           + '<option value="">\u2014</option>'
-           + '<option value="Ready"'+(row.status1==='Ready'?' selected':'')+'>Ready</option>'
-           + '<option value="Not Ready"'+(row.status1==='Not Ready'?' selected':'')+'>Not Ready</option>'
-           + '</select></td>',
-      status2:'<td style="width:'+w.status2+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'status2\',this.value)"'+lockAttr+'>'
-           + '<option value="">\u2014</option>'
-           + '<option value="Collected"'+(row.status2==='Collected'?' selected':'')+'>Collected</option>'
-           + '<option value="Not Collected"'+(row.status2==='Not Collected'?' selected':'')+'>Not Collected</option>'
-           + '</select></td>',
-      todate:'<td style="width:'+w.todate+'px;"><div class="staff-wrap-cell">'
-           + '<input class="staff-cell staff-date-hidden" type="date" value="'+row.date2+'"'+lockAttr
-           + ' onchange="staffSaleChange('+cid+','+ri+',\'date2\',this.value);staffRefreshDateDisp(this)"/>'
-           + '<div class="staff-date-disp'+(locked?' staff-locked-disp':'')+'"'+dateClickAttr+'>'+(toDateDisp||'Select date')+'</div>'
-           + '</div></td>',
-      paid:'<td style="width:'+w.paid+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'paid\',this.value)"'+lockAttr+'>'
-           + '<option value="">\u2014</option>'
-           + '<option value="Not Paid"'+(row.paid==='Not Paid'?' selected':'')+'>Not Paid</option>'
-           + '<option value="Paid"'+(row.paid==='Paid'?' selected':'')+'>Paid</option>'
-           + '</select></td>',
-      paymode:'<td style="width:'+w.paymode+'px;"><select class="staff-cell" onchange="staffSaleChange('+cid+','+ri+',\'payMode\',this.value)"'+lockAttr+'>'
-           + '<option value="">\u2014</option>'
-           + '<option value="Cash"'+(row.payMode==='Cash'?' selected':'')+'>Cash</option>'
-           + '<option value="Card"'+(row.payMode==='Card'?' selected':'')+'>Card</option>'
-           + '<option value="Bank Transfer"'+(row.payMode==='Bank Transfer'?' selected':'')+'>Bank Transfer</option>'
-           + '</select></td>',
-      del:'<td style="width:'+w.del+'px;"><button class="staff-del-btn" onclick="staffDelRow('+cid+','+ri+')"'+lockAttr+'>&#x2715;</button></td>',
-    };
+    rowsHtml += '<tr id="srow_'+cid+'_'+ri+'">'
+      + '<td style="width:34px;text-align:center;color:var(--muted);font-size:0.7rem;padding:6px 4px;">'+(ri+1)+'</td>'
+      + '<td><input class="staff-cell" type="text" value="'+escH(row.narration||'')+'" placeholder="What was sold…"'+lockAttr
+      + ' oninput="staffSaleChange('+cid+','+ri+',\'narration\',this.value)"/></td>'
+      + '<td><div class="staff-price-wrap"><span class="staff-curr-prefix">'+staffSym()+'</span>'
+      + '<input class="staff-cell num" type="text" inputmode="decimal" value="'+upVal+'" placeholder="0"'+lockAttr
+      + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
+      + ' oninput="staffNumChange('+cid+','+ri+',\'unit_price\',this.value)"/></div></td>'
+      + '<td><input class="staff-cell num" type="text" inputmode="numeric" value="'+(row.qty||1)+'"'+lockAttr
+      + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
+      + ' oninput="staffNumChange('+cid+','+ri+',\'qty\',this.value)"/></td>'
+      + '<td><div class="staff-cell ro" id="stotal_'+cid+'_'+ri+'">'+totVal+'</div></td>'
+      + '<td><button class="staff-del-btn" onclick="staffDelRow('+cid+','+ri+')"'+lockAttr+'>&#x2715;</button></td>'
+      + '</tr>';
   });
 
-  const headerDefs = [
-    ['sn','S/N'], ['date','Date'], ['service','Service'], ['item','Item'],
-    ['price','Unit Price'], ['qty','Qty'], ['total','Total'],
-    ['status1','Status 1'], ['status2','Status 2'], ['todate','To collect when?'],
-    ['paid','Payment'], ['paymode','Mode of Payment'], ['del','']
-  ];
-
-  function buildResizeHandle(key) {
-    return '';
-  }
-  function buildHeaderRow(keys) {
-    return '<tr>' + keys.map(function(k){
-      const def = headerDefs.find(function(h){return h[0]===k;});
-      return '<th style="width:'+w[k]+'px;position:relative;">'+def[1]+buildResizeHandle(k)+'</th>';
-    }).join('') + '</tr>';
-  }
-  function buildBodyRows(keys) {
-    return cellsByRow.map(function(cells, ri){
-      return '<tr id="srow_'+cid+'_'+ri+'">' + keys.map(function(k){return cells[k];}).join('') + '</tr>';
-    }).join('');
-  }
-  function buildFootRow(keys, isPane1) {
-    let h = '<tr class="staff-total-row">';
-    keys.forEach(function(k){
-      if (k==='sn')      h += '<td style="width:'+w.sn+'px;">'+(isPane1?'Total':'')+'</td>';
-      else if (k==='qty')   h += '<td style="width:'+w.qty+'px;text-align:right;" id="totQty_'+cid+'">'+(totalQty||'')+'</td>';
-      else if (k==='total') h += '<td style="width:'+w.total+'px;text-align:right;" id="totAmt_'+cid+'">'+staffFmtAmt(totalAmt)+'</td>';
-      else h += '<td style="width:'+(w[k]||80)+'px;"></td>';
-    });
-    h += '</tr>';
-    return h;
-  }
-
-  const allKeys = headerDefs.map(function(h){return h[0];});
-
-  // Desktop: one wide scrollable table with all columns
-  const desktopTable =
-    '<div class="staff-sheet-wrap staff-desktop-only">'
-    + '<table class="staff-table" data-custid="'+cid+'">'
-    + '<thead>'+buildHeaderRow(allKeys)+'</thead>'
-    + '<tbody>'+buildBodyRows(allKeys)+'</tbody>'
-    + '<tfoot>'+buildFootRow(allKeys,true)+'</tfoot>'
-    + '</table></div>';
-
-  // ── Mobile/Tablet: DYNAMIC panes — as many as needed so every column
-  //    has its full content visible without clipping. Never forced to 3. ──
-  const availW = Math.max(280, (window.innerWidth || 375) - 28); // minus outer padding
-  const groups = [];
-  let cur = [], curW = 0;
-  allKeys.forEach(function(k){
-    const cw = w[k] || 80;
-    if (curW + cw > availW && cur.length > 0) {
-      groups.push(cur);
-      cur = []; curW = 0;
-    }
-    cur.push(k); curW += cw;
-  });
-  if (cur.length > 0) groups.push(cur);
-
-  let paneHtml = '';
-  groups.forEach(function(keys, gi){
-    paneHtml += '<div class="staff-swipe-pane">'
-      + '<table class="staff-table"><thead>'+buildHeaderRow(keys)+'</thead>'
-      + '<tbody>'+buildBodyRows(keys)+'</tbody>'
-      + '<tfoot>'+buildFootRow(keys, gi===0)+'</tfoot></table></div>';
-  });
-
-  let dotsHtml = '';
-  groups.forEach(function(_, gi){
-    dotsHtml += '<span class="staff-swipe-dot'+(gi===0?' active':'')+'" data-pane="'+gi+'"></span>';
-  });
-
-  const mobilePanes =
-    '<div class="staff-swipe-wrap staff-mobile-only" data-custid="'+cid+'" data-panecount="'+groups.length+'">'
-      + '<div class="staff-swipe-track" style="width:'+(groups.length*100)+'%;">'
-        + paneHtml
-      + '</div>'
-      + '<div class="staff-swipe-dots">'
-        + dotsHtml
-      + '</div>'
-    + '</div>';
+  const table = '<table class="staff-table" style="width:100%;table-layout:fixed;">'
+    + '<thead><tr>'
+    + '<th style="width:34px;">S/N</th>'
+    + '<th>Narration</th>'
+    + '<th style="width:110px;">Unit Price</th>'
+    + '<th style="width:60px;">Qty</th>'
+    + '<th style="width:110px;">Total</th>'
+    + '<th style="width:34px;"></th>'
+    + '</tr></thead>'
+    + '<tbody>'+rowsHtml+'</tbody>'
+    + '<tfoot><tr class="staff-total-row">'
+    + '<td colspan="4" style="padding:7px 5px;">Total</td>'
+    + '<td style="text-align:right;padding:7px 5px;" id="totAmt_'+cid+'">'+(totalAmt>0?staffFmtAmt(totalAmt):'')+'</td>'
+    + '<td></td>'
+    + '</tr></tfoot>'
+    + '</table>';
 
   return '<div class="staff-customer-block'+(locked?' staff-locked-block':'')+'" data-custid="'+cid+'">'
     + '<div class="staff-customer-header">'
     + '<button class="staff-lock-btn" onclick="staffToggleLock('+cid+')" title="'+(locked?'Unlock to edit':'Lock to prevent editing')+'">'
-    + (locked ? '&#128274;' : '&#128275;')
-    + '</button>'
+    + (locked ? '&#128274;' : '&#128275;') + '</button>'
     + '<input class="staff-customer-name" type="text" value="'+escH(cust.name)+'"'+lockAttr
     + ' onchange="staffCustRename('+cid+',this.value)" placeholder="Customer name\u2026"/>'
     + '<input class="staff-customer-serial" type="text" value="'+escH(cust.serial||'')+'"'+lockAttr
-    + ' onchange="staffCustSerialChange('+cid+',this.value)" placeholder="S/N"'
-    + ' title="Customer Serial Number"/>'
+    + ' onchange="staffCustSerialChange('+cid+',this.value)" placeholder="S/N" title="Customer Serial Number"/>'
     + '<div class="staff-cust-btns">'
     + '<button class="staff-cust-btn" onclick="staffAddRowToCustomer('+cid+')"'+lockAttr+'>+ Row</button>'
     + '<button class="staff-cust-btn del" onclick="staffDeleteCustomer('+cid+')"'+lockAttr+'>&#x2715;</button>'
     + '</div></div>'
-    + desktopTable
-    + mobilePanes
+    + '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">'
+    + table
+    + '</div>'
     + '<div class="staff-save-static-wrap">'
     + '<button class="staff-save-static-btn" onclick="staffSaveCustomer('+cid+')">&#8250; Save</button>'
     + '<span class="staff-static-total" id="staticTotal_'+cid+'">Total = '+(totalAmt>0?staffFmtAmt(totalAmt):staffSym()+'0')+'</span>'
