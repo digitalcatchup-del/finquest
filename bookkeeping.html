@@ -2050,13 +2050,11 @@ async function continueInit() {
 
   try {
     const { data:settings } = await bkDb.from('bk_settings')
-      .select('currency').eq('user_id', bkUser.id).maybeSingle();
-    if (settings?.currency) {
-      activeCurrency = settings.currency;
-      const sel = document.getElementById('currencySelect');
-      if (sel) sel.value = activeCurrency;
-    }
-  } catch(e) { /* use default NGN */ }
+      .select('currency, decimal_places, date_format').eq('user_id', bkUser.id).maybeSingle();
+    if (settings?.currency)                setCurrency(settings.currency);
+    if (settings?.date_format)             setDateFormat(settings.date_format);
+    if (settings?.decimal_places != null)  decimalPlaces = parseInt(settings.decimal_places)||0;
+  } catch(e) { /* use defaults */ }
 
   try { await loadAccounts(); } catch(e) { console.warn('loadAccounts failed:', e); }
   try { await refreshEquation(); } catch(e) { console.warn('refreshEquation failed:', e); }
@@ -5778,24 +5776,27 @@ async function coaDeleteAccount(id,name) {
 
 // ── ACCOUNT SETTINGS PAGE ─────────────────────────────────────
 async function showAccountSettings() {
-  staffShowChrome();
-  showExtEqToggle();
-  showDashToolbar();
+  // Hide hero, toolbar, equation — settings is its own clean page
+  recordsPageChrome();
   setActiveNav('');
   document.getElementById('recordsDD')?.classList.add('hidden');
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
 
-  const [{ data:bkProf },{ data:prods },{ data:settings }] = await Promise.all([
+  const [{ data:bkProf },{ data:settings }] = await Promise.all([
     bkDb.from('bk_business_profiles').select('*').eq('user_id',bkUser.id).maybeSingle(),
-    bkDb.from('bk_products').select('*').eq('user_id',bkUser.id).order('product_name'),
     bkDb.from('bk_settings').select('*').eq('user_id',bkUser.id).maybeSingle(),
   ]);
 
+  // Load saved display preferences
+  if (settings?.currency)       setCurrency(settings.currency);
+  if (settings?.date_format)    setDateFormat(settings.date_format);
+  if (settings?.decimal_places !== undefined) decimalPlaces = parseInt(settings.decimal_places)||0;
+
   const currOpts = Object.entries(CURRENCIES).map(([k,v])=>
-    `<option value="${k}" ${(settings?.currency||activeCurrency)===k?'selected':''}>${v.symbol} ${k} — ${v.name}</option>`).join('');
+    `<option value="${k}" ${activeCurrency===k?'selected':''}>${v.symbol} ${k} — ${v.name}</option>`).join('');
 
   document.getElementById('bkContent').innerHTML = `
-    <div class="bk-content-header"><div class="bk-content-title">ACCOUNT SETTINGS</div></div>
+    <div class="bk-content-header"><div class="bk-content-title">SETTINGS</div></div>
     <div class="acct-settings-grid">
       <div class="acct-card">
         <div class="acct-card-title">Business Profile</div>
@@ -5809,59 +5810,75 @@ async function showAccountSettings() {
         <button class="acct-save-btn" onclick="saveAccountSettings()">Save Changes</button>
         <div id="asMsg" style="font-size:0.75rem;margin-top:8px;min-height:16px;"></div>
       </div>
+
       <div class="acct-card">
-        <div class="acct-card-title">Display & Currency</div>
+        <div class="acct-card-title">Display &amp; Currency</div>
         <div class="acct-field"><label class="acct-label">Currency</label>
-          <select class="acct-input" id="as_currency" onchange="setCurrency(this.value)">${currOpts}</select></div>
+          <select class="acct-input" id="as_currency">
+            ${currOpts}
+          </select></div>
         <div class="acct-field"><label class="acct-label">Decimal Places</label>
-          <select class="acct-input" onchange="decimalPlaces=parseInt(this.value);">
+          <select class="acct-input" id="as_decimals">
             <option value="0" ${decimalPlaces===0?'selected':''}>0 — e.g. ₦1,500</option>
             <option value="2" ${decimalPlaces===2?'selected':''}>2 — e.g. ₦1,500.00</option>
           </select></div>
         <div class="acct-field"><label class="acct-label">Date Format</label>
-          <select class="acct-input" onchange="setDateFormat(this.value)">
+          <select class="acct-input" id="as_datefmt">
             <option value="dd/mm/yyyy" ${dateFormat==='dd/mm/yyyy'?'selected':''}>DD/MM/YYYY</option>
             <option value="mm/dd/yyyy" ${dateFormat==='mm/dd/yyyy'?'selected':''}>MM/DD/YYYY</option>
-            <option value="dd/mm/yy" ${dateFormat==='dd/mm/yy'?'selected':''}>DD/MM/YY</option>
-            <option value="dd/mm" ${dateFormat==='dd/mm'?'selected':''}>DD/MM</option>
+            <option value="dd/mm/yy"   ${dateFormat==='dd/mm/yy'?'selected':''}>DD/MM/YY</option>
+            <option value="dd/mm"      ${dateFormat==='dd/mm'?'selected':''}>DD/MM</option>
             <option value="month_day_year" ${dateFormat==='month_day_year'?'selected':''}>Month-Day-Year — e.g. Jun/30th/2026</option>
-            <option value="day_date_year" ${dateFormat==='day_date_year'?'selected':''}>Day/Date/Year — e.g. Tue/30th/June/2026</option>
+            <option value="day_date_year"  ${dateFormat==='day_date_year'?'selected':''}>Day/Date/Year — e.g. Tue/30th/June/2026</option>
           </select>
           <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">Applies to Master Records and all ledgers.</div>
         </div>
+        <button class="acct-save-btn" onclick="saveDisplaySettings()">Save Changes</button>
+        <div id="dsMsg" style="font-size:0.75rem;margin-top:8px;min-height:16px;"></div>
         <div style="margin-top:14px;font-size:0.75rem;color:var(--muted);">Logged in as:<br>
           <span style="color:var(--off);">${bkUser?.email||''}</span></div>
       </div>
-      <div class="acct-card">
-        <div class="acct-card-title">Products & Services</div>
-        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;">These appear in the ⚡ Quick Input widget.</p>
-        <div style="margin-bottom:12px;">
-          ${(!prods||prods.length===0)
-            ?'<div style="font-size:0.8rem;color:var(--muted);">No products added yet.</div>'
-            :prods.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
-              <span style="flex:1;font-size:0.8rem;color:var(--off);">${escH(p.product_name)}</span>
-              <span style="font-size:0.75rem;color:var(--gold);width:80px;text-align:right;">${fmt(p.price)}</span>
-              <button onclick="deleteProduct('${p.id}')" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:0.75rem;">✕</button>
-            </div>`).join('')}
-        </div>
-        <div style="display:grid;grid-template-columns:2fr 1fr;gap:6px;margin-bottom:8px;">
-          <input class="acct-input" type="text" id="newProdName" placeholder="Product name" style="padding:8px;"/>
-          <input class="acct-input" type="number" id="newProdPrice" placeholder="Price" style="padding:8px;"/>
-        </div>
-        <button class="acct-save-btn" onclick="addProduct().then(()=>showAccountSettings())">+ Add</button>
-      </div>
+
       ${bkUser?.email?.includes('chukwunonso') || userRole === 'owner' ? `
       <div class="acct-card" style="border-color:rgba(212,175,55,0.3);">
         <div class="acct-card-title" style="color:var(--gold);">🔧 Developer Preview</div>
         <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;">Preview the employee experience as it appears after staff log in.</p>
-        <button class="bk-btn bk-btn-gold" onclick="showStaffPage();closeBkMenu()">Preview Staff Pages →</button>
+        <button class="bk-btn bk-btn-gold" onclick="showStaffPage()">Preview Staff Pages →</button>
       </div>` : ''}
+
       <div class="acct-card acct-danger">
         <div class="acct-card-title">Sign Out</div>
         <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;">Your data is safely stored in the cloud.</p>
         <button class="acct-danger-btn" onclick="bkSignOut()">Sign Out →</button>
       </div>
     </div>`;
+}
+
+async function saveDisplaySettings() {
+  const msg = document.getElementById('dsMsg');
+  const currency     = document.getElementById('as_currency')?.value || activeCurrency;
+  const decimals     = parseInt(document.getElementById('as_decimals')?.value)||0;
+  const dateFmt      = document.getElementById('as_datefmt')?.value || dateFormat;
+  if (msg) { msg.textContent='Saving…'; msg.style.color='var(--muted)'; }
+
+  // Apply immediately
+  setCurrency(currency);
+  decimalPlaces = decimals;
+  setDateFormat(dateFmt);
+
+  // Persist to bk_settings
+  const { error } = await bkDb.from('bk_settings').upsert({
+    user_id:        bkUser.id,
+    currency:       currency,
+    decimal_places: decimals,
+    date_format:    dateFmt,
+    updated_at:     new Date().toISOString(),
+  }, { onConflict: 'user_id' });
+
+  if (msg) {
+    msg.textContent = error ? '⚠ Error: '+error.message : '✓ Saved — settings will apply on next login too';
+    msg.style.color = error ? 'var(--red)' : 'var(--green)';
+  }
 }
 
 async function saveAccountSettings() {
