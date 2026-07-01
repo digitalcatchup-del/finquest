@@ -1920,6 +1920,8 @@ function suShowTestDashboard() {
 function suShowStaffEntry() {
   hideAuthScreen();
   staffHideChrome();
+  staffDisplayName = suData.staffName || suData.name || (bkUser?.email?.split('@')[0]) || 'Staff';
+  businessDisplayName = suData.businessName || '';
   document.getElementById('bkUserName').textContent = suData.businessName || 'Test User';
   showStaffPage();
 }
@@ -1961,11 +1963,12 @@ function setCurrency(code) {
   if (bkUser) {
     bkDb.from('bk_settings').upsert({ user_id:bkUser.id, currency:code, updated_at:new Date().toISOString() });
   }
-  refreshEquation();
-  // Re-render if a ledger or journal is currently open
-  if (activeAccount) renderLedger();
-  else if (document.getElementById('journalTable')) renderJournal();
-  // Do NOT navigate away — other pages (settings, dashboard, etc.) don't need re-rendering
+  // Only refresh equation and re-render if we're on a page that shows them
+  if (currentPage !== 'settings') {
+    refreshEquation();
+    if (activeAccount) renderLedger();
+    else if (document.getElementById('journalTable')) renderJournal();
+  }
 }
 
 // ── DEFAULT ACCOUNTS ─────────────────────────────────────────
@@ -2095,6 +2098,7 @@ async function loadAccounts() {
 }
 
 function buildDropdowns() {
+  if (!accounts) return;
   const types = ['capital','liability','asset','income','expenditure'];
   types.forEach(type => {
     const sub = document.getElementById('sub'+type.charAt(0).toUpperCase()+type.slice(1));
@@ -2476,6 +2480,9 @@ function setSaveMsg(msg, type) {
 // ── EQUATION ─────────────────────────────────────────────────
 async function refreshEquation() {
   if(!bkUser) return;
+  // Don't update equation elements if we're on a page that has hidden the chrome
+  if (!document.getElementById('bkMainChrome') ||
+      document.getElementById('bkMainChrome').style.display === 'none') return;
   const { data } = await bkDb.from('bk_transactions')
     .select('record_type,debit,credit').eq('user_id',bkUser.id);
 
@@ -2524,6 +2531,7 @@ async function refreshEquation() {
 
   const lhs=cap+lia, diff=Math.abs(lhs-ast);
   const check=document.getElementById('eqCheck');
+  if (!check) return; // chrome hidden (settings, products etc)
   if(!data||data.length===0){
     check.textContent='Enter transactions to see the equation update.';
     check.className='bk-eq-check';
@@ -2687,7 +2695,11 @@ async function smartAutoCorrect(journalId, drAmt, crAmt) {
 // ── DASHBOARD ─────────────────────────────────────────────────
 // showDashboard is defined above in the COA/settings section
 
+// ── Page guard — prevents stale async callbacks from navigating away ──
+let currentPage = 'dashboard'; // updated by every page-entry function
+
 async function showDashboard() {
+  currentPage = 'dashboard';
   staffShowChrome();
   hideDashToolbar();
   setActiveNav('navDash');
@@ -2823,7 +2835,17 @@ async function showDashboard() {
           ${(accounts['asset']||[]).length===0?'<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:16px;">No asset accounts yet.</div>':''}
         </div>
       </div>
-    </div>`;
+    </div>
+    ${bkUser?.email === 'demo@butterflydynamix.com' ? `
+    <div style="padding:24px 16px 8px;text-align:center;">
+      <div style="border:1px dashed var(--border2);border-radius:12px;padding:20px 24px;max-width:480px;margin:0 auto;">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">🔄 Demo Mode</div>
+        <p style="font-size:0.78rem;color:var(--muted);line-height:1.6;margin-bottom:14px;">You are using the Butterfly Dynamix demo account. Click Reset to wipe all demo data and start fresh.</p>
+        <button onclick="resetDemoData()" style="background:none;border:2px solid var(--red);color:var(--red);font-size:0.82rem;font-weight:700;padding:10px 28px;border-radius:8px;cursor:pointer;transition:all 0.15s;">
+          🔄 Reset Demo Data
+        </button>
+      </div>
+    </div>` : ''}`;
 
   Object.values(charts).forEach(c=>c?.destroy&&c.destroy());
   charts={};
@@ -2844,7 +2866,49 @@ async function showDashboard() {
     options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
       plugins:{legend:{display:false}}}});
 }
-// ── REPORTS ──────────────────────────────────────────────────
+// ── DEMO RESET ────────────────────────────────────────────────
+// Wipes all data for the shared demo account so the next tester
+// starts fresh. Only available when logged in as the demo user.
+async function resetDemoData() {
+  if (!bkUser || bkUser.email !== 'demo@butterflydynamix.com') return;
+  const confirmed = confirm(
+    'Reset all demo data?\n\nThis will delete all transactions, journal entries, accounts, products, and settings for this demo account. The next person who logs in will start fresh.\n\nThis cannot be undone.'
+  );
+  if (!confirmed) return;
+
+  const content = document.getElementById('bkContent');
+  if (content) content.innerHTML = '<div class="bk-loading">Resetting demo data…</div>';
+
+  try {
+    const uid = bkUser.id;
+    // Delete in order to respect foreign key constraints
+    await bkDb.from('bk_transactions').delete().eq('user_id', uid);
+    await bkDb.from('bk_journal').delete().eq('user_id', uid);
+    await bkDb.from('bk_accounts').delete().eq('user_id', uid);
+    await bkDb.from('bk_products').delete().eq('user_id', uid);
+    await bkDb.from('bk_settings').delete().eq('user_id', uid);
+    await bkDb.from('bk_business_profiles').delete().eq('user_id', uid);
+    await bkDb.from('bk_staff_messages').delete().eq('sender_id', uid);
+
+    // Reset in-memory state
+    accounts = { capital:[], liability:[], asset:[], income:[], expenditure:[] };
+    journalRows = [];
+    rows = [];
+    activeAccount = null;
+    activeType = null;
+    businessDisplayName = '';
+    staffCustomers = [];
+    staffExpRows = [];
+
+    alert('✓ Demo data reset successfully. The app will now reload.');
+    window.location.reload();
+  } catch(e) {
+    alert('Error resetting data: ' + (e.message || 'Please try again.'));
+    showDashboard();
+  }
+}
+
+
 
 
 function renderTrialBalance(t) {
@@ -2861,7 +2925,8 @@ function renderTrialBalance(t) {
       </div>
     </div>
     <div class="report-wrap">
-      <table class="report-table">
+      <div class="bk-sheet-wrap">
+      <table class="report-table" style="width:100%;min-width:360px;">
         <thead><tr><th>Account</th><th class="num">Debit (${CURRENCIES[activeCurrency].symbol})</th><th class="num">Credit (${CURRENCIES[activeCurrency].symbol})</th></tr></thead>
         <tbody>
           ${Object.entries(t).map(([type,v])=>`
@@ -2877,6 +2942,7 @@ function renderTrialBalance(t) {
           </tr>
         </tbody>
       </table>
+      </div>
     </div>`;
 }
 
@@ -3159,7 +3225,7 @@ function renderJournalRows() {
   setTimeout(()=>{ initColumnResize(); initRowResize(); }, 50);
 }
 
-function journalHasData(r){
+function journalHasData(r){ if(!r) return false;
   return r.narration||r.debit_account_name||r.credit_account_name||r.debit_amount>0||r.credit_amount>0;
 }
 
@@ -4750,7 +4816,7 @@ function changeDecimals(dir) {
 // fmt() defined at top of script
 
 // ── DATE FORMAT ───────────────────────────────────────────────
-let dateFormat = 'dd/mm/yyyy';
+let dateFormat = 'month_day_year'; // default: Month-Day-Year e.g. Jun/30th/2026
 
 function setDateFormat(fmt) {
   dateFormat = fmt;
@@ -5776,6 +5842,7 @@ async function coaDeleteAccount(id,name) {
 
 // ── ACCOUNT SETTINGS PAGE ─────────────────────────────────────
 async function showAccountSettings() {
+  currentPage = 'settings';
   staffHideChrome(); // settings is a clean standalone page — no equation, no toolbar, no hero
   setActiveNav('');
   document.getElementById('recordsDD')?.classList.add('hidden');
@@ -6064,8 +6131,8 @@ function openAccountById(type, id) {
 let psRows=[], psType='products';
 
 async function showProductsPage(type) {
-  staffShowChrome();
-  hideEqAndToolbar();
+  currentPage = 'products';
+  staffHideChrome();
   psType=type||'products';
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const { data }=await bkDb.from('bk_products').select('*')
@@ -6239,7 +6306,7 @@ const LAUNDRY_ITEMS=['Shirt','Trouser','Full Suit','Up and Down','Duvet','Bed Sp
 let staffCustomers=[],staffExpRows=[],staffDateFmt='month_day_year',_custIdSeq=0;
 let staffCurrency='NGN'; // independent of the main app's currency setting
 
-function staffSym(){ return CURRENCIES[staffCurrency]?.symbol || '₦'; }
+function staffSym(){ return (CURRENCIES[staffCurrency] || CURRENCIES['NGN'])?.symbol || '₦'; }
 function staffFmtAmt(n){
   if (!n || n<=0) return '';
   return staffSym() + n.toLocaleString('en-NG');
