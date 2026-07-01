@@ -2860,8 +2860,6 @@ function renderTrialBalance(t) {
         <span style="font-size:0.78rem;font-weight:700;color:${balanced?'var(--green)':'var(--red)'}">
           ${balanced?'✓ Balanced':'⚠ Not Balanced'}
         </span>
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
-        <button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button>
       </div>
     </div>
     <div class="report-wrap">
@@ -2892,8 +2890,6 @@ function renderPL(t) {
     <div class="bk-content-header">
       <div class="bk-content-title">PROFIT & LOSS ACCOUNT</div>
       <div class="bk-header-actions">
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
-        <button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button>
       </div>
     </div>
     <div class="report-wrap">
@@ -2928,8 +2924,6 @@ function renderBS(t) {
         <span style="font-size:0.78rem;font-weight:700;color:${balanced?'var(--green)':'var(--red)'}">
           ${balanced?'✓ Balanced':'⚠ Not Balanced'}
         </span>
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
-        <button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button>
       </div>
     </div>
     <div class="report-wrap">
@@ -3057,7 +3051,9 @@ async function openJournal() {
     row_order:r.row_order, saved:true
   }));
 
-  while(journalRows.length<20) journalRows.push(emptyJournalRow(journalRows.length));
+  // Only keep saved rows — show empty state if none, otherwise just the data
+  const savedJCount = journalRows.filter(r => r.id).length;
+  if (savedJCount === 0) journalRows = [];
   renderJournal();
 }
 
@@ -3099,16 +3095,26 @@ function renderJournal() {
 
 function renderJournalRows() {
   const tbody=document.getElementById('journalBody'); if(!tbody) return;
-  const totalDr=journalRows.reduce((a,r)=>a+(r.debit_amount||0),0);
-  const totalCr=journalRows.reduce((a,r)=>a+(r.credit_amount||0),0);
+  const filledRows = journalRows.filter(r => journalHasData(r));
+  const totalDr=filledRows.reduce((a,r)=>a+(r.debit_amount||0),0);
+  const totalCr=filledRows.reduce((a,r)=>a+(r.credit_amount||0),0);
   const balanced=Math.abs(totalDr-totalCr)<0.01;
 
-  tbody.innerHTML=journalRows.map((row,i)=>{
-    const sn=journalHasData(row)?i+1:'';
-    return `<tr id="jrow_${i}">
+  if (filledRows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px 12px;color:var(--muted);font-size:0.82rem;">
+      No entries yet. Use <strong style="color:var(--gold)">+ Add another row</strong> below to record a transaction.
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML=filledRows.map((row,i)=>{
+    const realIdx = journalRows.indexOf(row);
+    const idx = realIdx >= 0 ? realIdx : i;
+    const sn=journalHasData(row)?idx+1:'';
+    return `<tr id="jrow_${idx}">
       <td style="position:relative;min-width:110px;">
         <input class="bk-cell staff-date-hidden" type="date" value="${row.txn_date}"
-          onchange="jCellChange(${i},'txn_date',this.value);this.nextElementSibling.textContent=this.value?formatDateDisplay(this.value):'Date'"/>
+          onchange="jCellChange(${idx},'txn_date',this.value);this.nextElementSibling.textContent=this.value?formatDateDisplay(this.value):'Date'"/>
         <div class="bk-date-disp-overlay" onclick="this.previousElementSibling.showPicker?this.previousElementSibling.showPicker():this.previousElementSibling.focus()">
           ${row.txn_date ? formatDateDisplay(row.txn_date) : '<span style="color:var(--muted2)">Date</span>'}
         </div>
@@ -3119,30 +3125,30 @@ function renderJournalRows() {
         oninput="jCellChange(${i},'payer',this.value)"/></td>
       <td style="position:relative;">
         <input class="bk-cell" type="text" value="${escH(row.narration)}" placeholder="Describe transaction…"
-          oninput="jCellChange(${i},'narration',this.value)"
-          id="jnarr_${i}"/>
+          oninput="jCellChange(${idx},'narration',this.value)"
+          id="jnarr_${idx}"/>
       </td>
-      <td><select class="bk-cell" 
-        onchange="jAccountChange(${i},'debit',this.value)">
+      <td><select class="bk-cell"
+        onchange="jAccountChange(${idx},'debit',this.value)">
         ${buildAccountOptions(row.debit_account_name)}
       </select></td>
-      <td><select class="bk-cell" 
-        onchange="jAccountChange(${i},'credit',this.value)">
+      <td><select class="bk-cell"
+        onchange="jAccountChange(${idx},'credit',this.value)">
         ${buildAccountOptions(row.credit_account_name)}
       </select></td>
       <td><input class="bk-cell num bk-amt-input" type="text" inputmode="decimal"
         value="${row.debit_amount>0?row.debit_amount.toLocaleString('en-NG'):''}" placeholder="0"
         onclick="this.select()"
         style="${(!balanced&&row.debit_amount>0)?'color:var(--red);':''}"
-        oninput="jAmtInput(this,${i},'debit_amount')"/></td>
+        oninput="jAmtInput(this,${idx},'debit_amount')"/></td>
       <td><input class="bk-cell num bk-amt-input" type="text" inputmode="decimal"
         value="${row.credit_amount>0?row.credit_amount.toLocaleString('en-NG'):''}" placeholder="0"
         onclick="this.select()"
         style="${(!balanced&&row.credit_amount>0)?'color:var(--red);':''}"
-        oninput="jAmtInput(this,${i},'credit_amount')"/></td>
+        oninput="jAmtInput(this,${idx},'credit_amount')"/></td>
       <td><input class="bk-cell sn-cell" type="text" value="${sn}" readonly tabindex="-1"/></td>
-      <td><button class="del-btn" onclick="deleteJournalRow(${i})">✕</button></td>
-      <td><button class="save-row-btn" onclick="saveJournalRow(${i})" title="Save & Post this row">›</button></td>
+      <td><button class="del-btn" onclick="deleteJournalRow(${idx})">✕</button></td>
+      <td><button class="save-row-btn" onclick="saveJournalRow(${idx})" title="Save & Post this row">›</button></td>
     </tr>`;
   }).join('');
 
@@ -6144,9 +6150,7 @@ async function psSaveRow(i) {
 
 // ── EXTENDED REPORTS ─────────────────────────────────────────
 async function showReport(type) {
-  staffShowChrome();
-  showExtEqToggle();
-  showDashToolbar();
+  recordsPageChrome(); // hides toolbar, hero header; keeps equation
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const {data}=await bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date').eq('user_id',bkUser.id);
   const T=data||[];
@@ -6168,7 +6172,7 @@ function renderCashFlow(T,tots) {
   const loanRep=Math.max(0,tots.liability.dr-tots.liability.cr);
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header"><div class="bk-content-title">CASH FLOW STATEMENT</div>
-      <div class="bk-header-actions"><button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button><button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button></div>
+      
     </div>
     <div class="report-wrap"><table class="report-table">
       <thead><tr><th>Activity</th><th class="num">Amount (${CURRENCIES[activeCurrency].symbol})</th></tr></thead>
@@ -6192,7 +6196,7 @@ function renderEquity(tots) {
   const closing=openCap+netProfit;
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header"><div class="bk-content-title">STATEMENT OF EQUITY</div>
-      <div class="bk-header-actions"><button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button><button class="bk-btn bk-btn-print" onclick="exportPDF()">⬇ PDF</button></div>
+      
     </div>
     <div class="report-wrap"><table class="report-table">
       <thead><tr><th>Component</th><th class="num">Amount (${CURRENCIES[activeCurrency].symbol})</th></tr></thead>
@@ -6511,29 +6515,8 @@ async function showColleagues(){
 }
 
 
-function showStaffDirectory(){
-  staffShowChrome(); showDashToolbar(); showExtEqToggle();
-  document.getElementById('bkContent').innerHTML = `
-    <div class="bk-content-header">
-      <div>
-        <div class="bk-content-title">STAFF</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Your registered staff and their roles.</div>
-      </div>
-      
-    </div>
-    <div style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:560px;">
-      ${STAFF_DIRECTORY.map(function(s){
-        return '<div class="staff-dir-row" onclick="openStaffChat('+s.id+')">'
-          + '<div class="staff-dir-avatar">'+s.avatar+'</div>'
-          + '<div style="flex:1;min-width:0;">'
-          + '<div class="staff-dir-name">'+escH(s.name)+'</div>'
-          + '<div class="staff-dir-pos">'+escH(s.position)+'</div>'
-          + '</div>'
-          + '<div class="staff-dir-chat-icon" title="Chat">\uD83D\uDCAC</div>'
-          + '</div>';
-      }).join('')}
-    </div>`;
-}
+
+
 
 // ── Real-time staff chat via Supabase Realtime ────────────────
 // Messages stored in bk_staff_messages (migration needed)
