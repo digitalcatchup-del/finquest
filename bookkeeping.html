@@ -749,6 +749,8 @@ body{padding-top:0;}
 .staff-homepage-btn{background:none;border:2px solid var(--border2);color:var(--off);font-size:0.85rem;font-weight:700;padding:12px 36px;border-radius:10px;cursor:pointer;margin-top:16px;transition:all 0.15s;}
 .staff-summary-cell{padding:8px 6px;color:var(--off);cursor:default;height:auto;min-height:33px;display:flex;align-items:center;}
 .staff-summary-row{cursor:pointer;transition:background 0.12s;}
+.staff-dir-list{padding:16px;display:flex;flex-direction:column;gap:10px;max-width:560px;}
+.staff-dir-empty{text-align:center;padding:40px 24px;color:var(--muted);font-size:0.84rem;line-height:1.7;}
 .staff-dir-row{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all 0.15s;}
 .staff-dir-row:hover{border-color:var(--gold);background:var(--gold-dim);}
 .staff-dir-avatar{font-size:1.6rem;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:50%;flex-shrink:0;}
@@ -6447,9 +6449,11 @@ function roleAwareSettings(){
 
 // ── Owner/Manager: Staff Directory ────────────────────────────
 async function showStaffDirectory(){
-  staffShowChrome(); showDashToolbar(); showExtEqToggle();
+  // Hide the dashboard chrome (hero header, toolbar, equation) — this is its own page
+  staffHideChrome();
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading staff…</div>';
   await fetchStaffList();
+
   const list = liveStaffList.length
     ? liveStaffList.map(function(s){
         return '<div class="staff-dir-row" onclick="openStaffChat(\''+s.id+'\')">'
@@ -6458,19 +6462,21 @@ async function showStaffDirectory(){
           + '<div class="staff-dir-name">'+escH(s.name)+'</div>'
           + '<div class="staff-dir-pos">'+escH(s.position)+'</div>'
           + '</div>'
-          + '<div class="staff-dir-chat-icon" title="Chat">\uD83D\uDCAC</div>'
+          + '<div class="staff-dir-chat-icon" title="Start chat">\uD83D\uDCAC</div>'
           + '</div>';
       }).join('')
-    : '<div style="text-align:center;padding:32px;color:var(--muted);font-size:0.82rem;">No registered staff yet. Staff will appear here after they sign up and select this business.</div>';
+    : '<div class="staff-dir-empty">No registered staff yet.<br><span style="font-size:0.75rem;">Staff appear here after they sign up and enter this business name.</span></div>';
 
-  document.getElementById('bkContent').innerHTML = `
-    <div class="bk-content-header">
-      <div>
-        <div class="bk-content-title">STAFF</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Registered staff for ${escH(businessDisplayName)}.</div>
-      </div>
-    </div>
-    <div style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:560px;">${list}</div>`;
+  document.getElementById('bkContent').innerHTML =
+    '<div class="bk-content-header">'
+    + '<div>'
+    + '<div class="bk-content-title">STAFF</div>'
+    + '<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">'
+    + escH(businessDisplayName) + ' \u2014 ' + liveStaffList.length
+    + ' registered</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="staff-dir-list">' + list + '</div>';
 }
 
 // ── Employee: Colleagues page ──────────────────────────────────
