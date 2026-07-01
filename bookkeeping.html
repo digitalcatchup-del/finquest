@@ -759,6 +759,10 @@ body{padding-top:0;}
 .staff-chat-bubble{max-width:75%;padding:9px 14px;border-radius:14px;font-size:0.84rem;line-height:1.4;word-break:break-word;}
 .staff-chat-bubble.me{align-self:flex-end;background:var(--gold);color:#000;border-bottom-right-radius:4px;}
 .staff-chat-bubble.them{align-self:flex-start;background:var(--surface2);color:var(--off);border-bottom-left-radius:4px;}
+.staff-chat-msg{display:flex;flex-direction:column;gap:2px;margin-bottom:4px;}
+.staff-chat-msg.me{align-items:flex-end;}
+.staff-chat-msg.them{align-items:flex-start;}
+.staff-chat-time{font-size:0.62rem;color:var(--muted);padding:0 4px;}
 .staff-summary-row:hover{background:rgba(212,175,55,0.06);}
 .staff-summary-row:hover .staff-summary-cell{color:var(--gold);}
 
@@ -944,11 +948,6 @@ body{padding-top:0;}
     <!-- Staff directory (owner/manager only) -->
     <div class="bk-menu-item" data-role="owner-manager" onclick="showStaffDirectory();closeBkMenu()" id="mnu-staff-directory">
       <span class="bk-menu-icon">👥</span> Staff
-    </div>
-
-    <!-- Staff Pages (owner/manager only) -->
-    <div class="bk-menu-item" data-role="owner-manager" onclick="showStaffPage();closeBkMenu()" id="mnu-staff-pages">
-      <span class="bk-menu-icon">👷</span> Staff Pages
     </div>
 
     <!-- Record (employee only) — straight into Sales/Expenses choice -->
@@ -5837,6 +5836,12 @@ async function showAccountSettings() {
         </div>
         <button class="acct-save-btn" onclick="addProduct().then(()=>showAccountSettings())">+ Add</button>
       </div>
+      ${bkUser?.email?.includes('chukwunonso') || userRole === 'owner' ? `
+      <div class="acct-card" style="border-color:rgba(212,175,55,0.3);">
+        <div class="acct-card-title" style="color:var(--gold);">🔧 Developer Preview</div>
+        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;">Preview the employee experience as it appears after staff log in.</p>
+        <button class="bk-btn bk-btn-gold" onclick="showStaffPage();closeBkMenu()">Preview Staff Pages →</button>
+      </div>` : ''}
       <div class="acct-card acct-danger">
         <div class="acct-card-title">Sign Out</div>
         <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;">Your data is safely stored in the cloud.</p>
@@ -6364,7 +6369,7 @@ function showStaffSettings(){
         <div id="staffDateFmtMsg" style="font-size:0.74rem;color:var(--gold);margin-top:8px;min-height:16px;"></div>
       </div>
       <p style="font-size:0.7rem;color:var(--muted);margin-top:14px;">
-        <span class="staff-test-badge">Test Run</span>
+        
         &nbsp;This setting is not saved \u2014 it resets if you leave this session.
       </p>
     </div>`;
@@ -6393,13 +6398,35 @@ function staffSetCurrency(code){
 // Lists registered staff and their position; click to open a chat.
 // Test mode — sample data, chat messages are not persisted.
 // ══════════════════════════════════════════════════════════════
-const STAFF_DIRECTORY = [
-  { id:1, name:'John Smith',  position:'Manager', avatar:'👔' },
-  { id:2, name:'Alex Williams', position:'Barber', avatar:'💈' },
-  { id:3, name:'Grace Okafor',  position:'Laundry Attendant', avatar:'🧺' },
-];
+// ── Real staff data — loaded from bk_business_profiles ────────
+// Shared between owner's Staff directory and employee's Colleagues page
+let liveStaffList = []; // populated by fetchStaffList()
 let staffChatTarget = null;
-let staffChatLog = {}; // {staffId: [{from:'me'|'them', text, time}]}
+let staffChatLog    = {}; // in-memory until Supabase chat table exists
+let staffRealtimeChannel = null;
+
+const ROLE_AVATAR = { owner:'👔', manager:'🗂️', employee:'👷' };
+const ROLE_LABEL  = { owner:'Owner', manager:'Manager', employee:'Staff' };
+
+// Fetch all users who share this business (same business_name in their profile)
+async function fetchStaffList() {
+  if (!bkUser || !businessDisplayName) return [];
+  try {
+    const { data } = await bkDb.from('bk_business_profiles')
+      .select('user_id, staff_display_name, role, business_type')
+      .eq('business_name', businessDisplayName);
+    liveStaffList = (data||[]).map(function(p){
+      return {
+        id:       p.user_id,
+        name:     p.staff_display_name || 'Staff Member',
+        position: p.business_type || ROLE_LABEL[p.role] || 'Staff',
+        role:     p.role || 'employee',
+        avatar:   ROLE_AVATAR[p.role] || '👤',
+      };
+    });
+  } catch(e) { liveStaffList = []; }
+  return liveStaffList;
+}
 
 // ── Show/hide menu items based on the logged-in user's role ───
 function applyRoleMenu(role){
@@ -6418,10 +6445,54 @@ function roleAwareSettings(){
   else showAccountSettings();
 }
 
-// Colleagues — same directory data/UI as the owner's Staff page, just
-// framed for a staff member's perspective (renamed, same chat stub)
-function showColleagues(){
+// ── Owner/Manager: Staff Directory ────────────────────────────
+async function showStaffDirectory(){
+  staffShowChrome(); showDashToolbar(); showExtEqToggle();
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading staff…</div>';
+  await fetchStaffList();
+  const list = liveStaffList.length
+    ? liveStaffList.map(function(s){
+        return '<div class="staff-dir-row" onclick="openStaffChat(\''+s.id+'\')">'
+          + '<div class="staff-dir-avatar">'+s.avatar+'</div>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div class="staff-dir-name">'+escH(s.name)+'</div>'
+          + '<div class="staff-dir-pos">'+escH(s.position)+'</div>'
+          + '</div>'
+          + '<div class="staff-dir-chat-icon" title="Chat">\uD83D\uDCAC</div>'
+          + '</div>';
+      }).join('')
+    : '<div style="text-align:center;padding:32px;color:var(--muted);font-size:0.82rem;">No registered staff yet. Staff will appear here after they sign up and select this business.</div>';
+
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">STAFF</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Registered staff for ${escH(businessDisplayName)}.</div>
+      </div>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:560px;">${list}</div>`;
+}
+
+// ── Employee: Colleagues page ──────────────────────────────────
+async function showColleagues(){
   staffHideChrome();
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading colleagues…</div>';
+  await fetchStaffList();
+  // Filter out self
+  const others = liveStaffList.filter(function(s){ return s.id !== bkUser?.id; });
+  const list = others.length
+    ? others.map(function(s){
+        return '<div class="staff-dir-row" onclick="openStaffChat(\''+s.id+'\')">'
+          + '<div class="staff-dir-avatar">'+s.avatar+'</div>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div class="staff-dir-name">'+escH(s.name)+'</div>'
+          + '<div class="staff-dir-pos">'+escH(s.position)+'</div>'
+          + '</div>'
+          + '<div class="staff-dir-chat-icon" title="Chat">\uD83D\uDCAC</div>'
+          + '</div>';
+      }).join('')
+    : '<div style="text-align:center;padding:32px;color:var(--muted);font-size:0.82rem;">No other colleagues registered yet.</div>';
+
   document.getElementById('bkContent').innerHTML = `
     <div class="bk-content-header">
       <div>
@@ -6430,19 +6501,9 @@ function showColleagues(){
       </div>
       <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
     </div>
-    <div style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:560px;">
-      ${STAFF_DIRECTORY.map(function(s){
-        return '<div class="staff-dir-row" onclick="openStaffChat('+s.id+')">'
-          + '<div class="staff-dir-avatar">'+s.avatar+'</div>'
-          + '<div style="flex:1;min-width:0;">'
-          + '<div class="staff-dir-name">'+escH(s.name)+'</div>'
-          + '<div class="staff-dir-pos">'+escH(s.position)+'</div>'
-          + '</div>'
-          + '<div class="staff-dir-chat-icon" title="Chat">\uD83D\uDCAC</div>'
-          + '</div>';
-      }).join('')}
-    </div>`;
+    <div style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:560px;">${list}</div>`;
 }
+
 
 function showStaffDirectory(){
   staffShowChrome(); showDashToolbar(); showExtEqToggle();
@@ -6452,7 +6513,7 @@ function showStaffDirectory(){
         <div class="bk-content-title">STAFF</div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Your registered staff and their roles.</div>
       </div>
-      <span class="staff-test-badge">Test Data</span>
+      
     </div>
     <div style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:560px;">
       ${STAFF_DIRECTORY.map(function(s){
@@ -6468,10 +6529,14 @@ function showStaffDirectory(){
     </div>`;
 }
 
-function openStaffChat(staffId){
-  staffChatTarget = STAFF_DIRECTORY.find(function(s){ return s.id===staffId; });
-  if (!staffChatTarget) return;
-  if (!staffChatLog[staffId]) staffChatLog[staffId] = [];
+// ── Real-time staff chat via Supabase Realtime ────────────────
+// Messages stored in bk_staff_messages (migration needed)
+async function openStaffChat(staffId) {
+  // Find in live list first, fall back to minimal placeholder
+  staffChatTarget = liveStaffList.find(function(s){ return String(s.id)===String(staffId); })
+    || { id:staffId, name:'Staff Member', position:'', avatar:'👤' };
+
+  const backFn = userRole==='employee' ? 'showColleagues()' : 'showStaffDirectory()';
 
   document.getElementById('bkContent').innerHTML = `
     <div class="bk-content-header">
@@ -6482,43 +6547,114 @@ function openStaffChat(staffId){
           <div style="font-size:0.72rem;color:var(--muted);">${escH(staffChatTarget.position)}</div>
         </div>
       </div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="userRole==='employee'?showColleagues():showStaffDirectory()">\u2190 Back</button>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="${backFn}">\u2190 Back</button>
     </div>
-    <div style="max-width:560px;padding:16px;">
-      <div id="staffChatLog" class="staff-chat-log"></div>
+    <div style="max-width:560px;padding:0 16px 16px;">
+      <div id="staffChatLog" class="staff-chat-log">
+        <div style="text-align:center;color:var(--muted);font-size:0.78rem;padding:20px;">Loading messages…</div>
+      </div>
       <div style="display:flex;gap:8px;margin-top:10px;">
         <input type="text" id="staffChatInput" class="acct-input" placeholder="Type a message\u2026"
           style="flex:1;" onkeydown="if(event.key==='Enter')sendStaffChat()"/>
         <button class="bk-btn bk-btn-gold" onclick="sendStaffChat()">Send</button>
       </div>
-      <p style="font-size:0.7rem;color:var(--muted);margin-top:10px;">
-        <span class="staff-test-badge">Test Mode</span>
-        &nbsp;Messages are not saved or delivered yet \u2014 chat backend coming soon.
-      </p>
     </div>`;
-  renderStaffChatLog();
+
+  await loadChatHistory(staffId);
+  subscribeToChat(staffId);
 }
 
-function renderStaffChatLog(){
+// Build a consistent channel ID for two users (sorted so A→B === B→A)
+function chatChannelId(uid1, uid2) {
+  return [String(uid1), String(uid2)].sort().join('_');
+}
+
+async function loadChatHistory(otherUserId) {
+  if (!bkUser) return;
+  const channelId = chatChannelId(bkUser.id, otherUserId);
+  try {
+    const { data } = await bkDb.from('bk_staff_messages')
+      .select('*')
+      .eq('channel_id', channelId)
+      .order('created_at', { ascending: true })
+      .limit(100);
+    renderStaffChatLog(data || []);
+  } catch(e) {
+    renderStaffChatLog([]);
+  }
+}
+
+function renderStaffChatLog(msgs) {
   const log = document.getElementById('staffChatLog');
-  if (!log || !staffChatTarget) return;
-  const msgs = staffChatLog[staffChatTarget.id] || [];
-  log.innerHTML = msgs.length===0
-    ? '<div style="text-align:center;color:var(--muted);font-size:0.8rem;padding:20px;">No messages yet. Say hello!</div>'
-    : msgs.map(function(m){
-        return '<div class="staff-chat-bubble '+(m.from==='me'?'me':'them')+'">'+escH(m.text)+'</div>';
-      }).join('');
+  if (!log) return;
+  if (!msgs || msgs.length === 0) {
+    log.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.8rem;padding:20px;">No messages yet. Say hello!</div>';
+    return;
+  }
+  log.innerHTML = msgs.map(function(m){
+    const isMe = m.sender_id === bkUser?.id;
+    const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'}) : '';
+    return '<div class="staff-chat-msg '+(isMe?'me':'them')+'">'
+      + '<div class="staff-chat-bubble '+(isMe?'me':'them')+'">'+escH(m.message_text||'')+'</div>'
+      + '<div class="staff-chat-time">'+time+'</div>'
+      + '</div>';
+  }).join('');
   log.scrollTop = log.scrollHeight;
 }
 
-function sendStaffChat(){
+function subscribeToChat(otherUserId) {
+  if (!bkUser || !bkDb.channel) return;
+  // Unsubscribe from any previous channel
+  if (staffRealtimeChannel) { try { bkDb.removeChannel(staffRealtimeChannel); } catch(e){} }
+  const channelId = chatChannelId(bkUser.id, otherUserId);
+  staffRealtimeChannel = bkDb.channel('chat_'+channelId)
+    .on('postgres_changes', {
+      event:'INSERT', schema:'public', table:'bk_staff_messages',
+      filter:'channel_id=eq.'+channelId,
+    }, function(payload) {
+      const log = document.getElementById('staffChatLog');
+      if (!log) return;
+      const m = payload.new;
+      const isMe = m.sender_id === bkUser?.id;
+      const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'}) : '';
+      // Remove empty-state if present
+      if (log.querySelector('div[style*="No messages"]')) log.innerHTML = '';
+      log.innerHTML += '<div class="staff-chat-msg '+(isMe?'me':'them')+'">'
+        + '<div class="staff-chat-bubble '+(isMe?'me':'them')+'">'+escH(m.message_text||'')+'</div>'
+        + '<div class="staff-chat-time">'+time+'</div>'
+        + '</div>';
+      log.scrollTop = log.scrollHeight;
+    })
+    .subscribe();
+}
+
+async function sendStaffChat() {
   const input = document.getElementById('staffChatInput');
   const text = input?.value.trim();
-  if (!text || !staffChatTarget) return;
-  if (!staffChatLog[staffChatTarget.id]) staffChatLog[staffChatTarget.id] = [];
-  staffChatLog[staffChatTarget.id].push({ from:'me', text:text, time:Date.now() });
+  if (!text || !staffChatTarget || !bkUser) return;
   input.value = '';
-  renderStaffChatLog();
+  const channelId = chatChannelId(bkUser.id, staffChatTarget.id);
+  try {
+    await bkDb.from('bk_staff_messages').insert({
+      channel_id:   channelId,
+      sender_id:    bkUser.id,
+      receiver_id:  staffChatTarget.id,
+      message_text: text,
+      created_at:   new Date().toISOString(),
+    });
+    // Realtime subscription will render it; no manual render needed
+  } catch(e) {
+    // Fallback: show optimistically if Realtime not set up yet
+    const log = document.getElementById('staffChatLog');
+    if (log) {
+      if (log.querySelector('div[style*="No messages"]')) log.innerHTML = '';
+      log.innerHTML += '<div class="staff-chat-msg me">'
+        + '<div class="staff-chat-bubble me">'+escH(text)+'</div>'
+        + '<div class="staff-chat-time">'+new Date().toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})+'</div>'
+        + '</div>';
+      log.scrollTop = log.scrollHeight;
+    }
+  }
 }
 
 function showStaffPage(){
@@ -6531,7 +6667,7 @@ function showStaffPage(){
       <div class="staff-welcome-think" onclick="showStaffDashboard()" title="Go to your dashboard">
         THINK <span>${escH(biz)}</span>
       </div>
-      <div class="staff-welcome-sub"><span class="staff-test-badge">Test Run \u2014 no data saved</span></div>
+      <div class="staff-welcome-sub"></div>
       <button class="staff-record-btn" onclick="showStaffChoice()">\uD83D\uDCDD Record</button>
       <button class="staff-homepage-btn" onclick="showStaffDashboard()">\uD83C\uDFE0 Homepage</button>
     </div>`;
@@ -6556,7 +6692,7 @@ function showStaffDashboard(){
     <div class="bk-content-header">
       <div>
         <div class="bk-content-title">STAFF HOMEPAGE</div>
-        <div style="margin-top:4px;"><span class="staff-test-badge">Test Run \u2014 this session only</span></div>
+        <div style="margin-top:4px;"></div>
       </div>
       <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
     </div>
@@ -6779,7 +6915,7 @@ function renderStaffSales(){
       <div>
         <div class="bk-content-title">RECORD SALES</div>
         <div style="margin-top:4px;">
-          <span class="staff-test-badge">Test Run</span>
+          
         </div>
       </div>
       <div style="display:flex;gap:8px;">
@@ -7180,7 +7316,7 @@ function renderStaffExpenses(){
   const totalExp=staffExpRows.reduce((a,r)=>a+(r.total||0),0);
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
-      <div><div class="bk-content-title">EXPENSES RECORD</div><span class="staff-test-badge">Test Run</span></div>
+      <div><div class="bk-content-title">EXPENSES RECORD</div></div>
       <div style="display:flex;gap:8px;">
         <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
         <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">← Back</button>
