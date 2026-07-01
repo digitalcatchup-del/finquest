@@ -1962,10 +1962,10 @@ function setCurrency(code) {
     bkDb.from('bk_settings').upsert({ user_id:bkUser.id, currency:code, updated_at:new Date().toISOString() });
   }
   refreshEquation();
-  // Re-render whatever is currently visible
+  // Re-render if a ledger or journal is currently open
   if (activeAccount) renderLedger();
   else if (document.getElementById('journalTable')) renderJournal();
-  else showDashboard();
+  // Do NOT navigate away — other pages (settings, dashboard, etc.) don't need re-rendering
 }
 
 // ── DEFAULT ACCOUNTS ─────────────────────────────────────────
