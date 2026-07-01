@@ -282,7 +282,7 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .bk-sheet-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-behavior:smooth;cursor:grab;}
 .bk-sheet-wrap:active{cursor:grabbing;}
 .bk-sheet{border-collapse:collapse;table-layout:fixed;white-space:nowrap;}
-.bk-sheet td, .bk-sheet th{white-space:nowrap;}
+.bk-sheet td, .bk-sheet th{white-space:normal;word-break:break-word;}
 .bk-sheet thead th{background:var(--bg);color:var(--gold);font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:10px 8px;text-align:left;border-bottom:2px solid var(--gold);border-right:1px solid var(--border);position:sticky;top:0;z-index:2;white-space:nowrap;}
 .bk-sheet thead th.num{text-align:right;}
 .bk-sheet thead th:last-child{border-right:none;}
@@ -300,7 +300,8 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .col-bal{width:128px;}
 .col-del{width:38px;}
 
-.bk-cell{width:100%;height:34px;background:transparent;border:none;color:var(--white);font-size:0.8rem;font-family:inherit;padding:0 8px;outline:none;}
+.bk-cell{width:100%;height:34px;background:transparent;border:none;color:var(--white);font-size:0.8rem;font-family:inherit;padding:0 8px;outline:none;white-space:normal;word-break:break-word;overflow-wrap:break-word;}
+.bk-date-disp-overlay{font-size:0.8rem;color:var(--white);padding:0 8px;cursor:pointer;height:34px;display:flex;align-items:center;white-space:normal;word-break:break-word;line-height:1.2;}
 .bk-cell:focus{background:rgba(212,175,55,0.07);}
 .bk-cell.num{text-align:right;}
 .bk-cell.bal{text-align:right;pointer-events:none;font-weight:700;}
@@ -454,7 +455,7 @@ select.bk-cell {
 .sched-subacct-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
 .sched-subacct-label{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
 .sched-subacct-select{min-width:200px;}
-.bk-cell-ro{width:100%;height:34px;background:transparent;border:none;color:var(--off);font-size:0.8rem;font-family:inherit;padding:0 8px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bk-cell-ro{width:100%;min-height:34px;background:transparent;border:none;color:var(--off);font-size:0.8rem;font-family:inherit;padding:4px 8px;pointer-events:none;white-space:normal;word-break:break-word;overflow-wrap:break-word;line-height:1.3;display:flex;align-items:center;}
 .bk-cell-ro.num{text-align:right;}
 
 /* ACCOUNT SETUP WIZARD */
@@ -901,26 +902,6 @@ body{padding-top:0;}
       <span class="bk-menu-icon">📊</span> Dashboard
     </div>
 
-    <!-- Staff directory (owner/manager only) -->
-    <div class="bk-menu-item" data-role="owner-manager" onclick="showStaffDirectory();closeBkMenu()" id="mnu-staff-directory">
-      <span class="bk-menu-icon">👥</span> Staff
-    </div>
-
-    <!-- Staff Pages preview (owner/manager only) -->
-    <div class="bk-menu-item" data-role="owner-manager" onclick="showStaffPage();closeBkMenu()" id="mnu-staff-pages">
-      <span class="bk-menu-icon">👷</span> Staff Pages
-    </div>
-
-    <!-- Products & Services (owner/manager only) -->
-    <div class="bk-menu-item bk-menu-parent" data-role="owner-manager" onclick="toggleSubMenu('sub-ps')">
-      <span class="bk-menu-icon">📦</span> Products & Services
-      <span class="bk-menu-arrow" id="arrow-ps">›</span>
-    </div>
-    <div class="bk-submenu" data-role="owner-manager" id="sub-ps">
-      <div class="bk-submenu-item" onclick="showProductsPage('products');closeBkMenu()">📦 Products</div>
-      <div class="bk-submenu-item" onclick="showProductsPage('services');closeBkMenu()">🛠 Services</div>
-    </div>
-
     <!-- Records (owner/manager only) -->
     <div class="bk-menu-item bk-menu-parent" data-role="owner-manager" onclick="toggleSubMenu('sub-records')">
       <span class="bk-menu-icon">📒</span> Records
@@ -929,13 +910,13 @@ body{padding-top:0;}
     <div class="bk-submenu" data-role="owner-manager" id="sub-records">
       <div class="bk-submenu-item" onclick="openChartOfAccounts();closeBkMenu()">📋 Chart of Accounts</div>
       <div class="bk-submenu-item" onclick="openJournal();closeBkMenu()">📒 Master Records</div>
-      <div class="bk-submenu-item" onclick="showReport('trial');closeBkMenu()">⚖ Trial Balance</div>
       <div style="padding:6px 20px;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);">Ledgers</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('capital');closeBkMenu()">Capital Records</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('liability');closeBkMenu()">Liability Records</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('asset');closeBkMenu()">Assets Records</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('income');closeBkMenu()">Income Records</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('expenditure');closeBkMenu()">Expenditure Records</div>
+      <div class="bk-submenu-item" onclick="showReport('trial');closeBkMenu()">⚖ Trial Balance</div>
     </div>
 
     <!-- Reports (owner/manager only) -->
@@ -948,6 +929,26 @@ body{padding-top:0;}
       <div class="bk-submenu-item" onclick="showReport('bs');closeBkMenu()">🏛 Balance Sheet</div>
       <div class="bk-submenu-item" onclick="showReport('cf');closeBkMenu()">💸 Cash Flow</div>
       <div class="bk-submenu-item" onclick="showReport('eq');closeBkMenu()">💼 Equity</div>
+    </div>
+
+    <!-- Products & Services (owner/manager only) -->
+    <div class="bk-menu-item bk-menu-parent" data-role="owner-manager" onclick="toggleSubMenu('sub-ps')">
+      <span class="bk-menu-icon">📦</span> Products & Services
+      <span class="bk-menu-arrow" id="arrow-ps">›</span>
+    </div>
+    <div class="bk-submenu" data-role="owner-manager" id="sub-ps">
+      <div class="bk-submenu-item" onclick="showProductsPage('products');closeBkMenu()">📦 Products</div>
+      <div class="bk-submenu-item" onclick="showProductsPage('services');closeBkMenu()">🛠 Services</div>
+    </div>
+
+    <!-- Staff directory (owner/manager only) -->
+    <div class="bk-menu-item" data-role="owner-manager" onclick="showStaffDirectory();closeBkMenu()" id="mnu-staff-directory">
+      <span class="bk-menu-icon">👥</span> Staff
+    </div>
+
+    <!-- Staff Pages (owner/manager only) -->
+    <div class="bk-menu-item" data-role="owner-manager" onclick="showStaffPage();closeBkMenu()" id="mnu-staff-pages">
+      <span class="bk-menu-icon">👷</span> Staff Pages
     </div>
 
     <!-- Record (employee only) — straight into Sales/Expenses choice -->
@@ -3104,8 +3105,13 @@ function renderJournalRows() {
   tbody.innerHTML=journalRows.map((row,i)=>{
     const sn=journalHasData(row)?i+1:'';
     return `<tr id="jrow_${i}">
-      <td><input class="bk-cell" type="date" value="${row.txn_date}"
-        onchange="jCellChange(${i},'txn_date',this.value)"/></td>
+      <td style="position:relative;min-width:110px;">
+        <input class="bk-cell staff-date-hidden" type="date" value="${row.txn_date}"
+          onchange="jCellChange(${i},'txn_date',this.value);this.nextElementSibling.textContent=this.value?formatDateDisplay(this.value):'Date'"/>
+        <div class="bk-date-disp-overlay" onclick="this.previousElementSibling.showPicker?this.previousElementSibling.showPicker():this.previousElementSibling.focus()">
+          ${row.txn_date ? formatDateDisplay(row.txn_date) : '<span style="color:var(--muted2)">Date</span>'}
+        </div>
+      </td>
       <td><input class="bk-cell" type="text" value="${escH(row.payee)}" placeholder="—"
         oninput="jCellChange(${i},'payee',this.value)"/></td>
       <td><input class="bk-cell" type="text" value="${escH(row.payer)}" placeholder="—"
@@ -3182,17 +3188,13 @@ function jAmtInput(el, i, field) {
     try { el.setSelectionRange(pos, pos); } catch(e) {}
   }
 
-  // Auto-fill the opposite column if it's empty
+  // Always mirror to the other column so debit always equals credit
   const otherField = field === 'debit_amount' ? 'credit_amount' : 'debit_amount';
-  const otherIdx   = field === 'debit_amount' ? 1 : 0; // credit is next input, debit is prev
-  if ((journalRows[i][otherField] || 0) === 0 && raw > 0) {
-    journalRows[i][otherField] = raw;
-    // Find the sibling input in the same row
-    const row  = el.closest('tr');
-    const amts = row ? row.querySelectorAll('.bk-amt-input') : [];
-    const other = field === 'debit_amount' ? amts[1] : amts[0];
-    if (other && other !== el) other.value = formatted;
-  }
+  journalRows[i][otherField] = raw;
+  const row2 = el.closest('tr');
+  const amts = row2 ? row2.querySelectorAll('.bk-amt-input') : [];
+  const other = field === 'debit_amount' ? amts[1] : amts[0];
+  if (other && other !== el) other.value = raw > 0 ? raw.toLocaleString('en-NG') : '';
 
   pushUndoState();
   updateJournalBalance();
@@ -3218,7 +3220,11 @@ function addJournalRow(){
 
 async function deleteJournalRow(i){
   const row=journalRows[i];
-  if(row.id) await bkDb.from('bk_journal').delete().eq('id',row.id);
+  if(row.id){
+    // Delete ledger transactions first, then the journal entry
+    await bkDb.from('bk_transactions').delete().eq('journal_id',row.id).eq('user_id',bkUser.id);
+    await bkDb.from('bk_journal').delete().eq('id',row.id).eq('user_id',bkUser.id);
+  }
   journalRows.splice(i,1);
   renderJournalRows();
   await refreshEquation();
