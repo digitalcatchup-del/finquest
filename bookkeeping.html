@@ -3095,19 +3095,20 @@ function renderJournal() {
 
 function renderJournalRows() {
   const tbody=document.getElementById('journalBody'); if(!tbody) return;
-  const filledRows = journalRows.filter(r => journalHasData(r));
-  const totalDr=filledRows.reduce((a,r)=>a+(r.debit_amount||0),0);
-  const totalCr=filledRows.reduce((a,r)=>a+(r.credit_amount||0),0);
+  // Show saved/filled rows AND any unsaved empty rows added via the + button
+  const visibleRows = journalRows.filter(function(r){ return journalHasData(r) || !r.id; });
+  const totalDr=visibleRows.reduce((a,r)=>a+(r.debit_amount||0),0);
+  const totalCr=visibleRows.reduce((a,r)=>a+(r.credit_amount||0),0);
   const balanced=Math.abs(totalDr-totalCr)<0.01;
 
-  if (filledRows.length === 0) {
+  if (visibleRows.length === 0) {
     tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px 12px;color:var(--muted);font-size:0.82rem;">
       No entries yet. Use <strong style="color:var(--gold)">+ Add another row</strong> below to record a transaction.
     </td></tr>`;
     return;
   }
 
-  tbody.innerHTML=filledRows.map((row,i)=>{
+  tbody.innerHTML=visibleRows.map(function(row,i){
     const realIdx = journalRows.indexOf(row);
     const idx = realIdx >= 0 ? realIdx : i;
     const sn=journalHasData(row)?idx+1:'';
@@ -3222,7 +3223,12 @@ function updateJournalBalance() {
 function addJournalRow(){
   journalRows.push(emptyJournalRow(journalRows.length));
   renderJournalRows();
-  setTimeout(()=>{ const tr=document.getElementById(`jrow_${journalRows.length-1}`); if(tr) tr.querySelector('input')?.focus(); },40);
+  // Focus the date input of the newly added row (it will be the last tr)
+  setTimeout(function(){
+    const allRows = document.querySelectorAll('#journalBody tr[id^="jrow_"]');
+    const last = allRows[allRows.length - 1];
+    if (last) { const inp = last.querySelector('input'); if(inp) inp.focus(); }
+  }, 40);
 }
 
 async function deleteJournalRow(i){
