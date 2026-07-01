@@ -2062,7 +2062,7 @@ function suShowTestDashboard() {
   hideAuthScreen();
   businessDisplayName = suData.businessName || '';
   document.getElementById('bkUserName').textContent = suData.businessName || 'User';
-  showStaffPage();
+  showDashboard();
 }
 
 // Employees/staff land directly in the Staff Pages area — no main app chrome
@@ -2214,9 +2214,12 @@ async function continueInit() {
 
   applyRoleMenu(userRole);
 
-  // Everyone lands on the Staff Pages welcome screen first.
-  // From there, Record goes to sales/expenses; Homepage goes to their role-specific dashboard.
-  showStaffPage();
+  // Route by role — employees go to Staff Pages, owners/managers go to Dashboard
+  if (userRole === 'employee') {
+    showStaffPage();
+  } else {
+    showDashboard();
+  }
 }
 
 // ── ACCOUNTS ─────────────────────────────────────────────────
