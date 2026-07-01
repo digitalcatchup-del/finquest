@@ -1370,12 +1370,6 @@ function renderSuStep() {
         <div class="su-option-title">Business Account</div>
         <div class="su-option-desc">For sole traders, companies, partnerships and organisations</div>
       </div>
-      <div class="su-option disabled">
-        <div class="su-option-icon">👤</div>
-        <div class="su-option-title">Personal Account</div>
-        <div class="su-option-desc">Personal finance and budgeting</div>
-        <div class="su-option-badge">Coming Soon</div>
-      </div>
     </div>
     <button class="su-next-btn" onclick="suNext()">Continue →</button>
     <div style="text-align:center;margin-top:16px;"><button class="su-back-btn" onclick="showAuthScreen('landing')">← Back to start</button></div>`;
@@ -1615,6 +1609,51 @@ function renderSuStep() {
       <button class="su-done-btn" onclick="suDone()">Done — Go to My Dashboard →</button>`;
   }
 
+  // ── Step 9: Employee personal details + company selection ──
+  else if (suStep===9) {
+    // Fetch registered companies asynchronously and inject into the dropdown
+    html += `
+    <div class="su-heading">Your Details</div>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:420px;margin:0 auto;">
+      <div class="acct-field"><label class="acct-label">First Name *</label>
+        <input class="acct-input" type="text" id="su_fname" value="${escH(suData.firstName||'')}"
+          oninput="suData.firstName=this.value" placeholder="First name"/></div>
+      <div class="acct-field"><label class="acct-label">Middle Name</label>
+        <input class="acct-input" type="text" id="su_mname" value="${escH(suData.middleName||'')}"
+          oninput="suData.middleName=this.value" placeholder="Middle name (optional)"/></div>
+      <div class="acct-field"><label class="acct-label">Last Name *</label>
+        <input class="acct-input" type="text" id="su_lname" value="${escH(suData.lastName||'')}"
+          oninput="suData.lastName=this.value" placeholder="Last name"/></div>
+      <div class="acct-field"><label class="acct-label">Date of Birth</label>
+        <input class="acct-input" type="date" id="su_dob" value="${suData.dob||''}"
+          onchange="suData.dob=this.value"/></div>
+      <div class="acct-field"><label class="acct-label">Position / Job Title *</label>
+        <input class="acct-input" type="text" id="su_position" value="${escH(suData.position||'')}"
+          oninput="suData.position=this.value" placeholder="e.g. Barber, Laundry Attendant, Cashier"/></div>
+      <div class="acct-field">
+        <label class="acct-label">Company / Business *</label>
+        <input class="acct-input" type="text" id="su_coSearch" placeholder="Search for your company…"
+          oninput="suFilterCompanies(this.value)" autocomplete="off"
+          value="${escH(suData.companySearch||'')}"/>
+        <select class="acct-input" id="su_company" style="margin-top:6px;"
+          onchange="suSelectCompany(this.value)">
+          <option value="">— Select company —</option>
+          <option value="__testing__">🧪 No company yet — just testing the platform</option>
+          <option value="__loading__" disabled>Loading registered companies…</option>
+        </select>
+        <div id="su_company_note" style="font-size:0.7rem;color:var(--muted);margin-top:4px;">
+          ${suData.companyName ? '✓ Selected: <strong style="color:var(--gold)">'+escH(suData.companyName)+'</strong>' : 'Companies register on this platform and appear in this list.'}
+        </div>
+      </div>
+    </div>
+    <button class="su-next-btn" style="margin-top:20px;" onclick="suEmployeeDone()">Continue →</button>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="su-back-btn" onclick="suStep=2;renderSuStep()">← Back</button>
+    </div>`;
+    // Load companies in background
+    setTimeout(suLoadCompanies, 100);
+  }
+
   c.innerHTML = html;
 
   // After render, init datalists for step 6
@@ -1625,6 +1664,9 @@ function renderSuStep() {
 
 function suNext() {
   if (suStep===1 && !suData.accountType) return;
+  // Employee flow: after step 2 (Who are you?), go straight to employee details step
+  if (suStep===2 && suData.whoAreYou==='employee') { suStep=9; renderSuStep(); return; }
+  if (suStep===9) { suDone(); return; } // employee done after their details
   if (suStep===3 && !suData.businessType) return;
   if (suStep===4 && suData.isRegistered===null) return;
   if (suStep===5 && suData.bizTypes.length===0) return;
@@ -1782,15 +1824,16 @@ async function saveSignupProducts() {
 async function saveSignupProfile() {
   if (!bkUser) return;
   await bkDb.from('bk_business_profiles').upsert({
-    user_id:       bkUser.id,
-    business_name: suData.businessName || null,
-    industry:      suData.industry || null,
-    business_type: (suData.bizTypes||[]).join(', ') || null,
-    country:       suData.country || null,
-    state_province:suData.state || null,
-    lga:           suData.lga || null,
-    role:          suData.whoAreYou || 'owner', // 'owner' | 'manager' | 'employee'
-    updated_at:    new Date().toISOString(),
+    user_id:            bkUser.id,
+    business_name:      suData.businessName || null,
+    industry:           suData.industry || null,
+    business_type:      (suData.bizTypes||[]).join(', ') || suData.position || null,
+    country:            suData.country || null,
+    state_province:     suData.state || null,
+    lga:                suData.lga || null,
+    role:               suData.whoAreYou || 'owner',
+    staff_display_name: suData.staffName || null,
+    updated_at:         new Date().toISOString(),
   }, { onConflict:'user_id' });
 }
 
@@ -1883,26 +1926,106 @@ function suSaveProdRow(i) {
   if (btn) { btn.textContent='✓'; btn.style.color='var(--green)'; setTimeout(()=>{btn.textContent='›';btn.style.color='';},1200); }
 }
 
+// ── Employee signup helpers ────────────────────────────────────
+
+let _allCompanies = []; // cached list of registered businesses
+
+async function suLoadCompanies() {
+  try {
+    const { data } = await bkDb.from('bk_business_profiles')
+      .select('business_name')
+      .not('business_name', 'is', null)
+      .in('role', ['owner', 'manager'])
+      .order('business_name');
+
+    // Unique business names only
+    const seen = {};
+    _allCompanies = (data||[])
+      .map(r => r.business_name)
+      .filter(n => n && !seen[n] && (seen[n]=1));
+
+    suPopulateCompanyDropdown(_allCompanies, document.getElementById('su_coSearch')?.value||'');
+  } catch(e) {
+    _allCompanies = [];
+  }
+}
+
+function suPopulateCompanyDropdown(companies, filter) {
+  const sel = document.getElementById('su_company');
+  if (!sel) return;
+  const q = (filter||'').toLowerCase().trim();
+  const filtered = q ? companies.filter(n => n.toLowerCase().includes(q)) : companies;
+
+  sel.innerHTML = '<option value="">— Select company —</option>'
+    + '<option value="__testing__">🧪 No company yet — just testing the platform</option>'
+    + filtered.map(n => `<option value="${escH(n)}" ${suData.companyName===n?'selected':''}>${escH(n)}</option>`).join('');
+}
+
+function suFilterCompanies(q) {
+  suData.companySearch = q;
+  suPopulateCompanyDropdown(_allCompanies, q);
+}
+
+function suSelectCompany(val) {
+  if (val === '__testing__') {
+    suData.businessName = 'Testing Platform';
+    suData.companyName  = 'Testing Platform';
+  } else if (val && val !== '__loading__') {
+    suData.businessName = val;
+    suData.companyName  = val;
+  }
+  const note = document.getElementById('su_company_note');
+  if (note && val && val !== '__loading__') {
+    note.innerHTML = val === '__testing__'
+      ? 'You\u2019ll be in test mode — you can switch to a real company later.'
+      : '\u2713 Selected: <strong style="color:var(--gold)">'+escH(suData.companyName)+'</strong>';
+  }
+}
+
+function suEmployeeDone() {
+  const fname = document.getElementById('su_fname')?.value.trim();
+  const lname = document.getElementById('su_lname')?.value.trim();
+  const pos   = document.getElementById('su_position')?.value.trim();
+  const comp  = document.getElementById('su_company')?.value;
+  if (!fname || !lname) { alert('Please enter your first and last name.'); return; }
+  if (!pos)   { alert('Please enter your position / job title.'); return; }
+  if (!comp || comp === '__loading__') { alert('Please select your company, or choose "No company yet".'); return; }
+
+  suData.firstName  = fname;
+  suData.lastName   = lname;
+  suData.middleName = document.getElementById('su_mname')?.value.trim()||'';
+  suData.dob        = document.getElementById('su_dob')?.value||'';
+  suData.position   = pos;
+
+  // staff_display_name = "First [Middle] Last"
+  const parts = [fname, suData.middleName, lname].filter(Boolean);
+  suData.staffName = parts.join(' ');
+
+  suDone();
+}
+
 async function suDone() {
   // Save products if user is logged in (test mode for spreadsheet, real save for products)
   await saveSignupProducts();
   // Save role + business profile for real — needed so future logins route correctly
   await saveSignupProfile();
   const isEmployee = suData.whoAreYou === 'employee';
+  const welcomeName = isEmployee
+    ? (suData.staffName || suData.firstName || 'there')
+    : (suData.businessName || 'there');
 
   document.getElementById('bkAuthContent').innerHTML = `
     <div class="su-welcome">
       <div class="su-welcome-icon">🎉</div>
-      <div class="su-welcome-title">Welcome, ${isEmployee ? 'there' : (escH(suData.businessName)||'there')}!</div>
+      <div class="su-welcome-title">Welcome, ${escH(welcomeName)}!</div>
       <div class="su-welcome-sub">
         ${isEmployee
-          ? 'Your staff page is ready.<br>'
+          ? ('Your staff account is set up'+(suData.companyName&&suData.companyName!='\'Testing Platform\''?' at <strong style="color:var(--gold)">'+escH(suData.companyName)+'</strong>':'')+'.<br>')
           : 'Your bookkeeping dashboard is ready.<br>'}
-        <span style="color:var(--gold);font-size:0.78rem;">Test mode — no data has been saved yet. We are still building!</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;">
         <button class="bk-auth-btn-primary" onclick="${isEmployee?'suShowStaffEntry()':'suShowTestDashboard()'}">
-          ${isEmployee ? 'Go to Staff Page →' : 'Go to Dashboard →'}
+          ${isEmployee ? 'Go to Staff Pages →' : 'Go to Dashboard →'}
         </button>
         <button class="bk-login-back" onclick="showAuthScreen('signup')">🔄 Start Over</button>
       </div>
@@ -2836,16 +2959,7 @@ async function showDashboard() {
         </div>
       </div>
     </div>
-    ${bkUser?.email === 'demo@butterflydynamix.com' ? `
-    <div style="padding:24px 16px 8px;text-align:center;">
-      <div style="border:1px dashed var(--border2);border-radius:12px;padding:20px 24px;max-width:480px;margin:0 auto;">
-        <div style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">🔄 Demo Mode</div>
-        <p style="font-size:0.78rem;color:var(--muted);line-height:1.6;margin-bottom:14px;">You are using the Butterfly Dynamix demo account. Click Reset to wipe all demo data and start fresh.</p>
-        <button onclick="resetDemoData()" style="background:none;border:2px solid var(--red);color:var(--red);font-size:0.82rem;font-weight:700;padding:10px 28px;border-radius:8px;cursor:pointer;transition:all 0.15s;">
-          🔄 Reset Demo Data
-        </button>
-      </div>
-    </div>` : ''}`;
+    ${'<div style="padding:24px 16px 8px;text-align:center;"><div style="border:1px dashed var(--border2);border-radius:12px;padding:20px 24px;max-width:480px;margin:0 auto;"><div style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">\uD83D\uDD04 Reset / Refresh</div><p style="font-size:0.78rem;color:var(--muted);line-height:1.6;margin-bottom:14px;">Delete all your data and start fresh. Useful after testing. <strong style="color:var(--red)">This cannot be undone.</strong></p><button onclick="resetDemoData()" style="background:none;border:2px solid var(--red);color:var(--red);font-size:0.82rem;font-weight:700;padding:10px 28px;border-radius:8px;cursor:pointer;">\uD83D\uDD04 Reset &amp; Start Fresh</button></div></div>'}`;
 
   Object.values(charts).forEach(c=>c?.destroy&&c.destroy());
   charts={};
@@ -2870,9 +2984,9 @@ async function showDashboard() {
 // Wipes all data for the shared demo account so the next tester
 // starts fresh. Only available when logged in as the demo user.
 async function resetDemoData() {
-  if (!bkUser || bkUser.email !== 'demo@butterflydynamix.com') return;
+  if (!bkUser) return;
   const confirmed = confirm(
-    'Reset all demo data?\n\nThis will delete all transactions, journal entries, accounts, products, and settings for this demo account. The next person who logs in will start fresh.\n\nThis cannot be undone.'
+    'Reset all your data?\n\nThis will delete all your transactions, journal entries, accounts, products, and settings.\n\nYou will be taken back to the sign-up wizard to start fresh.\n\nThis cannot be undone.'
   );
   if (!confirmed) return;
 
