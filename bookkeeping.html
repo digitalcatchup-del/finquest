@@ -317,7 +317,7 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .bk-add-row-btn:hover{border-color:var(--gold);color:var(--gold);}
 
 /* REPORTS */
-.report-wrap{padding:24px;}
+.report-wrap{padding:24px;max-width:760px;margin:0 auto;}
 .report-table{width:100%;border-collapse:collapse;font-size:0.83rem;}
 .report-table th{font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);padding:10px 14px;text-align:left;border-bottom:2px solid var(--gold);}
 .report-table th.num{text-align:right;}
@@ -5776,8 +5776,7 @@ async function coaDeleteAccount(id,name) {
 
 // ── ACCOUNT SETTINGS PAGE ─────────────────────────────────────
 async function showAccountSettings() {
-  // Hide hero, toolbar, equation — settings is its own clean page
-  recordsPageChrome();
+  staffHideChrome(); // settings is a clean standalone page — no equation, no toolbar, no hero
   setActiveNav('');
   document.getElementById('recordsDD')?.classList.add('hidden');
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
@@ -6088,12 +6087,7 @@ function renderProductsPage() {
       <div class="bk-header-actions">
         <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showProductsPage('${isSvc?'products':'services'}')">
           Switch to ${isSvc?'Products':'Services'}</button>
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
       </div>
-    </div>
-    <div class="ps-barcode-note" style="margin:0;border-radius:0;border-left:none;border-right:none;">
-      <span style="font-size:1.2rem;">📱</span>
-      <span>Barcode scanner coming soon — scan any product barcode and it will auto-populate here, updating automatically with every sale and purchase.</span>
     </div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
       <table class="ps-table" style="min-width:700px;">
