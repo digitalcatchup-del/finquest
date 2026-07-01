@@ -1319,17 +1319,63 @@ function showAuthScreen(view) {
     setTimeout(()=>document.getElementById('loginEmail')?.focus(), 50);
 
   } else if (view==='signup') {
-    suStep = 1;
-    suData = { accountType:'business', whoAreYou:'owner', businessType:'',
-      isRegistered:null, industry:'', bizTypes:[], country:'Nigeria',
-      state:'Lagos', lga:'Ikeja', town:'', village:'', street:'',
-      businessName:'', offerType:'services', products:[], prodCurrency:'NGN' };
-    renderSuStep();
+    // Show email/password form FIRST — creates the Supabase auth user before the wizard
+    content.innerHTML = `
+      <div class="bk-auth-think-1" style="text-align:center;margin-bottom:6px;">Create Account</div>
+      <div style="text-align:center;font-size:0.78rem;color:var(--muted);margin-bottom:24px;">Enter your email and a password to get started</div>
+      <div class="bk-login-form">
+        <input class="bk-login-input" type="email" id="suEmail" placeholder="Email address" autocomplete="email"/>
+        <input class="bk-login-input" type="password" id="suPW" placeholder="Password (min 6 characters)"
+          onkeydown="if(event.key==='Enter')doSignUp()"/>
+        <input class="bk-login-input" type="password" id="suPW2" placeholder="Confirm password"
+          onkeydown="if(event.key==='Enter')doSignUp()"/>
+        <div class="bk-login-err" id="suAuthErr"></div>
+        <button class="bk-login-btn" onclick="doSignUp()">Create Account →</button>
+        <button class="bk-login-back" onclick="showAuthScreen('landing')">← Back</button>
+      </div>`;
+    setTimeout(()=>document.getElementById('suEmail')?.focus(), 50);
   }
 }
 
 function hideAuthScreen() {
   document.getElementById('bkAuthScreen')?.classList.add('hidden');
+}
+
+async function doSignUp() {
+  const email = document.getElementById('suEmail')?.value.trim();
+  const pw    = document.getElementById('suPW')?.value;
+  const pw2   = document.getElementById('suPW2')?.value;
+  const err   = document.getElementById('suAuthErr');
+  if (!email || !pw) { if(err) err.textContent='Please enter your email and a password.'; return; }
+  if (pw.length < 6)  { if(err) err.textContent='Password must be at least 6 characters.'; return; }
+  if (pw !== pw2)     { if(err) err.textContent='Passwords do not match.'; return; }
+  if (err) { err.textContent='Creating account…'; err.style.color='var(--muted)'; }
+
+  const { data, error } = await bkDb.auth.signUp({ email, password: pw });
+  if (error) {
+    if (err) { err.textContent = error.message; err.style.color='var(--red)'; }
+    return;
+  }
+  if (!data?.user) {
+    if (err) { err.textContent='Account created — please check your email to confirm, then log in.'; err.style.color='var(--gold)'; }
+    return;
+  }
+
+  // Auth user created and session set — now launch the profile wizard
+  bkUser = data.user;
+  hideAuthScreen();
+
+  suStep = 1;
+  suData = { accountType:'business', whoAreYou:'owner', businessType:'',
+    isRegistered:null, industry:'', bizTypes:[], country:'Nigeria',
+    state:'Lagos', lga:'Ikeja', town:'', village:'', street:'',
+    businessName:'', offerType:'services', products:[], prodCurrency:'NGN' };
+
+  // Show the wizard in the main app area (auth screen is now hidden)
+  document.getElementById('bkContent').innerHTML = '';
+  staffHideChrome();
+  document.getElementById('bkAuthScreen')?.classList.remove('hidden');
+  renderSuStep();
 }
 
 async function doLogin() {
@@ -2005,31 +2051,11 @@ function suEmployeeDone() {
 }
 
 async function suDone() {
-  // Save products if user is logged in (test mode for spreadsheet, real save for products)
   await saveSignupProducts();
-  // Save role + business profile for real — needed so future logins route correctly
   await saveSignupProfile();
-  const isEmployee = suData.whoAreYou === 'employee';
-  const welcomeName = isEmployee
-    ? (suData.staffName || suData.firstName || 'there')
-    : (suData.businessName || 'there');
-
-  document.getElementById('bkAuthContent').innerHTML = `
-    <div class="su-welcome">
-      <div class="su-welcome-icon">🎉</div>
-      <div class="su-welcome-title">Welcome, ${escH(welcomeName)}!</div>
-      <div class="su-welcome-sub">
-        ${isEmployee
-          ? ('Your staff account is set up'+(suData.companyName&&suData.companyName!='\'Testing Platform\''?' at <strong style="color:var(--gold)">'+escH(suData.companyName)+'</strong>':'')+'.<br>')
-          : 'Your bookkeeping dashboard is ready.<br>'}
-      </div>
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <button class="bk-auth-btn-primary" onclick="${isEmployee?'suShowStaffEntry()':'suShowTestDashboard()'}">
-          Get Started →
-        </button>
-        <button class="bk-login-back" onclick="showAuthScreen('signup')">🔄 Start Over</button>
-      </div>
-    </div>`;
+  // Hide the auth wizard and fully initialise the new user's app
+  hideAuthScreen();
+  await continueInit();
 }
 
 function suShowTestDashboard() {
