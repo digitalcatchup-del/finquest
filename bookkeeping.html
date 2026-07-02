@@ -727,6 +727,14 @@ body{padding-top:0;}
 .ps-del-btn:hover{color:var(--red);}
 .ps-save-btn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.95rem;font-weight:900;padding:4px 8px;}
 .ps-save-btn:hover{color:var(--white);}
+.ps-col-selector{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;min-width:270px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+.ps-col-selector-title{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.ps-col-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);}
+.ps-col-row:last-child{border-bottom:none;}
+.ps-col-label{display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--off);cursor:pointer;flex:1;}
+.ps-col-check{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
+.ps-col-save-btn{background:none;border:1px solid var(--border2);color:var(--gold);font-size:1rem;font-weight:700;width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:8px;transition:all 0.12s;}
+.ps-col-save-btn:hover{background:var(--gold);color:#000;}
 .ps-add-btn{background:none;border:1px dashed var(--border2);color:var(--muted);font-size:0.76rem;font-weight:600;padding:8px;border-radius:6px;cursor:pointer;width:100%;margin-top:8px;}
 .ps-add-btn:hover{border-color:var(--gold);color:var(--gold);}
 .ps-barcode-note{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:0.76rem;color:var(--muted);display:flex;gap:10px;align-items:flex-start;}
@@ -6226,70 +6234,188 @@ function openAccountById(type, id) {
 // ── PRODUCTS & SERVICES PAGE ──────────────────────────────────
 let psRows=[], psType='products';
 
+// ── Column definitions ────────────────────────────────────────
+const PS_COL_DEFS = {
+  products: [
+    { id:'product_type', label:'Product Type',                    def:true  },
+    { id:'cost_price',   label:'Cost Price',                      def:false },
+    { id:'sell_price',   label:'Selling Price',                   def:true  },
+    { id:'qty',          label:'Quantity in Stock',               def:true  },
+    { id:'qty_date',     label:'Quantity in Stock as at',         def:true  },
+    { id:'total_cost',   label:'Total in stock — at cost price',  def:false },
+    { id:'total_sell',   label:'Total in stock — at selling price',def:true },
+    { id:'income_acct',  label:'Posts To (Income Account)',       def:false },
+  ],
+  services: [
+    { id:'service_type', label:'Service Type',  def:true  },
+    { id:'sell_price',   label:'Selling Price', def:true  },
+    { id:'income_acct',  label:'Posts To (Income Account)', def:false },
+  ],
+};
+
+// Active column preferences — { products:{col_id:bool,...}, services:{...} }
+let psColPrefs = { products:{}, services:{} };
+
+function psDefaultPrefs(type) {
+  const prefs = {};
+  PS_COL_DEFS[type].forEach(c => { prefs[c.id] = c.def; });
+  return prefs;
+}
+
+async function loadPsColPrefs() {
+  PS_COL_DEFS.products.forEach(c => { if(!(c.id in psColPrefs.products)) psColPrefs.products[c.id]=c.def; });
+  PS_COL_DEFS.services.forEach(c => { if(!(c.id in psColPrefs.services)) psColPrefs.services[c.id]=c.def; });
+  try {
+    const { data } = await bkDb.from('bk_settings')
+      .select('products_columns,services_columns').eq('user_id',bkUser.id).maybeSingle();
+    if (data?.products_columns) psColPrefs.products = { ...psDefaultPrefs('products'), ...JSON.parse(data.products_columns) };
+    if (data?.services_columns) psColPrefs.services = { ...psDefaultPrefs('services'), ...JSON.parse(data.services_columns) };
+  } catch(e) {}
+}
+
+async function savePsColPref(type, colId, val) {
+  psColPrefs[type][colId] = val;
+  const field = type === 'products' ? 'products_columns' : 'services_columns';
+  await bkDb.from('bk_settings').upsert({
+    user_id: bkUser.id,
+    [field]: JSON.stringify(psColPrefs[type]),
+    updated_at: new Date().toISOString(),
+  }, { onConflict:'user_id' });
+  renderProductsPage();
+}
+
+function togglePsColSelector() {
+  const sel = document.getElementById('psColSelector');
+  if (sel) sel.classList.toggle('hidden');
+}
+
 async function showProductsPage(type) {
   currentPage = 'products';
   staffHideChrome();
-  psType=type||'products';
-  document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
-  const { data }=await bkDb.from('bk_products').select('*')
+  psType = type || 'products';
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
+  await loadPsColPrefs();
+  const { data } = await bkDb.from('bk_products').select('*')
     .eq('user_id',bkUser.id).eq('is_service',psType==='services').eq('is_active',true).order('product_name');
-  psRows=(data||[]).map(r=>({id:r.id,name:r.product_name||'',cost_price:parseFloat(r.cost_price)||0,
-    sell_price:parseFloat(r.price)||0,qty:parseFloat(r.qty_in_stock)||0,unit:r.unit||'unit',saved:true}));
+  psRows = (data||[]).map(r => ({
+    id:             r.id,
+    name:           r.product_name || '',
+    product_type:   r.product_type || '',
+    cost_price:     parseFloat(r.cost_price) || 0,
+    sell_price:     parseFloat(r.price) || 0,
+    qty:            parseFloat(r.qty_in_stock) || 0,
+    qty_date:       r.qty_as_at || '',
+    unit:           r.unit || 'unit',
+    income_account: r.income_account || '',
+    saved:          true,
+  }));
   renderProductsPage();
 }
 
 function renderProductsPage() {
-  const isSvc=psType==='services';
-  const colLabel=isSvc?'Service Type':'Product Type';
-  document.getElementById('bkContent').innerHTML=`
+  const isSvc  = psType === 'services';
+  const prefs  = psColPrefs[psType] || psDefaultPrefs(psType);
+  const cols   = PS_COL_DEFS[psType];
+  const incomeAccts = (accounts.income || []).map(a =>
+    `<option value="${escH(a.account_name)}">${escH(a.account_name)}</option>`).join('');
+
+  // ── Column selector dropdown ──────────────────────────────
+  const selectorRows = cols.map(c => {
+    const checked = prefs[c.id] !== false;
+    return `<div class="ps-col-row">
+      <label class="ps-col-label">
+        <input type="checkbox" class="ps-col-check" id="psc_${c.id}" ${checked?'checked':''}/>
+        ${escH(c.label)}
+      </label>
+      <button class="ps-col-save-btn" onclick="savePsColPref('${psType}','${c.id}',document.getElementById('psc_${c.id}').checked)">&rsaquo;</button>
+    </div>`;
+  }).join('');
+
+  // ── Build header and row cells based on active prefs ─────
+  const show = (id) => prefs[id] !== false;
+
+  let thHtml = `<th style="width:36px;">S/N</th><th>${isSvc?'Service':'Product'}</th>`;
+  if (!isSvc && show('product_type')) thHtml += `<th style="min-width:110px;">Product Type</th>`;
+  if (isSvc  && show('service_type')) thHtml += `<th style="min-width:110px;">Service Type</th>`;
+  if (!isSvc && show('cost_price'))   thHtml += `<th class="num" style="width:110px;">Cost Price</th>`;
+  if (show('sell_price'))             thHtml += `<th class="num" style="width:110px;">Selling Price</th>`;
+  if (!isSvc && show('qty'))          thHtml += `<th class="num" style="width:90px;">Qty in Stock</th>`;
+  if (!isSvc && show('qty_date'))     thHtml += `<th style="width:130px;">Stock as at</th>`;
+  if (!isSvc && show('total_cost'))   thHtml += `<th class="num" style="width:120px;">Total — at cost</th>`;
+  if (!isSvc && show('total_sell'))   thHtml += `<th class="num" style="width:130px;">Total — at selling</th>`;
+  if (show('income_acct'))            thHtml += `<th style="width:160px;">Posts To</th>`;
+  thHtml += `<th style="width:28px;"></th><th style="width:28px;"></th>`;
+
+  const bodyHtml = psRows.map((r, i) => {
+    const atCost = r.cost_price * r.qty;
+    const atSell = r.sell_price * r.qty;
+    let td = `<td class="ps-sn">${i+1}</td>
+      <td><input class="ps-cell" type="text" value="${escH(r.name)}"
+        placeholder="${isSvc?'Service':'Product'} name…"
+        oninput="psRows[${i}].name=this.value;psRows[${i}].saved=false"/></td>`;
+    if (!isSvc && show('product_type')) td += `<td><input class="ps-cell" type="text" value="${escH(r.product_type||'')}"
+        placeholder="e.g. Hair care…" oninput="psRows[${i}].product_type=this.value;psRows[${i}].saved=false"/></td>`;
+    if (isSvc  && show('service_type')) td += `<td><input class="ps-cell" type="text" value="${escH(r.product_type||'')}"
+        placeholder="e.g. Cleaning…" oninput="psRows[${i}].product_type=this.value;psRows[${i}].saved=false"/></td>`;
+    if (!isSvc && show('cost_price'))   td += `<td><input class="ps-cell num" type="number" value="${r.cost_price||''}"
+        placeholder="0" oninput="psRows[${i}].cost_price=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>`;
+    if (show('sell_price'))             td += `<td><input class="ps-cell num" type="number" value="${r.sell_price||''}"
+        placeholder="0" oninput="psRows[${i}].sell_price=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>`;
+    if (!isSvc && show('qty'))          td += `<td><input class="ps-cell num" type="number" value="${r.qty||''}"
+        placeholder="0" oninput="psRows[${i}].qty=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>`;
+    if (!isSvc && show('qty_date'))     td += `<td><input class="ps-cell" type="date" value="${escH(r.qty_date||'')}"
+        onchange="psRows[${i}].qty_date=this.value;psRows[${i}].saved=false"/></td>`;
+    if (!isSvc && show('total_cost'))   td += `<td><div id="psAtCost_${i}" class="ps-cell ro num">${atCost>0?fmt(atCost):''}</div></td>`;
+    if (!isSvc && show('total_sell'))   td += `<td><div id="psAtSell_${i}" class="ps-cell ro num">${atSell>0?fmt(atSell):''}</div></td>`;
+    if (show('income_acct'))            td += `<td><select class="ps-cell" style="font-size:0.75rem;"
+        onchange="psRows[${i}].income_account=this.value;psRows[${i}].saved=false">
+        <option value="">Auto-detect</option>${incomeAccts.replace(
+          `value="${escH(r.income_account)}"`,
+          `value="${escH(r.income_account)}" selected`
+        )}</select></td>`;
+    td += `<td><button class="ps-del-btn" onclick="psDeleteRow(${i})">✕</button></td>
+      <td><button class="ps-save-btn" onclick="psSaveRow(${i})" title="Save">›</button></td>`;
+    return `<tr id="psRow_${i}">${td}</tr>`;
+  }).join('');
+
+  document.getElementById('bkContent').innerHTML = `
     <div class="bk-content-header">
       <div>
         <div class="bk-content-title">${isSvc?'SERVICES':'PRODUCTS'}</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${isSvc?'Track services, pricing and availability.':'Track products, pricing and stock levels.'}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${isSvc?'Track services and pricing.':'Track products, pricing and stock.'}</div>
       </div>
-      <div class="bk-header-actions">
-        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showProductsPage('${isSvc?'products':'services'}')">
-          Switch to ${isSvc?'Products':'Services'}</button>
+      <div style="display:flex;gap:8px;align-items:center;position:relative;">
+        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;"
+          onclick="showProductsPage('${isSvc?'products':'services'}')">
+          Switch to ${isSvc?'Products':'Services'}
+        </button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;"
+          onclick="togglePsColSelector()">⚙ Columns ▾</button>
+        <div id="psColSelector" class="ps-col-selector hidden">
+          <div class="ps-col-selector-title">Show / hide columns</div>
+          ${selectorRows}
+        </div>
       </div>
     </div>
-    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-      <table class="ps-table" style="min-width:700px;">
-        <thead><tr>
-          <th style="width:36px;">S/N</th>
-          <th>${colLabel}</th>
-          <th class="num" style="width:110px;">Cost Price</th>
-          <th class="num" style="width:110px;">Selling Price</th>
-          <th class="num" style="width:90px;">${isSvc?'Sessions':'Qty in Stock'}</th>
-          <th class="num" style="width:120px;">At Cost (Total)</th>
-          <th class="num" style="width:120px;">At Selling (Total)</th>
-          <th style="width:32px;"></th>
-          <th style="width:28px;"></th>
-        </tr></thead>
-        <tbody id="psBody">
-          ${psRows.map((r,i)=>{
-            const atCost=r.cost_price*r.qty, atSell=r.sell_price*r.qty;
-            return `<tr id="psRow_${i}">
-              <td class="ps-sn">${i+1}</td>
-              <td><input class="ps-cell" type="text" value="${escH(r.name)}" placeholder="${colLabel}…"
-                oninput="psRows[${i}].name=this.value;psRows[${i}].saved=false"/></td>
-              <td><input class="ps-cell num" type="number" value="${r.cost_price||''}" placeholder="0"
-                oninput="psRows[${i}].cost_price=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>
-              <td><input class="ps-cell num" type="number" value="${r.sell_price||''}" placeholder="0"
-                oninput="psRows[${i}].sell_price=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>
-              <td><input class="ps-cell num" type="number" value="${r.qty||''}" placeholder="0"
-                oninput="psRows[${i}].qty=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>
-              <td><div id="psAtCost_${i}" class="ps-cell ro">${atCost>0?fmt(atCost):''}</div></td>
-              <td><div id="psAtSell_${i}" class="ps-cell ro">${atSell>0?fmt(atSell):''}</div></td>
-              <td><button class="ps-del-btn" onclick="psDeleteRow(${i})">✕</button></td>
-              <td><button class="ps-save-btn" onclick="psSaveRow(${i})" title="Save">›</button></td>
-            </tr>`;
-          }).join('')}
-        </tbody>
+    <div class="bk-sheet-wrap">
+      <table class="ps-table" style="min-width:400px;">
+        <thead><tr>${thHtml}</tr></thead>
+        <tbody id="psBody">${bodyHtml}</tbody>
       </table>
     </div>
     <div style="padding:10px 16px;">
       <button class="ps-add-btn" onclick="psAddRow()">+ Add ${isSvc?'Service':'Product'}</button>
     </div>`;
+
+  // Close selector when clicking outside
+  setTimeout(function(){
+    document.addEventListener('click', function psCl(e){
+      if (!e.target.closest('#psColSelector') && !e.target.closest('[onclick="togglePsColSelector()"]')) {
+        document.getElementById('psColSelector')?.classList.add('hidden');
+        document.removeEventListener('click', psCl);
+      }
+    });
+  }, 10);
 }
 
 function psUpdateTotals(i) {
@@ -6300,7 +6426,7 @@ function psUpdateTotals(i) {
 }
 
 function psAddRow() {
-  psRows.push({id:null,name:'',cost_price:0,sell_price:0,qty:0,unit:'unit',saved:false});
+  psRows.push({id:null,name:'',product_type:'',cost_price:0,sell_price:0,qty:0,qty_date:'',unit:'unit',income_account:'',saved:false});
   renderProductsPage();
   setTimeout(()=>{ document.querySelectorAll('#psBody tr').item(psRows.length-1)?.querySelector('input')?.focus(); },40);
 }
@@ -6313,16 +6439,19 @@ async function psDeleteRow(i) {
 async function psSaveRow(i) {
   const r=psRows[i]; const btn=document.querySelector(`#psRow_${i} .ps-save-btn`);
   if(!r.name.trim()) return;
+  const payload = {
+    product_name:r.name.trim(), price:r.sell_price, cost_price:r.cost_price,
+    qty_in_stock:r.qty, unit:r.unit, product_type:r.product_type||null,
+    qty_as_at:r.qty_date||null, income_account:r.income_account||null,
+    updated_at:new Date().toISOString(),
+  };
   if(!r.id) {
     const {data,error}=await bkDb.from('bk_products').insert({
-      user_id:bkUser.id,product_name:r.name.trim(),price:r.sell_price,cost_price:r.cost_price,
-      qty_in_stock:r.qty,unit:r.unit,is_service:psType==='services',is_active:true,
+      ...payload, user_id:bkUser.id, is_service:psType==='services', is_active:true,
     }).select().single();
     if(!error&&data){psRows[i].id=data.id;psRows[i].saved=true;}
   } else {
-    await bkDb.from('bk_products').update({product_name:r.name.trim(),price:r.sell_price,
-      cost_price:r.cost_price,qty_in_stock:r.qty,updated_at:new Date().toISOString()})
-      .eq('id',r.id).eq('user_id',bkUser.id);
+    await bkDb.from('bk_products').update(payload).eq('id',r.id).eq('user_id',bkUser.id);
     psRows[i].saved=true;
   }
   if(btn){btn.textContent='✓';btn.style.color='var(--green)';setTimeout(()=>{btn.textContent='›';btn.style.color='';},1500);}
@@ -7221,19 +7350,151 @@ function staffRefreshCustomerTotals(custId){
   if (staticTotal) staticTotal.textContent = 'Total = ' + (totalAmt>0?staffFmtAmt(totalAmt):staffSym()+'0');
 }
 
-function staffSaveCustomer(custId){
-  const block = document.querySelector('.staff-customer-block [data-custid="'+custId+'"]');
-  const btn = document.querySelector('.staff-customer-block .staff-save-static-btn');
-  // Find the right button by searching all blocks
+// ── Auto-post engine ──────────────────────────────────────────
+// Maps payment method to the cash/bank account name
+function staffCashAccount(payMode) {
+  const m = (payMode||'').toLowerCase();
+  if (m === 'transfer' || m === 'pos' || m === 'bank') return 'Cash at Bank';
+  return 'Cash in Hand'; // cash, default
+}
+
+// Determines the correct income account for a narration/product name.
+// Tries to match against products in bk_products, then falls back to rules.
+async function staffIncomeAccount(narration) {
+  if (!bkUser || !narration) return 'Sales Revenue';
+  try {
+    const { data } = await bkDb.from('bk_products')
+      .select('product_name, income_account')
+      .eq('user_id', bkUser.id)
+      .ilike('product_name', '%' + narration.trim() + '%')
+      .limit(1);
+    if (data && data[0] && data[0].income_account) return data[0].income_account;
+  } catch(e) {}
+  // Rule-based fallback
+  const n = narration.toLowerCase();
+  if (n.includes('haircut')||n.includes('barb')||n.includes('shave')||n.includes('trim')||n.includes('cut')) return 'Barbing Revenue';
+  if (n.includes('laundry')||n.includes('wash')||n.includes('dry')||n.includes('iron')||n.includes('clean')) return 'Service Income';
+  if (n.includes('service')||n.includes('consult')||n.includes('repair')||n.includes('fix')) return 'Service Income';
+  return 'Sales Revenue';
+}
+
+// Auto-post a single sale row to the journal + ledger
+async function autoPostSaleRow(row, customerName, txnDate) {
+  if (!bkUser || !row.total || row.total <= 0) return;
+  const cashAcct   = staffCashAccount(row.payMode);
+  const incomeAcct = await staffIncomeAccount(row.narration);
+  const amount     = parseFloat(row.total) || 0;
+  const narration  = (row.narration || 'Sale') + (customerName ? ' — ' + customerName : '');
+  const date       = txnDate || new Date().toISOString().slice(0,10);
+
+  // 1. Write to bk_journal
+  const { data: jnl, error: jErr } = await bkDb.from('bk_journal').insert({
+    user_id:              bkUser.id,
+    txn_date:             date,
+    narration:            narration,
+    debit_account_name:   cashAcct,
+    debit_record_type:    'asset',
+    credit_account_name:  incomeAcct,
+    credit_record_type:   'income',
+    debit_amount:         amount,
+    credit_amount:        amount,
+    created_at:           new Date().toISOString(),
+  }).select().single();
+
+  if (jErr || !jnl) return;
+
+  // 2. Find account IDs and calculate new running balances
+  const [cashRes, incomeRes] = await Promise.all([
+    bkDb.from('bk_accounts').select('id,opening_balance').eq('user_id',bkUser.id).eq('account_name',cashAcct).maybeSingle(),
+    bkDb.from('bk_accounts').select('id,opening_balance').eq('user_id',bkUser.id).eq('account_name',incomeAcct).maybeSingle(),
+  ]);
+
+  // 3. Get last balance for each account to calculate running balance
+  const getLastBal = async (acctName) => {
+    const { data } = await bkDb.from('bk_transactions')
+      .select('balance').eq('user_id',bkUser.id).eq('account_name',acctName)
+      .order('created_at',{ascending:false}).limit(1);
+    return parseFloat(data?.[0]?.balance) || 0;
+  };
+
+  const cashLastBal   = await getLastBal(cashAcct);
+  const incomeLastBal = await getLastBal(incomeAcct);
+
+  // 4. Post to bk_transactions (both sides of the entry)
+  const txns = [];
+  if (cashRes?.data) {
+    txns.push({
+      user_id:      bkUser.id,
+      journal_id:   jnl.id,
+      record_type:  'asset',
+      account_name: cashAcct,
+      txn_date:     date,
+      narration:    narration,
+      debit:        amount,
+      credit:       0,
+      balance:      cashLastBal + amount, // assets increase with debit
+      created_at:   new Date().toISOString(),
+    });
+  }
+  if (incomeRes?.data) {
+    txns.push({
+      user_id:      bkUser.id,
+      journal_id:   jnl.id,
+      record_type:  'income',
+      account_name: incomeAcct,
+      txn_date:     date,
+      narration:    narration,
+      debit:        0,
+      credit:       amount,
+      balance:      incomeLastBal + amount, // income increases with credit
+      created_at:   new Date().toISOString(),
+    });
+  }
+  if (txns.length) await bkDb.from('bk_transactions').insert(txns);
+}
+
+// Save a customer block AND auto-post all rows to the accounting ledger
+async function staffSaveCustomer(custId) {
+  const cust = staffGetCust(custId);
+  if (!cust) return;
+
+  // Find the Save button and show saving state
+  let saveBtn = null;
   document.querySelectorAll('.staff-save-static-btn').forEach(function(b){
-    if (b.getAttribute('onclick')==='staffSaveCustomer('+custId+')') {
-      const orig = b.textContent;
-      b.textContent = '\u2713 Saved';
-      b.style.background = 'var(--green)';
-      setTimeout(function(){ b.textContent = orig; b.style.background=''; }, 1500);
-    }
+    if (b.getAttribute('onclick') === 'staffSaveCustomer('+custId+')') saveBtn = b;
   });
-  // TEST MODE — no Supabase save
+  if (saveBtn) { saveBtn.textContent = 'Posting…'; saveBtn.disabled = true; }
+
+  const date = new Date().toISOString().slice(0,10);
+  const rows  = (cust.rows || []).filter(function(r){ return r.total > 0; });
+
+  try {
+    // Auto-post each row sequentially to maintain correct running balances
+    for (const row of rows) {
+      await autoPostSaleRow(row, cust.name, date);
+    }
+    // Mark saved
+    cust.posted = true;
+    if (saveBtn) {
+      saveBtn.textContent = '✓ Posted';
+      saveBtn.style.background = 'var(--green)';
+      saveBtn.disabled = false;
+      setTimeout(function(){
+        saveBtn.textContent = '› Save';
+        saveBtn.style.background = '';
+      }, 2500);
+    }
+    // Refresh equation bar if visible
+    if (document.getElementById('bkMainChrome')?.style.display !== 'none') {
+      refreshEquation();
+    }
+  } catch(e) {
+    if (saveBtn) {
+      saveBtn.textContent = '⚠ Error — retry';
+      saveBtn.style.background = 'var(--red)';
+      saveBtn.disabled = false;
+    }
+  }
 }
 
 function staffDelRow(custId,ri){
