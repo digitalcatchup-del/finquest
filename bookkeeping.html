@@ -6277,16 +6277,6 @@ function togglePsColSelector() {
 }
 
 // Called on every checkbox change — re-renders the table immediately
-function psColCheck(colId, checked) {
-  psColPrefs[psType][colId] = checked;
-  renderProductsPage();
-  // Re-open the selector after re-render closes it
-  setTimeout(function(){
-    const sel = document.getElementById('psColSelector');
-    if (sel) sel.classList.remove('hidden');
-  }, 15);
-}
-
 // Save button at bottom of dropdown — persists prefs and closes menu
 async function psSaveColPrefs() {
   const btn = document.getElementById('psSaveColBtn');
@@ -6327,106 +6317,110 @@ async function showProductsPage(type) {
 }
 
 function renderProductsPage() {
-  const isSvc  = psType === 'services';
-  const prefs  = psColPrefs[psType] || psDefaultPrefs(psType);
-  const cols   = PS_COL_DEFS[psType];
-  const incomeAccts = (accounts.income || []).map(a =>
-    `<option value="${escH(a.account_name)}">${escH(a.account_name)}</option>`).join('');
+  const isSvc = psType === 'services';
+  const prefs = psColPrefs[psType] || psDefaultPrefs(psType);
+  const cols  = PS_COL_DEFS[psType];
 
-  // ── Column selector dropdown ──────────────────────────────
   const selectorRows = cols.map(c => {
     const checked = prefs[c.id] !== false;
-    return `<div class="ps-col-row">
-      <label class="ps-col-label">
-        <input type="checkbox" class="ps-col-check" data-col="${c.id}"
-          ${checked?'checked':''}
-          onchange="psColCheck('${c.id}',this.checked)"/>
-        ${escH(c.label)}
-      </label>
-    </div>`;
+    return '<div class="ps-col-row">'
+      + '<label class="ps-col-label">'
+      + '<input type="checkbox" class="ps-col-check" data-col="'+c.id+'"'
+      + (checked?' checked':'')
+      + ' onchange="psColCheck(this.dataset.col,this.checked)"/>'
+      + escH(c.label)
+      + '</label></div>';
   }).join('');
 
-  // ── Build header and row cells based on active prefs ─────
-  const show = (id) => prefs[id] !== false;
+  document.getElementById('bkContent').innerHTML =
+    '<div class="bk-content-header">'
+    + '<div><div class="bk-content-title">'+(isSvc?'SERVICES':'PRODUCTS')+'</div>'
+    + '<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">'+(isSvc?'Track services and pricing.':'Track products, pricing and stock.')+'</div></div>'
+    + '<div style="display:flex;gap:8px;align-items:center;position:relative;">'
+    + '<button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showProductsPage(\''+(isSvc?'products':'services')+'\')">'+'Switch to '+(isSvc?'Products':'Services')+'</button>'
+    + '<button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" id="psColBtn" onclick="togglePsColSelector()">⚙ Columns ▾</button>'
+    + '<div id="psColSelector" class="ps-col-selector hidden">'
+    + '<div class="ps-col-selector-title">Show / hide columns</div>'
+    + selectorRows
+    + '<button onclick="psSaveColPrefs()" id="psSaveColBtn"'
+    + ' style="width:100%;margin-top:10px;background:var(--gold);color:#000;border:none;font-size:0.78rem;font-weight:700;padding:9px;border-radius:7px;cursor:pointer;">'
+    + 'Save &amp; Close</button>'
+    + '</div></div></div>'
+    + '<div class="bk-sheet-wrap"><table class="ps-table" style="min-width:400px;">'
+    + '<thead id="psThead"></thead><tbody id="psBody"></tbody>'
+    + '</table></div>'
+    + '<div style="padding:10px 16px;">'
+    + '<button class="ps-add-btn" onclick="psAddRow()">+ Add '+(isSvc?'Service':'Product')+'</button>'
+    + '</div>';
 
-  let thHtml = `<th style="width:36px;">S/N</th><th>${isSvc?'Service':'Product'}</th>`;
-  if (!isSvc && show('product_type')) thHtml += `<th style="min-width:110px;">Product Type</th>`;
-  if (isSvc  && show('service_type')) thHtml += `<th style="min-width:110px;">Service Type</th>`;
-  if (!isSvc && show('cost_price'))   thHtml += `<th class="num" style="width:110px;">Cost Price</th>`;
-  if (show('sell_price'))             thHtml += `<th class="num" style="width:110px;">Selling Price</th>`;
-  if (!isSvc && show('qty'))          thHtml += `<th class="num" style="width:90px;">Qty in Stock</th>`;
-  if (!isSvc && show('qty_date'))     thHtml += `<th style="width:130px;">Stock as at</th>`;
-  if (!isSvc && show('total_cost'))   thHtml += `<th class="num" style="width:120px;">Total — at cost</th>`;
-  if (!isSvc && show('total_sell'))   thHtml += `<th class="num" style="width:130px;">Total — at selling</th>`;
-  if (show('income_acct'))            thHtml += `<th style="width:160px;">Posts To</th>`;
-  thHtml += `<th style="width:28px;"></th><th style="width:28px;"></th>`;
+  psRenderTable();
+}
 
-  const bodyHtml = psRows.map((r, i) => {
+// Only re-renders the table — dropdown stays untouched
+function psRenderTable() {
+  const isSvc  = psType === 'services';
+  const prefs  = psColPrefs[psType] || psDefaultPrefs(psType);
+  const show   = function(id){ return prefs[id] !== false; };
+  const incomeAccts = (accounts.income || []).map(function(a){
+    return '<option value="'+escH(a.account_name)+'">'+escH(a.account_name)+'</option>';
+  }).join('');
+
+  let thHtml = '<th style="width:36px;">S/N</th><th>'+(isSvc?'Service':'Product')+'</th>';
+  if (!isSvc && show('product_type')) thHtml += '<th style="min-width:110px;">Product Type</th>';
+  if (isSvc  && show('service_type')) thHtml += '<th style="min-width:110px;">Service Type</th>';
+  if (!isSvc && show('cost_price'))   thHtml += '<th class="num" style="width:110px;">Cost Price</th>';
+  if (show('sell_price'))             thHtml += '<th class="num" style="width:110px;">Selling Price</th>';
+  if (!isSvc && show('qty'))          thHtml += '<th class="num" style="width:90px;">Qty in Stock</th>';
+  if (!isSvc && show('qty_date'))     thHtml += '<th style="width:130px;">Stock as at</th>';
+  if (!isSvc && show('total_cost'))   thHtml += '<th class="num" style="width:120px;">Total — at cost</th>';
+  if (!isSvc && show('total_sell'))   thHtml += '<th class="num" style="width:130px;">Total — at selling</th>';
+  if (show('income_acct'))            thHtml += '<th style="width:160px;">Posts To</th>';
+  thHtml += '<th style="width:28px;"></th><th style="width:28px;"></th>';
+
+  const bodyHtml = psRows.map(function(r, i){
     const atCost = r.cost_price * r.qty;
     const atSell = r.sell_price * r.qty;
-    let td = `<td class="ps-sn">${i+1}</td>
-      <td><input class="ps-cell" type="text" value="${escH(r.name)}"
-        placeholder="${isSvc?'Service':'Product'} name…"
-        oninput="psRows[${i}].name=this.value;psRows[${i}].saved=false"/></td>`;
-    if (!isSvc && show('product_type')) td += `<td><input class="ps-cell" type="text" value="${escH(r.product_type||'')}"
-        placeholder="e.g. Hair care…" oninput="psRows[${i}].product_type=this.value;psRows[${i}].saved=false"/></td>`;
-    if (isSvc  && show('service_type')) td += `<td><input class="ps-cell" type="text" value="${escH(r.product_type||'')}"
-        placeholder="e.g. Cleaning…" oninput="psRows[${i}].product_type=this.value;psRows[${i}].saved=false"/></td>`;
-    if (!isSvc && show('cost_price'))   td += `<td><input class="ps-cell num" type="number" value="${r.cost_price||''}"
-        placeholder="0" oninput="psRows[${i}].cost_price=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>`;
-    if (show('sell_price'))             td += `<td><input class="ps-cell num" type="number" value="${r.sell_price||''}"
-        placeholder="0" oninput="psRows[${i}].sell_price=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>`;
-    if (!isSvc && show('qty'))          td += `<td><input class="ps-cell num" type="number" value="${r.qty||''}"
-        placeholder="0" oninput="psRows[${i}].qty=parseFloat(this.value)||0;psRows[${i}].saved=false;psUpdateTotals(${i})"/></td>`;
-    if (!isSvc && show('qty_date'))     td += `<td><input class="ps-cell" type="date" value="${escH(r.qty_date||'')}"
-        onchange="psRows[${i}].qty_date=this.value;psRows[${i}].saved=false"/></td>`;
-    if (!isSvc && show('total_cost'))   td += `<td><div id="psAtCost_${i}" class="ps-cell ro num">${atCost>0?fmt(atCost):''}</div></td>`;
-    if (!isSvc && show('total_sell'))   td += `<td><div id="psAtSell_${i}" class="ps-cell ro num">${atSell>0?fmt(atSell):''}</div></td>`;
-    if (show('income_acct'))            td += `<td><select class="ps-cell" style="font-size:0.75rem;"
-        onchange="psRows[${i}].income_account=this.value;psRows[${i}].saved=false">
-        <option value="">Auto-detect</option>${incomeAccts.replace(
-          `value="${escH(r.income_account)}"`,
-          `value="${escH(r.income_account)}" selected`
-        )}</select></td>`;
-    td += `<td><button class="ps-del-btn" onclick="psDeleteRow(${i})">✕</button></td>
-      <td><button class="ps-save-btn" onclick="psSaveRow(${i})" title="Save">›</button></td>`;
-    return `<tr id="psRow_${i}">${td}</tr>`;
+    let td = '<td class="ps-sn">'+(i+1)+'</td>'
+      + '<td><input class="ps-cell" type="text" value="'+escH(r.name)+'"'
+      + ' placeholder="'+(isSvc?'Service':'Product')+' name…"'
+      + ' oninput="psRows['+i+'].name=this.value;psRows['+i+'].saved=false"/></td>';
+    if (!isSvc && show('product_type')) td += '<td><input class="ps-cell" type="text" value="'+escH(r.product_type||'')+'"'
+      + ' placeholder="e.g. Hair care…" oninput="psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false"/></td>';
+    if (isSvc  && show('service_type')) td += '<td><input class="ps-cell" type="text" value="'+escH(r.product_type||'')+'"'
+      + ' placeholder="e.g. Cleaning…" oninput="psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false"/></td>';
+    if (!isSvc && show('cost_price'))   td += '<td><input class="ps-cell num" type="number" value="'+(r.cost_price||'')+'"'
+      + ' placeholder="0" oninput="psRows['+i+'].cost_price=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>';
+    if (show('sell_price'))             td += '<td><input class="ps-cell num" type="number" value="'+(r.sell_price||'')+'"'
+      + ' placeholder="0" oninput="psRows['+i+'].sell_price=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>';
+    if (!isSvc && show('qty'))          td += '<td><input class="ps-cell num" type="number" value="'+(r.qty||'')+'"'
+      + ' placeholder="0" oninput="psRows['+i+'].qty=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>';
+    if (!isSvc && show('qty_date'))     td += '<td><input class="ps-cell" type="date" value="'+escH(r.qty_date||'')+'"'
+      + ' onchange="psRows['+i+'].qty_date=this.value;psRows['+i+'].saved=false"/></td>';
+    if (!isSvc && show('total_cost'))   td += '<td><div id="psAtCost_'+i+'" class="ps-cell ro num">'+(atCost>0?fmt(atCost):'')+'</div></td>';
+    if (!isSvc && show('total_sell'))   td += '<td><div id="psAtSell_'+i+'" class="ps-cell ro num">'+(atSell>0?fmt(atSell):'')+'</div></td>';
+    if (show('income_acct'))            td += '<td><select class="ps-cell" style="font-size:0.75rem;"'
+      + ' onchange="psRows['+i+'].income_account=this.value;psRows['+i+'].saved=false">'
+      + '<option value="">Auto-detect</option>'
+      + incomeAccts.replace('value="'+escH(r.income_account)+'"','value="'+escH(r.income_account)+'" selected')
+      + '</select></td>';
+    td += '<td><button class="ps-del-btn" onclick="psDeleteRow('+i+')">&#x2715;</button></td>'
+      + '<td><button class="ps-save-btn" onclick="psSaveRow('+i+')" title="Save">&#x203a;</button></td>';
+    return '<tr id="psRow_'+i+'">'+td+'</tr>';
   }).join('');
 
-  document.getElementById('bkContent').innerHTML = `
-    <div class="bk-content-header">
-      <div>
-        <div class="bk-content-title">${isSvc?'SERVICES':'PRODUCTS'}</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${isSvc?'Track services and pricing.':'Track products, pricing and stock.'}</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;position:relative;">
-        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;"
-          onclick="showProductsPage('${isSvc?'products':'services'}')">
-          Switch to ${isSvc?'Products':'Services'}
-        </button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;"
-          onclick="togglePsColSelector()">⚙ Columns ▾</button>
-        <div id="psColSelector" class="ps-col-selector hidden">
-          <div class="ps-col-selector-title">Show / hide columns</div>
-          ${selectorRows}
-          <button id="psSaveColBtn" onclick="psSaveColPrefs()"
-            style="width:100%;margin-top:10px;background:var(--gold);color:#000;border:none;font-size:0.78rem;font-weight:700;padding:9px;border-radius:7px;cursor:pointer;">
-            Save &amp; Close
-          </button>
-        </div>
-      </div>
-    </div>
-    <div class="bk-sheet-wrap">
-      <table class="ps-table" style="min-width:400px;">
-        <thead><tr>${thHtml}</tr></thead>
-        <tbody id="psBody">${bodyHtml}</tbody>
-      </table>
-    </div>
-    <div style="padding:10px 16px;">
-      <button class="ps-add-btn" onclick="psAddRow()">+ Add ${isSvc?'Service':'Product'}</button>
-    </div>`;
-
+  const thead = document.getElementById('psThead');
+  const tbody = document.getElementById('psBody');
+  if (thead) thead.innerHTML = '<tr>'+thHtml+'</tr>';
+  if (tbody) tbody.innerHTML = bodyHtml ||
+    '<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No '+(isSvc?'services':'products')+' yet. Click + Add below.</td></tr>';
 }
+
+// Checkbox changed — update prefs and re-render TABLE ONLY (dropdown stays open)
+function psColCheck(colId, checked) {
+  psColPrefs[psType][colId] = checked;
+  psRenderTable();
+}
+
 
 function psUpdateTotals(i) {
   const r=psRows[i];
