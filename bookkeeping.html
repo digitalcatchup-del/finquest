@@ -189,6 +189,7 @@ select.bk-cell,input.bk-cell{min-height:34px;}
   --blue:#1d4ed8;--blue-l:#eff6ff;
 }
 body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;}
+.hidden{display:none !important;}
 
 /* HEADER */
 .bk-header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:200;}
@@ -384,8 +385,16 @@ select.bk-cell {
 .col-help-ai:hover{opacity:0.85;}
 /* Help icon on TH */
 .th-help-icon{display:none;}
-.th-help-text{cursor:pointer;}
-.th-help-text:hover{color:var(--gold);}
+.jdate-filter-btn{background:none;border:none;cursor:pointer;font-size:0.75rem;padding:0 2px;vertical-align:middle;opacity:0.6;}
+.jdate-filter-btn:hover{opacity:1;}
+.jdate-filter-popup{position:absolute;top:calc(100% + 4px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;min-width:300px;z-index:300;box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+.jdate-filter-popup label{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;}
+.jdate-filter-popup input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:6px 10px;font-size:0.8rem;font-family:inherit;margin-bottom:10px;}
+.jdate-filter-row{display:flex;gap:8px;margin-top:10px;}
+/* Fill handle */
+.jcell-selected{outline:2px solid var(--gold);outline-offset:-2px;}
+.jfill-handle{position:absolute;bottom:-4px;right:-4px;width:8px;height:8px;background:var(--gold);border:1px solid #000;cursor:crosshair;z-index:10;}
+th .col-date-wrap{position:relative;display:inline-flex;align-items:center;gap:4px;}
 /* QUICK INPUT WIDGET */
 .qi-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:700;display:flex;align-items:center;justify-content:center;}
 .qi-overlay.hidden{display:none;}
@@ -951,6 +960,11 @@ body{padding-top:0;}
     <div class="bk-submenu" data-role="owner-manager" id="sub-ps">
       <div class="bk-submenu-item" onclick="showProductsPage('products');closeBkMenu()">📦 Products</div>
       <div class="bk-submenu-item" onclick="showProductsPage('services');closeBkMenu()">🛠 Services</div>
+    </div>
+
+    <!-- Suppliers (owner/manager only) -->
+    <div class="bk-menu-item" data-role="owner-manager" onclick="showSuppliersPage();closeBkMenu()">
+      <span class="bk-menu-icon">🤝</span> Suppliers
     </div>
 
     <!-- Staff directory (owner/manager only) -->
@@ -2408,14 +2422,14 @@ function renderLedger() {
       <table class="bk-sheet" id="ledgerTable" style="min-width:1072px;">
         <thead>
           <tr>
-            <th class="col-date"><span class="th-help-text" onclick="showColumnHelp(this,'Date')">Date</span></th>
-            <th class="col-payee"><span class="th-help-text" onclick="showColumnHelp(this,'Payee')">Payee</span></th>
-            <th class="col-payer"><span class="th-help-text" onclick="showColumnHelp(this,'Payer')">Payer</span></th>
-            <th class="col-narr"><span class="th-help-text" onclick="showColumnHelp(this,'Narration')">Narration</span></th>
-            <th class="col-dr num"><span class="th-help-text" onclick="showColumnHelp(this,'Debit')">Debit (${CURRENCIES[activeCurrency].symbol})</span></th>
-            <th class="col-cr num"><span class="th-help-text" onclick="showColumnHelp(this,'Credit')">Credit (${CURRENCIES[activeCurrency].symbol})</span></th>
-            <th class="col-bal num"><span class="th-help-text" onclick="showColumnHelp(this,'Balance')">Balance (${CURRENCIES[activeCurrency].symbol})</span></th>
-            <th class="col-sn num"><span class="th-help-text" onclick="showColumnHelp(this,'S/N')">S/N</span></th>
+            <th class="col-date">Date <button class="jdate-filter-btn" onclick="toggleJDateFilter(event)" title="Filter by date">📅</button></th>
+            <th class="col-payee">Payee</th>
+            <th class="col-payer">Payer</th>
+            <th class="col-narr">Narration</th>
+            <th class="col-dr num">Debit (${CURRENCIES[activeCurrency].symbol})</th>
+            <th class="col-cr num">Credit (${CURRENCIES[activeCurrency].symbol})</th>
+            <th class="col-bal num">Balance (${CURRENCIES[activeCurrency].symbol})</th>
+            <th class="col-sn num">S/N</th>
           </tr>
         </thead>
         <tbody id="ledgerBody"></tbody>
@@ -3246,15 +3260,15 @@ function renderJournal() {
     <div class="bk-sheet-wrap">
       <table class="bk-sheet" id="journalTable" style="min-width:1214px;">
         <thead><tr>
-          <th style="width:110px;"><span class="th-help-text" onclick="showColumnHelp(this,'Date')">Date</span></th>
-          <th style="width:120px;"><span class="th-help-text" onclick="showColumnHelp(this,'Payee')">Payee</span></th>
-          <th style="width:120px;"><span class="th-help-text" onclick="showColumnHelp(this,'Payer')">Payer</span></th>
-          <th style="width:180px;"><span class="th-help-text" onclick="showColumnHelp(this,'Narration')">Narration</span></th>
-          <th style="width:175px;"><span class="th-help-text" onclick="showColumnHelp(this,'Debit Account')">Debit Account</span></th>
-          <th style="width:175px;"><span class="th-help-text" onclick="showColumnHelp(this,'Credit Account')">Credit Account</span></th>
-          <th class="num" style="width:110px;"><span class="th-help-text" onclick="showColumnHelp(this,'Debit')">Debit (${CURRENCIES[activeCurrency].symbol})</span></th>
-          <th class="num" style="width:110px;"><span class="th-help-text" onclick="showColumnHelp(this,'Credit')">Credit (${CURRENCIES[activeCurrency].symbol})</span></th>
-          <th class="num" style="width:44px;"><span class="th-help-text" onclick="showColumnHelp(this,'S/N')">S/N</span></th>
+          <th style="width:110px;">Date</th>
+          <th style="width:120px;">Payee</th>
+          <th style="width:120px;">Payer</th>
+          <th style="width:180px;">Narration</th>
+          <th style="width:175px;">Debit Account</th>
+          <th style="width:175px;">Credit Account</th>
+          <th class="num" style="width:110px;">Debit (${CURRENCIES[activeCurrency].symbol})</th>
+          <th class="num" style="width:110px;">Credit (${CURRENCIES[activeCurrency].symbol})</th>
+          <th class="num" style="width:44px;">S/N</th>
           <th style="width:38px;"></th>
           <th style="width:32px;"></th>
         </tr></thead>
@@ -3270,7 +3284,17 @@ function renderJournal() {
 function renderJournalRows() {
   const tbody=document.getElementById('journalBody'); if(!tbody) return;
   // Show saved/filled rows AND any unsaved empty rows added via the + button
-  const visibleRows = journalRows.filter(function(r){ return journalHasData(r) || !r.id; });
+  // Apply date filter if active
+  let visibleRows = journalRows.filter(function(r){ return journalHasData(r) || !r.id; });
+  if (jDateFrom || jDateTo) {
+    visibleRows = visibleRows.filter(function(r){
+      if (!r.txn_date && !journalHasData(r)) return true; // keep empty rows
+      if (!r.txn_date) return false;
+      if (jDateFrom && r.txn_date < jDateFrom) return false;
+      if (jDateTo   && r.txn_date > jDateTo)   return false;
+      return true;
+    });
+  }
   const totalDr=visibleRows.reduce((a,r)=>a+(r.debit_amount||0),0);
   const totalCr=visibleRows.reduce((a,r)=>a+(r.credit_amount||0),0);
   const balanced=Math.abs(totalDr-totalCr)<0.01;
@@ -3295,11 +3319,14 @@ function renderJournalRows() {
         </div>
       </td>
       <td><input class="bk-cell" type="text" value="${escH(row.payee)}" placeholder="—"
-        oninput="jCellChange(${i},'payee',this.value)"/></td>
+        onfocus="jCellFocus(this,${idx},'payee')"
+        oninput="jCellChange(${idx},'payee',this.value)"/></td>
       <td><input class="bk-cell" type="text" value="${escH(row.payer)}" placeholder="—"
-        oninput="jCellChange(${i},'payer',this.value)"/></td>
+        onfocus="jCellFocus(this,${idx},'payer')"
+        oninput="jCellChange(${idx},'payer',this.value)"/></td>
       <td style="position:relative;">
         <input class="bk-cell" type="text" value="${escH(row.narration)}" placeholder="Describe transaction…"
+          onfocus="jCellFocus(this,${idx},'narration')"
           oninput="jCellChange(${idx},'narration',this.value)"
           id="jnarr_${idx}"/>
       </td>
@@ -5122,113 +5149,153 @@ async function showSettings() {
 }
 
 // ── COLUMN HELP — TOGGLE + AI WITHIN WIDGET ───────────────────
-function showColumnHelp(spanEl, colName) {
-  const existing = document.getElementById('colHelpTooltip');
+// ── DATE FILTER (Journal) ─────────────────────────────────────
+let jDateFrom = '', jDateTo = '';
 
-  // Toggle off if same column clicked
-  if (existing && existing.dataset.column === colName) {
-    existing.remove();
-    return;
-  }
-  existing?.remove();
-
-  const data = COLUMN_HELP[colName];
-  if (!data) return;
-
-  const tip = document.createElement('div');
-  tip.id = 'colHelpTooltip';
-  tip.className = 'col-help-tooltip';
-  tip.dataset.column = colName;
-
-  tip.innerHTML = `
-    <div class="col-help-title">${data.title}</div>
-    <div class="col-help-text">${data.text}</div>
-    <div class="col-help-example">
-      <strong>Example</strong>${data.example}
-    </div>
-    <div class="col-help-actions">
-      <button class="col-help-close" onclick="document.getElementById('colHelpTooltip')?.remove()">Close</button>
-    </div>
-    <div class="col-help-ai-section">
-      <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">✨ Ask AI</div>
-      <div class="col-help-chat-history" id="colHelpChat"></div>
-      <div class="col-help-chat-row">
-        <input class="col-help-chat-input" type="text" id="colHelpInput"
-          placeholder="Ask a question about ${data.title}…"
-          onkeydown="if(event.key==='Enter') askColumnAI('${colName}')"/>
-        <button class="col-help-chat-send" onclick="askColumnAI('${colName}')">Ask</button>
-      </div>
+function toggleJDateFilter(e) {
+  e.stopPropagation();
+  let popup = document.getElementById('jDateFilterPopup');
+  if (popup) { popup.remove(); return; }
+  const btn = e.currentTarget;
+  const th  = btn.closest('th');
+  if (!th) return;
+  th.style.position = 'relative';
+  popup = document.createElement('div');
+  popup.id = 'jDateFilterPopup';
+  popup.className = 'jdate-filter-popup';
+  popup.innerHTML = `
+    <div style="font-size:0.72rem;font-weight:700;color:var(--gold);margin-bottom:12px;">Filter by Date</div>
+    <label>Single date</label>
+    <input type="date" id="jdf_single" value="${jDateFrom===jDateTo?jDateFrom:''}"
+      onchange="jApplyDateFilter(this.value,this.value)"/>
+    <label>Date range — From</label>
+    <input type="date" id="jdf_from" value="${jDateFrom}"
+      onchange="jDateFrom=this.value"/>
+    <label>Date range — To</label>
+    <input type="date" id="jdf_to" value="${jDateTo}"
+      onchange="jDateTo=this.value"/>
+    <div class="jdate-filter-row">
+      <button class="bk-btn bk-btn-gold" style="flex:1;font-size:0.76rem;"
+        onclick="jApplyDateFilter(jDateFrom,jDateTo)">Apply Filter</button>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;"
+        onclick="jClearDateFilter()">Clear</button>
     </div>`;
-
-  // Position near the clicked span
-  const rect = spanEl.getBoundingClientRect();
-  const top  = Math.min(rect.bottom + 4, window.innerHeight - 380);
-  const left = Math.min(Math.max(8, rect.left - 10), window.innerWidth - 360);
-  tip.style.top  = top  + 'px';
-  tip.style.left = left + 'px';
-  document.body.appendChild(tip);
-
-  // Focus input
-  setTimeout(()=>document.getElementById('colHelpInput')?.focus(), 50);
-}
-
-async function askColumnAI(colName) {
-  const inputEl = document.getElementById('colHelpInput');
-  const chatEl  = document.getElementById('colHelpChat');
-  if (!inputEl || !chatEl) return;
-
-  const question = inputEl.value.trim();
-  if (!question) return;
-  inputEl.value = '';
-
-  // Show user message
-  const userMsg = document.createElement('div');
-  userMsg.className = 'col-help-chat-msg user';
-  userMsg.textContent = question;
-  chatEl.appendChild(userMsg);
-
-  // Show loading
-  const loadingMsg = document.createElement('div');
-  loadingMsg.className = 'col-help-chat-msg ai';
-  loadingMsg.textContent = '✨ Thinking…';
-  chatEl.appendChild(loadingMsg);
-  chatEl.scrollTop = chatEl.scrollHeight;
-
-  let answer = '';
-  try {
-    const { data:{ session } } = await bkDb.auth.getSession();
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({
-        messages: [{ role:'user', content:
-          `In the context of bookkeeping and accounting, I have a question about the "${colName}" field/column. ${question} Please explain clearly for a beginner.`
-        }],
-        system: 'You are a helpful accounting tutor. Give clear, concise answers for beginners. Keep responses under 150 words.',
-      }),
+  th.appendChild(popup);
+  // Close on outside click
+  setTimeout(function(){
+    document.addEventListener('click', function jClose(ev){
+      if (!ev.target.closest('#jDateFilterPopup') && !ev.target.closest('.jdate-filter-btn')) {
+        popup.remove(); document.removeEventListener('click', jClose);
+      }
     });
-    const json = await res.json();
-    answer = json.reply || json.content || 'Sorry, could not get an answer. Please try again.';
-  } catch(e) {
-    answer = 'Could not connect to AI. Please check your connection.';
-  }
+  }, 10);
+}
 
-  loadingMsg.textContent = answer;
-  chatEl.scrollTop = chatEl.scrollHeight;
+function jApplyDateFilter(from, to) {
+  jDateFrom = from || '';
+  jDateTo   = to   || '';
+  document.getElementById('jDateFilterPopup')?.remove();
+  renderJournalRows();
+  // Show filter active indicator on the Date header
+  const btn = document.querySelector('.jdate-filter-btn');
+  if (btn) btn.style.opacity = (from||to) ? '1' : '0.6';
+}
 
-  // Save to Q&A history
-  if (bkUser) {
-    bkDb.from('bk_qa_history').insert({
-      user_id: bkUser.id,
-      column_name: colName,
-      question,
-      answer,
-    }).then(()=>{});
+function jClearDateFilter() {
+  jDateFrom = ''; jDateTo = '';
+  jApplyDateFilter('','');
+}
+
+// ── FILL HANDLE (Journal cells) ──────────────────────────────
+// Allows dragging from bottom-right corner of a cell to copy its
+// value into adjacent cells in the same column — like Google Sheets.
+let jFillSrcRow = null, jFillSrcField = null, jFillSrcVal = null;
+let jFillDragging = false;
+
+function jCellFocus(el, rowIdx, field) {
+  // Remove any existing fill handle
+  document.querySelectorAll('.jfill-handle').forEach(h => h.remove());
+  document.querySelectorAll('.jcell-selected').forEach(c => c.classList.remove('jcell-selected'));
+
+  const cell = el.closest('td');
+  if (!cell) return;
+  cell.classList.add('jcell-selected');
+  cell.style.position = 'relative';
+
+  const handle = document.createElement('div');
+  handle.className = 'jfill-handle';
+  handle.title = 'Drag to copy value to adjacent cells';
+  handle.onmousedown = function(e) {
+    e.preventDefault();
+    jFillSrcRow   = rowIdx;
+    jFillSrcField = field;
+    jFillSrcVal   = el.value || el.textContent;
+    jFillDragging = true;
+    document.body.style.userSelect = 'none';
+    document.onmousemove = jFillDragMove;
+    document.onmouseup  = jFillDragEnd;
+  };
+  cell.appendChild(handle);
+}
+
+function jFillDragMove(e) {
+  if (!jFillDragging) return;
+  // Highlight cells being dragged over
+  const target = document.elementFromPoint(e.clientX, e.clientY);
+  if (!target) return;
+  const td = target.closest('td');
+  if (!td) return;
+  const tr = td.closest('tr[id^="jrow_"]');
+  if (!tr) return;
+  const tgtRowIdx = parseInt(tr.id.replace('jrow_',''));
+  if (isNaN(tgtRowIdx) || tgtRowIdx === jFillSrcRow) return;
+  // Highlight target cell
+  document.querySelectorAll('.jcell-fill-target').forEach(c => c.classList.remove('jcell-fill-target'));
+  const min = Math.min(jFillSrcRow, tgtRowIdx);
+  const max = Math.max(jFillSrcRow, tgtRowIdx);
+  for (let i = min; i <= max; i++) {
+    const targetRow = document.getElementById('jrow_'+i);
+    if (targetRow) {
+      const inputs = targetRow.querySelectorAll('input, select');
+      inputs.forEach(function(inp){
+        if (inp.id && inp.id.startsWith('jnarr_')) targetRow.cells[3]?.classList.add('jcell-fill-target');
+      });
+    }
   }
 }
+
+function jFillDragEnd(e) {
+  if (!jFillDragging) return;
+  jFillDragging = false;
+  document.body.style.userSelect = '';
+  document.onmousemove = null;
+  document.onmouseup  = null;
+  document.querySelectorAll('.jcell-fill-target').forEach(c => c.classList.remove('jcell-fill-target'));
+
+  const target = document.elementFromPoint(e.clientX, e.clientY);
+  if (!target) return;
+  const tr = target.closest('tr[id^="jrow_"]');
+  if (!tr) return;
+  const tgtRowIdx = parseInt(tr.id.replace('jrow_',''));
+  if (isNaN(tgtRowIdx) || tgtRowIdx === jFillSrcRow) return;
+
+  const min = Math.min(jFillSrcRow, tgtRowIdx);
+  const max = Math.max(jFillSrcRow, tgtRowIdx);
+  for (let i = min; i <= max; i++) {
+    if (i === jFillSrcRow) continue;
+    // Ensure row exists in journalRows
+    while (journalRows.length <= i) journalRows.push(emptyJournalRow(journalRows.length));
+    if (jFillSrcField && jFillSrcVal !== null) {
+      journalRows[i][jFillSrcField] = jFillSrcVal;
+      journalRows[i].saved = false;
+    }
+  }
+  renderJournalRows();
+}
+
+// Stub kept for backward compat
+function showColumnHelp(spanEl, colName) {}
+
 
 // ── EQUATION ERROR EXPLAINER ──────────────────────────────────
 async function explainEquationError(diff) {
@@ -6829,7 +6896,100 @@ async function showColleagues(){
 
 
 
-// ── Real-time staff chat via Supabase Realtime ────────────────
+// ── SUPPLIERS PAGE ────────────────────────────────────────────
+let supplierRows = [];
+
+async function showSuppliersPage() {
+  currentPage = 'suppliers';
+  staffHideChrome();
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading suppliers…</div>';
+  try {
+    const { data } = await bkDb.from('bk_suppliers')
+      .select('*').eq('user_id', bkUser.id).order('supplier_name');
+    supplierRows = (data||[]).map(r => ({
+      id:       r.id,
+      name:     r.supplier_name || '',
+      ps_type:  r.products_services || 'product',
+      type:     r.type || '',
+      saved:    true,
+    }));
+  } catch(e) { supplierRows = []; }
+  renderSuppliersPage();
+}
+
+function renderSuppliersPage() {
+  const bodyHtml = supplierRows.map((r, i) => `
+    <tr id="supRow_${i}">
+      <td class="ps-sn">${i+1}</td>
+      <td><input class="ps-cell" type="text" value="${escH(r.name)}"
+        placeholder="Supplier name…" oninput="supplierRows[${i}].name=this.value;supplierRows[${i}].saved=false"/></td>
+      <td><select class="ps-cell" onchange="supplierRows[${i}].ps_type=this.value;supplierRows[${i}].saved=false">
+        <option value="product"  ${r.ps_type==='product' ?'selected':''}>Product</option>
+        <option value="service"  ${r.ps_type==='service' ?'selected':''}>Service</option>
+      </select></td>
+      <td><input class="ps-cell" type="text" value="${escH(r.type)}"
+        placeholder="e.g. Wholesaler, Manufacturer…" oninput="supplierRows[${i}].type=this.value;supplierRows[${i}].saved=false"/></td>
+      <td><button class="ps-del-btn" onclick="supDeleteRow(${i})">✕</button></td>
+      <td><button class="ps-save-btn" onclick="supSaveRow(${i})" title="Save">›</button></td>
+    </tr>`).join('');
+
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div class="bk-content-title">SUPPLIERS</div>
+    </div>
+    <div class="bk-sheet-wrap">
+      <table class="ps-table" style="min-width:560px;">
+        <thead><tr>
+          <th style="width:36px;">S/N</th>
+          <th>Supplier</th>
+          <th style="width:130px;">Products / Service</th>
+          <th>Type</th>
+          <th style="width:28px;"></th>
+          <th style="width:28px;"></th>
+        </tr></thead>
+        <tbody id="supBody">${bodyHtml||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No suppliers yet. Click + Add Supplier below.</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div style="padding:10px 16px;">
+      <button class="ps-add-btn" onclick="supAddRow()">+ Add Supplier</button>
+    </div>`;
+}
+
+function supAddRow() {
+  supplierRows.push({ id:null, name:'', ps_type:'product', type:'', saved:false });
+  renderSuppliersPage();
+  setTimeout(function(){ document.querySelectorAll('#supBody tr').item(supplierRows.length-1)?.querySelector('input')?.focus(); }, 40);
+}
+
+async function supDeleteRow(i) {
+  if (supplierRows[i].id) {
+    await bkDb.from('bk_suppliers').delete().eq('id', supplierRows[i].id).eq('user_id', bkUser.id);
+  }
+  supplierRows.splice(i, 1);
+  renderSuppliersPage();
+}
+
+async function supSaveRow(i) {
+  const r = supplierRows[i];
+  const btn = document.querySelector('#supRow_' + i + ' .ps-save-btn');
+  if (!r.name.trim()) return;
+  if (!r.id) {
+    const { data, error } = await bkDb.from('bk_suppliers').insert({
+      user_id: bkUser.id, supplier_name: r.name.trim(),
+      products_services: r.ps_type, type: r.type,
+    }).select().single();
+    if (!error && data) { supplierRows[i].id = data.id; supplierRows[i].saved = true; }
+  } else {
+    await bkDb.from('bk_suppliers').update({
+      supplier_name: r.name.trim(), products_services: r.ps_type,
+      type: r.type, updated_at: new Date().toISOString(),
+    }).eq('id', r.id).eq('user_id', bkUser.id);
+    supplierRows[i].saved = true;
+  }
+  if (btn) { btn.textContent = '✓'; btn.style.color = 'var(--green)'; setTimeout(function(){ btn.textContent = '›'; btn.style.color = ''; }, 1500); }
+}
+
+
 // Messages stored in bk_staff_messages (migration needed)
 async function openStaffChat(staffId) {
   // Find in live list first, fall back to minimal placeholder
