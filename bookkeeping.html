@@ -733,8 +733,6 @@ body{padding-top:0;}
 .ps-col-row:last-child{border-bottom:none;}
 .ps-col-label{display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--off);cursor:pointer;flex:1;}
 .ps-col-check{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
-.ps-col-save-btn{background:none;border:1px solid var(--border2);color:var(--gold);font-size:1rem;font-weight:700;width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:8px;transition:all 0.12s;}
-.ps-col-save-btn:hover{background:var(--gold);color:#000;}
 .ps-add-btn{background:none;border:1px dashed var(--border2);color:var(--muted);font-size:0.76rem;font-weight:600;padding:8px;border-radius:6px;cursor:pointer;width:100%;margin-top:8px;}
 .ps-add-btn:hover{border-color:var(--gold);color:var(--gold);}
 .ps-barcode-note{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:0.76rem;color:var(--muted);display:flex;gap:10px;align-items:flex-start;}
@@ -6273,20 +6271,36 @@ async function loadPsColPrefs() {
   } catch(e) {}
 }
 
-async function savePsColPref(type, colId, val) {
-  psColPrefs[type][colId] = val;
-  const field = type === 'products' ? 'products_columns' : 'services_columns';
-  await bkDb.from('bk_settings').upsert({
-    user_id: bkUser.id,
-    [field]: JSON.stringify(psColPrefs[type]),
-    updated_at: new Date().toISOString(),
-  }, { onConflict:'user_id' });
-  renderProductsPage();
-}
-
 function togglePsColSelector() {
   const sel = document.getElementById('psColSelector');
   if (sel) sel.classList.toggle('hidden');
+}
+
+// Called on every checkbox change — re-renders the table immediately
+function psColCheck(colId, checked) {
+  psColPrefs[psType][colId] = checked;
+  renderProductsPage();
+  // Re-open the selector after re-render closes it
+  setTimeout(function(){
+    const sel = document.getElementById('psColSelector');
+    if (sel) sel.classList.remove('hidden');
+  }, 15);
+}
+
+// Save button at bottom of dropdown — persists prefs and closes menu
+async function psSaveColPrefs() {
+  const btn = document.getElementById('psSaveColBtn');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  const field = psType === 'products' ? 'products_columns' : 'services_columns';
+  try {
+    await bkDb.from('bk_settings').upsert({
+      user_id: bkUser.id,
+      [field]: JSON.stringify(psColPrefs[psType]),
+      updated_at: new Date().toISOString(),
+    }, { onConflict:'user_id' });
+  } catch(e) {}
+  document.getElementById('psColSelector')?.classList.add('hidden');
+  if (btn) { btn.textContent = 'Saved ✓'; btn.disabled = false; }
 }
 
 async function showProductsPage(type) {
@@ -6324,10 +6338,11 @@ function renderProductsPage() {
     const checked = prefs[c.id] !== false;
     return `<div class="ps-col-row">
       <label class="ps-col-label">
-        <input type="checkbox" class="ps-col-check" id="psc_${c.id}" ${checked?'checked':''}/>
+        <input type="checkbox" class="ps-col-check" data-col="${c.id}"
+          ${checked?'checked':''}
+          onchange="psColCheck('${c.id}',this.checked)"/>
         ${escH(c.label)}
       </label>
-      <button class="ps-col-save-btn" onclick="savePsColPref('${psType}','${c.id}',document.getElementById('psc_${c.id}').checked)">&rsaquo;</button>
     </div>`;
   }).join('');
 
@@ -6394,6 +6409,10 @@ function renderProductsPage() {
         <div id="psColSelector" class="ps-col-selector hidden">
           <div class="ps-col-selector-title">Show / hide columns</div>
           ${selectorRows}
+          <button id="psSaveColBtn" onclick="psSaveColPrefs()"
+            style="width:100%;margin-top:10px;background:var(--gold);color:#000;border:none;font-size:0.78rem;font-weight:700;padding:9px;border-radius:7px;cursor:pointer;">
+            Save &amp; Close
+          </button>
         </div>
       </div>
     </div>
@@ -6407,15 +6426,6 @@ function renderProductsPage() {
       <button class="ps-add-btn" onclick="psAddRow()">+ Add ${isSvc?'Service':'Product'}</button>
     </div>`;
 
-  // Close selector when clicking outside
-  setTimeout(function(){
-    document.addEventListener('click', function psCl(e){
-      if (!e.target.closest('#psColSelector') && !e.target.closest('[onclick="togglePsColSelector()"]')) {
-        document.getElementById('psColSelector')?.classList.add('hidden');
-        document.removeEventListener('click', psCl);
-      }
-    });
-  }, 10);
 }
 
 function psUpdateTotals(i) {
