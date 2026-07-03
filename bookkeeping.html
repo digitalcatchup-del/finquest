@@ -1017,73 +1017,34 @@ body{padding-top:0;}
 
   <div id="bkMainChrome">
   <div class="bk-eq-bar">
-    <button id="eqCollapseBtn" onclick="toggleEqBar()" title="Collapse equation"
-      style="position:absolute;top:10px;right:14px;background:none;border:none;color:var(--muted);font-size:0.85rem;cursor:pointer;padding:4px 6px;transition:color 0.15s;">▾</button>
-    <!-- Main equation: Assets = Capital + Liabilities -->
     <div id="eqBarBody">
-    <div class="bk-eq-title">Assets = Capital + Liabilities</div>
+    <div class="bk-eq-title">Capital + Profit/Loss + Liabilities = Assets</div>
     <div class="bk-equation">
-      <div class="bk-eq-block" onclick="eqNav('asset')" style="cursor:pointer;" title="Go to Assets Records">
-        <div class="bk-eq-label">Assets</div>
-        <div class="bk-eq-value av" id="eqAssets">—</div>
-      </div>
-      <div class="bk-eq-op">=</div>
-      <div class="bk-eq-block" onclick="eqNav('capital')" style="cursor:pointer;" title="Go to Capital Records">
+      <div class="bk-eq-block" onclick="eqNav('capital')" style="cursor:pointer;">
         <div class="bk-eq-label">Capital</div>
         <div class="bk-eq-value cv" id="eqCapital">—</div>
       </div>
       <div class="bk-eq-op">+</div>
-      <div class="bk-eq-block" onclick="eqNav('liability')" style="cursor:pointer;" title="Go to Liability Records">
+      <div class="bk-eq-block" onclick="eqNav('income')" style="cursor:pointer;">
+        <div class="bk-eq-label">Profit/Loss</div>
+        <div class="bk-eq-value" id="eqProfitLoss" style="color:#4ade80;">—</div>
+      </div>
+      <div class="bk-eq-op">+</div>
+      <div class="bk-eq-block" onclick="eqNav('liability')" style="cursor:pointer;">
         <div class="bk-eq-label">Liabilities</div>
         <div class="bk-eq-value lv" id="eqLiabilities">—</div>
       </div>
-    </div>
-
-    <!-- Extended equation toggle -->
-    <div id="extEqToggleWrap" style="text-align:center;margin-top:10px;">
-      <button onclick="toggleExtEq()" id="extEqBtn"
-        style="background:none;border:none;color:var(--muted);font-size:0.68rem;font-weight:600;cursor:pointer;letter-spacing:0.04em;padding:4px 8px;border-radius:4px;transition:color 0.15s;">
-        ▸ Show Extended Equation
-      </button>
-    </div>
-    <div id="extEqPanel" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-      <div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:8px;">
-        Assets = Capital + Revenue − Expenditure + Liabilities
+      <div class="bk-eq-op">=</div>
+      <div class="bk-eq-block" onclick="eqNav('asset')" style="cursor:pointer;">
+        <div class="bk-eq-label">Assets</div>
+        <div class="bk-eq-value av" id="eqAssets">—</div>
       </div>
-      <div class="bk-equation" style="gap:6px;flex-wrap:wrap;justify-content:center;">
-        <div class="bk-eq-block" onclick="eqNav('asset')" style="cursor:pointer;">
-          <div class="bk-eq-label">Assets</div>
-          <div class="bk-eq-value av" id="eqAssetsX">—</div>
-        </div>
-        <div class="bk-eq-op">=</div>
-        <div class="bk-eq-block" onclick="eqNav('capital')" style="cursor:pointer;">
-          <div class="bk-eq-label">Capital</div>
-          <div class="bk-eq-value cv" id="eqCapitalX">—</div>
-        </div>
-        <div class="bk-eq-op">+</div>
-        <div class="bk-eq-block" onclick="eqNav('income')" style="cursor:pointer;">
-          <div class="bk-eq-label">Revenue</div>
-          <div class="bk-eq-value" style="color:#4ade80;" id="eqRevenue">—</div>
-        </div>
-        <div class="bk-eq-op">−</div>
-        <div class="bk-eq-block" onclick="eqNav('expenditure')" style="cursor:pointer;">
-          <div class="bk-eq-label">Expenditure</div>
-          <div class="bk-eq-value" style="color:#f87171;" id="eqExpenditure">—</div>
-        </div>
-        <div class="bk-eq-op">+</div>
-        <div class="bk-eq-block" onclick="eqNav('liability')" style="cursor:pointer;">
-          <div class="bk-eq-label">Liabilities</div>
-          <div class="bk-eq-value lv" id="eqLiabilitiesX">—</div>
-        </div>
-      </div>
-      <div id="extEqResult" style="text-align:center;font-size:0.72rem;margin-top:8px;color:var(--muted);"></div>
     </div>
-
-    <div class="bk-eq-check" id="eqCheck">Loading…</div>
-    <div style="text-align:center;margin-top:14px;">
-      <button class="eq-record-btn" onclick="showRecordChoice()">📝 Record</button>
+    <div class="bk-eq-check" id="eqCheck">Enter transactions to see the equation update.</div>
     </div>
-    </div>
+  </div>
+  <div style="text-align:center;padding:10px 0 4px;">
+    <button class="eq-record-btn" onclick="showRecordChoice()">&#128221; Record</button>
   </div>
   </div>
 
@@ -2652,13 +2613,10 @@ function setSaveMsg(msg, type) {
 // ── EQUATION ─────────────────────────────────────────────────
 async function refreshEquation() {
   if(!bkUser) return;
-  // Don't update equation elements if we're on a page that has hidden the chrome
   if (!document.getElementById('bkMainChrome') ||
       document.getElementById('bkMainChrome').style.display === 'none') return;
   const { data } = await bkDb.from('bk_transactions')
     .select('record_type,debit,credit').eq('user_id',bkUser.id);
-
-  // Also get opening balances from accounts
   const { data:accts } = await bkDb.from('bk_accounts')
     .select('record_type,opening_balance').eq('user_id',bkUser.id);
 
@@ -2669,7 +2627,6 @@ async function refreshEquation() {
     if(a.record_type==='liability') lia+=ob;
     if(a.record_type==='asset')     ast+=ob;
   });
-
   (data||[]).forEach(r=>{
     const dr=parseFloat(r.debit)||0, cr=parseFloat(r.credit)||0;
     if(r.record_type==='capital')     cap += cr-dr;
@@ -2679,40 +2636,33 @@ async function refreshEquation() {
     if(r.record_type==='expenditure') exp += dr-cr;
   });
 
-  // Main equation: Assets = Capital + Liabilities
+  const profitLoss = rev - exp;
   const setEl = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
-  setEl('eqCapital',     fmt(cap));
-  setEl('eqLiabilities', fmt(lia));
-  setEl('eqAssets',      fmt(ast));
-  // Extended equation elements
-  setEl('eqCapitalX',    fmt(cap));
-  setEl('eqLiabilitiesX',fmt(lia));
-  setEl('eqAssetsX',     fmt(ast));
-  setEl('eqRevenue',     fmt(rev));
-  setEl('eqExpenditure', fmt(exp));
-  // Extended check: Assets = Capital + Revenue - Expenditure + Liabilities
-  const extResult = cap + rev - exp + lia;
-  const extEl = document.getElementById('extEqResult');
-  if(extEl) {
-    const extDiff = Math.abs(extResult - ast);
-    extEl.textContent = extDiff < 0.01
-      ? '✓ Extended equation balanced'
-      : `⚠ Extended diff: ${fmt(extDiff)} — Profit/Loss of ${fmt(rev-exp)} not yet reflected in Capital`;
-    extEl.style.color = extDiff < 0.01 ? 'var(--green)' : 'var(--gold)';
+  setEl('eqCapital',    fmt(cap));
+  setEl('eqLiabilities',fmt(lia));
+  setEl('eqAssets',     fmt(ast));
+  const plEl = document.getElementById('eqProfitLoss');
+  if (plEl) {
+    plEl.textContent = fmt(Math.abs(profitLoss));
+    plEl.style.color = profitLoss >= 0 ? 'var(--green)' : 'var(--red)';
+    plEl.closest('.bk-eq-block')?.querySelector('.bk-eq-label')
+      && (plEl.closest('.bk-eq-block').querySelector('.bk-eq-label').textContent =
+        profitLoss >= 0 ? 'Profit' : 'Loss');
   }
 
-  const lhs=cap+lia, diff=Math.abs(lhs-ast);
-  const check=document.getElementById('eqCheck');
-  if (!check) return; // chrome hidden (settings, products etc)
-  if(!data||data.length===0){
-    check.textContent='Enter transactions to see the equation update.';
-    check.className='bk-eq-check';
-  } else if(diff<0.01){
-    check.textContent='✓ Books are balanced';
-    check.className='bk-eq-check balanced';
+  const check = document.getElementById('eqCheck');
+  if (!check) return;
+  const lhs = cap + profitLoss + lia;
+  const diff = Math.abs(lhs - ast);
+  if (!data || data.length === 0) {
+    check.textContent = 'Enter transactions to see the equation update.';
+    check.className = 'bk-eq-check';
+  } else if (diff < 0.01) {
+    check.textContent = '✓ Books are balanced';
+    check.className = 'bk-eq-check balanced';
   } else {
-    check.innerHTML=`<span style="cursor:pointer;" onclick="smartErrorDetect(${diff.toFixed(2)})">⚠ Difference of ${fmt(diff)} — tap here to find &amp; fix the problem ✨</span>`;
-    check.className='bk-eq-check unbalanced';
+    check.innerHTML = `<span style="cursor:pointer;" onclick="smartErrorDetect(${diff.toFixed(2)})">⚠ Difference of ${fmt(diff)} — tap to find the problem ✨</span>`;
+    check.className = 'bk-eq-check unbalanced';
   }
 }
 
@@ -6685,13 +6635,10 @@ function showGlobalHero(){
   if (hero) hero.style.display = '';
 }
 
-// ── Applied to all Records pages (schedule, ledger, journal, COA) ──
-// Shows equation bar, hides toolbar, hides the Welcome/THINK header
+// ── Applied to all Records/Reports pages ──────────────────────
+// Hides everything including the equation — equation only on Dashboard
 function recordsPageChrome(){
-  staffShowChrome();   // restore chrome + hero fully first
-  hideGlobalHero();    // then hide the hero
-  hideDashToolbar();   // hide toolbar (not needed on records pages)
-  showExtEqToggle();   // keep equation visible
+  staffHideChrome();
 }
 
 // ── The collapsible toolbar (search, dates, undo/redo, decimals, etc.)
@@ -7345,11 +7292,10 @@ function buildSalesSummarySpreadsheet(){
 }
 
 // ── RECORD CHOICE (from equation bar — owner/manager context) ─
+let owingRows = [];
+function staffEmptyOwingRow(n) { return { sn:n, name:'', narration:'', unit_price:0, qty:1, total:0 }; }
 function showRecordChoice() {
-  // Keep chrome visible (equation stays shown) — just replace content
-  staffShowChrome();
-  hideGlobalHero();
-  hideDashToolbar();
+  staffHideChrome(); // hide equation, hero, toolbar
   document.getElementById('bkContent').innerHTML = `
     <div class="bk-content-header">
       <div class="bk-content-title">RECORD</div>
@@ -7374,14 +7320,14 @@ function showRecordChoice() {
     </div>`;
 }
 
-// Sales — reuses the same staff sales spreadsheet
 function showRecordSales() {
+  staffHideChrome();
   if (staffCustomers.length === 0) staffCustomers = [staffNewCustomer()];
   renderStaffSales();
 }
 
-// Expenses — S/N, Narration, Unit Price, Quantity, Total (no Date)
 function showRecordExpenses() {
+  staffHideChrome();
   if (staffExpRows.length === 0) staffExpRows = [1,2,3].map(n => staffEmptyExpRow(n));
   renderRecordExpenses();
 }
@@ -7401,7 +7347,7 @@ function renderRecordExpenses() {
         onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
         oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
       <td><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
-      <td><button class="staff-del-btn" onclick="staffExpDel(${i})">✕</button></td>
+      <td><button class="staff-del-btn" onclick="staffExpRows.splice(${i},1);renderRecordExpenses()">✕</button></td>
     </tr>`).join('');
   const totalExp = staffExpRows.reduce((a,r) => a+(r.total||0), 0);
   document.getElementById('bkContent').innerHTML = `
@@ -7427,14 +7373,11 @@ function renderRecordExpenses() {
         </tr></tfoot>
       </table>
     </div>
-    <button class="staff-add-cust-btn" onclick="staffExpAddRow();renderRecordExpenses()" style="margin-top:8px;">+ Add Row</button>`;
+    <button class="staff-add-cust-btn" onclick="staffExpRows.push(staffEmptyExpRow(staffExpRows.length+1));renderRecordExpenses()" style="margin-top:8px;">+ Add Row</button>`;
 }
 
-// ── OWING PAGE ────────────────────────────────────────────────
-let owingRows = [];
-function staffEmptyOwingRow(n) { return { sn:n, name:'', narration:'', unit_price:0, qty:1, total:0 }; }
-
 function showOwingPage() {
+  staffHideChrome();
   if (owingRows.length === 0) owingRows = [1,2,3].map(n => staffEmptyOwingRow(n));
   renderOwingPage();
 }
@@ -7443,7 +7386,7 @@ function renderOwingPage() {
   const rows = owingRows.map((r,i) => `
     <tr>
       <td class="staff-sn">${i+1}</td>
-      <td><input class="staff-cell" type="text" value="${escH(r.name)}" placeholder="Customer name…"
+      <td><input class="staff-cell" type="text" value="${escH(r.name)}" placeholder="Name…"
         oninput="owingRows[${i}].name=this.value"/></td>
       <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="What's owed…"
         oninput="owingRows[${i}].narration=this.value"/></td>
@@ -7468,11 +7411,11 @@ function renderOwingPage() {
       <table class="staff-table" style="min-width:500px;table-layout:fixed;">
         <thead><tr>
           <th style="width:34px;">S/N</th>
-          <th style="width:130px;">Name</th>
+          <th style="width:120px;">Name</th>
           <th>Narration</th>
           <th style="width:130px;">Unit Price</th>
-          <th style="width:60px;">Qty</th>
-          <th style="width:130px;">Total</th>
+          <th style="width:55px;">Qty</th>
+          <th style="width:120px;">Total</th>
           <th style="width:34px;"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -7491,8 +7434,8 @@ function owingNumChange(i, field, val) {
   owingRows[i].total  = owingRows[i].unit_price * (owingRows[i].qty||1);
   const el = document.getElementById('owing_total_'+i);
   if (el) el.textContent = staffFmtAmt(owingRows[i].total);
-  document.querySelector('.staff-total-row td:nth-child(6)').textContent =
-    staffFmtAmt(owingRows.reduce((a,r) => a+(r.total||0), 0));
+  const totEl = document.querySelector('#bkContent .staff-total-row td:nth-child(6)');
+  if (totEl) totEl.textContent = staffFmtAmt(owingRows.reduce((a,r)=>a+(r.total||0),0));
 }
 
 
@@ -7773,6 +7716,8 @@ async function autoPostSaleRow(row, customerName, txnDate) {
 async function staffSaveCustomer(custId) {
   const cust = staffGetCust(custId);
   if (!cust) return;
+  if (cust._posting) return; // prevent double-post
+  cust._posting = true;
 
   // Find the Save button and show saving state
   let saveBtn = null;
@@ -7798,6 +7743,7 @@ async function staffSaveCustomer(custId) {
       setTimeout(function(){
         saveBtn.textContent = '› Save';
         saveBtn.style.background = '';
+        cust._posting = false;
       }, 2500);
     }
     // Refresh equation bar if visible
@@ -7805,6 +7751,7 @@ async function staffSaveCustomer(custId) {
       refreshEquation();
     }
   } catch(e) {
+    cust._posting = false;
     if (saveBtn) {
       saveBtn.textContent = '⚠ Error — retry';
       saveBtn.style.background = 'var(--red)';
