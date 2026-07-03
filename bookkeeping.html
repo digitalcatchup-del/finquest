@@ -6557,6 +6557,9 @@ function renderEquity(tots) {
 // ══════════════════════════════════════════════════════════════
 
 let staffCustomers=[],staffExpRows=[],staffDateFmt='month_day_year',_custIdSeq=0;
+
+function staffEmptyExpRow(n){ return {sn:n, narration:'', unit_price:0, qty:1, total:0}; }
+function staffEmptyOwingRow(n){ return {sn:n, name:'', narration:'', unit_price:0, qty:1, total:0}; }
 let staffCurrency='NGN'; // independent of the main app's currency setting
 
 function staffSym(){ return (CURRENCIES[staffCurrency] || CURRENCIES['NGN'])?.symbol || '₦'; }
@@ -7342,7 +7345,6 @@ function buildSalesSummarySpreadsheet(){
 
 // ── RECORD CHOICE (from equation bar — owner/manager context) ─
 let owingRows = [];
-function staffEmptyOwingRow(n) { return { sn:n, name:'', narration:'', unit_price:0, qty:1, total:0 }; }
 function showRecordChoice() {
   staffHideChrome(); // hide equation, hero, toolbar
   document.getElementById('bkContent').innerHTML = `
@@ -7457,15 +7459,15 @@ function renderOwingPage() {
       <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showRecordChoice()">← Back</button>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="staff-table" style="min-width:500px;table-layout:fixed;">
+      <table class="staff-table" style="min-width:560px;table-layout:auto;">
         <thead><tr>
           <th style="width:34px;">S/N</th>
-          <th style="width:120px;">Name</th>
+          <th style="width:110px;white-space:nowrap;">Name</th>
           <th>Narration</th>
-          <th style="width:130px;">Unit Price</th>
-          <th style="width:55px;">Qty</th>
-          <th style="width:120px;">Total</th>
-          <th style="width:34px;"></th>
+          <th style="width:120px;white-space:nowrap;">Unit Price</th>
+          <th style="width:50px;">Qty</th>
+          <th style="width:110px;white-space:nowrap;">Total</th>
+          <th style="width:30px;"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
         <tfoot><tr class="staff-total-row">
