@@ -6038,7 +6038,7 @@ async function showAccountSettings() {
       <div class="acct-card" style="border-color:rgba(212,175,55,0.3);">
         <div class="acct-card-title" style="color:var(--gold);">🔧 Developer Preview</div>
         <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;">Preview the employee experience as it appears after staff log in.</p>
-        <button class="bk-btn bk-btn-gold" onclick="showStaffPage()">Preview Staff Pages →</button>
+        <button class="bk-btn bk-btn-gold" onclick="showStaffDashboard()">Preview Staff Pages →</button>
       </div>` : ''}
 
       <div class="acct-card acct-danger">
@@ -6846,7 +6846,7 @@ async function showColleagues(){
         <div class="bk-content-title">COLLEAGUES</div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">People you work with at ${escH(businessDisplayName)}.</div>
       </div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="goToHomepage()">\u2190 Back</button>
     </div>
     <div style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:560px;">${list}</div>`;
 }
@@ -7077,15 +7077,10 @@ async function sendStaffChat() {
 }
 
 function showStaffPage(){
-  staffHideChrome();
-  document.getElementById('bkContent').innerHTML=`
-    <div class="staff-welcome staff-welcome-centered">
-      <button class="staff-record-btn" onclick="showStaffChoice()">\uD83D\uDCDD Record</button>
-      <button class="staff-homepage-btn" onclick="goToHomepage()">\uD83C\uDFE0 Homepage</button>
-    </div>`;
+  // Route directly to the right homepage — no intermediate buttons page
+  goToHomepage();
 }
 
-// Route Homepage button to the right dashboard based on role
 function goToHomepage() {
   if (userRole === 'employee') {
     showStaffDashboard();
@@ -7350,7 +7345,7 @@ function showRecordChoice() {
   document.getElementById('bkContent').innerHTML = `
     <div class="bk-content-header">
       <div class="bk-content-title">RECORD</div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showDashboard()">← Back</button>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="goToHomepage()">← Back</button>
     </div>
     <div class="staff-choice">
       <div class="staff-choice-btn" onclick="showRecordSales()">
@@ -7497,7 +7492,7 @@ function showStaffChoice(){
       <div class="bk-content-title">RECORD</div>
       <div style="display:flex;gap:8px;">
         <button class="staff-settings-btn" onclick="showStaffSettings()" title="Settings">\u2699\uFE0F</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="goToHomepage()">\u2190 Back</button>
       </div>
     </div>
     <div class="staff-choice">
