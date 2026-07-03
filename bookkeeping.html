@@ -669,7 +669,12 @@ body{padding-top:0;}
 @media(min-width:768px){.acct-settings-grid{grid-template-columns:1fr 1fr;}}
 
 /* ── IMPROVED DASHBOARD ─────────────────────────────────── */
-.dash-kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+/* Dashboard KPI list — one item per full-width row */
+.dash-kpi-list{display:flex;flex-direction:column;gap:0;margin-bottom:16px;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.dash-kpi-item{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);gap:12px;background:var(--surface);}
+.dash-kpi-item:last-child{border-bottom:none;}
+.dash-kpi-item-label{font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);width:130px;flex-shrink:0;display:flex;align-items:center;gap:6px;}
+.dash-kpi-item-value{font-size:1.15rem;font-weight:900;flex:1;}
 .dash-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;min-width:0;overflow:hidden;}
 .dash-kpi-label{font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
 .dash-kpi-value{font-size:1.4rem;font-weight:900;color:var(--white);margin-bottom:4px;}
@@ -831,7 +836,9 @@ body{padding-top:0;}
 .staff-cust-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-cust-btn.del:hover{border-color:var(--red);color:var(--red);}
 .staff-table{width:100%;border-collapse:collapse;font-size:0.76rem;min-width:900px;table-layout:fixed;}
-.staff-table-compact{min-width:0 !important;table-layout:fixed;}
+.staff-table-compact{min-width:0 !important;width:100%;table-layout:auto !important;}
+.staff-table-compact th,.staff-table-compact td{white-space:nowrap;}
+.staff-table-compact th:nth-child(2),.staff-table-compact td:nth-child(2){white-space:normal;min-width:80px;}
 .staff-table th{background:var(--bg);color:var(--gold);font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:7px 5px;text-align:left;border-bottom:2px solid var(--gold);white-space:nowrap;}
 .staff-table td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;}
 .staff-cell{width:100%;background:transparent;border:none;color:var(--white);font-size:0.76rem;font-family:inherit;padding:6px 5px;outline:none;height:33px;min-width:60px;}
@@ -2894,28 +2901,28 @@ async function showDashboard() {
 
   content.innerHTML=`
     <div style="padding:0 0 20px;">
-      <div class="dash-kpi-row" style="padding:16px 16px 0;">
-        <div class="dash-kpi-card">
-          <div class="dash-kpi-label">Total Income <span class="dash-kpi-icon">💰</span></div>
-          <div class="dash-kpi-value" style="color:#4ade80;">${fmt(income)}</div>
+      <div class="dash-kpi-list" style="padding:16px 16px 0;">
+        <div class="dash-kpi-item">
+          <div class="dash-kpi-item-label">Total Income <span class="dash-kpi-icon">💰</span></div>
+          <div class="dash-kpi-item-value" style="color:#4ade80;">${fmt(income)}</div>
           <div class="dash-kpi-change ${incomeThisMonth>0?'up':'neutral'}">${incomeThisMonth>0?'↑ '+fmt(incomeThisMonth)+' this month':'No income this month'}</div>
         </div>
-        <div class="dash-kpi-card">
-          <div class="dash-kpi-label">Total Expenses <span class="dash-kpi-icon">📤</span></div>
-          <div class="dash-kpi-value" style="color:#f87171;">${fmt(expenses)}</div>
+        <div class="dash-kpi-item">
+          <div class="dash-kpi-item-label">Total Expenses <span class="dash-kpi-icon">📤</span></div>
+          <div class="dash-kpi-item-value" style="color:#f87171;">${fmt(expenses)}</div>
           <div class="dash-kpi-change ${expensesThisMonth>0?'down':'neutral'}">${expensesThisMonth>0?'↓ '+fmt(expensesThisMonth)+' this month':'No expenses this month'}</div>
         </div>
-        <div class="dash-kpi-card">
-          <div class="dash-kpi-label">Net ${netProfit>=0?'Profit':'Loss'} <span class="dash-kpi-icon">${netProfit>=0?'📈':'📉'}</span></div>
-          <div class="dash-kpi-value" style="color:${netProfit>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(netProfit))}</div>
+        <div class="dash-kpi-item">
+          <div class="dash-kpi-item-label">Net ${netProfit>=0?'Profit':'Loss'} <span class="dash-kpi-icon">${netProfit>=0?'📈':'📉'}</span></div>
+          <div class="dash-kpi-item-value" style="color:${netProfit>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(netProfit))}</div>
           <div class="dash-kpi-change ${netProfit>=0?'up':'down'}">${income>0?Math.round(netProfit/income*100)+'% margin':'—'}</div>
         </div>
-        <div class="dash-kpi-card">
-          <div class="dash-kpi-label">Cash & Assets <span class="dash-kpi-icon">🏦</span></div>
-          <div class="dash-kpi-value" style="color:var(--gold);">${fmt(cashBal||assets)}</div>
+        <div class="dash-kpi-item">
+          <div class="dash-kpi-item-label">Cash &amp; Assets <span class="dash-kpi-icon">🏦</span></div>
+          <div class="dash-kpi-item-value" style="color:var(--gold);">${fmt(cashBal||assets)}</div>
           <div class="dash-kpi-change neutral">Total assets: ${fmt(assets)}</div>
         </div>
-      </div>
+      </div>/div>
       <div class="dash-charts-row" style="padding:16px 16px 0;">
         <div class="dash-card">
           <div class="dash-card-title">Revenue vs Expenses</div>
@@ -6384,7 +6391,7 @@ function renderProductsPage() {
     + '<div class="bk-sheet-wrap"><table class="ps-table" style="min-width:400px;">'
     + '<thead id="psThead"></thead><tbody id="psBody"></tbody>'
     + '</table></div>'
-    + '<div style="padding:10px 16px;display:flex;gap:10px;">'
+    + '<div style="padding:10px 16px;display:flex;flex-direction:column;gap:8px;max-width:200px;">'
     + '<button class="ps-add-btn" onclick="psAddRow()">+ Add '+(isSvc?'Service':'Product')+'</button>'
     + '<button class="staff-save-static-btn" style="padding:9px 20px;font-size:0.78rem;" onclick="psSaveAll()">Save All</button>'
     + '</div>';
@@ -7468,7 +7475,7 @@ function renderOwingPage() {
       <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showRecordChoice()">← Back</button>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="staff-table staff-table-compact" style="width:100%;">
+      <table class="staff-table staff-table-compact" style="min-width:460px;">
         <thead><tr>
           <th style="width:34px;">S/N</th>
           <th style="width:110px;white-space:nowrap;">Name</th>
@@ -7595,7 +7602,7 @@ function renderCustomerBlock(cust){
       + '</tr>';
   });
 
-  const table = '<table class="staff-table staff-table-compact" style="width:100%;">'
+  const table = '<table class="staff-table staff-table-compact" style="min-width:400px;">'
     + '<thead><tr>'
     + '<th style="width:30px;">S/N</th>'
     + '<th style="width:130px;">Narration</th>'
