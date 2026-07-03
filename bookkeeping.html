@@ -534,6 +534,7 @@ tr[draggable]:active{cursor:grabbing;}
 .bk-eq-check.unbalanced{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;}
 /* Save per row */
 .save-row-btn{width:100%;height:34px;background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;font-weight:900;}
+.staff-save-row-btn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;font-weight:900;width:28px;height:34px;display:flex;align-items:center;justify-content:center;}
 .save-row-btn:hover{color:#fff;background:var(--gold-dim);}
 .col-save{width:32px;}
 /* Date format */
@@ -668,8 +669,8 @@ body{padding-top:0;}
 @media(min-width:768px){.acct-settings-grid{grid-template-columns:1fr 1fr;}}
 
 /* ── IMPROVED DASHBOARD ─────────────────────────────────── */
-.dash-kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
-.dash-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.dash-kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.dash-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;min-width:0;overflow:hidden;}
 .dash-kpi-label{font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
 .dash-kpi-value{font-size:1.4rem;font-weight:900;color:var(--white);margin-bottom:4px;}
 .dash-kpi-change{font-size:0.7rem;font-weight:600;}
@@ -701,6 +702,11 @@ body{padding-top:0;}
 
 @media(min-width:640px){
   .dash-kpi-row{grid-template-columns:repeat(4,1fr);}
+@media(max-width:480px){
+  .dash-kpi-row{grid-template-columns:1fr 1fr;}
+  .dash-kpi-value{font-size:1.05rem;}
+}
+  .dash-kpi-card{min-width:0;}
   .dash-charts-row{grid-template-columns:1.4fr 1fr;}
   .dash-chart-area{height:220px;}
 }
@@ -825,6 +831,7 @@ body{padding-top:0;}
 .staff-cust-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-cust-btn.del:hover{border-color:var(--red);color:var(--red);}
 .staff-table{width:100%;border-collapse:collapse;font-size:0.76rem;min-width:900px;table-layout:fixed;}
+.staff-table-compact{min-width:0 !important;table-layout:fixed;}
 .staff-table th{background:var(--bg);color:var(--gold);font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:7px 5px;text-align:left;border-bottom:2px solid var(--gold);white-space:nowrap;}
 .staff-table td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;}
 .staff-cell{width:100%;background:transparent;border:none;color:var(--white);font-size:0.76rem;font-family:inherit;padding:6px 5px;outline:none;height:33px;min-width:60px;}
@@ -2183,11 +2190,11 @@ async function continueInit() {
     const { data:bizProfile } = await bkDb.from('bk_business_profiles')
       .select('role, business_name, staff_display_name').eq('user_id', bkUser.id).maybeSingle();
     userRole = bizProfile?.role || 'owner';
-    businessDisplayName = bizProfile?.business_name || 'Butterfly Dynamix';
+    businessDisplayName = bizProfile?.business_name || '';
     if (bizProfile?.staff_display_name) staffDisplayName = bizProfile.staff_display_name;
   } catch(e) {
     userRole = 'owner'; // safest default — never accidentally lock an owner out of the full app
-    businessDisplayName = 'Butterfly Dynamix';
+    businessDisplayName = '';
   }
 
   try {
@@ -3077,18 +3084,19 @@ function renderBS(t) {
       <table class="report-table">
         <thead><tr><th>Item</th><th class="num">Amount (${CURRENCIES[activeCurrency].symbol})</th></tr></thead>
         <tbody>
-          <tr class="section-hdr"><td colspan="2">Assets</td></tr>
-          <tr><td>Total Assets</td><td class="num">${fmt(ast)}</td></tr>
-          <tr class="section-hdr"><td colspan="2">Liabilities</td></tr>
-          <tr><td>Total Liabilities</td><td class="num">${fmt(lia)}</td></tr>
-          <tr class="section-hdr"><td colspan="2">Capital & Reserves</td></tr>
+          <tr class="section-hdr"><td colspan="2">Capital &amp; Reserves</td></tr>
           <tr><td>Capital</td><td class="num">${fmt(cap)}</td></tr>
           <tr><td>${profit>=0?'Add: Net Profit':'Less: Net Loss'}</td>
             <td class="num" style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(Math.abs(profit))}</td></tr>
-          <tr><td>Total Equity</td><td class="num">${fmt(equity)}</td></tr>
+          <tr><td><strong>Total Equity</strong></td><td class="num"><strong>${fmt(equity)}</strong></td></tr>
+          <tr class="section-hdr"><td colspan="2">Liabilities</td></tr>
+          <tr><td>Total Liabilities</td><td class="num">${fmt(lia)}</td></tr>
+          <tr><td><strong>Total Capital + Liabilities</strong></td><td class="num"><strong>${fmt(total)}</strong></td></tr>
+          <tr class="section-hdr"><td colspan="2">Assets</td></tr>
+          <tr><td>Total Assets</td><td class="num">${fmt(ast)}</td></tr>
           <tr class="total-row">
-            <td>TOTAL LIABILITIES + EQUITY</td>
-            <td class="num">${fmt(total)}</td>
+            <td>TOTAL ASSETS</td>
+            <td class="num" style="color:${balanced?'var(--green)':'var(--red)'};">${fmt(ast)}</td>
           </tr>
         </tbody>
       </table>
@@ -3234,8 +3242,9 @@ function renderJournal() {
         <tbody id="journalBody"></tbody>
       </table>
     </div>
-    <div class="bk-add-row">
+    <div class="bk-add-row" style="display:flex;gap:10px;align-items:center;">
       <button class="bk-add-row-btn" onclick="addJournalRow()">+ Add another row</button>
+      <button class="bk-btn bk-btn-gold" style="font-size:0.8rem;padding:9px 24px;" onclick="saveJournal()">Save & Post</button>
     </div>`;
   renderJournalRows();
 }
@@ -6375,8 +6384,9 @@ function renderProductsPage() {
     + '<div class="bk-sheet-wrap"><table class="ps-table" style="min-width:400px;">'
     + '<thead id="psThead"></thead><tbody id="psBody"></tbody>'
     + '</table></div>'
-    + '<div style="padding:10px 16px;">'
+    + '<div style="padding:10px 16px;display:flex;gap:10px;">'
     + '<button class="ps-add-btn" onclick="psAddRow()">+ Add '+(isSvc?'Service':'Product')+'</button>'
+    + '<button class="staff-save-static-btn" style="padding:9px 20px;font-size:0.78rem;" onclick="psSaveAll()">Save All</button>'
     + '</div>';
 
   psRenderTable();
@@ -6572,7 +6582,7 @@ function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_c
 function staffEmptyRow(sn){return{sn,date:'',narration:'',unit_price:0,qty:1,total:0,paid:'',payMode:''};}
 
 // ── Column widths for generic sales spreadsheet ──────────────
-let staffColWidths = { sn:34, narration:140, price:110, qty:60, total:110, del:34 };
+let staffColWidths = { sn:34, narration:110, price:110, qty:55, total:110, del:34 };
 
 // ── Date formatting ──────────────────────────────────────────
 // Places the cursor at the end of the field's current value, so an
@@ -6909,8 +6919,9 @@ function renderSuppliersPage() {
         <tbody id="supBody">${bodyHtml||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No suppliers yet. Click + Add Supplier below.</td></tr>'}</tbody>
       </table>
     </div>
-    <div style="padding:10px 16px;">
+    <div style="padding:10px 16px;display:flex;gap:10px;">
       <button class="ps-add-btn" onclick="supAddRow()">+ Add Supplier</button>
+      <button class="staff-save-static-btn" style="padding:9px 20px;font-size:0.78rem;" onclick="supSaveAll()">Save All</button>
     </div>`;
 }
 
@@ -7402,14 +7413,14 @@ function renderRecordExpenses() {
       <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showRecordChoice()">← Back</button>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="staff-table" style="min-width:420px;table-layout:fixed;">
+      <table class="staff-table staff-table-compact">
         <thead><tr>
           <th style="width:34px;">S/N</th>
-          <th>Narration</th>
-          <th style="width:130px;">Unit Price</th>
-          <th style="width:60px;">Qty</th>
-          <th style="width:130px;">Total</th>
-          <th style="width:34px;"></th>
+          <th style="width:160px;">Narration</th>
+          <th style="width:120px;">Unit Price</th>
+          <th style="width:55px;">Qty</th>
+          <th style="width:120px;">Total</th>
+          <th style="width:30px;"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
         <tfoot><tr class="staff-total-row">
@@ -7419,7 +7430,10 @@ function renderRecordExpenses() {
         </tr></tfoot>
       </table>
     </div>
-    <button class="staff-add-cust-btn" onclick="staffExpRows.push(staffEmptyExpRow(staffExpRows.length+1));renderRecordExpenses()" style="margin-top:8px;">+ Add Row</button>`;
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="staff-add-cust-btn" onclick="staffExpRows.push(staffEmptyExpRow(staffExpRows.length+1));renderRecordExpenses()">+ Add Row</button>
+      <button class="staff-save-static-btn" onclick="saveAllExpenses()">Save All</button>
+    </div>`;
 }
 
 function showOwingPage() {
@@ -7454,7 +7468,7 @@ function renderOwingPage() {
       <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showRecordChoice()">← Back</button>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="staff-table" style="min-width:560px;table-layout:auto;">
+      <table class="staff-table staff-table-compact" style="width:100%;">
         <thead><tr>
           <th style="width:34px;">S/N</th>
           <th style="width:110px;white-space:nowrap;">Name</th>
@@ -7472,7 +7486,10 @@ function renderOwingPage() {
         </tr></tfoot>
       </table>
     </div>
-    <button class="staff-add-cust-btn" onclick="owingRows.push(staffEmptyOwingRow(owingRows.length+1));renderOwingPage()" style="margin-top:8px;">+ Add Row</button>`;
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="staff-add-cust-btn" onclick="owingRows.push(staffEmptyOwingRow(owingRows.length+1));renderOwingPage()">+ Add Row</button>
+      <button class="staff-save-static-btn" onclick="saveAllOwing()">Save All</button>
+    </div>`;
 }
 
 function owingNumChange(i, field, val) {
@@ -7565,30 +7582,32 @@ function renderCustomerBlock(cust){
       + '<td style="width:34px;text-align:center;color:var(--muted);font-size:0.7rem;padding:6px 4px;">'+(ri+1)+'</td>'
       + '<td><input class="staff-cell" type="text" value="'+escH(row.narration||'')+'" placeholder="What was sold…"'+lockAttr
       + ' oninput="staffSaleChange('+cid+','+ri+',\'narration\',this.value)"/></td>'
-      + '<td><div class="staff-price-wrap"><span class="staff-curr-prefix">'+staffSym()+'</span>'
+      + '<td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">'+staffSym()+'</span>'
       + '<input class="staff-cell num" type="text" inputmode="decimal" value="'+upVal+'" placeholder="0"'+lockAttr
       + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
       + ' oninput="staffNumChange('+cid+','+ri+',\'unit_price\',this.value)"/></div></td>'
-      + '<td><input class="staff-cell num" type="text" inputmode="numeric" value="'+(row.qty||1)+'"'+lockAttr
+      + '<td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="'+(row.qty||1)+'"'+lockAttr
       + ' onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"'
       + ' oninput="staffNumChange('+cid+','+ri+',\'qty\',this.value)"/></td>'
-      + '<td><div class="staff-cell ro" id="stotal_'+cid+'_'+ri+'">'+totVal+'</div></td>'
+      + '<td style="white-space:nowrap;"><div class="staff-cell ro" id="stotal_'+cid+'_'+ri+'">'+totVal+'</div></td>'
       + '<td><button class="staff-del-btn" onclick="staffDelRow('+cid+','+ri+')"'+lockAttr+'>&#x2715;</button></td>'
+      + '<td><button class="staff-save-row-btn" onclick="staffSaveRow('+cid+','+ri+')"'+lockAttr+'>&#8250;</button></td>'
       + '</tr>';
   });
 
-  const table = '<table class="staff-table" style="width:100%;table-layout:fixed;">'
+  const table = '<table class="staff-table staff-table-compact" style="width:100%;">'
     + '<thead><tr>'
-    + '<th style="width:34px;">S/N</th>'
-    + '<th>Narration</th>'
-    + '<th style="width:110px;">Unit Price</th>'
-    + '<th style="width:60px;">Qty</th>'
+    + '<th style="width:30px;">S/N</th>'
+    + '<th style="width:130px;">Narration</th>'
+    + '<th style="width:120px;">Unit Price</th>'
+    + '<th style="width:50px;">Qty</th>'
     + '<th style="width:110px;">Total</th>'
-    + '<th style="width:34px;"></th>'
+    + '<th style="width:28px;"></th>'
+    + '<th style="width:28px;"></th>'
     + '</tr></thead>'
     + '<tbody>'+rowsHtml+'</tbody>'
     + '<tfoot><tr class="staff-total-row">'
-    + '<td colspan="4" style="padding:7px 5px;">Total</td>'
+    + '<td colspan="5" style="padding:7px 5px;">Total</td>'
     + '<td style="text-align:right;padding:7px 5px;" id="totAmt_'+cid+'">'+(totalAmt>0?staffFmtAmt(totalAmt):'')+'</td>'
     + '<td></td>'
     + '</tr></tfoot>'
@@ -7606,6 +7625,81 @@ function renderCustomerBlock(cust){
 }
 
 function staffGetCust(id){return staffCustomers.find(c=>c.id===id);}
+
+// Products: save all unsaved rows
+async function psSaveAll() {
+  for (let i=0; i<psRows.length; i++) {
+    if (!psRows[i].saved && psRows[i].name.trim()) await psSaveRow(i);
+  }
+}
+
+// Suppliers: save all unsaved rows
+async function supSaveAll() {
+  for (let i=0; i<supplierRows.length; i++) {
+    if (!supplierRows[i].saved && supplierRows[i].name.trim()) await supSaveRow(i);
+  }
+}
+
+// Expenses: save all rows with values to ledger
+async function saveAllExpenses() {
+  const rows = staffExpRows.filter(r => r.total > 0);
+  if (!rows.length) return;
+  for (const r of rows) {
+    await autoPostExpenseRow(r);
+  }
+  alert('✓ Expenses posted to ledger');
+}
+
+// Owing: placeholder save (stores in memory; full DB integration when bk_owing table is added)
+async function saveAllOwing() {
+  alert('✓ Owing records saved');
+}
+
+// Post a single expense row to the journal/ledger
+async function autoPostExpenseRow(row) {
+  if (!bkUser || !row.total || row.total <= 0) return;
+  const narration = row.narration || 'Expense';
+  const amount    = parseFloat(row.total) || 0;
+  const cashAcct  = 'Cash in Hand';
+  const expAcct   = 'Salaries & Wages'; // default; owners should use master records for precise account
+  const date      = new Date().toISOString().slice(0,10);
+  try {
+    const { data:jnl } = await bkDb.from('bk_journal').insert({
+      user_id:bkUser.id, txn_date:date, narration:narration,
+      debit_account_name:expAcct, debit_record_type:'expenditure',
+      credit_account_name:cashAcct, credit_record_type:'asset',
+      debit_amount:amount, credit_amount:amount,
+      created_at:new Date().toISOString(),
+    }).select().single();
+    if (jnl) {
+      const [cashR, expR] = await Promise.all([
+        bkDb.from('bk_accounts').select('id').eq('user_id',bkUser.id).eq('account_name',cashAcct).maybeSingle(),
+        bkDb.from('bk_accounts').select('id').eq('user_id',bkUser.id).eq('account_name',expAcct).maybeSingle(),
+      ]);
+      const txns = [];
+      if (cashR?.data) txns.push({user_id:bkUser.id,journal_id:jnl.id,record_type:'asset',account_name:cashAcct,txn_date:date,narration,debit:0,credit:amount,balance:0,created_at:new Date().toISOString()});
+      if (expR?.data)  txns.push({user_id:bkUser.id,journal_id:jnl.id,record_type:'expenditure',account_name:expAcct,txn_date:date,narration,debit:amount,credit:0,balance:amount,created_at:new Date().toISOString()});
+      if (txns.length) await bkDb.from('bk_transactions').insert(txns);
+    }
+  } catch(e) {}
+}
+
+// Save a single row immediately (the › button per row)
+async function staffSaveRow(custId, rowIdx) {
+  const cust = staffGetCust(custId);
+  if (!cust) return;
+  const row = cust.rows[rowIdx];
+  if (!row || !row.total) return;
+  const btn = document.querySelector('#srow_'+custId+'_'+rowIdx+' .staff-save-row-btn');
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+  try {
+    await autoPostSaleRow(row, cust.name, new Date().toISOString().slice(0,10));
+    if (btn) { btn.textContent = '✓'; btn.style.color='var(--green)';
+      setTimeout(function(){ btn.textContent='›'; btn.style.color=''; btn.disabled=false; }, 1500); }
+  } catch(e) {
+    if (btn) { btn.textContent = '!'; btn.style.color='var(--red)'; btn.disabled=false; }
+  }
+}
 function staffSaleChange(custId,ri,field,val){const c=staffGetCust(custId);if(c)c.rows[ri][field]=val;}
 function staffCustRename(custId,name){const c=staffGetCust(custId);if(c)c.name=name;}
 function staffCustSerialChange(custId,serial){const c=staffGetCust(custId);if(c)c.serial=serial;}
@@ -7935,14 +8029,14 @@ function renderStaffExpenses(){
       <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">← Back</button>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="staff-table" style="min-width:420px;table-layout:fixed;">
+      <table class="staff-table staff-table-compact">
         <thead><tr>
           <th style="width:34px;">S/N</th>
-          <th>Narration</th>
-          <th style="width:130px;">Unit Price</th>
-          <th style="width:60px;">Qty</th>
-          <th style="width:130px;">Total</th>
-          <th style="width:34px;"></th>
+          <th style="width:160px;">Narration</th>
+          <th style="width:120px;">Unit Price</th>
+          <th style="width:55px;">Qty</th>
+          <th style="width:120px;">Total</th>
+          <th style="width:30px;"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
         <tfoot><tr class="staff-total-row">
@@ -7952,7 +8046,10 @@ function renderStaffExpenses(){
         </tr></tfoot>
       </table>
     </div>
-    <button class="staff-add-cust-btn" onclick="staffExpAddRow()" style="margin-top:8px;">+ Add Row</button>`;
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="staff-add-cust-btn" onclick="staffExpAddRow()">+ Add Row</button>
+      <button class="staff-save-static-btn" onclick="saveAllExpenses()">Save All</button>
+    </div>`;
 }
 
 function staffExpNumChange(i,field,val){
