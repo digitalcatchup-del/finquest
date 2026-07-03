@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -7,6 +8,18 @@
 <meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Bookkeeping — Butterfly Dynamix</title>
+  <!-- PWA manifest -->
+  <link rel="manifest" href="/manifest.json"/>
+  <!-- Theme colour — shows in browser chrome on Android -->
+  <meta name="theme-color" content="#d4af37"/>
+  <!-- iOS PWA support -->
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="BD Books"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png"/>
+  <!-- MS Tiles (Windows) -->
+  <meta name="msapplication-TileColor" content="#d4af37"/>
+  <meta name="msapplication-TileImage" content="/icons/icon-144x144.png"/>
 <style>html,body{background:#0f1117!important;}
 /* ── LANDING PAGE TYPOGRAPHY ─────────────────────────── */
 .bk-land-small{font-size:0.85rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:8px;}
@@ -8144,5 +8157,40 @@ const COLUMN_HELP = {
 };
 
 </script>
+  <script>
+    // Register service worker for PWA / offline support
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(function(reg) {
+            // Service worker registered
+          })
+          .catch(function(err) {
+            // Service worker registration failed silently
+          });
+      });
+    }
+
+    // PWA install prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Show install button if it exists
+      const installBtn = document.getElementById('pwaInstallBtn');
+      if (installBtn) installBtn.style.display = 'block';
+    });
+
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(result) {
+          deferredPrompt = null;
+          const installBtn = document.getElementById('pwaInstallBtn');
+          if (installBtn) installBtn.style.display = 'none';
+        });
+      }
+    }
+  </script>
 </body>
 </html>
