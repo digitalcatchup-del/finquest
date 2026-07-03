@@ -220,9 +220,13 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .bk-eq-value.lv{color:#f97316;}
 .bk-eq-value.av{color:var(--gold);}
 .bk-eq-op{font-size:1.6rem;font-weight:300;color:var(--muted);margin-top:16px;}
+.staff-notice-item{padding:10px 0;border-bottom:1px solid var(--border);}
+.staff-notice-item:last-child{border-bottom:none;}
+.staff-notice-msg{font-size:0.82rem;color:var(--off);line-height:1.4;}
 .eq-record-btn{background:var(--gold);color:#000;border:none;font-size:0.82rem;font-weight:700;padding:9px 28px;border-radius:8px;cursor:pointer;letter-spacing:0.03em;transition:opacity 0.15s;}
-.eq-record-btn:hover{opacity:0.85;}font-size:0.73rem;margin-top:10px;color:var(--muted);}
-.bk-eq-check.balanced{color:var(--green);}
+.eq-record-btn:hover{opacity:0.85;}
+.bk-eq-check{font-size:0.7rem;margin-top:10px;color:var(--muted);text-align:center;}
+.bk-eq-check.balanced{color:var(--green);font-size:0.68rem;}
 .bk-eq-check.unbalanced{color:var(--red);}
 
 /* NAV */
@@ -1016,7 +1020,9 @@ body{padding-top:0;}
   </div>
 
   <div id="bkMainChrome">
-  <div class="bk-eq-bar">
+  <div class="bk-eq-bar" style="position:relative;">
+    <button id="eqCollapseBtn" onclick="toggleEqBar()" title="Collapse equation"
+      style="position:absolute;top:10px;right:14px;background:none;border:none;color:var(--muted);font-size:0.85rem;cursor:pointer;padding:4px 6px;">▾</button>
     <div id="eqBarBody">
     <div class="bk-eq-title">Capital + Profit/Loss + Liabilities = Assets</div>
     <div class="bk-equation">
@@ -7086,72 +7092,115 @@ function goToHomepage() {
 }
 
 // ── STAFF DASHBOARD — summarises this session's recorded data ──
-function showStaffDashboard(){
+async function showStaffDashboard(){
   staffHideChrome();
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
 
-  const custCount   = staffCustomers.length;
-  const totalSales  = staffCustomers.reduce(function(sum,c){
-    return sum + c.rows.reduce(function(a,r){ return a + (parseFloat(r.total)||0); }, 0);
-  }, 0);
-  const totalExp    = staffExpRows.reduce(function(a,r){ return a + (parseFloat(r.total)||0); }, 0);
-  const netAmount   = totalSales - totalExp;
-  const rowCount    = staffCustomers.reduce(function(sum,c){ return sum + c.rows.filter(function(r){ return r.total>0; }).length; }, 0);
-  const custWithSales = staffCustomers.filter(function(c){
-    return c.rows.some(function(r){ return r.total>0; });
-  }).length;
+  // Fetch today's transactions posted by this user
+  const today = new Date().toISOString().slice(0,10);
+  let todayTxns = [], recentTxns = [];
+  let notices = [];
+  try {
+    const [txnRes, noticeRes] = await Promise.all([
+      bkDb.from('bk_transactions')
+        .select('account_name,record_type,debit,credit,narration,txn_date,created_at')
+        .eq('user_id', bkUser.id)
+        .order('created_at', {ascending:false})
+        .limit(50),
+      bkDb.from('bk_notices')
+        .select('*')
+        .eq('business_name', businessDisplayName)
+        .order('created_at', {ascending:false})
+        .limit(5),
+    ]);
+    const all = txnRes.data || [];
+    todayTxns  = all.filter(r => r.txn_date === today && r.record_type === 'income');
+    recentTxns = all.filter(r => r.record_type === 'income').slice(0,5);
+    notices    = noticeRes.data || [];
+  } catch(e) {}
+
+  // In-session stats (from what's been recorded but not yet saved to DB)
+  const sessionSales = staffCustomers.reduce((s,c) =>
+    s + c.rows.reduce((a,r) => a+(parseFloat(r.total)||0), 0), 0);
+  const sessionItems = staffCustomers.reduce((s,c) =>
+    s + c.rows.filter(r => r.total>0).length, 0);
+  const sessionExp   = staffExpRows.reduce((a,r) => a+(parseFloat(r.total)||0), 0);
+
+  // DB totals for today
+  const dbTodaySales = todayTxns.reduce((a,r) => a+(parseFloat(r.credit)||0), 0);
+  const totalToday   = dbTodaySales + sessionSales;
+
+  const name = staffDisplayName || bkUser?.email?.split('@')[0] || 'Staff';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  // Recent posted transactions table
+  const recentRows = recentTxns.map((r,i) => `
+    <tr>
+      <td style="color:var(--muted);font-size:0.7rem;padding:7px 8px;">${r.txn_date||'—'}</td>
+      <td style="padding:7px 8px;">${escH(r.narration||'')}</td>
+      <td style="text-align:right;padding:7px 8px;color:var(--green);">${staffFmtAmt(parseFloat(r.credit)||0)}</td>
+    </tr>`).join('');
+
+  // Notice board
+  const noticeHtml = notices.length
+    ? notices.map(n => `<div class="staff-notice-item">
+        <div class="staff-notice-msg">${escH(n.message||'')}</div>
+        <div class="staff-notice-time" style="font-size:0.68rem;color:var(--muted);margin-top:3px;">${n.created_at?new Date(n.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short'}):'—'}</div>
+      </div>`).join('')
+    : '<div style="color:var(--muted);font-size:0.8rem;padding:8px 0;">No announcements right now.</div>';
 
   document.getElementById('bkContent').innerHTML = `
-    <div class="bk-content-header">
-      <div>
-        <div class="bk-content-title">STAFF HOMEPAGE</div>
-        <div style="margin-top:4px;"></div>
-      </div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
+    <div style="padding:20px 16px 8px;">
+      <div style="font-size:1rem;font-weight:700;color:var(--white);">${greeting}, ${escH(name)} 👋</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${new Date().toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
     </div>
 
-    <div class="dash-kpi-row" style="padding:16px 16px 0;">
+    <!-- Quick Actions -->
+    <div style="padding:0 16px 16px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="bk-btn bk-btn-gold" style="flex:1;min-width:120px;" onclick="showStaffChoice()">📝 Record</button>
+      <button class="bk-btn bk-btn-outline" style="flex:1;min-width:120px;" onclick="showColleagues()">💬 Colleagues</button>
+    </div>
+
+    <!-- Today's summary -->
+    <div class="dash-kpi-row" style="padding:0 16px 16px;">
       <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Total Sales <span class="dash-kpi-icon">\uD83D\uDED2</span></div>
-        <div class="dash-kpi-value" style="color:#4ade80;">${staffFmtAmt(totalSales)||staffSym()+'0'}</div>
-        <div class="dash-kpi-change neutral">${rowCount} item${rowCount!==1?'s':''} recorded</div>
+        <div class="dash-kpi-label">Today's Sales 🛒</div>
+        <div class="dash-kpi-value" style="color:#4ade80;">${staffFmtAmt(totalToday)}</div>
+        <div class="dash-kpi-change neutral">${todayTxns.length} posted + ${sessionItems} in session</div>
       </div>
       <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Total Expenses <span class="dash-kpi-icon">\uD83D\uDCB8</span></div>
-        <div class="dash-kpi-value" style="color:#f87171;">${staffFmtAmt(totalExp)||staffSym()+'0'}</div>
-        <div class="dash-kpi-change neutral">${staffExpRows.filter(function(r){return r.total>0;}).length} entr${staffExpRows.filter(function(r){return r.total>0;}).length!==1?'ies':'y'}</div>
-      </div>
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Net <span class="dash-kpi-icon">${netAmount>=0?'\uD83D\uDCC8':'\uD83D\uDCC9'}</span></div>
-        <div class="dash-kpi-value" style="color:${netAmount>=0?'#4ade80':'#f87171'};">${staffFmtAmt(Math.abs(netAmount))||staffSym()+'0'}</div>
-        <div class="dash-kpi-change neutral">Sales minus expenses</div>
-      </div>
-      <div class="dash-kpi-card">
-        <div class="dash-kpi-label">Customers <span class="dash-kpi-icon">\uD83D\uDC65</span></div>
-        <div class="dash-kpi-value" style="color:var(--gold);">${custCount}</div>
-        <div class="dash-kpi-change neutral">${custWithSales} with recorded sales</div>
+        <div class="dash-kpi-label">Session Expenses 💸</div>
+        <div class="dash-kpi-value" style="color:#f87171;">${staffFmtAmt(sessionExp)}</div>
+        <div class="dash-kpi-change neutral">${staffExpRows.filter(r=>r.total>0).length} recorded</div>
       </div>
     </div>
 
-    <div style="padding:16px 16px 0;">
-      <div class="dash-card-title" style="margin-bottom:2px;">Sales Summary</div>
-      <div class="dash-card-sub">One row per customer \u2014 read-only. Edit in Record Sales.</div>
-      ${buildSalesSummarySpreadsheet()}
-    </div>
-
-    <div style="padding:16px 16px 20px;">
+    <!-- Recent posted sales -->
+    <div style="padding:0 16px 16px;">
       <div class="dash-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-          <div class="dash-card-title" style="margin-bottom:0;">Quick Actions</div>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
-          <button class="bk-btn bk-btn-gold" onclick="showStaffSales()">\uD83D\uDED2 Go to Sales</button>
-          <button class="bk-btn bk-btn-outline" onclick="showStaffExpenses()">\uD83D\uDCB8 Go to Expenses</button>
-          <button class="bk-btn bk-btn-outline" onclick="showStaffSettings()">\u2699\uFE0F Settings</button>
-        </div>
+        <div class="dash-card-title" style="margin-bottom:10px;">Recent Posted Sales</div>
+        ${recentTxns.length ? `
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+            <thead><tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:6px 8px;color:var(--muted);font-size:0.68rem;font-weight:700;">Date</th>
+              <th style="text-align:left;padding:6px 8px;color:var(--muted);font-size:0.68rem;font-weight:700;">Narration</th>
+              <th style="text-align:right;padding:6px 8px;color:var(--muted);font-size:0.68rem;font-weight:700;">Amount</th>
+            </tr></thead>
+            <tbody>${recentRows}</tbody>
+          </table>
+        </div>` : '<div style="color:var(--muted);font-size:0.8rem;">No posted sales yet. Record a sale and hit Save.</div>'}
+      </div>
+    </div>
+
+    <!-- Notice board -->
+    <div style="padding:0 16px 24px;">
+      <div class="dash-card">
+        <div class="dash-card-title" style="margin-bottom:10px;">📢 Notice Board</div>
+        ${noticeHtml}
       </div>
     </div>`;
-
-  initStaffSwipe();
 }
 
 // ── Build one summarised row per customer from their Record Sales rows ──
