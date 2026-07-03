@@ -220,7 +220,8 @@ body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Arial,sans-s
 .bk-eq-value.lv{color:#f97316;}
 .bk-eq-value.av{color:var(--gold);}
 .bk-eq-op{font-size:1.6rem;font-weight:300;color:var(--muted);margin-top:16px;}
-.bk-eq-check{text-align:center;font-size:0.73rem;margin-top:10px;color:var(--muted);}
+.eq-record-btn{background:var(--gold);color:#000;border:none;font-size:0.82rem;font-weight:700;padding:9px 28px;border-radius:8px;cursor:pointer;letter-spacing:0.03em;transition:opacity 0.15s;}
+.eq-record-btn:hover{opacity:0.85;}font-size:0.73rem;margin-top:10px;color:var(--muted);}
 .bk-eq-check.balanced{color:var(--green);}
 .bk-eq-check.unbalanced{color:var(--red);}
 
@@ -744,7 +745,6 @@ body{padding-top:0;}
 .ps-col-check{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
 .ps-add-btn{background:none;border:1px dashed var(--border2);color:var(--muted);font-size:0.76rem;font-weight:600;padding:8px;border-radius:6px;cursor:pointer;width:100%;margin-top:8px;}
 .ps-add-btn:hover{border-color:var(--gold);color:var(--gold);}
-.ps-barcode-note{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:0.76rem;color:var(--muted);display:flex;gap:10px;align-items:flex-start;}
 
 /* Ensure main content doesn't go under hamburger on mobile */
 @media(max-width:599px){
@@ -1080,6 +1080,9 @@ body{padding-top:0;}
     </div>
 
     <div class="bk-eq-check" id="eqCheck">Loading…</div>
+    <div style="text-align:center;margin-top:14px;">
+      <button class="eq-record-btn" onclick="showRecordChoice()">📝 Record</button>
+    </div>
     </div>
   </div>
   </div>
@@ -6610,7 +6613,7 @@ function staffNewCustomer(name){return{id:++_custIdSeq,name:name||`Customer ${_c
 function staffEmptyRow(sn){return{sn,date:'',narration:'',unit_price:0,qty:1,total:0,paid:'',payMode:''};}
 
 // ── Column widths for generic sales spreadsheet ──────────────
-let staffColWidths = { sn:34, narration:200, price:110, qty:60, total:110, del:34 };
+let staffColWidths = { sn:34, narration:140, price:110, qty:60, total:110, del:34 };
 
 // ── Date formatting ──────────────────────────────────────────
 // Places the cursor at the end of the field's current value, so an
@@ -7341,11 +7344,163 @@ function buildSalesSummarySpreadsheet(){
   return desktopTable + mobilePanes;
 }
 
+// ── RECORD CHOICE (from equation bar — owner/manager context) ─
+function showRecordChoice() {
+  // Keep chrome visible (equation stays shown) — just replace content
+  staffShowChrome();
+  hideGlobalHero();
+  hideDashToolbar();
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div class="bk-content-title">RECORD</div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showDashboard()">← Back</button>
+    </div>
+    <div class="staff-choice">
+      <div class="staff-choice-btn" onclick="showRecordSales()">
+        <div class="staff-choice-icon">🛒</div>
+        <div class="staff-choice-label">Sales</div>
+        <div class="staff-choice-desc">Record customer sales</div>
+      </div>
+      <div class="staff-choice-btn" onclick="showRecordExpenses()">
+        <div class="staff-choice-icon">💸</div>
+        <div class="staff-choice-label">Expenses</div>
+        <div class="staff-choice-desc">Record business expenses</div>
+      </div>
+      <div class="staff-choice-btn" onclick="showOwingPage()">
+        <div class="staff-choice-icon">📋</div>
+        <div class="staff-choice-label">Owing</div>
+        <div class="staff-choice-desc">Record what customers owe</div>
+      </div>
+    </div>`;
+}
+
+// Sales — reuses the same staff sales spreadsheet
+function showRecordSales() {
+  if (staffCustomers.length === 0) staffCustomers = [staffNewCustomer()];
+  renderStaffSales();
+}
+
+// Expenses — S/N, Narration, Unit Price, Quantity, Total (no Date)
+function showRecordExpenses() {
+  if (staffExpRows.length === 0) staffExpRows = [1,2,3].map(n => staffEmptyExpRow(n));
+  renderRecordExpenses();
+}
+
+function renderRecordExpenses() {
+  const rows = staffExpRows.map((r,i) => `
+    <tr>
+      <td class="staff-sn">${i+1}</td>
+      <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="What was the expense?"
+        oninput="staffExpRows[${i}].narration=this.value"/></td>
+      <td><div class="staff-price-wrap"><span class="staff-curr-prefix">${staffSym()}</span>
+        <input class="staff-cell num" type="text" inputmode="decimal"
+          value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
+          onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+          oninput="staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
+      <td><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
+        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+        oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
+      <td><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
+      <td><button class="staff-del-btn" onclick="staffExpDel(${i})">✕</button></td>
+    </tr>`).join('');
+  const totalExp = staffExpRows.reduce((a,r) => a+(r.total||0), 0);
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div class="bk-content-title">RECORD EXPENSES</div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showRecordChoice()">← Back</button>
+    </div>
+    <div class="bk-sheet-wrap">
+      <table class="staff-table" style="min-width:420px;table-layout:fixed;">
+        <thead><tr>
+          <th style="width:34px;">S/N</th>
+          <th>Narration</th>
+          <th style="width:130px;">Unit Price</th>
+          <th style="width:60px;">Qty</th>
+          <th style="width:130px;">Total</th>
+          <th style="width:34px;"></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr class="staff-total-row">
+          <td colspan="4" style="padding:7px 5px;">Total</td>
+          <td style="text-align:right;padding:7px 5px;">${staffFmtAmt(totalExp)}</td>
+          <td></td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <button class="staff-add-cust-btn" onclick="staffExpAddRow();renderRecordExpenses()" style="margin-top:8px;">+ Add Row</button>`;
+}
+
+// ── OWING PAGE ────────────────────────────────────────────────
+let owingRows = [];
+function staffEmptyOwingRow(n) { return { sn:n, name:'', narration:'', unit_price:0, qty:1, total:0 }; }
+
+function showOwingPage() {
+  if (owingRows.length === 0) owingRows = [1,2,3].map(n => staffEmptyOwingRow(n));
+  renderOwingPage();
+}
+
+function renderOwingPage() {
+  const rows = owingRows.map((r,i) => `
+    <tr>
+      <td class="staff-sn">${i+1}</td>
+      <td><input class="staff-cell" type="text" value="${escH(r.name)}" placeholder="Customer name…"
+        oninput="owingRows[${i}].name=this.value"/></td>
+      <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="What's owed…"
+        oninput="owingRows[${i}].narration=this.value"/></td>
+      <td><div class="staff-price-wrap"><span class="staff-curr-prefix">${staffSym()}</span>
+        <input class="staff-cell num" type="text" inputmode="decimal"
+          value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
+          onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+          oninput="owingNumChange(${i},'unit_price',this.value)"/></div></td>
+      <td><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
+        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+        oninput="owingNumChange(${i},'qty',this.value)"/></td>
+      <td><div class="staff-cell ro" id="owing_total_${i}">${staffFmtAmt(r.total)}</div></td>
+      <td><button class="staff-del-btn" onclick="owingRows.splice(${i},1);renderOwingPage()">✕</button></td>
+    </tr>`).join('');
+  const grandTotal = owingRows.reduce((a,r) => a+(r.total||0), 0);
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div class="bk-content-title">OWING</div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showRecordChoice()">← Back</button>
+    </div>
+    <div class="bk-sheet-wrap">
+      <table class="staff-table" style="min-width:500px;table-layout:fixed;">
+        <thead><tr>
+          <th style="width:34px;">S/N</th>
+          <th style="width:130px;">Name</th>
+          <th>Narration</th>
+          <th style="width:130px;">Unit Price</th>
+          <th style="width:60px;">Qty</th>
+          <th style="width:130px;">Total</th>
+          <th style="width:34px;"></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr class="staff-total-row">
+          <td colspan="5" style="padding:7px 5px;">Total Owing</td>
+          <td style="text-align:right;padding:7px 5px;">${staffFmtAmt(grandTotal)}</td>
+          <td></td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <button class="staff-add-cust-btn" onclick="owingRows.push(staffEmptyOwingRow(owingRows.length+1));renderOwingPage()" style="margin-top:8px;">+ Add Row</button>`;
+}
+
+function owingNumChange(i, field, val) {
+  owingRows[i][field] = parseFloat(String(val).replace(/,/g,''))||0;
+  owingRows[i].total  = owingRows[i].unit_price * (owingRows[i].qty||1);
+  const el = document.getElementById('owing_total_'+i);
+  if (el) el.textContent = staffFmtAmt(owingRows[i].total);
+  document.querySelector('.staff-total-row td:nth-child(6)').textContent =
+    staffFmtAmt(owingRows.reduce((a,r) => a+(r.total||0), 0));
+}
+
+
 function showStaffChoice(){
   staffHideChrome();
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
-      <div class="bk-content-title">STAFF RECORD</div>
+      <div class="bk-content-title">RECORD</div>
       <div style="display:flex;gap:8px;">
         <button class="staff-settings-btn" onclick="showStaffSettings()" title="Settings">\u2699\uFE0F</button>
         <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffPage()">\u2190 Back</button>
@@ -7361,6 +7516,11 @@ function showStaffChoice(){
         <div class="staff-choice-icon">\uD83D\uDCB8</div>
         <div class="staff-choice-label">Expenses</div>
         <div class="staff-choice-desc">Record business expenses</div>
+      </div>
+      <div class="staff-choice-btn" onclick="showOwingPage()">
+        <div class="staff-choice-icon">\uD83D\uDCCB</div>
+        <div class="staff-choice-label">Owing</div>
+        <div class="staff-choice-desc">Record what customers owe</div>
       </div>
     </div>`;
 }
@@ -7385,6 +7545,8 @@ function renderStaffSales(){
         <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">\u2190 Back</button>
       </div>
     </div>
+
+
     <div id="staffSalesBody" style="padding:0 0 16px;"></div>`;
   renderAllCustomers();
 }
@@ -7444,17 +7606,6 @@ function renderCustomerBlock(cust){
     + '</table>';
 
   return '<div class="staff-customer-block'+(locked?' staff-locked-block':'')+'" data-custid="'+cid+'">'
-    + '<div class="staff-customer-header">'
-    + '<button class="staff-lock-btn" onclick="staffToggleLock('+cid+')" title="'+(locked?'Unlock to edit':'Lock to prevent editing')+'">'
-    + (locked ? '&#128274;' : '&#128275;') + '</button>'
-    + '<input class="staff-customer-name" type="text" value="'+escH(cust.name)+'"'+lockAttr
-    + ' onchange="staffCustRename('+cid+',this.value)" placeholder="Customer name\u2026"/>'
-    + '<input class="staff-customer-serial" type="text" value="'+escH(cust.serial||'')+'"'+lockAttr
-    + ' onchange="staffCustSerialChange('+cid+',this.value)" placeholder="S/N" title="Customer Serial Number"/>'
-    + '<div class="staff-cust-btns">'
-    + '<button class="staff-cust-btn" onclick="staffAddRowToCustomer('+cid+')"'+lockAttr+'>+ Row</button>'
-    + '<button class="staff-cust-btn del" onclick="staffDeleteCustomer('+cid+')"'+lockAttr+'>&#x2715;</button>'
-    + '</div></div>'
     + '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">'
     + table
     + '</div>'
@@ -7514,7 +7665,8 @@ function staffRefreshCustomerTotals(custId){
   if (staticTotal) staticTotal.textContent = 'Total = ' + (totalAmt>0?staffFmtAmt(totalAmt):staffSym()+'0');
 }
 
-// ── Auto-post engine ──────────────────────────────────────────
+
+
 // Maps payment method to the cash/bank account name
 function staffCashAccount(payMode) {
   const m = (payMode||'').toLowerCase();
@@ -7761,7 +7913,7 @@ function initStaffSwipe(){
 // Expenses
 function showStaffExpenses(){
   staffHideChrome();
-  if(staffExpRows.length===0)staffExpRows=[1,2,3,4,5].map(n=>staffEmptyExpRow(n));
+  if(staffExpRows.length===0) staffExpRows=[1,2,3].map(n=>staffEmptyExpRow(n));
   renderStaffExpenses();
 }
 
@@ -7769,8 +7921,7 @@ function renderStaffExpenses(){
   const rows=staffExpRows.map((r,i)=>`
     <tr>
       <td class="staff-sn">${i+1}</td>
-      <td><input class="staff-cell" type="date" value="${r.date}" onchange="staffExpRows[${i}].date=this.value"/></td>
-      <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="Description…"
+      <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="What was the expense?"
         oninput="staffExpRows[${i}].narration=this.value"/></td>
       <td><div class="staff-price-wrap">
         <span class="staff-curr-prefix">${staffSym()}</span>
@@ -7778,33 +7929,33 @@ function renderStaffExpenses(){
         value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
         onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
         oninput="staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
-      <td><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}" style="width:55px;"
+      <td><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
         onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
         oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
       <td><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
-      <td><button class="staff-save-btn" onclick="staffExpSave(${i})">›</button></td>
       <td><button class="staff-del-btn" onclick="staffExpDel(${i})">✕</button></td>
     </tr>`).join('');
   const totalExp=staffExpRows.reduce((a,r)=>a+(r.total||0),0);
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
-      <div><div class="bk-content-title">EXPENSES RECORD</div></div>
-      <div style="display:flex;gap:8px;">
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">← Back</button>
-      </div>
+      <div class="bk-content-title">RECORD EXPENSES</div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">← Back</button>
     </div>
-    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-      <table class="staff-table" style="min-width:560px;">
+    <div class="bk-sheet-wrap">
+      <table class="staff-table" style="min-width:420px;table-layout:fixed;">
         <thead><tr>
-          <th>S/N</th><th>Date</th><th>Narration / Description</th>
-          <th>Unit Price</th><th>Qty</th><th>Total</th><th>›</th><th>✕</th>
+          <th style="width:34px;">S/N</th>
+          <th>Narration</th>
+          <th style="width:130px;">Unit Price</th>
+          <th style="width:60px;">Qty</th>
+          <th style="width:130px;">Total</th>
+          <th style="width:34px;"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
         <tfoot><tr class="staff-total-row">
-          <td colspan="5" style="padding:7px 5px;">Total</td>
-          <td style="text-align:right;padding:7px 5px;" id="expGrandTotal">${staffFmtAmt(totalExp)}</td>
-          <td colspan="2"></td>
+          <td colspan="4" style="padding:7px 5px;">Total</td>
+          <td style="text-align:right;padding:7px 5px;">${staffFmtAmt(totalExp)}</td>
+          <td></td>
         </tr></tfoot>
       </table>
     </div>
