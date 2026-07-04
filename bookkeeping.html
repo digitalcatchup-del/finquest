@@ -2410,7 +2410,7 @@ function renderLedger() {
     });
   }
 
-  // Compute the closing balance: last saved row's balance, else opening balance
+  // Compute closing balance
   const dataRows = rows.filter(r => r.id && (r.debit > 0 || r.credit > 0));
   const closingBal = dataRows.length > 0
     ? parseFloat(dataRows[dataRows.length-1].balance) || ob
@@ -2420,28 +2420,28 @@ function renderLedger() {
   const balText = fmt(Math.abs(closingBal));
 
   content.innerHTML = `
-    <div class="sched-total-banner" style="border-left:4px solid ${color};margin-bottom:12px;">
+    <div class="sched-total-banner" id="ledgerTotalBanner" style="border-left:4px solid ${color};margin-bottom:12px;">
       <div class="sched-total-label">Total ${activeAccount.account_name}</div>
-      <div class="sched-total-val" style="color:${color};">${balText}</div>
+      <div class="sched-total-val" id="ledgerTotalVal" style="color:${color};">${balText}</div>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="bk-sheet" id="ledgerTable" style="min-width:1072px;">
+      <table class="bk-sheet" id="ledgerTable" style="min-width:920px;">
         <thead>
           <tr>
-            <th class="col-date">Date <button class="jdate-filter-btn" onclick="toggleJDateFilter(event)" title="Filter by date">📅</button></th>
-            <th class="col-payee">Payee</th>
-            <th class="col-payer">Payer</th>
+            <th class="col-sn num" style="width:40px;">S/N</th>
+            <th class="col-date" style="width:110px;">Date <button class="jdate-filter-btn" onclick="toggleJDateFilter(event)" title="Filter by date">📅</button></th>
+            <th class="col-payee" style="width:120px;">Payee</th>
+            <th class="col-payer" style="width:120px;">Payer</th>
             <th class="col-narr">Narration</th>
-            <th class="col-dr num">Debit (${CURRENCIES[activeCurrency].symbol})</th>
-            <th class="col-cr num">Credit (${CURRENCIES[activeCurrency].symbol})</th>
-            <th class="col-bal num">Balance (${CURRENCIES[activeCurrency].symbol})</th>
-            <th class="col-sn num">S/N</th>
+            <th class="col-dr num" style="width:110px;">Debit (${CURRENCIES[activeCurrency].symbol})</th>
+            <th class="col-cr num" style="width:110px;">Credit (${CURRENCIES[activeCurrency].symbol})</th>
+            <th class="col-bal num" style="width:120px;">Balance (${CURRENCIES[activeCurrency].symbol})</th>
+            <th style="width:28px;"></th>
           </tr>
         </thead>
         <tbody id="ledgerBody"></tbody>
       </table>
     </div>
-
     <div class="sched-below-table">
       <div class="sched-subacct-wrap">
         <label class="sched-subacct-label">Sub Accounts</label>
@@ -2461,46 +2461,105 @@ function renderRows(displayRows) {
   if (!tbody) return;
   const ob = parseFloat(activeAccount?.opening_balance)||0;
 
-  // Opening balance row — always show at top of every ledger
+  // Opening balance row
   const obRow = `
     <tr class="ob-row" id="row_ob">
+      <td style="text-align:center;padding:8px 6px;font-size:0.72rem;color:var(--muted);">—</td>
       <td colspan="4" style="padding:8px 10px;font-size:0.78rem;font-weight:700;color:var(--gold);">Opening Balance</td>
       <td style="text-align:right;padding:8px 10px;font-size:0.78rem;color:var(--muted);">—</td>
       <td style="text-align:right;padding:8px 10px;font-size:0.78rem;color:var(--muted);">—</td>
       <td style="text-align:right;padding:8px 10px;font-size:0.82rem;font-weight:800;color:var(--gold);">${ob!==0?fmt(ob):fmt(0)}</td>
-      <td style="text-align:center;padding:8px 10px;font-size:0.72rem;color:var(--muted);">—</td>
+      <td></td>
     </tr>`;
 
   const dataRows = (displayRows||rows).filter(r => hasData(r));
 
   if (dataRows.length === 0) {
-    tbody.innerHTML = obRow + `<tr><td colspan="8" style="text-align:center;padding:28px 12px;color:var(--muted);font-size:0.82rem;">
-      No entries yet. Transactions posted from
-      <button onclick="openJournal()" style="background:none;border:none;color:var(--gold);font-weight:700;cursor:pointer;font-size:inherit;padding:0;">Master Records</button>
-      will appear here.
-    </td></tr>`;
+    tbody.innerHTML = obRow + `<tr><td colspan="9" style="text-align:center;padding:28px 12px;color:var(--muted);font-size:0.82rem;">
+      No entries yet — type directly into any row below to add a transaction.
+    </td></tr>` + buildEmptyEditableRows(5);
     return;
   }
 
-  tbody.innerHTML = obRow + dataRows.map((row, i) => {
+  // Render existing rows as editable + extra empty rows
+  const existingHtml = dataRows.map((row, i) => {
     const realIdx = rows.indexOf(row);
     const idx = realIdx >= 0 ? realIdx : i;
-    const bal = parseFloat(row.balance)||0;
-    const balClass = bal > 0 ? 'pos' : bal < 0 ? 'neg' : 'zero';
-    const sn  = hasData(row) ? idx+1 : '';
-    const dateDisplay = row.txn_date ? formatDateDisplay(row.txn_date) : '';
-    return `<tr id="row_${idx}" draggable="true">
-      <td class="col-date"><div class="bk-cell-ro">${dateDisplay}</div></td>
-      <td class="col-payee"><div class="bk-cell-ro">${escH(row.payee)}</div></td>
-      <td class="col-payer"><div class="bk-cell-ro">${escH(row.payer)}</div></td>
-      <td class="col-narr"><div class="bk-cell-ro">${escH(row.narration)}</div></td>
-      <td class="col-dr"><div class="bk-cell-ro num">${row.debit>0?fmt(row.debit):''}</div></td>
-      <td class="col-cr"><div class="bk-cell-ro num">${row.credit>0?fmt(row.credit):''}</div></td>
-      <td class="col-bal"><div class="bk-cell-ro bal ${balClass}">${bal!==0?fmt(bal):''}</div></td>
-      <td class="col-sn"><div class="bk-cell-ro sn-cell">${sn}</div></td>
-    </tr>`;
+    return buildEditableRow(row, idx, i+1);
   }).join('');
+
+  // Add empty rows for new entries
+  const emptyStart = rows.filter(r=>hasData(r)).length;
+  const extraEmpty = buildEmptyEditableRows(3, emptyStart);
+
+  tbody.innerHTML = obRow + existingHtml + extraEmpty;
   setTimeout(()=>{ initColumnResize(); initRowResize(); initDragRows(); }, 50);
+}
+
+function buildEditableRow(row, idx, sn) {
+  const bal      = parseFloat(row.balance)||0;
+  const balClass = bal > 0 ? 'pos' : bal < 0 ? 'neg' : 'zero';
+  const dateVal  = row.txn_date || '';
+
+  return `<tr id="row_${idx}">
+    <td class="col-sn" style="text-align:center;padding:4px 2px;font-size:0.72rem;color:var(--muted);white-space:nowrap;">${sn}</td>
+    <td class="col-date"><input class="bk-cell" type="date" value="${escH(dateVal)}"
+      onchange="rows[${idx}].txn_date=this.value;rows[${idx}].saved=false;ledgerCellChanged(${idx})"/></td>
+    <td class="col-payee"><input class="bk-cell" type="text" value="${escH(row.payee||'')}" placeholder="Payee…"
+      oninput="rows[${idx}].payee=this.value;rows[${idx}].saved=false"/></td>
+    <td class="col-payer"><input class="bk-cell" type="text" value="${escH(row.payer||'')}" placeholder="Payer…"
+      oninput="rows[${idx}].payer=this.value;rows[${idx}].saved=false"/></td>
+    <td class="col-narr"><input class="bk-cell" type="text" value="${escH(row.narration||'')}" placeholder="Narration…"
+      oninput="rows[${idx}].narration=this.value;rows[${idx}].saved=false"/></td>
+    <td class="col-dr"><input class="bk-cell num" type="text" inputmode="decimal"
+      value="${row.debit>0?row.debit:''}" placeholder="0"
+      oninput="rows[${idx}].debit=parseFloat(this.value.replace(/,/g,''))||0;rows[${idx}].saved=false;ledgerCellChanged(${idx})"/></td>
+    <td class="col-cr"><input class="bk-cell num" type="text" inputmode="decimal"
+      value="${row.credit>0?row.credit:''}" placeholder="0"
+      oninput="rows[${idx}].credit=parseFloat(this.value.replace(/,/g,''))||0;rows[${idx}].saved=false;ledgerCellChanged(${idx})"/></td>
+    <td class="col-bal"><input class="bk-cell num bal ${balClass}" id="balCell_${idx}" type="text" inputmode="decimal"
+      value="${bal!==0?fmt(bal):''}" placeholder="0"
+      oninput="rows[${idx}].balance=parseFloat(this.value.replace(/,/g,''))||0;rows[${idx}].saved=false;ledgerUpdateTotalBanner()"/></td>
+    <td><button class="save-row-btn" onclick="saveRow(${idx})" title="Save row">›</button></td>
+  </tr>`;
+}
+
+function buildEmptyEditableRows(count, startIdx) {
+  startIdx = startIdx || rows.length;
+  let html = '';
+  for (let i = 0; i < count; i++) {
+    const idx = startIdx + i;
+    // Ensure rows array has a slot
+    while (rows.length <= idx) rows.push(emptyRow(rows.length));
+    html += buildEditableRow(rows[idx], idx, '');
+  }
+  return html;
+}
+
+// Called when debit/credit changes — recalc balances and update DOM + total banner
+function ledgerCellChanged(changedIdx) {
+  recalcBalances();
+  // Update all balance cells in the DOM
+  rows.forEach((r,i) => {
+    const cell = document.getElementById('balCell_'+i);
+    if (cell) {
+      const bal = parseFloat(r.balance)||0;
+      cell.value = bal !== 0 ? fmt(bal) : '';
+      cell.className = 'bk-cell num bal ' + (bal>0?'pos':bal<0?'neg':'zero');
+    }
+  });
+  ledgerUpdateTotalBanner();
+}
+
+// Update the total banner at the top with the latest closing balance
+function ledgerUpdateTotalBanner() {
+  const ob = parseFloat(activeAccount?.opening_balance)||0;
+  const dataRows = rows.filter(r => hasData(r));
+  const closing = dataRows.length > 0
+    ? parseFloat(dataRows[dataRows.length-1].balance) || ob
+    : ob;
+  const el = document.getElementById('ledgerTotalVal');
+  if (el) el.textContent = fmt(Math.abs(closing));
 }
 
 function hasData(r) {
