@@ -39,12 +39,17 @@ self.addEventListener('fetch', function(event) {
   // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
-  // Don't intercept Supabase API calls — always go to network
+  // Don't intercept chrome-extension or non-http requests
+  try {
+    const url = new URL(event.request.url);
+    if (!url.protocol.startsWith('http')) return;
+    // Don't intercept Supabase API calls — always go to network
+    if (url.hostname.includes('supabase.co') ||
+        url.hostname.includes('supabase.com')) {
+      return;
+    }
+  } catch(e) { return; }
   const url = new URL(event.request.url);
-  if (url.hostname.includes('supabase.co') ||
-      url.hostname.includes('supabase.com')) {
-    return;
-  }
 
   event.respondWith(
     caches.match(event.request).then(function(cachedResponse) {
