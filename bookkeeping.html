@@ -2464,11 +2464,19 @@ function renderRows(displayRows) {
   // Opening balance row
   const obRow = `
     <tr class="ob-row" id="row_ob">
-      <td style="text-align:center;padding:8px 6px;font-size:0.72rem;color:var(--muted);">—</td>
-      <td colspan="4" style="padding:8px 10px;font-size:0.78rem;font-weight:700;color:var(--gold);">Opening Balance</td>
-      <td style="text-align:right;padding:8px 10px;font-size:0.78rem;color:var(--muted);">—</td>
-      <td style="text-align:right;padding:8px 10px;font-size:0.78rem;color:var(--muted);">—</td>
-      <td style="text-align:right;padding:8px 10px;font-size:0.82rem;font-weight:800;color:var(--gold);">${ob!==0?fmt(ob):fmt(0)}</td>
+      <td style="text-align:center;padding:4px 2px;font-size:0.72rem;color:var(--muted);">—</td>
+      <td colspan="4" style="padding:6px 10px;">
+        <span style="font-size:0.76rem;font-weight:700;color:var(--gold);">Opening Balance</span>
+      </td>
+      <td style="text-align:right;padding:4px 6px;color:var(--muted);">—</td>
+      <td style="text-align:right;padding:4px 6px;color:var(--muted);">—</td>
+      <td style="padding:4px 6px;">
+        <input class="bk-cell num" id="obBalInput" type="text" inputmode="decimal"
+          value="${ob!==0?ob:''}" placeholder="0"
+          style="font-weight:800;color:var(--gold);"
+          oninput="ledgerOBChanged(this.value)"
+          onblur="saveOpeningBalance(this.value)"/>
+      </td>
       <td></td>
     </tr>`;
 
@@ -2536,7 +2544,36 @@ function buildEmptyEditableRows(count, startIdx) {
   return html;
 }
 
-// Called when debit/credit changes — recalc balances and update DOM + total banner
+// Opening balance changed — recalc all rows and update total banner live
+function ledgerOBChanged(val) {
+  const newOB = parseFloat(String(val).replace(/,/g,'')) || 0;
+  if (activeAccount) activeAccount.opening_balance = newOB;
+  ledgerCellChanged(0); // recalc from the top
+}
+
+// Save opening balance to bk_accounts on blur
+async function saveOpeningBalance(val) {
+  if (!activeAccount || !bkUser) return;
+  const newOB = parseFloat(String(val).replace(/,/g,'')) || 0;
+  activeAccount.opening_balance = newOB;
+  recalcBalances();
+  ledgerUpdateTotalBanner();
+  try {
+    await bkDb.from('bk_accounts').update({
+      opening_balance: newOB,
+      updated_at: new Date().toISOString(),
+    }).eq('id', activeAccount.id).eq('user_id', bkUser.id);
+    setSaveMsg('✓ Opening balance saved', 'ok');
+    // Update the accounts cache too
+    const acctArr = accounts[activeType] || [];
+    const idx = acctArr.findIndex(a => a.id === activeAccount.id);
+    if (idx >= 0) acctArr[idx].opening_balance = newOB;
+  } catch(e) {
+    setSaveMsg('Error saving opening balance', 'err');
+  }
+}
+
+
 function ledgerCellChanged(changedIdx) {
   recalcBalances();
   // Update all balance cells in the DOM
