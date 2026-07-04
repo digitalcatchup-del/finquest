@@ -17,10 +17,13 @@
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="BD Books"/>
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png"/>
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png"/>
+  <link rel="shortcut icon" href="/icons/favicon-32x32.png"/>
   <!-- MS Tiles (Windows) -->
   <meta name="msapplication-TileColor" content="#d4af37"/>
-  <meta name="msapplication-TileImage" content="/icons/icon-144x144.png"/>
+  <meta name="msapplication-TileImage" content="/icons/android-chrome-192x192.png"/>
 <style>html,body{background:#0f1117!important;}
 /* ── LANDING PAGE TYPOGRAPHY ─────────────────────────── */
 .bk-land-small{font-size:0.85rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:8px;}
@@ -7770,6 +7773,109 @@ function staffRefreshCustomerTotals(custId){
 
 
 
+// ── OFFLINE SUPPORT — IndexedDB queue ────────────────────────
+const BD_DB_NAME    = 'bd_offline';
+const BD_DB_VERSION = 1;
+const BD_STORE      = 'pending_sales';
+
+function bdOpenDB() {
+  return new Promise(function(resolve, reject) {
+    const req = indexedDB.open(BD_DB_NAME, BD_DB_VERSION);
+    req.onupgradeneeded = function(e) {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(BD_STORE)) {
+        const store = db.createObjectStore(BD_STORE, { keyPath:'id', autoIncrement:true });
+        store.createIndex('synced', 'synced', { unique:false });
+      }
+    };
+    req.onsuccess = function(e) { resolve(e.target.result); };
+    req.onerror   = function(e) { reject(e.target.error); };
+  });
+}
+
+async function bdSaveOffline(row, customerName, txnDate) {
+  try {
+    const db    = await bdOpenDB();
+    const tx    = db.transaction(BD_STORE, 'readwrite');
+    const store = tx.objectStore(BD_STORE);
+    store.add({ row, customerName, txnDate, savedAt:new Date().toISOString(), synced:false, userId:bkUser?.id||null });
+    return new Promise(function(resolve, reject) {
+      tx.oncomplete = resolve;
+      tx.onerror    = function(e) { reject(e.target.error); };
+    });
+  } catch(e) {}
+}
+
+async function bdGetPendingSales() {
+  try {
+    const db    = await bdOpenDB();
+    const tx    = db.transaction(BD_STORE, 'readonly');
+    const index = tx.objectStore(BD_STORE).index('synced');
+    const req   = index.getAll(false);
+    return new Promise(function(resolve) {
+      req.onsuccess = function(e) { resolve(e.target.result||[]); };
+      req.onerror   = function()  { resolve([]); };
+    });
+  } catch(e) { return []; }
+}
+
+async function bdMarkSynced(id) {
+  try {
+    const db    = await bdOpenDB();
+    const tx    = db.transaction(BD_STORE, 'readwrite');
+    const store = tx.objectStore(BD_STORE);
+    const req   = store.get(id);
+    req.onsuccess = function(e) {
+      const r = e.target.result;
+      if (r) { r.synced = true; store.put(r); }
+    };
+  } catch(e) {}
+}
+
+async function bdSyncOfflineSales() {
+  if (!bkUser) return;
+  const pending = await bdGetPendingSales();
+  if (!pending.length) return;
+  let synced = 0;
+  for (const record of pending) {
+    try {
+      await autoPostSaleRow(record.row, record.customerName, record.txnDate);
+      await bdMarkSynced(record.id);
+      synced++;
+    } catch(e) {}
+  }
+  if (synced > 0) {
+    bdUpdateSyncBadge();
+    const msg = document.createElement('div');
+    msg.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a2a1a;border:1px solid var(--green);color:#4ade80;padding:10px 20px;border-radius:8px;font-size:0.82rem;font-weight:600;z-index:9999;white-space:nowrap;';
+    msg.textContent = '\u2713 ' + synced + ' offline sale' + (synced>1?'s':'') + ' synced to ledger';
+    document.body.appendChild(msg);
+    setTimeout(function() { msg.remove(); }, 3000);
+    refreshEquation();
+  }
+}
+
+async function bdUpdateSyncBadge() {
+  const pending = await bdGetPendingSales();
+  const count   = pending.length;
+  let badge     = document.getElementById('bdOfflineBadge');
+  if (count === 0) { if (badge) badge.remove(); return; }
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'bdOfflineBadge';
+    badge.style.cssText = 'position:fixed;top:12px;right:12px;background:#d4af37;color:#000;font-size:0.72rem;font-weight:800;padding:5px 12px;border-radius:20px;z-index:9999;cursor:pointer;';
+    badge.onclick = function() { bdSyncOfflineSales(); };
+    document.body.appendChild(badge);
+  }
+  badge.textContent = count + ' offline sale' + (count>1?'s':'') + ' \u2014 tap to sync';
+}
+
+window.addEventListener('online',  function() { bdSyncOfflineSales(); });
+window.addEventListener('load',     function() {
+  setTimeout(bdUpdateSyncBadge, 2000);
+  if (navigator.onLine) setTimeout(bdSyncOfflineSales, 3000);
+});
+
 // Maps payment method to the cash/bank account name
 function staffCashAccount(payMode) {
   const m = (payMode||'').toLowerCase();
@@ -7890,14 +7996,23 @@ async function staffSaveCustomer(custId) {
   const rows  = (cust.rows || []).filter(function(r){ return r.total > 0; });
 
   try {
-    // Auto-post each row sequentially to maintain correct running balances
-    for (const row of rows) {
-      await autoPostSaleRow(row, cust.name, date);
+    const isOnline = navigator.onLine;
+    if (isOnline) {
+      // Online — post directly to Supabase
+      for (const row of rows) {
+        await autoPostSaleRow(row, cust.name, date);
+      }
+    } else {
+      // Offline — save to IndexedDB queue
+      for (const row of rows) {
+        await bdSaveOffline(row, cust.name, date);
+      }
+      bdUpdateSyncBadge();
     }
     // Mark saved
     cust.posted = true;
     if (saveBtn) {
-      saveBtn.textContent = '✓ Posted';
+      saveBtn.textContent = isOnline ? '✓ Posted' : '✓ Saved offline';
       saveBtn.style.background = 'var(--green)';
       saveBtn.disabled = false;
       setTimeout(function(){
@@ -8222,6 +8337,14 @@ const COLUMN_HELP = {
       document.addEventListener('DOMContentLoaded', function() {
         const bar = document.getElementById('pwaInstallBar');
         if (bar) bar.remove();
+      });
+    }
+    // Listen for background sync message from service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'SYNC_OFFLINE_SALES') {
+          bdSyncOfflineSales();
+        }
       });
     }
   </script>
