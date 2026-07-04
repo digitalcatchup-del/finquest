@@ -858,15 +858,18 @@ body{padding-top:0;}
 .toolbox-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-save-row-btn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;font-weight:900;width:28px;height:34px;}
 .staff-table-compact{min-width:0 !important;width:100%;table-layout:auto !important;}
+.staff-table-compact td,.staff-table-compact th{border-right:1px solid var(--border2);}
+.staff-table-compact td:last-child,.staff-table-compact th:last-child{border-right:none;}
 .staff-table-compact th,.staff-table-compact td{white-space:nowrap;}
 .staff-table-compact th:nth-child(2),.staff-table-compact td:nth-child(2){white-space:normal;min-width:80px;}
 .staff-table th{background:var(--bg);color:var(--gold);font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:7px 5px;text-align:left;border-bottom:2px solid var(--gold);white-space:nowrap;}
 .staff-table td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;}
 .staff-cell{width:100%;background:transparent;border:none;color:var(--white);font-size:0.76rem;font-family:inherit;padding:6px 5px;outline:none;height:33px;min-width:60px;}
+.staff-table select.staff-cell{background:var(--surface2);color:var(--white);-webkit-appearance:none;appearance:none;padding-right:20px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;}
 .staff-cell:focus{background:rgba(212,175,55,0.06);}
 .staff-cell.num{text-align:right;}
 .staff-cell.ro{pointer-events:none;color:var(--gold);font-weight:700;text-align:right;display:block;padding:6px 5px;}
-.staff-sn{text-align:center;color:var(--muted);font-size:0.7rem;padding:6px 4px;width:28px;}
+.staff-sn{text-align:center;color:var(--muted);font-size:0.7rem;padding:0 4px;width:28px;vertical-align:middle !important;}
 .staff-save-btn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;font-weight:900;padding:4px 7px;min-height:33px;}
 .staff-save-btn:hover{color:var(--white);}
 .staff-del-btn{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:0.8rem;padding:4px 7px;min-height:33px;}
@@ -896,7 +899,8 @@ body{padding-top:0;}
 /* ── Static Save button below each customer block ───────────── */
 .staff-save-static-wrap{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 0 4px;background:var(--surface);border-top:1px solid var(--border);}
 .staff-static-total{font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.02em;}
-.staff-price-wrap{display:flex;align-items:center;gap:2px;padding:0 2px;}
+.staff-price-wrap{display:flex;align-items:center;gap:0;padding:0 2px;flex-direction:row-reverse;justify-content:flex-end;}
+.staff-price-wrap .staff-curr-prefix{padding-left:4px;padding-right:0;flex-shrink:0;}
 .staff-curr-prefix{color:var(--gold);font-size:0.74rem;font-weight:700;flex-shrink:0;}
 .staff-price-wrap .staff-cell{padding-left:2px;}
 .staff-welcome-centered{min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
@@ -2565,7 +2569,10 @@ function buildEmptyEditableRows(count, startIdx) {
 // Clear opening balance back to zero
 async function clearOpeningBalance() {
   const input = document.getElementById('obBalInput');
-  if (input) input.value = '';
+  if (input) {
+    input.value = '';
+    ledgerOBChanged('0'); // recalc all rows in DOM immediately
+  }
   await saveOpeningBalance('0');
 }
 function ledgerOBChanged(val) {
@@ -2980,6 +2987,23 @@ async function smartAutoCorrect(journalId, drAmt, crAmt) {
 
 // ── Page guard — prevents stale async callbacks from navigating away ──
 let currentPage = 'dashboard'; // updated by every page-entry function
+function bdSaveRoute(page) {
+  currentPage = page;
+  try { sessionStorage.setItem('bd_route', page); } catch(e) {}
+}
+function bdRestoreRoute() {
+  try {
+    const r = sessionStorage.getItem('bd_route');
+    if (r === 'dashboard' || !r) { showDashboard(); return; }
+    if (r === 'journal')  { openJournal(); return; }
+    if (r === 'settings') { showSettings(); return; }
+    if (r === 'products') { showProductsPage('products'); return; }
+    if (r === 'services') { showProductsPage('services'); return; }
+    if (r === 'suppliers'){ showSuppliersPage(); return; }
+    if (r === 'staff')    { showStaffDashboard(); return; }
+    showDashboard();
+  } catch(e) { showDashboard(); }
+}
 
 
 // ── SALES & EXPENSES BREAKDOWN DRILLDOWN ─────────────────────
@@ -3074,7 +3098,7 @@ async function showExpensesBreakdown() {
 }
 
 async function showDashboard() {
-  currentPage = 'dashboard';
+  bdSaveRoute('dashboard');
   showDashboardHero(); // show title + Record button, hide equation
   hideDashToolbar();
   setActiveNav('navDash');
@@ -6260,7 +6284,7 @@ async function coaDeleteAccount(id,name) {
 
 // ── ACCOUNT SETTINGS PAGE ─────────────────────────────────────
 async function showAccountSettings() {
-  currentPage = 'settings';
+  bdSaveRoute('settings');
   staffHideChrome(); // settings is a clean standalone page — no equation, no toolbar, no hero
   setActiveNav('');
   document.getElementById('recordsDD')?.classList.add('hidden');
@@ -6644,7 +6668,7 @@ async function psSaveColPrefs() {
 }
 
 async function showProductsPage(type) {
-  currentPage = 'products';
+  bdSaveRoute('products');
   staffHideChrome();
   psType = type || 'products';
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
@@ -7202,7 +7226,7 @@ async function showColleagues(){
 let supplierRows = [];
 
 async function showSuppliersPage() {
-  currentPage = 'suppliers';
+  bdSaveRoute('suppliers');
   staffHideChrome();
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading suppliers…</div>';
   try {
@@ -7707,13 +7731,13 @@ function showRecordChoice() {
 
 function showRecordSales() {
   staffHideChrome();
-  if (salesRows.length === 0) salesRows = [1,2,3,4,5].map(n=>staffEmptySaleRow(n));
+  if (salesRows.length === 0) salesRows = [staffEmptySaleRow(1)];
   renderStaffSales();
 }
 
 function showRecordExpenses() {
   staffHideChrome();
-  if (staffExpRows.length === 0) staffExpRows = [1,2,3].map(n => staffEmptyExpRow(n));
+  if (staffExpRows.length === 0) staffExpRows = [staffEmptyExpRow(1)];
   renderRecordExpenses();
 }
 
@@ -7727,7 +7751,7 @@ function renderRecordExpenses() {
         <input class="staff-cell num" type="text" inputmode="decimal"
           value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
           onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-          oninput="staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
+          oninput="fmtInputCommas(this);staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
       <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
         onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
         oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
@@ -7759,9 +7783,9 @@ function renderRecordExpenses() {
       <table class="staff-table staff-table-compact" style="min-width:580px;">
         <thead><tr>
           <th style="width:34px;white-space:nowrap;">S/N</th>
-          <th style="width:150px;">Narration</th>
+          <th style="width:180px;">Narration</th>
           <th style="width:120px;">Unit Price</th>
-          <th style="width:55px;">Qty</th>
+          <th style="width:80px;">Quantity</th>
           <th style="width:110px;">Total</th>
           <th style="width:120px;">Payment Mode</th>
           <th style="width:30px;"></th>
@@ -7820,7 +7844,7 @@ function renderOwingPage() {
           <th style="width:130px;">Name</th>
           <th style="width:160px;">Narration</th>
           <th style="width:130px;">Unit Price</th>
-          <th style="width:55px;">Qty</th>
+          <th style="width:80px;">Quantity</th>
           <th style="width:120px;">Total</th>
           <th style="width:34px;"></th>
         </tr></thead>
@@ -7875,7 +7899,7 @@ function showStaffChoice(){
 function showStaffSales(){
   staffHideChrome();
   if(salesRows.length===0) salesRows=[1,2,3,4,5].map(n=>staffEmptySaleRow(n));
-  salesRows.forEach(r=>{r._posted=false;}); // reset on fresh open
+  salesRows.forEach(r=>{r._posted=false;});
   renderStaffSales();
 }
 
@@ -7888,7 +7912,7 @@ function renderStaffSales(){
       <td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">${staffSym()}</span>
         <input class="staff-cell num" type="text" inputmode="decimal" value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
           onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-          oninput="salesNumChange(${i},'unit_price',this.value)"/></div></td>
+          oninput="fmtInputCommas(this);salesNumChange(${i},'unit_price',this.value)"/></div></td>
       <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
         onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
         oninput="salesNumChange(${i},'qty',this.value)"/></td>
@@ -7920,9 +7944,9 @@ function renderStaffSales(){
       <table class="staff-table staff-table-compact" style="min-width:600px;">
         <thead><tr>
           <th style="width:34px;white-space:nowrap;">S/N</th>
-          <th style="width:150px;">Narration</th>
+          <th style="width:180px;">Narration</th>
           <th style="width:120px;">Unit Price</th>
-          <th style="width:55px;">Qty</th>
+          <th style="width:80px;">Quantity</th>
           <th style="width:110px;">Total</th>
           <th style="width:120px;">Payment Mode</th>
           <th style="width:30px;"></th>
@@ -8006,7 +8030,7 @@ function renderCustomerBlock(cust){
     const totVal = staffFmtAmt(row.total);
     rowsHtml += '<tr id="srow_'+cid+'_'+ri+'">'
       + '<td style="width:34px;text-align:center;color:var(--muted);font-size:0.7rem;padding:6px 4px;">'+(ri+1)+'</td>'
-      + '<td><input class="staff-cell" type="text" value="'+escH(row.narration||'')+'" placeholder="What was sold…"'+lockAttr
+      + '<td><input class="staff-cell" type="text" value="'+escH(row.narration||'')+'" placeholder="What was sold?"'+lockAttr
       + ' oninput="staffSaleChange('+cid+','+ri+',\'narration\',this.value)"/></td>'
       + '<td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">'+staffSym()+'</span>'
       + '<input class="staff-cell num" type="text" inputmode="decimal" value="'+upVal+'" placeholder="0"'+lockAttr
@@ -8292,6 +8316,21 @@ window.addEventListener('load',     function() {
   if (navigator.onLine) setTimeout(bdSyncOfflineSales, 3000);
 });
 
+// Global comma formatter for any number input — call oninput
+// Preserves cursor position, strips non-numeric, inserts commas
+function fmtInputCommas(el) {
+  const raw = el.value.replace(/[^0-9.]/g, '');
+  if (!raw) return;
+  const parts = raw.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const formatted = parts.join('.');
+  const cursor = el.selectionStart;
+  const prevLen = el.value.length;
+  el.value = formatted;
+  const diff = formatted.length - prevLen;
+  try { el.setSelectionRange(cursor + diff, cursor + diff); } catch(e) {}
+}
+
 // Maps payment method to the cash/bank account name
 function staffCashAccount(payMode) {
   const m = (payMode||'').toLowerCase();
@@ -8570,7 +8609,7 @@ function renderStaffExpenses(){
         <input class="staff-cell num" type="text" inputmode="decimal"
         value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
         onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-        oninput="staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
+        oninput="fmtInputCommas(this);staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
       <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
         onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
         oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
@@ -8602,9 +8641,9 @@ function renderStaffExpenses(){
       <table class="staff-table staff-table-compact" style="min-width:580px;">
         <thead><tr>
           <th style="width:34px;white-space:nowrap;">S/N</th>
-          <th style="width:150px;">Narration</th>
+          <th style="width:180px;">Narration</th>
           <th style="width:120px;">Unit Price</th>
-          <th style="width:55px;">Qty</th>
+          <th style="width:80px;">Quantity</th>
           <th style="width:110px;">Total</th>
           <th style="width:120px;">Payment Mode</th>
           <th style="width:30px;"></th>
