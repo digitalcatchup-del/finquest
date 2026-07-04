@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -1052,6 +1051,10 @@ body{padding-top:0;}
   </p>
   <h1 class="bk-think" onclick="showDashboard()" title="Go to Dashboard"
       style="cursor:pointer;user-select:none;">How is business doing <span>today?</span></h1>
+  <!-- Record button sits here — visible on dashboard, hidden on other pages -->
+  <div id="bkRecordBtnWrap" style="text-align:center;padding:10px 0 4px;">
+    <button class="eq-record-btn" onclick="showRecordChoice()">&#128221; Record</button>
+  </div>
   </div>
 
   <div id="bkMainChrome">
@@ -1083,9 +1086,6 @@ body{padding-top:0;}
     </div>
     <div class="bk-eq-check" id="eqCheck">Enter transactions to see the equation update.</div>
     </div>
-  </div>
-  <div style="text-align:center;padding:10px 0 4px;">
-    <button class="eq-record-btn" onclick="showRecordChoice()">&#128221; Record</button>
   </div>
   </div>
 
@@ -2955,7 +2955,7 @@ async function showExpensesBreakdown() {
 
 async function showDashboard() {
   currentPage = 'dashboard';
-  staffHideChrome();
+  showDashboardHero(); // show title + Record button, hide equation
   hideDashToolbar();
   setActiveNav('navDash');
   document.getElementById('recordsDD')?.classList.add('hidden');
@@ -6819,17 +6819,33 @@ function staffHideChrome(){
   const chrome  = document.getElementById('bkMainChrome');
   const toolbar = document.getElementById('bkToolbar');
   const hero    = document.getElementById('bkGlobalHero');
+  const recBtn  = document.getElementById('bkRecordBtnWrap');
   if (chrome)  chrome.style.display  = 'none';
   if (toolbar) toolbar.style.display = 'none';
   if (hero)    hero.style.display    = 'none';
+  if (recBtn)  recBtn.style.display  = 'none';
 }
 function staffShowChrome(){
   const chrome  = document.getElementById('bkMainChrome');
   const toolbar = document.getElementById('bkToolbar');
   const hero    = document.getElementById('bkGlobalHero');
+  const recBtn  = document.getElementById('bkRecordBtnWrap');
   if (chrome)  chrome.style.display  = '';
   if (toolbar) toolbar.style.display = '';
   if (hero)    hero.style.display    = '';
+  if (recBtn)  recBtn.style.display  = '';
+}
+
+// Dashboard: show hero title + Record button, but hide equation bar
+function showDashboardHero(){
+  const chrome  = document.getElementById('bkMainChrome');
+  const toolbar = document.getElementById('bkToolbar');
+  const hero    = document.getElementById('bkGlobalHero');
+  const recBtn  = document.getElementById('bkRecordBtnWrap');
+  if (hero)    hero.style.display    = '';   // show title
+  if (recBtn)  recBtn.style.display  = '';   // show Record button
+  if (chrome)  chrome.style.display  = 'none'; // hide equation
+  if (toolbar) toolbar.style.display = 'none'; // hide toolbar
 }
 
 // ── For owner-facing pages (e.g. Products & Services) that want the
