@@ -7,7 +7,7 @@
   "background_color": "#0f1117",
   "theme_color": "#d4af37",
   "orientation": "portrait-primary",
-  "scope": "/",
+  "scope": "/bookkeeping",
   "id": "/bookkeeping"
   "lang": "en",
   "icons": [
