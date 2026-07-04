@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -7587,7 +7588,7 @@ function showRecordChoice() {
 
 function showRecordSales() {
   staffHideChrome();
-  if (staffCustomers.length === 0) staffCustomers = [staffNewCustomer()];
+  if (salesRows.length === 0) salesRows = [1,2,3,4,5].map(n=>staffEmptySaleRow(n));
   renderStaffSales();
 }
 
@@ -7755,6 +7756,7 @@ function showStaffChoice(){
 function showStaffSales(){
   staffHideChrome();
   if(salesRows.length===0) salesRows=[1,2,3,4,5].map(n=>staffEmptySaleRow(n));
+  salesRows.forEach(r=>{r._posted=false;}); // reset on fresh open
   renderStaffSales();
 }
 
@@ -7833,22 +7835,24 @@ function salesNumChange(i,field,val){
 async function salesSaveRow(i){
   const r=salesRows[i];
   if(!r||!r.total) return;
+  if(r._posted) return; // already posted — prevent double posting
   const btn=document.querySelector('#srow_'+i+' .staff-save-row-btn');
   if(btn){btn.textContent='...';btn.disabled=true;}
   try{
     await autoPostSaleRow(r,'',new Date().toISOString().slice(0,10));
+    salesRows[i]._posted = true; // mark as posted
     if(btn){btn.textContent='\u2713';btn.style.color='var(--green)';
-      setTimeout(()=>{btn.textContent='\u203a';btn.style.color='';btn.disabled=false;},1500);}
+      setTimeout(()=>{btn.textContent='\u2713';btn.style.color='var(--green)';btn.disabled=true;},1500);}
   }catch(e){
     if(btn){btn.textContent='!';btn.style.color='var(--red)';btn.disabled=false;}
   }
 }
 
 async function salesSaveAll(){
-  const rows=salesRows.filter(r=>r.total>0);
-  if(!rows.length) return;
+  const rows=salesRows.filter(r=>r.total>0 && !r._posted); // skip already posted
+  if(!rows.length){ alert('No new rows to save — all have already been posted.'); return; }
   const date=new Date().toISOString().slice(0,10);
-  for(const r of rows) await autoPostSaleRow(r,'',date);
+  for(const r of rows){ await autoPostSaleRow(r,'',date); r._posted=true; }
   const msg=document.createElement('div');
   msg.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a2a1a;border:1px solid var(--green);color:#4ade80;padding:10px 20px;border-radius:8px;font-size:0.82rem;font-weight:600;z-index:9999;white-space:nowrap;';
   msg.textContent='\u2713 '+rows.length+' sale'+(rows.length>1?'s':'')+' posted';
@@ -7947,14 +7951,21 @@ async function supSaveAll() {
 async function expSaveRow(i){
   const r=staffExpRows[i];
   if(!r||!r.total) return;
-  try{ await autoPostExpenseRow(r); } catch(e){}
+  if(r._posted) return; // already posted
+  try{
+    await autoPostExpenseRow(r);
+    staffExpRows[i]._posted = true;
+    const btn = document.querySelector('#erow_'+i+' .staff-save-row-btn');
+    if(btn){btn.textContent='✓';btn.style.color='var(--green)';btn.disabled=true;}
+  } catch(e){}
 }
 
 async function saveAllExpenses() {
-  const rows = staffExpRows.filter(r => r.total > 0);
-  if (!rows.length) return;
+  const rows = staffExpRows.filter(r => r.total > 0 && !r._posted);
+  if (!rows.length) { alert('No new expenses to save — all have already been posted.'); return; }
   for (const r of rows) {
     await autoPostExpenseRow(r);
+    r._posted = true;
   }
   alert('✓ Expenses posted to ledger');
 }
