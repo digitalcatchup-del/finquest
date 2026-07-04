@@ -852,6 +852,11 @@ body{padding-top:0;}
 .staff-cust-btn:hover{border-color:var(--gold);color:var(--gold);}
 .staff-cust-btn.del:hover{border-color:var(--red);color:var(--red);}
 .staff-table{width:100%;border-collapse:collapse;font-size:0.76rem;min-width:900px;table-layout:fixed;}
+.sales-toolbox{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;min-width:220px;z-index:300;box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+.toolbox-title{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.toolbox-btn{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--off);font-size:0.78rem;padding:8px 12px;border-radius:7px;cursor:pointer;text-align:left;margin-bottom:6px;}
+.toolbox-btn:hover{border-color:var(--gold);color:var(--gold);}
+.staff-save-row-btn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;font-weight:900;width:28px;height:34px;}
 .staff-table-compact{min-width:0 !important;width:100%;table-layout:auto !important;}
 .staff-table-compact th,.staff-table-compact td{white-space:nowrap;}
 .staff-table-compact th:nth-child(2),.staff-table-compact td:nth-child(2){white-space:normal;min-width:80px;}
@@ -947,7 +952,7 @@ body{padding-top:0;}
   <!-- Menu header -->
   <div style="padding:20px 20px 12px 62px;border-bottom:1px solid var(--border);flex-shrink:0;">
     <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Butterfly Dynamix</div>
-    <div style="font-size:1.05rem;font-weight:800;color:var(--white);">Bookkeeping</div>
+    <div style="font-size:1.05rem;font-weight:800;color:var(--white);">Accounting</div>
   </div>
 
   <!-- Menu items -->
@@ -966,12 +971,12 @@ body{padding-top:0;}
       <div class="bk-submenu-item" onclick="openChartOfAccounts();closeBkMenu()">📋 All Records</div>
       <div class="bk-submenu-item" onclick="openJournal();closeBkMenu()">📒 Record a Transaction</div>
       <div style="padding:6px 20px;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);">Ledgers</div>
-      <div class="bk-submenu-item" onclick="openFirstAccount('capital');closeBkMenu()">What you invested</div>
-      <div class="bk-submenu-item" onclick="openFirstAccount('liability');closeBkMenu()">What you owe</div>
-      <div class="bk-submenu-item" onclick="openFirstAccount('asset');closeBkMenu()">What the business has</div>
-      <div class="bk-submenu-item" onclick="openFirstAccount('income');closeBkMenu()">How much did you make?</div>
-      <div class="bk-submenu-item" onclick="openFirstAccount('expenditure');closeBkMenu()">How much did you spend?</div>
-      <div class="bk-submenu-item" onclick="showReport('trial');closeBkMenu()">⚖ Balance Records</div>
+      <div class="bk-submenu-item" onclick="openFirstAccount('capital');closeBkMenu()">Capital</div>
+      <div class="bk-submenu-item" onclick="openFirstAccount('liability');closeBkMenu()">Liabilities</div>
+      <div class="bk-submenu-item" onclick="openFirstAccount('asset');closeBkMenu()">Assets</div>
+      <div class="bk-submenu-item" onclick="openFirstAccount('income');closeBkMenu()">Income</div>
+      <div class="bk-submenu-item" onclick="openFirstAccount('expenditure');closeBkMenu()">Expenditure</div>
+      <div class="bk-submenu-item" onclick="showReport('trial');closeBkMenu()">Trial Balance</div>
     </div>
 
     <!-- Reports (owner/manager only) -->
@@ -1046,7 +1051,7 @@ body{padding-top:0;}
       style="cursor:pointer;">—</strong>
   </p>
   <h1 class="bk-think" onclick="showDashboard()" title="Go to Dashboard"
-      style="cursor:pointer;user-select:none;">THINK <span>FINANCE</span></h1>
+      style="cursor:pointer;user-select:none;">How is business doing <span>today?</span></h1>
   </div>
 
   <div id="bkMainChrome">
@@ -2144,7 +2149,7 @@ function setCurrency(code) {
 const DEFAULT_ACCOUNTS = {
   capital:     ['Share Capital','Retained Earnings','Owner\'s Equity','Drawings'],
   liability:   ['Bank Loan','Trade Creditors','Accrued Expenses','VAT Payable','PAYE Payable'],
-  asset:       ['Cash in Hand','Cash at Bank','Trade Debtors','Inventory / Stock','Equipment','Land and Buildings','Motor Vehicles','Prepaid Expenses'],
+  asset:       ['Cash in Hand','Cash at Bank','Debtors','Inventory / Stock','Fixed Assets','Land and Buildings','Motor Vehicles','Prepaid Expenses'],
   income:      ['Sales Revenue','Service Income','Interest Received','Other Income'],
   expenditure: ['Cost of Goods Sold','Salaries and Wages','Rent','Utilities','Marketing','Transport','Bank Charges','Depreciation','Professional Fees'],
 };
@@ -2856,9 +2861,101 @@ async function smartAutoCorrect(journalId, drAmt, crAmt) {
 // ── Page guard — prevents stale async callbacks from navigating away ──
 let currentPage = 'dashboard'; // updated by every page-entry function
 
+
+// ── SALES & EXPENSES BREAKDOWN DRILLDOWN ─────────────────────
+async function showSalesBreakdown() {
+  staffHideChrome();
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading sales breakdown...</div>';
+  const { data:T } = await bkDb.from('bk_transactions').select('*')
+    .eq('user_id',bkUser.id).eq('record_type','income').order('txn_date',{ascending:false});
+  const rows = T||[];
+  // Group by payment mode based on account name (debit side)
+  const { data:J } = await bkDb.from('bk_journal').select('*').eq('user_id',bkUser.id);
+  const jMap = {};
+  (J||[]).forEach(j=>{ jMap[j.id]=j; });
+  // Categorise each transaction
+  let cash=0,bank=0,pos=0,credit=0;
+  rows.forEach(r=>{
+    const j=jMap[r.journal_id];
+    if(!j) return;
+    const dr=j.debit_account_name||'';
+    if(dr==='Cash in Hand') cash+=(parseFloat(r.credit)||0);
+    else if(dr==='Cash at Bank') bank+=(parseFloat(r.credit)||0);
+    else if(dr==='Debtors') credit+=(parseFloat(r.credit)||0);
+    else cash+=(parseFloat(r.credit)||0);
+  });
+  const total=cash+bank+credit;
+  document.getElementById('bkContent').innerHTML=`
+    <div class="bk-content-header">
+      <div class="bk-content-title">SALES BREAKDOWN</div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showDashboard()">&larr; Back</button>
+    </div>
+    <div style="padding:16px;">
+      <div class="dash-card" style="margin-bottom:12px;">
+        <div class="dash-kpi-label" style="margin-bottom:4px;">Total Sales</div>
+        <div style="font-size:1.4rem;font-weight:900;color:#4ade80;">${fmt(total)}</div>
+      </div>
+      ${[['Cash Sales','Cash in Hand',cash,'#4ade80'],['Bank Transfer',null,bank,'#60a5fa'],['Credit Sales (Owed)',null,credit,'#f97316']].map(([label,acct,val,col])=>`
+      <div class="dash-card" style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div class="dash-acct-name" style="font-size:0.82rem;">${label}</div>
+            <div class="dash-acct-bar" style="margin-top:6px;"><div class="dash-acct-bar-fill" style="width:${total>0?Math.round(val/total*100):0}%;background:${col};"></div></div>
+          </div>
+          <div style="font-size:1.1rem;font-weight:800;color:${col};margin-left:16px;">${fmt(val)}</div>
+        </div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:4px;">${total>0?Math.round(val/total*100):0}% of total sales</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+async function showExpensesBreakdown() {
+  staffHideChrome();
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading expenses breakdown...</div>';
+  const { data:T } = await bkDb.from('bk_transactions').select('*')
+    .eq('user_id',bkUser.id).eq('record_type','expenditure').order('txn_date',{ascending:false});
+  const rows = T||[];
+  const { data:J } = await bkDb.from('bk_journal').select('*').eq('user_id',bkUser.id);
+  const jMap = {};
+  (J||[]).forEach(j=>{ jMap[j.id]=j; });
+  let cash=0,bank=0,credit=0;
+  rows.forEach(r=>{
+    const j=jMap[r.journal_id];
+    if(!j) return;
+    const cr=j.credit_account_name||'';
+    if(cr==='Cash in Hand') cash+=(parseFloat(r.debit)||0);
+    else if(cr==='Cash at Bank') bank+=(parseFloat(r.debit)||0);
+    else if(cr==='Creditors') credit+=(parseFloat(r.debit)||0);
+    else cash+=(parseFloat(r.debit)||0);
+  });
+  const total=cash+bank+credit;
+  document.getElementById('bkContent').innerHTML=`
+    <div class="bk-content-header">
+      <div class="bk-content-title">EXPENSES BREAKDOWN</div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showDashboard()">&larr; Back</button>
+    </div>
+    <div style="padding:16px;">
+      <div class="dash-card" style="margin-bottom:12px;">
+        <div class="dash-kpi-label" style="margin-bottom:4px;">Total Expenses</div>
+        <div style="font-size:1.4rem;font-weight:900;color:#f87171;">${fmt(total)}</div>
+      </div>
+      ${[['Cash Payments',cash,'#f87171'],['Bank Transfer / POS',bank,'#60a5fa'],['Credit (Owed)',credit,'#f97316']].map(([label,val,col])=>`
+      <div class="dash-card" style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div class="dash-acct-name" style="font-size:0.82rem;">${label}</div>
+            <div class="dash-acct-bar" style="margin-top:6px;"><div class="dash-acct-bar-fill" style="width:${total>0?Math.round(val/total*100):0}%;background:${col};"></div></div>
+          </div>
+          <div style="font-size:1.1rem;font-weight:800;color:${col};margin-left:16px;">${fmt(val)}</div>
+        </div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:4px;">${total>0?Math.round(val/total*100):0}% of total expenses</div>
+      </div>`).join('')}
+    </div>`;
+}
+
 async function showDashboard() {
   currentPage = 'dashboard';
-  staffShowChrome();
+  staffHideChrome();
   hideDashToolbar();
   setActiveNav('navDash');
   document.getElementById('recordsDD')?.classList.add('hidden');
@@ -2901,6 +2998,9 @@ async function showDashboard() {
   const netProfit=income-expenses;
   const cashBal=T.filter(r=>r.record_type==='asset'&&(r.account_name||'').toLowerCase().includes('cash'))
     .reduce((a,r)=>a+(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0),0);
+  const cashBank=T.filter(t=>t.account_name==='Cash at Bank'&&t.record_type==='asset').reduce((s,t)=>s+(parseFloat(t.debit)||0)-(parseFloat(t.credit)||0),0);
+  const debtorsBal=T.filter(t=>t.account_name==='Debtors'&&t.record_type==='asset').reduce((s,t)=>s+(parseFloat(t.debit)||0)-(parseFloat(t.credit)||0),0);
+  const creditorsBal=T.filter(t=>t.account_name==='Creditors'&&t.record_type==='liability').reduce((s,t)=>s+(parseFloat(t.credit)||0)-(parseFloat(t.debit)||0),0);
 
   const monthLabels=[],incMo=[],expMo=[];
   for(let i=5;i>=0;i--){
@@ -2918,25 +3018,40 @@ async function showDashboard() {
   content.innerHTML=`
     <div style="padding:0 0 20px;">
       <div class="dash-kpi-row" style="padding:16px 16px 0;">
-        <div class="dash-kpi-card">
-          <div class="dash-kpi-label">Total Income <span class="dash-kpi-icon">💰</span></div>
+        <div class="dash-kpi-card" onclick="showSalesBreakdown()" style="cursor:pointer;" title="Tap to see breakdown">
+          <div class="dash-kpi-label">${localStorage.getItem('bd_kpi_sales_label')==='income'?'Total Income':'Total Sales'} <span class="dash-kpi-icon">💰</span></div>
           <div class="dash-kpi-value" style="color:#4ade80;">${fmt(income)}</div>
-          <div class="dash-kpi-change ${incomeThisMonth>0?'up':'neutral'}">${incomeThisMonth>0?'↑ '+fmt(incomeThisMonth)+' this month':'No income this month'}</div>
+          <div class="dash-kpi-change ${incomeThisMonth>0?'up':'neutral'}">${incomeThisMonth>0?'&uarr; '+fmt(incomeThisMonth)+' this month':'No sales this month'}</div>
         </div>
-        <div class="dash-kpi-card">
+        <div class="dash-kpi-card" onclick="showExpensesBreakdown()" style="cursor:pointer;" title="Tap to see breakdown">
           <div class="dash-kpi-label">Total Expenses <span class="dash-kpi-icon">📤</span></div>
           <div class="dash-kpi-value" style="color:#f87171;">${fmt(expenses)}</div>
-          <div class="dash-kpi-change ${expensesThisMonth>0?'down':'neutral'}">${expensesThisMonth>0?'↓ '+fmt(expensesThisMonth)+' this month':'No expenses this month'}</div>
+          <div class="dash-kpi-change ${expensesThisMonth>0?'down':'neutral'}">${expensesThisMonth>0?'&darr; '+fmt(expensesThisMonth)+' this month':'No expenses this month'}</div>
         </div>
         <div class="dash-kpi-card">
-          <div class="dash-kpi-label">Net ${netProfit>=0?'Profit':'Loss'} <span class="dash-kpi-icon">${netProfit>=0?'📈':'📉'}</span></div>
+          <div class="dash-kpi-label">${netProfit>=0?'Profit':'Loss'} <span class="dash-kpi-icon">${netProfit>=0?'📈':'📉'}</span></div>
           <div class="dash-kpi-value" style="color:${netProfit>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(netProfit))}</div>
-          <div class="dash-kpi-change ${netProfit>=0?'up':'down'}">${income>0?Math.round(netProfit/income*100)+'% margin':'—'}</div>
+          <div class="dash-kpi-change ${netProfit>=0?'up':'down'}">${income>0?Math.round(netProfit/income*100)+'% margin':'&mdash;'}</div>
         </div>
         <div class="dash-kpi-card">
-          <div class="dash-kpi-label">Cash &amp; Assets <span class="dash-kpi-icon">🏦</span></div>
-          <div class="dash-kpi-value" style="color:var(--gold);">${fmt(cashBal||assets)}</div>
-          <div class="dash-kpi-change neutral">Total assets: ${fmt(assets)}</div>
+          <div class="dash-kpi-label">Cash in Hand <span class="dash-kpi-icon">💵</span></div>
+          <div class="dash-kpi-value" style="color:var(--gold);">${fmt(cashBal)}</div>
+          <div class="dash-kpi-change neutral">Physical cash</div>
+        </div>
+        <div class="dash-kpi-card">
+          <div class="dash-kpi-label">Cash at Bank <span class="dash-kpi-icon">🏦</span></div>
+          <div class="dash-kpi-value" style="color:var(--gold);">${fmt(cashBank)}</div>
+          <div class="dash-kpi-change neutral">Bank &amp; POS balance</div>
+        </div>
+        <div class="dash-kpi-card" onclick="eqNav('asset')" style="cursor:pointer;" title="View Debtors ledger">
+          <div class="dash-kpi-label">They Owe You <span class="dash-kpi-icon">📥</span></div>
+          <div class="dash-kpi-value" style="color:#60a5fa;">${fmt(debtorsBal)}</div>
+          <div class="dash-kpi-change neutral">Credit sales outstanding</div>
+        </div>
+        <div class="dash-kpi-card" onclick="eqNav('liability')" style="cursor:pointer;" title="View Creditors ledger">
+          <div class="dash-kpi-label">You Owe Them <span class="dash-kpi-icon">📤</span></div>
+          <div class="dash-kpi-value" style="color:#f97316;">${fmt(creditorsBal)}</div>
+          <div class="dash-kpi-change neutral">Credit purchases outstanding</div>
         </div>
       </div>
       <div class="dash-charts-row" style="padding:16px 16px 0;">
@@ -3101,6 +3216,24 @@ function renderBS(t) {
         <span style="font-size:0.78rem;font-weight:700;color:${balanced?'var(--green)':'var(--red)'}">
           ${balanced?'✓ Balanced':'⚠ Not Balanced'}
         </span>
+      </div>
+    </div>
+    <div style="padding:0 16px 12px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;text-align:center;">
+        <div style="font-size:0.68rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Accounting Equation</div>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;font-size:0.82rem;font-weight:700;">
+          <span style="color:var(--gold);">Capital</span><span style="color:var(--muted);">+</span>
+          <span style="color:${profit>=0?'#4ade80':'#f87171'};">${profit>=0?'Profit':'Loss'}</span><span style="color:var(--muted);">+</span>
+          <span style="color:#60a5fa;">Liabilities</span><span style="color:var(--muted);">=</span>
+          <span style="color:var(--gold);">Assets</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;font-size:0.88rem;font-weight:900;margin-top:8px;">
+          <span style="color:var(--gold);">${fmt(cap)}</span><span style="color:var(--muted);">+</span>
+          <span style="color:${profit>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(profit))}</span><span style="color:var(--muted);">+</span>
+          <span style="color:#60a5fa;">${fmt(lia)}</span><span style="color:var(--muted);">=</span>
+          <span style="color:${balanced?'#4ade80':'#f87171'};">${fmt(ast)}</span>
+        </div>
+        <div style="font-size:0.7rem;margin-top:8px;color:${balanced?'#4ade80':'#f87171'};">${balanced?'✓ Equation balanced':'⚠ Difference of '+fmt(Math.abs(total-ast))}</div>
       </div>
     </div>
     <div class="report-wrap">
@@ -5066,6 +5199,10 @@ async function saveJournalRow(i) {
   if (msg) { msg.textContent='✓ Posted'; msg.className='bk-save-msg ok'; }
 }
 
+function bdSetLayoutPref(key, val) {
+  localStorage.setItem(key, val);
+}
+
 // ── SETTINGS PAGE ─────────────────────────────────────────────
 async function showSettings() {
   setActiveNav('navSettings');
@@ -6066,6 +6203,41 @@ async function showAccountSettings() {
           <span style="color:var(--off);">${bkUser?.email||''}</span></div>
       </div>
 
+      <div class="acct-card" style="border-color:rgba(212,175,55,0.3);">
+        <div class="acct-card-title" style="color:var(--gold);">🎨 Design Layout</div>
+        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;">Customise how your homepage looks and what it shows.</p>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Homepage — Sales Label</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="bk-btn ${localStorage.getItem('bd_kpi_sales_label')==='income'?'bk-btn-gold':'bk-btn-outline'}" style="font-size:0.74rem;"
+              onclick="bdSetLayoutPref('bd_kpi_sales_label','income');this.parentNode.querySelectorAll('.bk-btn').forEach(b=>b.className='bk-btn bk-btn-outline');this.className='bk-btn bk-btn-gold'">Total Income</button>
+            <button class="bk-btn ${!localStorage.getItem('bd_kpi_sales_label')||localStorage.getItem('bd_kpi_sales_label')==='sales'?'bk-btn-gold':'bk-btn-outline'}" style="font-size:0.74rem;"
+              onclick="bdSetLayoutPref('bd_kpi_sales_label','sales');this.parentNode.querySelectorAll('.bk-btn').forEach(b=>b.className='bk-btn bk-btn-outline');this.className='bk-btn bk-btn-gold'">Total Sales</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Homepage — Show Owing Widgets</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="bk-btn ${localStorage.getItem('bd_show_owing')!=='false'?'bk-btn-gold':'bk-btn-outline'}" style="font-size:0.74rem;"
+              onclick="bdSetLayoutPref('bd_show_owing','true');showSettings()">Show</button>
+            <button class="bk-btn ${localStorage.getItem('bd_show_owing')==='false'?'bk-btn-gold':'bk-btn-outline'}" style="font-size:0.74rem;"
+              onclick="bdSetLayoutPref('bd_show_owing','false');showSettings()">Hide</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:4px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Homepage — Profit Label</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="bk-btn ${!localStorage.getItem('bd_profit_label')||localStorage.getItem('bd_profit_label')==='profit'?'bk-btn-gold':'bk-btn-outline'}" style="font-size:0.74rem;"
+              onclick="bdSetLayoutPref('bd_profit_label','profit')">Profit/Loss</button>
+            <button class="bk-btn ${localStorage.getItem('bd_profit_label')==='net'?'bk-btn-gold':'bk-btn-outline'}" style="font-size:0.74rem;"
+              onclick="bdSetLayoutPref('bd_profit_label','net')">Net Profit</button>
+          </div>
+        </div>
+      </div>
+
       ${bkUser?.email?.includes('chukwunonso') || userRole === 'owner' ? `
       <div class="acct-card" style="border-color:rgba(212,175,55,0.3);">
         <div class="acct-card-title" style="color:var(--gold);">🔧 Developer Preview</div>
@@ -6590,8 +6762,10 @@ function renderEquity(tots) {
 // ══════════════════════════════════════════════════════════════
 
 let staffCustomers=[],staffExpRows=[],staffDateFmt='month_day_year',_custIdSeq=0;
+let salesRows=[];
+function staffEmptySaleRow(n){return{sn:n,narration:'',unit_price:0,qty:1,total:0,pay_mode:'cash'};}
 
-function staffEmptyExpRow(n){ return {sn:n, narration:'', unit_price:0, qty:1, total:0}; }
+function staffEmptyExpRow(n){ return {sn:n, narration:'', unit_price:0, qty:1, total:0, pay_mode:'cash'}; }
 function staffEmptyOwingRow(n){ return {sn:n, name:'', narration:'', unit_price:0, qty:1, total:0}; }
 let staffCurrency='NGN'; // independent of the main app's currency setting
 
@@ -7392,11 +7566,6 @@ function showRecordChoice() {
         <div class="staff-choice-label">Expenses</div>
         <div class="staff-choice-desc">Record business expenses</div>
       </div>
-      <div class="staff-choice-btn" onclick="showOwingPage()">
-        <div class="staff-choice-icon">📋</div>
-        <div class="staff-choice-label">Owing</div>
-        <div class="staff-choice-desc">Record what customers owe</div>
-      </div>
     </div>`;
 }
 
@@ -7414,50 +7583,68 @@ function showRecordExpenses() {
 
 function renderRecordExpenses() {
   const rows = staffExpRows.map((r,i) => `
-    <tr>
-      <td class="staff-sn">${i+1}</td>
+    <tr id="erow_${i}">
+      <td class="staff-sn" style="white-space:nowrap;">${i+1}</td>
       <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="What was the expense?"
         oninput="staffExpRows[${i}].narration=this.value"/></td>
-      <td><div class="staff-price-wrap"><span class="staff-curr-prefix">${staffSym()}</span>
+      <td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">${staffSym()}</span>
         <input class="staff-cell num" type="text" inputmode="decimal"
           value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
           onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
           oninput="staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
-      <td><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
+      <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
         onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
         oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
-      <td><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
-      <td><button class="staff-del-btn" onclick="staffExpRows.splice(${i},1);renderRecordExpenses()">✕</button></td>
+      <td style="white-space:nowrap;"><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
+      <td><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
+        onchange="staffExpRows[${i}].pay_mode=this.value">
+        <option value="cash"     ${(r.pay_mode||'cash')==='cash'    ?'selected':''}>Cash</option>
+        <option value="transfer" ${r.pay_mode==='transfer'?'selected':''}>Bank Transfer</option>
+        <option value="pos"      ${r.pay_mode==='pos'     ?'selected':''}>POS</option>
+        <option value="credit"   ${r.pay_mode==='credit'  ?'selected':''}>On Credit</option>
+      </select></td>
+      <td><button class="staff-save-row-btn" onclick="expSaveRow(${i})" title="Save">&rsaquo;</button></td>
+      <td><button class="staff-del-btn" onclick="staffExpRows.splice(${i},1);renderRecordExpenses()">&times;</button></td>
     </tr>`).join('');
   const totalExp = staffExpRows.reduce((a,r) => a+(r.total||0), 0);
   document.getElementById('bkContent').innerHTML = `
     <div class="bk-content-header">
       <div class="bk-content-title">RECORD EXPENSES</div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showRecordChoice()">← Back</button>
+      <div style="display:flex;gap:6px;align-items:center;position:relative;">
+        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="toggleExpToolbox()">&#9881; Tools</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showRecordChoice()">&larr; Back</button>
+        <div id="expToolbox" class="sales-toolbox hidden">
+          <div class="toolbox-title">Toolbox</div>
+          <button class="toolbox-btn" onclick="window.print();toggleExpToolbox()">&#128424; Print</button>
+        </div>
+      </div>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="staff-table staff-table-compact" style="min-width:480px;">
+      <table class="staff-table staff-table-compact" style="min-width:580px;">
         <thead><tr>
-          <th style="width:34px;">S/N</th>
-          <th style="width:180px;">Narration</th>
-          <th style="width:130px;">Unit Price</th>
-          <th style="width:60px;">Qty</th>
-          <th style="width:130px;">Total</th>
-          <th style="width:34px;"></th>
+          <th style="width:34px;white-space:nowrap;">S/N</th>
+          <th style="width:150px;">Narration</th>
+          <th style="width:120px;">Unit Price</th>
+          <th style="width:55px;">Qty</th>
+          <th style="width:110px;">Total</th>
+          <th style="width:120px;">Payment Mode</th>
+          <th style="width:30px;"></th>
+          <th style="width:30px;"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
         <tfoot><tr class="staff-total-row">
           <td colspan="4" style="padding:7px 5px;">Total</td>
-          <td style="text-align:right;padding:7px 5px;">${staffFmtAmt(totalExp)}</td>
-          <td></td>
+          <td style="white-space:nowrap;padding:7px 5px;">${staffFmtAmt(totalExp)}</td>
+          <td colspan="3"></td>
         </tr></tfoot>
       </table>
     </div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+    <div style="display:flex;flex-direction:column;gap:8px;padding:10px 16px;">
       <button class="staff-add-cust-btn" onclick="staffExpRows.push(staffEmptyExpRow(staffExpRows.length+1));renderRecordExpenses()">+ Add Row</button>
       <button class="staff-save-static-btn" onclick="saveAllExpenses()">Save All</button>
     </div>`;
 }
+
 
 function showOwingPage() {
   staffHideChrome();
@@ -7546,48 +7733,125 @@ function showStaffChoice(){
         <div class="staff-choice-label">Expenses</div>
         <div class="staff-choice-desc">Record business expenses</div>
       </div>
-      <div class="staff-choice-btn" onclick="showOwingPage()">
-        <div class="staff-choice-icon">\uD83D\uDCCB</div>
-        <div class="staff-choice-label">Owing</div>
-        <div class="staff-choice-desc">Record what customers owe</div>
-      </div>
     </div>`;
 }
 
 function showStaffSales(){
   staffHideChrome();
-  if(staffCustomers.length===0) staffCustomers=[staffNewCustomer()];
+  if(salesRows.length===0) salesRows=[1,2,3,4,5].map(n=>staffEmptySaleRow(n));
   renderStaffSales();
 }
 
 function renderStaffSales(){
+  const tbody=salesRows.map((r,i)=>`
+    <tr id="srow_${i}">
+      <td class="staff-sn" style="white-space:nowrap;">${i+1}</td>
+      <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="What was sold&hellip;"
+        oninput="salesRows[${i}].narration=this.value"/></td>
+      <td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">${staffSym()}</span>
+        <input class="staff-cell num" type="text" inputmode="decimal" value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
+          onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+          oninput="salesNumChange(${i},'unit_price',this.value)"/></div></td>
+      <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
+        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+        oninput="salesNumChange(${i},'qty',this.value)"/></td>
+      <td style="white-space:nowrap;"><div class="staff-cell ro" id="sale_total_${i}">${staffFmtAmt(r.total)}</div></td>
+      <td><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
+        onchange="salesRows[${i}].pay_mode=this.value">
+        <option value="cash"     ${r.pay_mode==='cash'    ?'selected':''}>Cash</option>
+        <option value="transfer" ${r.pay_mode==='transfer'?'selected':''}>Bank Transfer</option>
+        <option value="pos"      ${r.pay_mode==='pos'     ?'selected':''}>POS</option>
+        <option value="credit"   ${r.pay_mode==='credit'  ?'selected':''}>On Credit</option>
+      </select></td>
+      <td><button class="staff-save-row-btn" onclick="salesSaveRow(${i})" title="Save">&rsaquo;</button></td>
+      <td><button class="staff-del-btn" onclick="salesRows.splice(${i},1);renderStaffSales()">&times;</button></td>
+    </tr>`).join('');
+  const total=salesRows.reduce((a,r)=>a+(r.total||0),0);
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
-      <div>
-        <div class="bk-content-title">RECORD SALES</div>
-        <div style="margin-top:4px;">
-          
+      <div class="bk-content-title">RECORD SALES</div>
+      <div style="display:flex;gap:6px;align-items:center;position:relative;">
+        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="toggleSalesToolbox()">&\#9881; Tools</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">&larr; Back</button>
+        <div id="salesToolbox" class="sales-toolbox hidden">
+          <div class="toolbox-title">Toolbox</div>
+          <button class="toolbox-btn" onclick="window.print();toggleSalesToolbox()">&#128424; Print</button>
         </div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="bk-btn bk-btn-print" onclick="printLedger()">\uD83D\uDDA8 Print</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">\u2190 Back</button>
-      </div>
     </div>
-
-
-    <div id="staffSalesBody" style="padding:0 0 16px;"></div>`;
-  renderAllCustomers();
+    <div class="bk-sheet-wrap">
+      <table class="staff-table staff-table-compact" style="min-width:600px;">
+        <thead><tr>
+          <th style="width:34px;white-space:nowrap;">S/N</th>
+          <th style="width:150px;">Narration</th>
+          <th style="width:120px;">Unit Price</th>
+          <th style="width:55px;">Qty</th>
+          <th style="width:110px;">Total</th>
+          <th style="width:120px;">Payment Mode</th>
+          <th style="width:30px;"></th>
+          <th style="width:30px;"></th>
+        </tr></thead>
+        <tbody>${tbody}</tbody>
+        <tfoot><tr class="staff-total-row">
+          <td colspan="4" style="padding:7px 5px;">Total</td>
+          <td style="white-space:nowrap;padding:7px 5px;">${staffFmtAmt(total)}</td>
+          <td colspan="3"></td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;padding:10px 16px;">
+      <button class="staff-add-cust-btn" onclick="salesRows.push(staffEmptySaleRow(salesRows.length+1));renderStaffSales()">+ Add Row</button>
+      <button class="staff-save-static-btn" onclick="salesSaveAll()">Save All</button>
+    </div>`;
 }
 
-function renderAllCustomers(){
-  const body=document.getElementById('staffSalesBody');
-  if(!body) return;
-  body.innerHTML=staffCustomers.map(c=>renderCustomerBlock(c)).join('')+
-    '<button class="staff-add-cust-btn" onclick="addStaffCustomer()">+ Add Customer</button>';
-  // Re-init swipe panes after render
-  initStaffSwipe();
+function salesNumChange(i,field,val){
+  salesRows[i][field]=parseFloat(String(val).replace(/,/g,''))||0;
+  salesRows[i].total=salesRows[i].unit_price*(salesRows[i].qty||1);
+  const el=document.getElementById('sale_total_'+i);
+  if(el) el.textContent=staffFmtAmt(salesRows[i].total);
+  const totEl=document.querySelector('#bkContent .staff-total-row td:nth-child(5)');
+  if(totEl) totEl.textContent=staffFmtAmt(salesRows.reduce((a,r)=>a+(r.total||0),0));
 }
+
+async function salesSaveRow(i){
+  const r=salesRows[i];
+  if(!r||!r.total) return;
+  const btn=document.querySelector('#srow_'+i+' .staff-save-row-btn');
+  if(btn){btn.textContent='...';btn.disabled=true;}
+  try{
+    await autoPostSaleRow(r,'',new Date().toISOString().slice(0,10));
+    if(btn){btn.textContent='\u2713';btn.style.color='var(--green)';
+      setTimeout(()=>{btn.textContent='\u203a';btn.style.color='';btn.disabled=false;},1500);}
+  }catch(e){
+    if(btn){btn.textContent='!';btn.style.color='var(--red)';btn.disabled=false;}
+  }
+}
+
+async function salesSaveAll(){
+  const rows=salesRows.filter(r=>r.total>0);
+  if(!rows.length) return;
+  const date=new Date().toISOString().slice(0,10);
+  for(const r of rows) await autoPostSaleRow(r,'',date);
+  const msg=document.createElement('div');
+  msg.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a2a1a;border:1px solid var(--green);color:#4ade80;padding:10px 20px;border-radius:8px;font-size:0.82rem;font-weight:600;z-index:9999;white-space:nowrap;';
+  msg.textContent='\u2713 '+rows.length+' sale'+(rows.length>1?'s':'')+' posted';
+  document.body.appendChild(msg);
+  setTimeout(()=>msg.remove(),2500);
+}
+
+function toggleSalesToolbox(){
+  const tb=document.getElementById('salesToolbox');
+  if(tb) tb.classList.toggle('hidden');
+}
+
+function toggleExpToolbox(){
+  const tb=document.getElementById('expToolbox');
+  if(tb) tb.classList.toggle('hidden');
+}
+
+function renderAllCustomers(){}
+
 
 // ── Generic sales block: S/N, Narration, Unit Price, Qty, Total ─
 // Fits in ONE mobile pane — no horizontal swiping needed
@@ -7664,6 +7928,12 @@ async function supSaveAll() {
 }
 
 // Expenses: save all rows with values to ledger
+async function expSaveRow(i){
+  const r=staffExpRows[i];
+  if(!r||!r.total) return;
+  try{ await autoPostExpenseRow(r); } catch(e){}
+}
+
 async function saveAllExpenses() {
   const rows = staffExpRows.filter(r => r.total > 0);
   if (!rows.length) return;
@@ -7906,7 +8176,11 @@ async function staffIncomeAccount(narration) {
 // Auto-post a single sale row to the journal + ledger
 async function autoPostSaleRow(row, customerName, txnDate) {
   if (!bkUser || !row.total || row.total <= 0) return;
-  const cashAcct   = staffCashAccount(row.payMode);
+  const payMode = row.pay_mode || row.payMode || 'cash';
+  let cashAcct;
+  if (payMode === 'credit')            cashAcct = 'Debtors';
+  else if (payMode === 'transfer' || payMode === 'pos') cashAcct = 'Cash at Bank';
+  else                                  cashAcct = 'Cash in Hand';
   const incomeAcct = await staffIncomeAccount(row.narration);
   const amount     = parseFloat(row.total) || 0;
   const narration  = (row.narration || 'Sale') + (customerName ? ' — ' + customerName : '');
@@ -8141,47 +8415,64 @@ function showStaffExpenses(){
 
 function renderStaffExpenses(){
   const rows=staffExpRows.map((r,i)=>`
-    <tr>
-      <td class="staff-sn">${i+1}</td>
+    <tr id="erow_${i}">
+      <td class="staff-sn" style="white-space:nowrap;">${i+1}</td>
       <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="What was the expense?"
         oninput="staffExpRows[${i}].narration=this.value"/></td>
-      <td><div class="staff-price-wrap">
+      <td style="white-space:nowrap;"><div class="staff-price-wrap">
         <span class="staff-curr-prefix">${staffSym()}</span>
         <input class="staff-cell num" type="text" inputmode="decimal"
         value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
         onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
         oninput="staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
-      <td><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
+      <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
         onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
         oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
-      <td><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
-      <td><button class="staff-del-btn" onclick="staffExpDel(${i})">✕</button></td>
+      <td style="white-space:nowrap;"><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
+      <td><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
+        onchange="staffExpRows[${i}].pay_mode=this.value">
+        <option value="cash"     ${(r.pay_mode||'cash')==='cash'    ?'selected':''}>Cash</option>
+        <option value="transfer" ${r.pay_mode==='transfer'?'selected':''}>Bank Transfer</option>
+        <option value="pos"      ${r.pay_mode==='pos'     ?'selected':''}>POS</option>
+        <option value="credit"   ${r.pay_mode==='credit'  ?'selected':''}>On Credit</option>
+      </select></td>
+      <td><button class="staff-save-row-btn" onclick="expSaveRow(${i})" title="Save">&rsaquo;</button></td>
+      <td><button class="staff-del-btn" onclick="staffExpDel(${i})">&#x2715;</button></td>
     </tr>`).join('');
   const totalExp=staffExpRows.reduce((a,r)=>a+(r.total||0),0);
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
       <div class="bk-content-title">RECORD EXPENSES</div>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">← Back</button>
+      <div style="display:flex;gap:6px;align-items:center;position:relative;">
+        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="toggleExpToolbox()">&#9881; Tools</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">&larr; Back</button>
+        <div id="expToolbox" class="sales-toolbox hidden">
+          <div class="toolbox-title">Toolbox</div>
+          <button class="toolbox-btn" onclick="window.print();toggleExpToolbox()">&#128424; Print</button>
+        </div>
+      </div>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="staff-table staff-table-compact">
+      <table class="staff-table staff-table-compact" style="min-width:580px;">
         <thead><tr>
-          <th style="width:34px;">S/N</th>
-          <th style="width:160px;">Narration</th>
+          <th style="width:34px;white-space:nowrap;">S/N</th>
+          <th style="width:150px;">Narration</th>
           <th style="width:120px;">Unit Price</th>
           <th style="width:55px;">Qty</th>
-          <th style="width:120px;">Total</th>
+          <th style="width:110px;">Total</th>
+          <th style="width:120px;">Payment Mode</th>
+          <th style="width:30px;"></th>
           <th style="width:30px;"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
         <tfoot><tr class="staff-total-row">
           <td colspan="4" style="padding:7px 5px;">Total</td>
-          <td style="text-align:right;padding:7px 5px;">${staffFmtAmt(totalExp)}</td>
-          <td></td>
+          <td style="white-space:nowrap;padding:7px 5px;">${staffFmtAmt(totalExp)}</td>
+          <td colspan="3"></td>
         </tr></tfoot>
       </table>
     </div>
-    <div style="display:flex;gap:10px;margin-top:8px;">
+    <div style="display:flex;flex-direction:column;gap:8px;padding:10px 16px;">
       <button class="staff-add-cust-btn" onclick="staffExpAddRow()">+ Add Row</button>
       <button class="staff-save-static-btn" onclick="saveAllExpenses()">Save All</button>
     </div>`;
