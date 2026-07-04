@@ -8,6 +8,18 @@
 <meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Bookkeeping — Butterfly Dynamix</title>
+  <!-- PWA manifest -->
+  <link rel="manifest" href="/manifest.json"/>
+  <!-- Theme colour — shows in browser chrome on Android -->
+  <meta name="theme-color" content="#d4af37"/>
+  <!-- iOS PWA support -->
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="BD Books"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png"/>
+  <!-- MS Tiles (Windows) -->
+  <meta name="msapplication-TileColor" content="#d4af37"/>
+  <meta name="msapplication-TileImage" content="/icons/icon-144x144.png"/>
 <style>html,body{background:#0f1117!important;}
 /* ── LANDING PAGE TYPOGRAPHY ─────────────────────────── */
 .bk-land-small{font-size:0.85rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:8px;}
@@ -675,7 +687,7 @@ body{padding-top:0;}
 .dash-kpi-item:last-child{border-bottom:none;}
 .dash-kpi-item-label{font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);width:130px;flex-shrink:0;display:flex;align-items:center;gap:6px;}
 .dash-kpi-item-value{font-size:1.15rem;font-weight:900;flex:1;}
-.dash-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;min-width:0;overflow:hidden;}
+.dash-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;min-width:0;overflow:hidden;word-break:break-word;}
 .dash-kpi-label{font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
 .dash-kpi-value{font-size:1.4rem;font-weight:900;color:var(--white);margin-bottom:4px;}
 .dash-kpi-change{font-size:0.7rem;font-weight:600;}
@@ -2901,28 +2913,28 @@ async function showDashboard() {
 
   content.innerHTML=`
     <div style="padding:0 0 20px;">
-      <div class="dash-kpi-list" style="padding:16px 16px 0;">
-        <div class="dash-kpi-item">
-          <div class="dash-kpi-item-label">Total Income <span class="dash-kpi-icon">💰</span></div>
-          <div class="dash-kpi-item-value" style="color:#4ade80;">${fmt(income)}</div>
+      <div class="dash-kpi-row" style="padding:16px 16px 0;">
+        <div class="dash-kpi-card">
+          <div class="dash-kpi-label">Total Income <span class="dash-kpi-icon">💰</span></div>
+          <div class="dash-kpi-value" style="color:#4ade80;">${fmt(income)}</div>
           <div class="dash-kpi-change ${incomeThisMonth>0?'up':'neutral'}">${incomeThisMonth>0?'↑ '+fmt(incomeThisMonth)+' this month':'No income this month'}</div>
         </div>
-        <div class="dash-kpi-item">
-          <div class="dash-kpi-item-label">Total Expenses <span class="dash-kpi-icon">📤</span></div>
-          <div class="dash-kpi-item-value" style="color:#f87171;">${fmt(expenses)}</div>
+        <div class="dash-kpi-card">
+          <div class="dash-kpi-label">Total Expenses <span class="dash-kpi-icon">📤</span></div>
+          <div class="dash-kpi-value" style="color:#f87171;">${fmt(expenses)}</div>
           <div class="dash-kpi-change ${expensesThisMonth>0?'down':'neutral'}">${expensesThisMonth>0?'↓ '+fmt(expensesThisMonth)+' this month':'No expenses this month'}</div>
         </div>
-        <div class="dash-kpi-item">
-          <div class="dash-kpi-item-label">Net ${netProfit>=0?'Profit':'Loss'} <span class="dash-kpi-icon">${netProfit>=0?'📈':'📉'}</span></div>
-          <div class="dash-kpi-item-value" style="color:${netProfit>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(netProfit))}</div>
+        <div class="dash-kpi-card">
+          <div class="dash-kpi-label">Net ${netProfit>=0?'Profit':'Loss'} <span class="dash-kpi-icon">${netProfit>=0?'📈':'📉'}</span></div>
+          <div class="dash-kpi-value" style="color:${netProfit>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(netProfit))}</div>
           <div class="dash-kpi-change ${netProfit>=0?'up':'down'}">${income>0?Math.round(netProfit/income*100)+'% margin':'—'}</div>
         </div>
-        <div class="dash-kpi-item">
-          <div class="dash-kpi-item-label">Cash &amp; Assets <span class="dash-kpi-icon">🏦</span></div>
-          <div class="dash-kpi-item-value" style="color:var(--gold);">${fmt(cashBal||assets)}</div>
+        <div class="dash-kpi-card">
+          <div class="dash-kpi-label">Cash &amp; Assets <span class="dash-kpi-icon">🏦</span></div>
+          <div class="dash-kpi-value" style="color:var(--gold);">${fmt(cashBal||assets)}</div>
           <div class="dash-kpi-change neutral">Total assets: ${fmt(assets)}</div>
         </div>
-      </div>/div>
+      </div>
       <div class="dash-charts-row" style="padding:16px 16px 0;">
         <div class="dash-card">
           <div class="dash-card-title">Revenue vs Expenses</div>
@@ -3249,9 +3261,9 @@ function renderJournal() {
         <tbody id="journalBody"></tbody>
       </table>
     </div>
-    <div class="bk-add-row" style="display:flex;gap:10px;align-items:center;">
+    <div class="bk-add-row" style="display:flex;flex-direction:column;gap:8px;">
       <button class="bk-add-row-btn" onclick="addJournalRow()">+ Add another row</button>
-      <button class="bk-btn bk-btn-gold" style="font-size:0.8rem;padding:9px 24px;" onclick="saveJournal()">Save & Post</button>
+      <button class="bk-btn bk-btn-gold" style="font-size:0.8rem;padding:9px 24px;align-self:flex-start;" onclick="saveJournal()">Save &amp; Post</button>
     </div>`;
   renderJournalRows();
 }
@@ -6926,9 +6938,9 @@ function renderSuppliersPage() {
         <tbody id="supBody">${bodyHtml||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No suppliers yet. Click + Add Supplier below.</td></tr>'}</tbody>
       </table>
     </div>
-    <div style="padding:10px 16px;display:flex;gap:10px;">
-      <button class="ps-add-btn" onclick="supAddRow()">+ Add Supplier</button>
-      <button class="staff-save-static-btn" style="padding:9px 20px;font-size:0.78rem;" onclick="supSaveAll()">Save All</button>
+    <div style="padding:10px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <button class="ps-add-btn" onclick="supAddRow()" style="width:100%;max-width:260px;">+ Add Supplier</button>
+      <button class="staff-save-static-btn" style="padding:9px 40px;font-size:0.78rem;" onclick="supSaveAll()">Save All</button>
     </div>`;
 }
 
@@ -7420,14 +7432,14 @@ function renderRecordExpenses() {
       <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showRecordChoice()">← Back</button>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="staff-table staff-table-compact">
+      <table class="staff-table staff-table-compact" style="min-width:480px;">
         <thead><tr>
           <th style="width:34px;">S/N</th>
-          <th style="width:160px;">Narration</th>
-          <th style="width:120px;">Unit Price</th>
-          <th style="width:55px;">Qty</th>
-          <th style="width:120px;">Total</th>
-          <th style="width:30px;"></th>
+          <th style="width:180px;">Narration</th>
+          <th style="width:130px;">Unit Price</th>
+          <th style="width:60px;">Qty</th>
+          <th style="width:130px;">Total</th>
+          <th style="width:34px;"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
         <tfoot><tr class="staff-total-row">
@@ -7437,7 +7449,7 @@ function renderRecordExpenses() {
         </tr></tfoot>
       </table>
     </div>
-    <div style="display:flex;gap:10px;margin-top:8px;">
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
       <button class="staff-add-cust-btn" onclick="staffExpRows.push(staffEmptyExpRow(staffExpRows.length+1));renderRecordExpenses()">+ Add Row</button>
       <button class="staff-save-static-btn" onclick="saveAllExpenses()">Save All</button>
     </div>`;
@@ -7475,15 +7487,15 @@ function renderOwingPage() {
       <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showRecordChoice()">← Back</button>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="staff-table staff-table-compact" style="min-width:460px;">
+      <table class="staff-table staff-table-compact" style="min-width:580px;">
         <thead><tr>
           <th style="width:34px;">S/N</th>
-          <th style="width:110px;white-space:nowrap;">Name</th>
-          <th>Narration</th>
-          <th style="width:120px;white-space:nowrap;">Unit Price</th>
-          <th style="width:50px;">Qty</th>
-          <th style="width:110px;white-space:nowrap;">Total</th>
-          <th style="width:30px;"></th>
+          <th style="width:130px;">Name</th>
+          <th style="width:160px;">Narration</th>
+          <th style="width:130px;">Unit Price</th>
+          <th style="width:55px;">Qty</th>
+          <th style="width:120px;">Total</th>
+          <th style="width:34px;"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
         <tfoot><tr class="staff-total-row">
@@ -7602,15 +7614,15 @@ function renderCustomerBlock(cust){
       + '</tr>';
   });
 
-  const table = '<table class="staff-table staff-table-compact" style="min-width:400px;">'
+  const table = '<table class="staff-table staff-table-compact" style="min-width:520px;">'
     + '<thead><tr>'
-    + '<th style="width:30px;">S/N</th>'
-    + '<th style="width:130px;">Narration</th>'
-    + '<th style="width:120px;">Unit Price</th>'
-    + '<th style="width:50px;">Qty</th>'
-    + '<th style="width:110px;">Total</th>'
-    + '<th style="width:28px;"></th>'
-    + '<th style="width:28px;"></th>'
+    + '<th style="width:34px;">S/N</th>'
+    + '<th style="width:160px;">Narration</th>'
+    + '<th style="width:130px;">Unit Price</th>'
+    + '<th style="width:60px;">Qty</th>'
+    + '<th style="width:120px;">Total</th>'
+    + '<th style="width:34px;"></th>'
+    + '<th style="width:34px;"></th>'
     + '</tr></thead>'
     + '<tbody>'+rowsHtml+'</tbody>'
     + '<tfoot><tr class="staff-total-row">'
@@ -8145,5 +8157,40 @@ const COLUMN_HELP = {
 };
 
 </script>
+  <script>
+    // Register service worker for PWA / offline support
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(function(reg) {
+            // Service worker registered
+          })
+          .catch(function(err) {
+            // Service worker registration failed silently
+          });
+      });
+    }
+
+    // PWA install prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Show install button if it exists
+      const installBtn = document.getElementById('pwaInstallBtn');
+      if (installBtn) installBtn.style.display = 'block';
+    });
+
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(result) {
+          deferredPrompt = null;
+          const installBtn = document.getElementById('pwaInstallBtn');
+          if (installBtn) installBtn.style.display = 'none';
+        });
+      }
+    }
+  </script>
 </body>
 </html>
