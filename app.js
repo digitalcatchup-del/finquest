@@ -661,7 +661,7 @@ function renderProfileHeader(profile) {
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px;">
           <button class="profile-edit-btn" onclick="openEditProfile()">Edit Profile</button>
           ${currentUser?.username && ['chukwunonso'].includes(currentUser.username.toLowerCase()) ?
-            `<button class="profile-edit-btn" onclick="window.open('bookkeeping.html','_blank')" style="border-color:var(--gold);color:var(--gold);">📊 Bookkeeping</button>` : ''}
+            `<button class="profile-edit-btn" onclick="window.open('bookkeeping','_blank')" style="border-color:var(--gold);color:var(--gold);">📊 Bookkeeping</button>` : ''}
         </div>` : ''}
     </div>`;
 }
