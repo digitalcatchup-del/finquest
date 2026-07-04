@@ -1,14 +1,17 @@
-// Butterfly Dynamix Bookkeeping — Service Worker
-// Caches the app shell for offline use and fast loading
-
-const CACHE_NAME = 'bd-bookkeeping-v1';
+// Butterfly Dynamix Bookkeeping — Service Worker v2
+const CACHE_NAME = 'bd-bookkeeping-v2';
 const ASSETS_TO_CACHE = [
-  '/',
+  '/bookkeeping',
   '/bookkeeping.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/icons/android-chrome-192x192.png',
+  '/icons/android-chrome-512x512.png',
+  '/icons/apple-touch-icon.png',
+  '/icons/favicon-32x32.png',
+  '/icons/favicon-16x16.png',
 ];
 
-// Install — cache the app shell
+// Install — cache app shell
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
@@ -19,80 +22,57 @@ self.addEventListener('install', function(event) {
   );
 });
 
-// Activate — clean up old caches
+// Activate — remove old caches
 self.addEventListener('activate', function(event) {
   event.waitUntil(
-    caches.keys().then(function(cacheNames) {
+    caches.keys().then(function(names) {
       return Promise.all(
-        cacheNames
-          .filter(function(name) { return name !== CACHE_NAME; })
-          .map(function(name) { return caches.delete(name); })
+        names.filter(function(n) { return n !== CACHE_NAME; })
+             .map(function(n) { return caches.delete(n); })
       );
-    }).then(function() {
-      return self.clients.claim();
-    })
+    }).then(function() { return self.clients.claim(); })
   );
 });
 
-// Fetch — serve from cache first, fall back to network
+// Fetch — cache first for app shell, network first for API
 self.addEventListener('fetch', function(event) {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
-  // Don't intercept chrome-extension or non-http requests
-  try {
-    const url = new URL(event.request.url);
-    if (!url.protocol.startsWith('http')) return;
-    // Don't intercept Supabase API calls — always go to network
-    if (url.hostname.includes('supabase.co') ||
-        url.hostname.includes('supabase.com')) {
-      return;
-    }
-  } catch(e) { return; }
+  // Skip non-http requests (chrome-extension etc)
+  if (!event.request.url.startsWith('http')) return;
+
   const url = new URL(event.request.url);
 
-  event.respondWith(
-    caches.match(event.request).then(function(cachedResponse) {
-      if (cachedResponse) {
-        // Serve from cache, but also update in background
-        fetch(event.request).then(function(networkResponse) {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then(function(cache) {
-              cache.put(event.request, networkResponse.clone());
-            });
+  // Always go to network for Supabase
+  if (url.hostname.includes('supabase.co') || url.hostname.includes('supabase.com')) return;
+
+  // Cache first for same-origin assets
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      caches.match(event.request).then(function(cached) {
+        const networkFetch = fetch(event.request).then(function(response) {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, copy); });
           }
-        }).catch(function() {});
-        return cachedResponse;
-      }
-
-      // Not in cache — fetch from network
-      return fetch(event.request).then(function(networkResponse) {
-        if (!networkResponse || networkResponse.status !== 200) {
-          return networkResponse;
-        }
-        // Cache the new response
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then(function(cache) {
-          cache.put(event.request, responseToCache);
-        });
-        return networkResponse;
-      }).catch(function() {
-        // Offline and not in cache — return offline page
-        return caches.match('/bookkeeping.html');
-      });
-    })
-  );
-});
-
-// Background sync for offline transactions (future use)
-self.addEventListener('sync', function(event) {
-  if (event.tag === 'sync-transactions') {
-    event.waitUntil(syncOfflineTransactions());
+          return response;
+        }).catch(function() { return cached; });
+        return cached || networkFetch;
+      })
+    );
+    return;
   }
 });
 
-async function syncOfflineTransactions() {
-  // Placeholder for offline transaction sync
-  // Will be implemented when IndexedDB offline queue is built
-  console.log('Background sync: checking for offline transactions');
-}
+// Background sync — fires when internet returns after offline save
+self.addEventListener('sync', function(event) {
+  if (event.tag === 'sync-transactions') {
+    event.waitUntil(
+      self.clients.matchAll().then(function(clients) {
+        clients.forEach(function(client) {
+          client.postMessage({ type: 'SYNC_OFFLINE_SALES' });
+        });
+      })
+    );
+  }
+});
