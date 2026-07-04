@@ -2425,7 +2425,7 @@ function renderLedger() {
       <div class="sched-total-val" id="ledgerTotalVal" style="color:${color};">${balText}</div>
     </div>
     <div class="bk-sheet-wrap">
-      <table class="bk-sheet" id="ledgerTable" style="min-width:920px;">
+      <table class="bk-sheet" id="ledgerTable" style="min-width:960px;">
         <thead>
           <tr>
             <th class="col-sn num" style="width:40px;">S/N</th>
@@ -2436,6 +2436,7 @@ function renderLedger() {
             <th class="col-dr num" style="width:110px;">Debit (${CURRENCIES[activeCurrency].symbol})</th>
             <th class="col-cr num" style="width:110px;">Credit (${CURRENCIES[activeCurrency].symbol})</th>
             <th class="col-bal num" style="width:120px;">Balance (${CURRENCIES[activeCurrency].symbol})</th>
+            <th style="width:28px;"></th>
             <th style="width:28px;"></th>
           </tr>
         </thead>
@@ -2470,33 +2471,28 @@ function renderRows(displayRows) {
       </td>
       <td style="text-align:right;padding:4px 6px;color:var(--muted);">—</td>
       <td style="text-align:right;padding:4px 6px;color:var(--muted);">—</td>
-      <td style="padding:4px 6px;">
+      <td style="padding:4px 6px;position:relative;">
+        <span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:0.72rem;color:var(--gold);pointer-events:none;">${CURRENCIES[activeCurrency].symbol}</span>
         <input class="bk-cell num" id="obBalInput" type="text" inputmode="decimal"
-          value="${ob!==0?ob:''}" placeholder="0"
-          style="font-weight:800;color:var(--gold);"
+          value="${ob!==0?fmt(ob):''}" placeholder="0"
+          style="font-weight:800;color:var(--gold);padding-left:18px;"
           oninput="ledgerOBChanged(this.value)"
           onblur="saveOpeningBalance(this.value)"/>
       </td>
-      <td></td>
+      <td><button class="del-btn" onclick="clearOpeningBalance()" title="Clear opening balance">✕</button></td>
+      <td><button class="save-row-btn" onclick="saveOpeningBalance(document.getElementById('obBalInput').value)" title="Save opening balance">›</button></td>
     </tr>`;
 
   const dataRows = (displayRows||rows).filter(r => hasData(r));
 
-  if (dataRows.length === 0) {
-    tbody.innerHTML = obRow + `<tr><td colspan="9" style="text-align:center;padding:28px 12px;color:var(--muted);font-size:0.82rem;">
-      No entries yet — type directly into any row below to add a transaction.
-    </td></tr>` + buildEmptyEditableRows(5);
-    return;
-  }
-
-  // Render existing rows as editable + extra empty rows
+  // Always render existing data rows + empty rows — no "no entries" message
   const existingHtml = dataRows.map((row, i) => {
     const realIdx = rows.indexOf(row);
     const idx = realIdx >= 0 ? realIdx : i;
     return buildEditableRow(row, idx, i+1);
   }).join('');
 
-  // Add empty rows for new entries
+  // Always show 3 empty rows below for new entries
   const emptyStart = rows.filter(r=>hasData(r)).length;
   const extraEmpty = buildEmptyEditableRows(3, emptyStart);
 
@@ -2504,10 +2500,30 @@ function renderRows(displayRows) {
   setTimeout(()=>{ initColumnResize(); initRowResize(); initDragRows(); }, 50);
 }
 
+// Format number with commas as user types
+function ledgerFmtInput(input, idx, field) {
+  const raw = input.value.replace(/[^0-9.]/g, '');
+  const num = parseFloat(raw) || 0;
+  rows[idx][field] = num;
+  rows[idx].saved = false;
+  // Reformat with commas, preserve cursor
+  const parts = raw.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const formatted = parts.join('.');
+  const cursorPos = input.selectionStart;
+  const prevLen = input.value.length;
+  input.value = formatted;
+  // Restore cursor position adjusted for added/removed commas
+  const diff = formatted.length - prevLen;
+  input.setSelectionRange(cursorPos + diff, cursorPos + diff);
+  if (field === 'debit' || field === 'credit') ledgerCellChanged(idx);
+}
+
 function buildEditableRow(row, idx, sn) {
   const bal      = parseFloat(row.balance)||0;
   const balClass = bal > 0 ? 'pos' : bal < 0 ? 'neg' : 'zero';
   const dateVal  = row.txn_date || '';
+  const sym      = CURRENCIES[activeCurrency]?.symbol || '₦';
 
   return `<tr id="row_${idx}">
     <td class="col-sn" style="text-align:center;padding:4px 2px;font-size:0.72rem;color:var(--muted);white-space:nowrap;">${sn}</td>
@@ -2520,14 +2536,17 @@ function buildEditableRow(row, idx, sn) {
     <td class="col-narr"><input class="bk-cell" type="text" value="${escH(row.narration||'')}" placeholder="Narration…"
       oninput="rows[${idx}].narration=this.value;rows[${idx}].saved=false"/></td>
     <td class="col-dr"><input class="bk-cell num" type="text" inputmode="decimal"
-      value="${row.debit>0?row.debit:''}" placeholder="0"
-      oninput="rows[${idx}].debit=parseFloat(this.value.replace(/,/g,''))||0;rows[${idx}].saved=false;ledgerCellChanged(${idx})"/></td>
+      value="${row.debit>0?fmt(row.debit):''}" placeholder="0"
+      oninput="ledgerFmtInput(this,${idx},'debit')"/></td>
     <td class="col-cr"><input class="bk-cell num" type="text" inputmode="decimal"
-      value="${row.credit>0?row.credit:''}" placeholder="0"
-      oninput="rows[${idx}].credit=parseFloat(this.value.replace(/,/g,''))||0;rows[${idx}].saved=false;ledgerCellChanged(${idx})"/></td>
-    <td class="col-bal"><input class="bk-cell num bal ${balClass}" id="balCell_${idx}" type="text" inputmode="decimal"
-      value="${bal!==0?fmt(bal):''}" placeholder="0"
-      oninput="rows[${idx}].balance=parseFloat(this.value.replace(/,/g,''))||0;rows[${idx}].saved=false;ledgerUpdateTotalBanner()"/></td>
+      value="${row.credit>0?fmt(row.credit):''}" placeholder="0"
+      oninput="ledgerFmtInput(this,${idx},'credit')"/></td>
+    <td class="col-bal" style="position:relative;">
+      <span style="position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:0.72rem;color:var(--muted);pointer-events:none;">${sym}</span>
+      <input class="bk-cell num bal ${balClass}" id="balCell_${idx}" type="text" inputmode="decimal"
+        value="${bal!==0?fmt(bal):''}" placeholder="0" style="padding-left:18px;"
+        oninput="ledgerFmtInput(this,${idx},'balance');ledgerUpdateTotalBanner()"/></td>
+    <td><button class="del-btn" onclick="deleteRow(${idx})" title="Delete row">✕</button></td>
     <td><button class="save-row-btn" onclick="saveRow(${idx})" title="Save row">›</button></td>
   </tr>`;
 }
@@ -2537,14 +2556,18 @@ function buildEmptyEditableRows(count, startIdx) {
   let html = '';
   for (let i = 0; i < count; i++) {
     const idx = startIdx + i;
-    // Ensure rows array has a slot
     while (rows.length <= idx) rows.push(emptyRow(rows.length));
     html += buildEditableRow(rows[idx], idx, '');
   }
   return html;
 }
 
-// Opening balance changed — recalc all rows and update total banner live
+// Clear opening balance back to zero
+async function clearOpeningBalance() {
+  const input = document.getElementById('obBalInput');
+  if (input) input.value = '';
+  await saveOpeningBalance('0');
+}
 function ledgerOBChanged(val) {
   const newOB = parseFloat(String(val).replace(/,/g,'')) || 0;
   if (activeAccount) activeAccount.opening_balance = newOB;
