@@ -1,6 +1,6 @@
-// Butterfly Dynamix Bookkeeping — Service Worker v3
-// v3: network-first strategy to prevent stale cache flicker
-const CACHE_NAME = 'bd-bookkeeping-v3';
+// Butterfly Dynamix Bookkeeping — Service Worker v4
+// v4: force cache clear after profile/multi-business update
+const CACHE_NAME = 'bd-bookkeeping-v4';
 const ASSETS_TO_CACHE = [
   '/bookkeeping',
   '/bookkeeping.html',
@@ -12,18 +12,16 @@ const ASSETS_TO_CACHE = [
   '/icons/favicon-16x16.png',
 ];
 
-// Install — cache app shell
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.addAll(ASSETS_TO_CACHE);
     }).then(function() {
-      return self.skipWaiting(); // activate immediately
+      return self.skipWaiting();
     })
   );
 });
 
-// Activate — remove ALL old caches
 self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys().then(function(names) {
@@ -35,48 +33,39 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// Fetch — NETWORK FIRST for HTML pages to prevent stale flicker
-// Cache first only for static assets (icons, etc.)
 self.addEventListener('fetch', function(event) {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith('http')) return;
 
   const url = new URL(event.request.url);
-
-  // Always go to network for Supabase
   if (url.hostname.includes('supabase.co') || url.hostname.includes('supabase.com')) return;
 
-  const isHtmlPage = url.pathname === '/bookkeeping' ||
-                     url.pathname === '/bookkeeping.html' ||
-                     url.pathname === '/';
+  const isHtml = url.pathname === '/bookkeeping' ||
+                 url.pathname === '/bookkeeping.html' ||
+                 url.pathname === '/';
 
-  if (isHtmlPage) {
-    // NETWORK FIRST for the app itself — prevents stale version showing
+  if (isHtml) {
+    // Network first for HTML — always get latest
     event.respondWith(
       fetch(event.request).then(function(response) {
         if (response && response.status === 200) {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then(function(cache) {
-            cache.put(event.request, copy);
-          });
+          caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, copy); });
         }
         return response;
       }).catch(function() {
-        // Offline fallback
         return caches.match('/bookkeeping') || caches.match('/bookkeeping.html');
       })
     );
   } else {
-    // CACHE FIRST for static assets (icons, manifest)
+    // Cache first for static assets
     event.respondWith(
       caches.match(event.request).then(function(cached) {
         if (cached) return cached;
         return fetch(event.request).then(function(response) {
           if (response && response.status === 200) {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then(function(cache) {
-              cache.put(event.request, copy);
-            });
+            caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, copy); });
           }
           return response;
         }).catch(function() { return cached; });
@@ -85,7 +74,6 @@ self.addEventListener('fetch', function(event) {
   }
 });
 
-// Background sync
 self.addEventListener('sync', function(event) {
   if (event.tag === 'sync-transactions') {
     event.waitUntil(
