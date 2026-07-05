@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -769,6 +768,75 @@ body{padding-top:0;}
 .ps-save-btn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.95rem;font-weight:900;padding:4px 8px;}
 .ps-save-btn:hover{color:var(--white);}
 .ps-col-selector{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;min-width:270px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+/* ── ALL BUSINESSES DASHBOARD ─────────────────────────────── */
+.ab-header{padding:20px 16px 12px;background:var(--surface);border-bottom:1px solid var(--border);}
+.ab-greeting{font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;}
+.ab-name{font-size:1.4rem;font-weight:900;color:var(--white);margin-bottom:4px;}
+.ab-alert{font-size:0.78rem;color:var(--muted);}
+.ab-alert strong{color:var(--gold);}
+.ab-actions{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);}
+.ab-btn{flex:1;padding:10px;border-radius:8px;border:none;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
+.ab-btn-primary{background:var(--gold);color:#000;}
+.ab-btn-secondary{background:var(--surface2);color:var(--white);border:1px solid var(--border2);}
+.ab-portfolio{padding:16px;}
+.ab-portfolio-title{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:12px;}
+.ab-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;}
+.ab-kpi-icon{font-size:1.1rem;margin-bottom:8px;}
+.ab-kpi-amount{font-size:1.5rem;font-weight:900;color:var(--white);margin-bottom:4px;}
+.ab-kpi-label{font-size:0.72rem;color:var(--muted);font-weight:600;}
+.ab-kpi-badge{float:right;font-size:0.7rem;font-weight:700;padding:3px 8px;border-radius:12px;}
+.ab-kpi-badge.up{background:rgba(74,222,128,0.15);color:#4ade80;}
+.ab-kpi-badge.down{background:rgba(248,113,113,0.15);color:#f87171;}
+.ab-kpi-badge.neutral{background:rgba(212,175,55,0.15);color:var(--gold);}
+.ab-section{padding:0 16px 16px;}
+.ab-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.ab-section-title{font-size:0.88rem;font-weight:800;color:var(--white);}
+.ab-section-sub{font-size:0.72rem;color:var(--muted);}
+.biz-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;}
+.biz-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;}
+.biz-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-right:10px;flex-shrink:0;}
+.biz-info{flex:1;}
+.biz-name{font-size:0.88rem;font-weight:800;color:var(--white);}
+.biz-industry{font-size:0.7rem;color:var(--muted);margin-top:2px;}
+.biz-status{font-size:0.65rem;font-weight:700;padding:3px 8px;border-radius:12px;white-space:nowrap;}
+.biz-status.healthy{background:rgba(74,222,128,0.15);color:#4ade80;}
+.biz-status.attention{background:rgba(251,191,36,0.15);color:#fbbf24;}
+.biz-status.critical{background:rgba(248,113,113,0.15);color:#f87171;}
+.biz-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+.biz-metric-label{font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;}
+.biz-metric-val{font-size:0.82rem;font-weight:800;color:var(--white);}
+.biz-metric-val.green{color:#4ade80;}
+.biz-metric-val.red{color:#f87171;}
+.biz-margin-bar{height:4px;background:var(--border2);border-radius:2px;margin-bottom:6px;overflow:hidden;}
+.biz-margin-fill{height:100%;border-radius:2px;transition:width 0.4s;}
+.biz-footer{display:flex;align-items:center;justify-content:space-between;}
+.biz-vs-last{font-size:0.7rem;color:var(--muted);}
+.biz-vs-last.up{color:#4ade80;}
+.biz-vs-last.down{color:#f87171;}
+.biz-open-btn{background:none;border:1px solid var(--border2);color:var(--gold);font-size:0.72rem;font-weight:700;padding:5px 14px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:4px;}
+.biz-open-btn:hover{background:var(--gold-dim);}
+.ab-activity-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.ab-activity-item:last-child{border-bottom:none;}
+.ab-activity-dot{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0;margin-top:2px;}
+.ab-activity-biz{font-size:0.62rem;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:0.08em;}
+.ab-activity-desc{font-size:0.8rem;color:var(--white);margin-top:2px;}
+.ab-activity-time{font-size:0.68rem;color:var(--muted);margin-top:2px;}
+/* Menu businesses list */
+.menu-biz-item{display:flex;align-items:center;gap:8px;padding:8px 20px;cursor:pointer;font-size:0.8rem;color:var(--off);}
+.menu-biz-item:hover{background:var(--gold-dim);color:var(--gold);}
+.menu-biz-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+/* Individual business breadcrumb */
+.biz-breadcrumb{font-size:0.72rem;color:var(--muted);display:flex;align-items:center;gap:4px;}
+.biz-breadcrumb .crumb-link{cursor:pointer;color:var(--muted);}
+.biz-breadcrumb .crumb-link:hover{color:var(--gold);}
+.biz-breadcrumb .crumb-sep{color:var(--muted);}
+.biz-breadcrumb .crumb-current{color:var(--white);font-weight:700;}
+/* Individual business tabs */
+.biz-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:0;overflow-x:auto;}
+.biz-tab{padding:10px 16px;font-size:0.8rem;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;}
+.biz-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.biz-tab:hover{color:var(--off);}
+
 .ps-col-selector-title{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 .ps-col-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);}
 .ps-col-row:last-child{border-bottom:none;}
@@ -1028,6 +1096,20 @@ body{padding-top:0;}
     <!-- Settings — shown to everyone, but routes differently per role -->
     <div class="bk-menu-item" onclick="roleAwareSettings();closeBkMenu()">
       <span class="bk-menu-icon">⚙️</span> Settings
+    </div>
+
+    <!-- BUSINESSES section (owner/manager only) — from Image 8 Figma -->
+    <div id="menuBusinessesSection" data-role="owner-manager" style="margin-top:8px;">
+      <div style="padding:10px 20px 6px;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;justify-content:space-between;">
+        <span>Businesses</span>
+        <button onclick="showAddBusinessModal();closeBkMenu()" style="background:none;border:1px solid var(--border2);color:var(--gold);font-size:0.7rem;padding:2px 8px;border-radius:4px;cursor:pointer;">+ Add</button>
+      </div>
+      <div id="menuBusinessesList" style="padding:0 0 8px;">
+        <!-- Populated by renderMenuBusinesses() -->
+      </div>
+      <div class="bk-menu-item" onclick="showAllBusinessesDashboard();closeBkMenu()" style="font-size:0.78rem;color:var(--muted);padding:8px 20px;">
+        <span style="margin-right:6px;">🏢</span> View All Businesses
+      </div>
     </div>
   </nav>
 
@@ -2244,11 +2326,16 @@ async function continueInit() {
 
   applyRoleMenu(userRole);
 
+  // Load businesses (async, non-blocking for UI)
+  if (userRole !== 'employee') {
+    loadUserBusinesses().catch(()=>{});
+  }
+
   // Route by role — employees go to Staff Pages, owners/managers go to Dashboard
   if (userRole === 'employee') {
     showStaffPage();
   } else {
-    showDashboard();
+    bdRestoreRoute();
   }
 }
 
@@ -2994,7 +3081,7 @@ function bdSaveRoute(page) {
 function bdRestoreRoute() {
   try {
     const r = sessionStorage.getItem('bd_route');
-    if (r === 'dashboard' || !r) { showDashboard(); return; }
+    if (r === 'all-businesses') { showAllBusinessesDashboard(); return; }
     if (r === 'journal')  { openJournal(); return; }
     if (r === 'settings') { showSettings(); return; }
     if (r === 'products') { showProductsPage('products'); return; }
@@ -8213,7 +8300,464 @@ function staffRefreshCustomerTotals(custId){
 
 
 
-// ── OFFLINE SUPPORT — IndexedDB queue ────────────────────────
+// ══ MULTI-BUSINESS DASHBOARD ══════════════════════════════════
+let userBusinesses = [];
+let activeBusiness = null; // null = "All Businesses" view
+
+// Load businesses from Supabase, creating a default one if none exist
+async function loadUserBusinesses() {
+  if (!bkUser) return;
+  try {
+    const { data } = await bkDb.from('businesses')
+      .select('*')
+      .eq('owner_user_id', bkUser.id)
+      .order('created_at');
+    userBusinesses = data || [];
+    if (userBusinesses.length === 0) await createDefaultBusiness();
+  } catch(e) { userBusinesses = []; }
+  renderMenuBusinesses();
+}
+
+async function createDefaultBusiness() {
+  const name = businessDisplayName || bkUser?.email?.split('@')[0] || 'My Business';
+  try {
+    const { data } = await bkDb.from('businesses').insert({
+      name, industry:'General', owner_user_id:bkUser.id,
+      currency:activeCurrency||'NGN', is_primary:true, icon:'🏢',
+    }).select().single();
+    if (data) {
+      userBusinesses = [data];
+      await bkDb.from('user_businesses').upsert(
+        {user_id:bkUser.id,business_id:data.id,role:userRole||'owner'},
+        {onConflict:'user_id,business_id'}
+      );
+    }
+  } catch(e) {}
+}
+
+// Render the BUSINESSES section in the hamburger menu
+function renderMenuBusinesses() {
+  const list = document.getElementById('menuBusinessesList');
+  if (!list) return;
+  const statusColors = {healthy:'#4ade80',attention:'#fbbf24',critical:'#f87171'};
+  list.innerHTML = userBusinesses.map(b => `
+    <div class="menu-biz-item" onclick="openBusinessFromMenu('${b.id}');closeBkMenu()">
+      <span>${b.icon||'🏢'}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escH(b.name)}</span>
+      <span class="menu-biz-dot" style="background:${statusColors[b.status]||'#4ade80'};"></span>
+    </div>`).join('');
+}
+
+async function openBusinessFromMenu(bizId) {
+  const biz = userBusinesses.find(b=>b.id===bizId);
+  if (!biz) return;
+  activeBusiness = biz;
+  await showSingleBusinessDashboard(biz);
+}
+
+// ── ALL BUSINESSES DASHBOARD ──────────────────────────────────
+async function showAllBusinessesDashboard() {
+  staffHideChrome();
+  activeBusiness = null;
+  bdSaveRoute('all-businesses');
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading businesses…</div>';
+  await loadUserBusinesses();
+
+  // Fetch metrics for each business
+  const bizMetrics = await fetchAllBusinessMetrics();
+  renderAllBusinessesDashboard(bizMetrics);
+}
+
+async function fetchAllBusinessMetrics() {
+  // For primary business, use existing bk_transactions data
+  const metrics = [];
+  for (const biz of userBusinesses) {
+    let revenue=0, expenses=0, receivables=0;
+    if (biz.is_primary) {
+      try {
+        const {data:T} = await bkDb.from('bk_transactions')
+          .select('record_type,debit,credit').eq('user_id',bkUser.id);
+        (T||[]).forEach(r=>{
+          if(r.record_type==='income') revenue+=(parseFloat(r.credit)||0)-(parseFloat(r.debit)||0);
+          if(r.record_type==='expenditure') expenses+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
+          if(r.record_type==='asset'&&r.account_name==='Debtors') receivables+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
+        });
+      } catch(e) {}
+    }
+    const profit = revenue - expenses;
+    const margin = revenue > 0 ? Math.round(profit/revenue*100) : 0;
+    const status = profit < 0 ? 'critical' : margin < 15 ? 'attention' : 'healthy';
+    metrics.push({...biz, revenue, expenses, profit, margin, receivables, status});
+  }
+  return metrics;
+}
+
+function renderAllBusinessesDashboard(metrics) {
+  const hour = new Date().getHours();
+  const greeting = hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
+  const name = businessDisplayName || bkUser?.email?.split('@')[0] || 'there';
+  const sym = CURRENCIES[activeCurrency]?.symbol || '₦';
+
+  const totalRevenue    = metrics.reduce((s,b)=>s+b.revenue,0);
+  const totalExpenses   = metrics.reduce((s,b)=>s+b.expenses,0);
+  const totalProfit     = metrics.reduce((s,b)=>s+b.profit,0);
+  const totalReceivables= metrics.reduce((s,b)=>s+b.receivables,0);
+  const criticalCount   = metrics.filter(b=>b.status==='critical').length;
+  const attentionCount  = metrics.filter(b=>b.status==='attention').length;
+  const alertCount      = criticalCount + attentionCount;
+
+  const bizCards = metrics.map(b => {
+    const iconBg = b.status==='critical'?'rgba(248,113,113,0.15)':b.status==='attention'?'rgba(251,191,36,0.15)':'rgba(74,222,128,0.15)';
+    const marginBarColor = b.profit<0?'#f87171':b.margin<15?'#fbbf24':'#4ade80';
+    return `
+    <div class="biz-card">
+      <div class="biz-card-header">
+        <div style="display:flex;align-items:center;flex:1;">
+          <div class="biz-icon" style="background:${iconBg};">${b.icon||'🏢'}</div>
+          <div class="biz-info">
+            <div class="biz-name">${escH(b.name)}</div>
+            <div class="biz-industry">${escH(b.industry||'General')}</div>
+          </div>
+        </div>
+        <span class="biz-status ${b.status}">${b.status==='healthy'?'● Healthy':b.status==='attention'?'● Attention':'● Critical'}</span>
+      </div>
+      <div class="biz-metrics">
+        <div>
+          <div class="biz-metric-label">Revenue</div>
+          <div class="biz-metric-val">${sym}${fmt(b.revenue)}</div>
+        </div>
+        <div>
+          <div class="biz-metric-label">Expenses</div>
+          <div class="biz-metric-val">${sym}${fmt(b.expenses)}</div>
+        </div>
+        <div>
+          <div class="biz-metric-label">Net Profit</div>
+          <div class="biz-metric-val ${b.profit>=0?'green':'red'}">${b.profit<0?'-':''}${sym}${fmt(Math.abs(b.profit))}</div>
+        </div>
+      </div>
+      <div style="font-size:0.68rem;color:var(--muted);margin-bottom:4px;">PROFIT MARGIN</div>
+      <div class="biz-margin-bar"><div class="biz-margin-fill" style="width:${Math.max(0,Math.min(100,b.margin))}%;background:${marginBarColor};"></div></div>
+      <div class="biz-footer">
+        <span class="biz-vs-last">${sym}${fmt(Math.abs(b.profit))} ${b.profit>=0?'profit':'loss'}</span>
+        <span style="font-size:0.72rem;font-weight:700;color:${marginBarColor};">${b.margin}%</span>
+        <button class="biz-open-btn" onclick="openBusiness('${b.id}')">👁 Open</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Recent activity from primary business transactions
+  document.getElementById('bkContent').innerHTML = `
+    <div class="ab-header">
+      <div class="ab-greeting">${greeting}</div>
+      <div class="ab-name">${escH(name)}</div>
+      ${alertCount>0?`<div class="ab-alert">You have <strong>${alertCount} alert${alertCount>1?'s':''}</strong> across your businesses today.</div>`:'<div class="ab-alert" style="color:#4ade80;">All businesses are healthy ✓</div>'}
+    </div>
+    <div class="ab-actions">
+      <button class="ab-btn ab-btn-primary" onclick="showAddBusinessModal()">+ Add Business</button>
+      <button class="ab-btn ab-btn-secondary" onclick="exportAllBusinesses()">⬇ Export All</button>
+    </div>
+    <div class="ab-portfolio">
+      <div class="ab-portfolio-title">Portfolio Overview</div>
+      <div class="ab-kpi-card">
+        <span class="ab-kpi-badge ${totalRevenue>0?'up':'neutral'}" style="float:right;">${totalRevenue>0?'↑':'—'} ${metrics.length} businesses</span>
+        <div class="ab-kpi-icon">💰</div>
+        <div class="ab-kpi-amount">${sym}${fmt(totalRevenue)}</div>
+        <div class="ab-kpi-label">Portfolio Revenue</div>
+      </div>
+      <div class="ab-kpi-card">
+        <span class="ab-kpi-badge down" style="float:right;">↑ ${metrics.length} active</span>
+        <div class="ab-kpi-icon">💳</div>
+        <div class="ab-kpi-amount">${sym}${fmt(totalExpenses)}</div>
+        <div class="ab-kpi-label">Total Expenses</div>
+      </div>
+      <div class="ab-kpi-card">
+        <span class="ab-kpi-badge ${totalProfit>=0?'up':'down'}" style="float:right;">${totalProfit>=0?'↑':'↓'} ${totalRevenue>0?Math.round(totalProfit/totalRevenue*100):0}%</span>
+        <div class="ab-kpi-icon">📈</div>
+        <div class="ab-kpi-amount" style="color:${totalProfit>=0?'#4ade80':'#f87171'};">${sym}${fmt(Math.abs(totalProfit))}</div>
+        <div class="ab-kpi-label">${totalProfit>=0?'Net Profit':'Net Loss'}</div>
+      </div>
+      ${totalReceivables>0?`<div class="ab-kpi-card">
+        <span class="ab-kpi-badge neutral" style="float:right;">${metrics.length} businesses</span>
+        <div class="ab-kpi-icon">⏰</div>
+        <div class="ab-kpi-amount" style="color:#60a5fa;">${sym}${fmt(totalReceivables)}</div>
+        <div class="ab-kpi-label">Total Receivables</div>
+      </div>`:''}
+    </div>
+    <div class="ab-section">
+      <div class="ab-section-header">
+        <div class="ab-section-title">My Businesses</div>
+        <div class="ab-section-sub">${metrics.length} ${metrics.length===1?'entity':'entities'}</div>
+      </div>
+      ${bizCards||'<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No businesses yet. Click + Add Business to get started.</div>'}
+    </div>
+    <div id="abChartSection" class="ab-section">
+      <div class="ab-section-title" style="margin-bottom:12px;">Revenue Overview</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <canvas id="abRevenueChart" height="180"></canvas>
+      </div>
+    </div>`;
+
+  // Draw simple revenue chart
+  setTimeout(()=>renderABChart(metrics),100);
+}
+
+function renderABChart(metrics) {
+  const canvas = document.getElementById('abRevenueChart');
+  if (!canvas || typeof Chart === 'undefined') return;
+  const sym = CURRENCIES[activeCurrency]?.symbol || '₦';
+  const labels = ['Revenue','Expenses','Profit'];
+  const colors = ['#4ade80','#f87171','#60a5fa'];
+  const data = [
+    metrics.reduce((s,b)=>s+b.revenue,0),
+    metrics.reduce((s,b)=>s+b.expenses,0),
+    metrics.reduce((s,b)=>s+b.profit,0),
+  ];
+  if (window._abChart) window._abChart.destroy();
+  window._abChart = new Chart(canvas, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{data,backgroundColor:colors,borderRadius:8,borderSkipped:false}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#888',font:{size:11}}},
+        y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#888',font:{size:11},callback:v=>sym+fmt(v)}}
+      }
+    }
+  });
+}
+
+// ── INDIVIDUAL BUSINESS DASHBOARD ────────────────────────────
+async function openBusiness(bizId) {
+  const biz = userBusinesses.find(b=>b.id===bizId);
+  if (!biz) return;
+  activeBusiness = biz;
+  await showSingleBusinessDashboard(biz);
+}
+
+async function showSingleBusinessDashboard(biz) {
+  staffHideChrome();
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
+
+  // Get metrics for this business
+  let revenue=0,expenses=0,profit=0,receivables=0;
+  let cashInHand=0,cashAtBank=0;
+  let recentTxns=[];
+  if (biz.is_primary) {
+    try {
+      const {data:T} = await bkDb.from('bk_transactions')
+        .select('*').eq('user_id',bkUser.id)
+        .order('txn_date',{ascending:false}).limit(20);
+      (T||[]).forEach(r=>{
+        if(r.record_type==='income') revenue+=(parseFloat(r.credit)||0)-(parseFloat(r.debit)||0);
+        if(r.record_type==='expenditure') expenses+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
+        if(r.account_name==='Cash in Hand'&&r.record_type==='asset') cashInHand+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
+        if(r.account_name==='Cash at Bank'&&r.record_type==='asset') cashAtBank+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
+        if(r.account_name==='Debtors'&&r.record_type==='asset') receivables+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
+      });
+      recentTxns = (T||[]).slice(0,8);
+    } catch(e) {}
+  }
+  profit = revenue - expenses;
+  const margin = revenue>0?Math.round(profit/revenue*100):0;
+  const sym = CURRENCIES[activeCurrency]?.symbol||'₦';
+  const statusColors = {healthy:'#4ade80',attention:'#fbbf24',critical:'#f87171'};
+  const sc = statusColors[biz.status]||'#4ade80';
+
+  const txnRows = recentTxns.map((t,i)=>`
+    <tr>
+      <td style="padding:8px 10px;font-size:0.7rem;color:var(--muted);white-space:nowrap;">TXN-${String(i+1).padStart(4,'0')}</td>
+      <td style="padding:8px 10px;font-size:0.72rem;color:var(--muted);">${t.txn_date||'—'}</td>
+      <td style="padding:8px 10px;font-size:0.78rem;">${escH(t.narration||'—')}</td>
+      <td style="padding:8px 10px;font-size:0.72rem;font-weight:700;color:${t.record_type==='income'?'#4ade80':'#f87171'};">${t.record_type==='income'?'INCOME':'EXPEND'}</td>
+      <td style="padding:8px 10px;font-size:0.78rem;text-align:right;font-weight:700;">${sym}${fmt(Math.abs((parseFloat(t.debit)||0)-(parseFloat(t.credit)||0)))}</td>
+    </tr>`).join('');
+
+  document.getElementById('bkContent').innerHTML = `
+    <!-- Breadcrumb -->
+    <div style="padding:12px 16px 0;display:flex;align-items:center;gap:6px;">
+      <div class="biz-breadcrumb">
+        <span class="crumb-link" onclick="showAllBusinessesDashboard()">All Businesses</span>
+        <span class="crumb-sep">›</span>
+        <span class="crumb-current">${escH(biz.name)}</span>
+      </div>
+    </div>
+
+    <!-- Business Header -->
+    <div style="padding:14px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);">
+      <button onclick="showAllBusinessesDashboard()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--off);width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">←</button>
+      <div style="width:44px;height:44px;border-radius:12px;background:rgba(74,222,128,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">${biz.icon||'🏢'}</div>
+      <div style="flex:1;">
+        <div style="font-size:1rem;font-weight:900;color:var(--white);">${escH(biz.name)}</div>
+        <div style="font-size:0.72rem;color:var(--muted);">${escH(biz.industry||'General')}</div>
+      </div>
+      <span class="biz-status ${biz.status}">● ${biz.status==='healthy'?'Healthy':biz.status==='attention'?'Attention':'Critical'}</span>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="padding:12px 16px;display:flex;gap:8px;overflow-x:auto;">
+      <button class="ab-btn ab-btn-primary" style="white-space:nowrap;" onclick="showRecordChoice()">📝 Record</button>
+      <button class="ab-btn ab-btn-secondary" style="white-space:nowrap;" onclick="showDashboard()">📊 Full Dashboard</button>
+      <button class="ab-btn ab-btn-secondary" style="white-space:nowrap;" onclick="showReport('pl')">📈 Reports</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="biz-tabs" style="padding:0 16px;">
+      <div class="biz-tab active" id="bizTab-dashboard" onclick="switchBizTab('dashboard')">Dashboard</div>
+      <div class="biz-tab" id="bizTab-transactions" onclick="switchBizTab('transactions')">Transactions</div>
+      <div class="biz-tab" id="bizTab-reports" onclick="switchBizTab('reports')">Reports</div>
+    </div>
+    <div id="bizTabContent">
+
+    <!-- KPI Cards -->
+    <div class="ab-portfolio" style="padding-top:12px;">
+      <div class="ab-kpi-card">
+        <span class="ab-kpi-badge up" style="float:right;">Revenue</span>
+        <div class="ab-kpi-icon">💰</div>
+        <div class="ab-kpi-amount" style="color:#4ade80;">${sym}${fmt(revenue)}</div>
+        <div class="ab-kpi-label">Total Revenue</div>
+      </div>
+      <div class="ab-kpi-card">
+        <span class="ab-kpi-badge down" style="float:right;">Expenses</span>
+        <div class="ab-kpi-icon">💳</div>
+        <div class="ab-kpi-amount" style="color:#f87171;">${sym}${fmt(expenses)}</div>
+        <div class="ab-kpi-label">Total Expenses</div>
+      </div>
+      <div class="ab-kpi-card">
+        <span class="ab-kpi-badge ${profit>=0?'up':'down'}" style="float:right;">${margin}% margin</span>
+        <div class="ab-kpi-icon">${profit>=0?'📈':'📉'}</div>
+        <div class="ab-kpi-amount" style="color:${profit>=0?'#4ade80':'#f87171'};">${sym}${fmt(Math.abs(profit))}</div>
+        <div class="ab-kpi-label">${profit>=0?'Net Profit':'Net Loss'}</div>
+      </div>
+      ${receivables>0?`<div class="ab-kpi-card">
+        <span class="ab-kpi-badge neutral" style="float:right;">Receivable</span>
+        <div class="ab-kpi-icon">⏰</div>
+        <div class="ab-kpi-amount" style="color:#60a5fa;">${sym}${fmt(receivables)}</div>
+        <div class="ab-kpi-label">Debtors / Receivable</div>
+      </div>`:''}
+    </div>
+
+    <!-- Profit Margin Bar -->
+    <div class="ab-section">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="font-size:0.82rem;font-weight:800;margin-bottom:12px;">Profit Margin</div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Revenue</span><span style="font-weight:700;">${sym}${fmt(revenue)}</span></div>
+        <div class="biz-margin-bar" style="height:6px;margin-bottom:10px;"><div class="biz-margin-fill" style="width:100%;background:#4ade80;"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Expenses</span><span style="font-weight:700;">${sym}${fmt(expenses)}</span></div>
+        <div class="biz-margin-bar" style="height:6px;margin-bottom:10px;"><div class="biz-margin-fill" style="width:${revenue>0?Math.min(100,Math.round(expenses/revenue*100)):0}%;background:#f87171;"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Net Profit</span><span style="font-weight:700;">${sym}${fmt(profit)}</span></div>
+        <div class="biz-margin-bar" style="height:6px;margin-bottom:14px;"><div class="biz-margin-fill" style="width:${Math.max(0,margin)}%;background:#60a5fa;"></div></div>
+        <div style="font-size:1.5rem;font-weight:900;color:${sc};">${margin}%</div>
+        <div style="font-size:0.72rem;color:${sc};margin-top:2px;">● ${profit>=0?'On track':'Below target'}</div>
+      </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    ${recentTxns.length>0?`
+    <div class="ab-section">
+      <div class="ab-section-header">
+        <div class="ab-section-title">Recent Transactions</div>
+        <button onclick="openJournal()" style="background:none;border:none;color:var(--gold);font-size:0.72rem;cursor:pointer;font-weight:700;">View all ›</button>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+          <thead><tr style="border-bottom:1px solid var(--border);">
+            <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">ID</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">Date</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">Description</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">Type</th>
+            <th style="padding:8px 10px;text-align:right;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">Amount</th>
+          </tr></thead>
+          <tbody>${txnRows}</tbody>
+        </table>
+        </div>
+      </div>
+    </div>`:''}
+    </div>`;
+}
+
+function switchBizTab(tab) {
+  document.querySelectorAll('.biz-tab').forEach(t=>t.classList.remove('active'));
+  const el = document.getElementById('bizTab-'+tab);
+  if (el) el.classList.add('active');
+  if (tab==='transactions') openJournal();
+  if (tab==='reports')      showReport('pl');
+}
+
+// ── ADD BUSINESS MODAL ────────────────────────────────────────
+function showAddBusinessModal() {
+  const modal = document.createElement('div');
+  modal.id = 'addBizModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:400px;">
+      <div style="font-size:1rem;font-weight:800;margin-bottom:16px;">Add a Business</div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;">Business Name *</label>
+        <input id="newBizName" class="bk-input" placeholder="e.g. Okoro Barbing Palace" style="width:100%;"/>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;">Industry</label>
+        <select id="newBizIndustry" class="bk-input" style="width:100%;">
+          <option>General</option><option>Retail</option><option>Food & Beverage</option>
+          <option>Consulting & Tech</option><option>Real Estate</option><option>Healthcare</option>
+          <option>Manufacturing</option><option>Transportation</option><option>Education</option>
+          <option>Beauty & Personal Care</option><option>Construction</option><option>Other</option>
+        </select>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;">Icon</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${['🏢','🛒','🍽️','💼','🏠','🏥','🏭','🚗','📚','💇','🔨','📦'].map(e=>`<button onclick="selectBizIcon(this,'${e}')" class="biz-icon-pick" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);font-size:1.1rem;cursor:pointer;">${e}</button>`).join('')}
+        </div>
+        <input type="hidden" id="newBizIcon" value="🏢"/>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="document.getElementById('addBizModal').remove()" class="bk-btn bk-btn-outline" style="flex:1;">Cancel</button>
+        <button onclick="submitNewBusiness()" class="bk-btn bk-btn-gold" style="flex:1;">Create Business</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function selectBizIcon(btn, icon) {
+  document.querySelectorAll('.biz-icon-pick').forEach(b=>b.style.borderColor='var(--border2)');
+  btn.style.borderColor='var(--gold)';
+  document.getElementById('newBizIcon').value = icon;
+}
+
+async function submitNewBusiness() {
+  const name = document.getElementById('newBizName')?.value?.trim();
+  if (!name) { alert('Please enter a business name'); return; }
+  const industry = document.getElementById('newBizIndustry')?.value || 'General';
+  const icon     = document.getElementById('newBizIcon')?.value || '🏢';
+  try {
+    const {data,error} = await bkDb.from('businesses').insert({
+      name, industry, icon,
+      owner_user_id:bkUser.id,
+      currency:activeCurrency||'NGN',
+      is_primary:false, status:'healthy',
+    }).select().single();
+    if (error) throw error;
+    userBusinesses.push(data);
+    await bkDb.from('user_businesses').upsert(
+      {user_id:bkUser.id,business_id:data.id,role:'owner'},
+      {onConflict:'user_id,business_id'}
+    );
+    document.getElementById('addBizModal')?.remove();
+    renderMenuBusinesses();
+    await showAllBusinessesDashboard();
+  } catch(e) { alert('Error creating business: '+e.message); }
+}
+
+function exportAllBusinesses() {
+  alert('Export feature coming soon — will generate a combined Excel report across all businesses.');
+}
+
+
 const BD_DB_NAME    = 'bd_offline';
 const BD_DB_VERSION = 1;
 const BD_STORE      = 'pending_sales';
