@@ -8327,46 +8327,42 @@ function staffRefreshCustomerTotals(custId){
 
 
 // ══ USER PROFILE SHEET ════════════════════════════════════════
-let profileData = {}; // cached profile data
+let profileData = {};
+let profileActiveBiz = null; // currently selected business in profile
+
+const NG_STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno',
+  'Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT (Abuja)','Gombe','Imo','Jigawa',
+  'Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo',
+  'Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
+
+const BIZ_TYPES = ['Sole Proprietorship','Partnership','Limited Liability Company (LLC)',
+  'Public Limited Company (PLC)','Cooperative','NGO / Non-profit','Other'];
+
+const INDUSTRIES = ['General','Retail','Food & Beverage','Consulting & Tech','Real Estate',
+  'Healthcare','Manufacturing','Transportation','Education','Beauty & Personal Care',
+  'Construction','Agriculture','Media & Entertainment','Financial Services','Other'];
 
 async function openProfileSheet() {
-  // Load latest profile data
   profileData = await loadProfileData();
+  profileActiveBiz = userBusinesses[0] || null;
   renderProfileSheet();
 }
 
 async function loadProfileData() {
-  const data = { email: bkUser?.email||'', name: staffDisplayName||'' };
+  const d = { email: bkUser?.email || '' };
   try {
-    const [profileRes, bizRes] = await Promise.all([
-      bkDb.from('profiles').select('*').eq('id', bkUser.id).maybeSingle(),
-      bkDb.from('bk_business_profiles').select('*').eq('user_id', bkUser.id).maybeSingle(),
-    ]);
-    if (profileRes.data) {
-      data.username    = profileRes.data.username || '';
-      data.full_name   = profileRes.data.full_name || staffDisplayName || '';
-      data.phone       = profileRes.data.phone || '';
-      data.job_title   = profileRes.data.job_title || '';
-    }
-    if (bizRes.data) {
-      data.business_name    = bizRes.data.business_name || businessDisplayName || '';
-      data.business_address = bizRes.data.business_address || '';
-      data.cac_number       = bizRes.data.cac_number || '';
-      data.business_phone   = bizRes.data.business_phone || '';
-      data.industry         = bizRes.data.industry || '';
-    }
+    const { data:p } = await bkDb.from('profiles').select('*').eq('id',bkUser.id).maybeSingle();
+    if (p) Object.assign(d, p);
   } catch(e) {}
-  return data;
+  return d;
 }
 
 function renderProfileSheet() {
-  // Remove existing sheet if any
   document.getElementById('profileSheetOverlay')?.remove();
   document.getElementById('profileSheet')?.remove();
 
-  const initials = (profileData.full_name||profileData.username||profileData.email||'?')
-    .trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  const isOwner = userRole !== 'employee';
+  const initials = _profileInitials();
+  const avatarUrl = profileData.avatar_url || '';
 
   const overlay = document.createElement('div');
   overlay.id = 'profileSheetOverlay';
@@ -8379,104 +8375,249 @@ function renderProfileSheet() {
   sheet.className = 'profile-sheet';
   sheet.innerHTML = `
     <div class="profile-sheet-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0;">
+      <div style="font-size:1rem;font-weight:800;">My Profile</div>
+      <button onclick="closeProfileSheet()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:4px 8px;">✕</button>
+    </div>
 
-    <!-- Header -->
-    <div class="profile-sheet-header">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <div style="font-size:1rem;font-weight:800;">My Profile</div>
-        <button onclick="closeProfileSheet()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px;">✕</button>
+    <!-- Avatar -->
+    <div style="padding:16px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);">
+      <div style="position:relative;cursor:pointer;" onclick="triggerAvatarUpload()">
+        ${avatarUrl
+          ? `<img id="profileAvatarImg" src="${avatarUrl}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;"/>`
+          : `<div class="profile-avatar-large" id="profileAvatarLarge">${initials}</div>`}
+        <div style="position:absolute;bottom:0;right:0;width:20px;height:20px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#000;font-weight:900;">✎</div>
+        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this)"/>
       </div>
-      <div style="display:flex;align-items:center;gap:14px;">
-        <div class="profile-avatar-large" id="profileAvatarLarge">${initials}</div>
-        <div>
-          <div style="font-size:1rem;font-weight:800;color:var(--white);">${escH(profileData.full_name||profileData.username||'—')}</div>
-          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">${escH(profileData.email)}</div>
-          <div style="margin-top:6px;"><span class="profile-plan-badge">★ ${userRole==='owner'?'Business Owner':userRole==='accountant'?'Accountant':'Staff'}</span></div>
-        </div>
+      <div>
+        <div style="font-size:1rem;font-weight:800;">${escH((profileData.first_name||'')+' '+(profileData.last_name||'')).trim()||escH(profileData.email)}</div>
+        <div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">${escH(profileData.email)}</div>
+        <div style="margin-top:6px;"><span class="profile-plan-badge">★ ${userRole==='owner'?'Business Owner':userRole==='accountant'?'Accountant':'Staff'}</span></div>
       </div>
     </div>
 
-    <!-- Personal Info -->
+    <!-- PERSONAL INFORMATION -->
     <div class="profile-section">
       <div class="profile-section-title">Personal Information</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="profile-field">
+          <label>First Name</label>
+          <input id="pf_first_name" type="text" value="${escH(profileData.first_name||'')}" placeholder="First name"/>
+        </div>
+        <div class="profile-field">
+          <label>Middle Name</label>
+          <input id="pf_middle_name" type="text" value="${escH(profileData.middle_name||'')}" placeholder="Middle name"/>
+        </div>
+      </div>
       <div class="profile-field">
-        <label>Full Name</label>
-        <input id="pf_full_name" type="text" value="${escH(profileData.full_name||profileData.username||'')}" placeholder="Your full name"/>
+        <label>Last Name</label>
+        <input id="pf_last_name" type="text" value="${escH(profileData.last_name||'')}" placeholder="Last name"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="profile-field">
+          <label>Date of Birth</label>
+          <input id="pf_dob" type="date" value="${escH(profileData.date_of_birth||'')}"/>
+        </div>
+        <div class="profile-field">
+          <label>Gender</label>
+          <select id="pf_gender">
+            <option value="">Select…</option>
+            ${['Male','Female','Non-binary','Prefer not to say'].map(g=>`<option ${profileData.gender===g?'selected':''}>${escH(g)}</option>`).join('')}
+          </select>
+        </div>
       </div>
       <div class="profile-field">
         <label>Phone Number</label>
         <input id="pf_phone" type="tel" value="${escH(profileData.phone||'')}" placeholder="+234 800 000 0000"/>
       </div>
-      ${!isOwner?`<div class="profile-field">
-        <label>Job Title</label>
-        <input id="pf_job_title" type="text" value="${escH(profileData.job_title||'')}" placeholder="e.g. Cashier, Barber, Manager"/>
-      </div>`:''}
-    </div>
-
-    ${isOwner?`<!-- Business Info -->
-    <div class="profile-section">
-      <div class="profile-section-title">Business Information</div>
-      <div class="profile-field">
-        <label>Business Name</label>
-        <input id="pf_business_name" type="text" value="${escH(profileData.business_name||'')}" placeholder="Your business name"/>
-      </div>
-      <div class="profile-field">
-        <label>Industry</label>
-        <select id="pf_industry">
-          ${['General','Retail','Food & Beverage','Consulting & Tech','Real Estate','Healthcare','Manufacturing','Transportation','Education','Beauty & Personal Care','Construction','Other'].map(i=>`<option ${profileData.industry===i?'selected':''}>${i}</option>`).join('')}
-        </select>
-      </div>
-      <div class="profile-field">
-        <label>Business Address</label>
-        <input id="pf_business_address" type="text" value="${escH(profileData.business_address||'')}" placeholder="e.g. 12 Marina St, Lagos"/>
-      </div>
-      <div class="profile-field">
-        <label>Business Phone</label>
-        <input id="pf_business_phone" type="tel" value="${escH(profileData.business_phone||'')}" placeholder="+234 800 000 0000"/>
-      </div>
-      <div class="profile-field">
-        <label>CAC Number <span style="color:var(--muted);font-weight:400;">(Corporate Affairs Commission)</span></label>
-        <input id="pf_cac_number" type="text" value="${escH(profileData.cac_number||'')}" placeholder="RC 000000"/>
-        <div class="field-note">Used on invoices and official documents.</div>
-      </div>
-    </div>`:''}
-
-    <!-- Account -->
-    <div class="profile-section">
-      <div class="profile-section-title">Account</div>
       <div class="profile-field">
         <label>Email Address</label>
         <input type="email" value="${escH(profileData.email)}" disabled style="opacity:0.5;cursor:not-allowed;"/>
-        <div class="field-note">Email cannot be changed here. Contact support to update it.</div>
+        <div class="field-note">Contact support to change your email.</div>
       </div>
       <div class="profile-field">
+        <label>Country</label>
+        <select id="pf_country" onchange="profileCountryChanged(this.value)">
+          <option ${(profileData.country||'Nigeria')==='Nigeria'?'selected':''}>Nigeria</option>
+          <option ${profileData.country==='Ghana'?'selected':''}>Ghana</option>
+          <option ${profileData.country==='Kenya'?'selected':''}>Kenya</option>
+          <option ${profileData.country==='South Africa'?'selected':''}>South Africa</option>
+          <option value="other" ${!['Nigeria','Ghana','Kenya','South Africa'].includes(profileData.country||'Nigeria')?'selected':''}>Other</option>
+        </select>
+      </div>
+      <div id="pf_ng_states_wrap" class="profile-field" style="${(profileData.country||'Nigeria')==='Nigeria'?'':'display:none;'}">
+        <label>State</label>
+        <select id="pf_state">
+          <option value="">Select state…</option>
+          ${NG_STATES.map(s=>`<option ${profileData.state===s?'selected':''}>${escH(s)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="profile-field">
+        <label>Local Government Area</label>
+        <input id="pf_lga" type="text" value="${escH(profileData.lga||'')}" placeholder="Enter LGA"/>
+      </div>
+      <div class="profile-field">
+        <label>Town / City</label>
+        <input id="pf_town" type="text" value="${escH(profileData.town||'')}" placeholder="e.g. Aba, Port Harcourt"/>
+      </div>
+    </div>
+
+    <!-- PASSWORD CHANGE -->
+    <div class="profile-section">
+      <div class="profile-section-title">Change Password</div>
+      <div class="profile-field">
         <label>New Password <span style="color:var(--muted);font-weight:400;">(leave blank to keep current)</span></label>
-        <input id="pf_new_password" type="password" placeholder="New password (min 8 characters)" autocomplete="new-password"/>
+        <input id="pf_new_password" type="password" placeholder="Min 8 characters" autocomplete="new-password" oninput="document.getElementById('pf_confirm_wrap').style.display=this.value?'block':'none'"/>
       </div>
       <div class="profile-field" id="pf_confirm_wrap" style="display:none;">
-        <label>Confirm New Password</label>
+        <label>Confirm Password</label>
         <input id="pf_confirm_password" type="password" placeholder="Confirm new password"/>
       </div>
     </div>
 
+    ${userRole !== 'employee' ? `<!-- BUSINESS INFORMATION -->
+    <div class="profile-section">
+      <div class="profile-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>Business Information</span>
+        <div style="display:flex;gap:6px;">
+          <button onclick="profileAddBusiness()" style="background:var(--gold);color:#000;border:none;font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">+ Add</button>
+          <button onclick="profileDeleteBusiness()" style="background:none;border:1px solid rgba(248,113,113,0.4);color:#f87171;font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">Delete</button>
+        </div>
+      </div>
+
+      <div class="profile-field">
+        <label>Select Business</label>
+        <select id="pf_biz_selector" onchange="profileSwitchBiz(this.value)">
+          ${userBusinesses.map(b=>`<option value="${b.id}" ${profileActiveBiz?.id===b.id?'selected':''}>${escH(b.name)}</option>`).join('')}
+          ${userBusinesses.length===0?'<option value="">No businesses yet</option>':''}
+        </select>
+      </div>
+
+      <div id="profileBizFields">
+        ${_renderBizFields(profileActiveBiz)}
+      </div>
+    </div>` : ''}
+
     <!-- Save + Sign Out -->
-    <div style="padding:16px 20px 32px;display:flex;flex-direction:column;gap:10px;">
+    <div style="padding:16px 20px 36px;display:flex;flex-direction:column;gap:10px;">
       <button class="profile-save-btn" onclick="saveProfile()">Save Changes</button>
       <button class="profile-danger-btn" onclick="bkSignOut()">Sign Out</button>
     </div>`;
 
   document.body.appendChild(sheet);
+  requestAnimationFrame(()=>{ overlay.classList.add('show'); sheet.classList.add('show'); });
+}
 
-  // Show password confirm when password field has value
-  sheet.querySelector('#pf_new_password').addEventListener('input', function() {
-    document.getElementById('pf_confirm_wrap').style.display = this.value ? 'block' : 'none';
-  });
+function _profileInitials() {
+  const name = (profileData.first_name||'') + ' ' + (profileData.last_name||'');
+  const trimmed = name.trim() || profileData.email || '?';
+  return trimmed.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+}
 
-  // Animate in
-  requestAnimationFrame(()=>{
-    overlay.classList.add('show');
-    sheet.classList.add('show');
-  });
+function _renderBizFields(biz) {
+  if (!biz) return '<div style="color:var(--muted);font-size:0.8rem;padding:8px 0;">Select a business above or click + Add.</div>';
+  return `
+    <div class="profile-field">
+      <label>Business Name</label>
+      <input id="pf_biz_name" type="text" value="${escH(biz.name||'')}" placeholder="Business name"/>
+    </div>
+    <div class="profile-field">
+      <label>Industry</label>
+      <select id="pf_biz_industry">
+        ${INDUSTRIES.map(i=>`<option ${(biz.industry||'General')===i?'selected':''}>${escH(i)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="profile-field">
+      <label>Business Type</label>
+      <select id="pf_biz_type">
+        <option value="">Select…</option>
+        ${BIZ_TYPES.map(t=>`<option ${biz.business_type===t?'selected':''}>${escH(t)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="profile-field">
+      <label>Products / Services Offered</label>
+      <textarea id="pf_biz_products" rows="3" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 12px;font-size:0.82rem;font-family:inherit;outline:none;resize:vertical;" placeholder="e.g. Haircuts, beard trims, shaving…">${escH(biz.products_services||'')}</textarea>
+    </div>
+    <div class="profile-field">
+      <label>Business Address</label>
+      <input id="pf_biz_address" type="text" value="${escH(biz.business_address||'')}" placeholder="Full business address"/>
+    </div>
+    <div class="profile-field">
+      <label>Business Phone</label>
+      <input id="pf_biz_phone" type="tel" value="${escH(biz.business_phone||'')}" placeholder="+234 800 000 0000"/>
+    </div>
+    <div class="profile-field">
+      <label>Registered with CAC?</label>
+      <select id="pf_cac_registered" onchange="document.getElementById('pf_cac_num_wrap').style.display=this.value==='yes'?'block':'none'">
+        <option value="no" ${!biz.cac_registered?'selected':''}>No — not registered</option>
+        <option value="yes" ${biz.cac_registered?'selected':''}>Yes — registered with CAC</option>
+      </select>
+    </div>
+    <div class="profile-field" id="pf_cac_num_wrap" style="${biz.cac_registered?'':'display:none;'}">
+      <label>CAC Number</label>
+      <input id="pf_cac_number" type="text" value="${escH(biz.cac_number||'')}" placeholder="RC 000000 or BN 000000"/>
+    </div>`;
+}
+
+function profileCountryChanged(val) {
+  const wrap = document.getElementById('pf_ng_states_wrap');
+  if (wrap) wrap.style.display = val === 'Nigeria' ? 'block' : 'none';
+}
+
+function profileSwitchBiz(bizId) {
+  const biz = userBusinesses.find(b=>b.id===bizId);
+  if (!biz) return;
+  profileActiveBiz = biz;
+  const fieldsEl = document.getElementById('profileBizFields');
+  if (fieldsEl) fieldsEl.innerHTML = _renderBizFields(biz);
+}
+
+function profileAddBusiness() {
+  closeProfileSheet();
+  setTimeout(()=>showAddBusinessModal(), 200);
+}
+
+async function profileDeleteBusiness() {
+  if (!profileActiveBiz) return;
+  if (!confirm(`Delete "${profileActiveBiz.name}"? This cannot be undone.`)) return;
+  try {
+    await bkDb.from('businesses').delete().eq('id',profileActiveBiz.id).eq('owner_user_id',bkUser.id);
+    userBusinesses = userBusinesses.filter(b=>b.id!==profileActiveBiz.id);
+    profileActiveBiz = userBusinesses[0]||null;
+    renderMenuBusinesses();
+    renderProfileSheet(); // re-render with updated list
+  } catch(e) { alert('Error deleting business: '+(e.message||'')); }
+}
+
+// Avatar upload
+function triggerAvatarUpload() {
+  document.getElementById('avatarFileInput')?.click();
+}
+
+async function handleAvatarUpload(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB.'); return; }
+  const ext  = file.name.split('.').pop().toLowerCase();
+  const path = `${bkUser.id}/avatar.${ext}`;
+  try {
+    const { error } = await bkDb.storage.from('avatars').upload(path, file, { upsert:true });
+    if (error) throw error;
+    const { data:urlData } = bkDb.storage.from('avatars').getPublicUrl(path);
+    const url = urlData.publicUrl + '?t=' + Date.now();
+    profileData.avatar_url = url;
+    // Update preview
+    const wrap = input.closest('[style*="position:relative"]');
+    if (wrap) {
+      const old = wrap.querySelector('img,#profileAvatarLarge');
+      if (old) { const img=document.createElement('img'); img.id='profileAvatarImg'; img.src=url; img.style.cssText='width:64px;height:64px;border-radius:50%;object-fit:cover;'; old.replaceWith(img); }
+    }
+    // Update menu avatar
+    const av = document.getElementById('menuAvatarCircle');
+    if (av) { const img2=document.createElement('img'); img2.src=url; img2.style.cssText='width:36px;height:36px;border-radius:50%;object-fit:cover;'; av.replaceWith(img2); }
+    // Save to DB
+    await bkDb.from('profiles').upsert({id:bkUser.id,avatar_url:url,updated_at:new Date().toISOString()},{onConflict:'id'});
+  } catch(e) { alert('Upload failed: '+(e.message||'Check file size and try again.')); }
 }
 
 function closeProfileSheet() {
@@ -8490,1149 +8631,83 @@ async function saveProfile() {
   const btn = document.querySelector('.profile-save-btn');
   if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
 
-  const fullName      = document.getElementById('pf_full_name')?.value?.trim()||'';
-  const phone         = document.getElementById('pf_phone')?.value?.trim()||'';
-  const jobTitle      = document.getElementById('pf_job_title')?.value?.trim()||'';
-  const bizName       = document.getElementById('pf_business_name')?.value?.trim()||'';
-  const industry      = document.getElementById('pf_industry')?.value||'';
-  const bizAddress    = document.getElementById('pf_business_address')?.value?.trim()||'';
-  const bizPhone      = document.getElementById('pf_business_phone')?.value?.trim()||'';
-  const cacNumber     = document.getElementById('pf_cac_number')?.value?.trim()||'';
-  const newPassword   = document.getElementById('pf_new_password')?.value||'';
-  const confirmPw     = document.getElementById('pf_confirm_password')?.value||'';
+  const firstName   = document.getElementById('pf_first_name')?.value?.trim()||'';
+  const middleName  = document.getElementById('pf_middle_name')?.value?.trim()||'';
+  const lastName    = document.getElementById('pf_last_name')?.value?.trim()||'';
+  const dob         = document.getElementById('pf_dob')?.value||null;
+  const gender      = document.getElementById('pf_gender')?.value||'';
+  const phone       = document.getElementById('pf_phone')?.value?.trim()||'';
+  const country     = document.getElementById('pf_country')?.value||'Nigeria';
+  const state       = document.getElementById('pf_state')?.value||'';
+  const lga         = document.getElementById('pf_lga')?.value?.trim()||'';
+  const town        = document.getElementById('pf_town')?.value?.trim()||'';
+  const newPw       = document.getElementById('pf_new_password')?.value||'';
+  const confirmPw   = document.getElementById('pf_confirm_password')?.value||'';
 
-  // Validate password if provided
-  if (newPassword) {
-    if (newPassword.length < 8) {
-      alert('Password must be at least 8 characters.');
-      if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
-      return;
-    }
-    if (newPassword !== confirmPw) {
-      alert('Passwords do not match.');
-      if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
-      return;
-    }
-  }
+  if (newPw && newPw.length < 8) { alert('Password must be at least 8 characters.'); if(btn){btn.textContent='Save Changes';btn.disabled=false;} return; }
+  if (newPw && newPw !== confirmPw) { alert('Passwords do not match.'); if(btn){btn.textContent='Save Changes';btn.disabled=false;} return; }
+
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
 
   try {
-    // Save to profiles table
+    // Save personal profile
     await bkDb.from('profiles').upsert({
-      id: bkUser.id,
-      full_name: fullName,
-      phone,
-      job_title: jobTitle,
-      updated_at: new Date().toISOString(),
-    }, { onConflict:'id' });
+      id:bkUser.id, first_name:firstName, middle_name:middleName, last_name:lastName,
+      full_name:fullName, phone, date_of_birth:dob||null, gender, country, state, lga, town,
+      updated_at:new Date().toISOString(),
+    }, {onConflict:'id'});
 
-    // Save business profile if owner/manager
-    if (userRole !== 'employee' && bizName) {
+    // Save business data if owner and business selected
+    if (userRole !== 'employee' && profileActiveBiz) {
+      const bizName     = document.getElementById('pf_biz_name')?.value?.trim()||profileActiveBiz.name;
+      const industry    = document.getElementById('pf_biz_industry')?.value||'General';
+      const bizType     = document.getElementById('pf_biz_type')?.value||'';
+      const products    = document.getElementById('pf_biz_products')?.value?.trim()||'';
+      const bizAddress  = document.getElementById('pf_biz_address')?.value?.trim()||'';
+      const bizPhone    = document.getElementById('pf_biz_phone')?.value?.trim()||'';
+      const cacReg      = document.getElementById('pf_cac_registered')?.value === 'yes';
+      const cacNum      = document.getElementById('pf_cac_number')?.value?.trim()||'';
+
+      await bkDb.from('businesses').update({
+        name:bizName, industry, business_type:bizType, products_services:products,
+        business_address:bizAddress, business_phone:bizPhone,
+        cac_registered:cacReg, cac_number:cacNum||null, updated_at:new Date().toISOString(),
+      }).eq('id', profileActiveBiz.id).eq('owner_user_id', bkUser.id);
+
+      // Update cache
+      const idx = userBusinesses.findIndex(b=>b.id===profileActiveBiz.id);
+      if (idx>=0) Object.assign(userBusinesses[idx], {name:bizName,industry,business_type:bizType,products_services:products,business_address:bizAddress,business_phone:bizPhone,cac_registered:cacReg,cac_number:cacNum});
+
+      // Also sync with bk_business_profiles for backward compat
       await bkDb.from('bk_business_profiles').upsert({
-        user_id: bkUser.id,
-        business_name: bizName,
-        industry,
-        business_address: bizAddress,
-        business_phone: bizPhone,
-        cac_number: cacNumber,
-        updated_at: new Date().toISOString(),
-      }, { onConflict:'user_id' });
-      // Update in-memory
+        user_id:bkUser.id, business_name:bizName, industry, business_address:bizAddress,
+        business_phone:bizPhone, cac_number:cacNum, updated_at:new Date().toISOString(),
+      },{onConflict:'user_id'});
+
       businessDisplayName = bizName;
     }
 
-    // Update display name in menu
+    // Change password if provided
+    if (newPw) {
+      const {error:pwErr} = await bkDb.auth.updateUser({password:newPw});
+      if (pwErr) throw new Error('Password update failed: '+pwErr.message);
+    }
+
+    // Update UI
     if (fullName) {
       staffDisplayName = fullName;
-      const mn = document.getElementById('bkMenuUserName');
-      if (mn) mn.textContent = fullName;
-      const av = document.getElementById('menuAvatarCircle');
-      if (av) av.textContent = fullName.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-      document.getElementById('profileAvatarLarge').textContent =
-        fullName.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const mn=document.getElementById('bkMenuUserName'); if(mn) mn.textContent=fullName;
+      const initials=fullName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const av=document.getElementById('menuAvatarCircle'); if(av&&av.tagName!=='IMG') av.textContent=initials;
     }
-
-    // Change password if provided
-    if (newPassword) {
-      const { error } = await bkDb.auth.updateUser({ password: newPassword });
-      if (error) throw new Error('Password update failed: ' + error.message);
-    }
-
-    if (btn) { btn.textContent = '✓ Saved'; btn.style.background='var(--green)'; }
-    setTimeout(()=>{ closeProfileSheet(); }, 1200);
-
-  } catch(e) {
-    alert('Error saving profile: ' + (e.message||'Unknown error'));
-    if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; btn.style.background=''; }
-  }
-}
-
-
-let userBusinesses = [];
-let activeBusiness = null; // null = "All Businesses" view
-
-// Load businesses from Supabase, creating a default one if none exist
-async function loadUserBusinesses() {
-  if (!bkUser) return;
-  try {
-    const { data } = await bkDb.from('businesses')
-      .select('*')
-      .eq('owner_user_id', bkUser.id)
-      .order('created_at');
-    userBusinesses = data || [];
-    if (userBusinesses.length === 0) await createDefaultBusiness();
-  } catch(e) { userBusinesses = []; }
-  renderMenuBusinesses();
-}
-
-async function createDefaultBusiness() {
-  const name = businessDisplayName || bkUser?.email?.split('@')[0] || 'My Business';
-  try {
-    const { data } = await bkDb.from('businesses').insert({
-      name, industry:'General', owner_user_id:bkUser.id,
-      currency:activeCurrency||'NGN', is_primary:true, icon:'🏢',
-    }).select().single();
-    if (data) {
-      userBusinesses = [data];
-      await bkDb.from('user_businesses').upsert(
-        {user_id:bkUser.id,business_id:data.id,role:userRole||'owner'},
-        {onConflict:'user_id,business_id'}
-      );
-    }
-  } catch(e) {}
-}
-
-// Render the BUSINESSES section in the hamburger menu
-function renderMenuBusinesses() {
-  const list = document.getElementById('menuBusinessesList');
-  if (!list) return;
-  const statusColors = {healthy:'#4ade80',attention:'#fbbf24',critical:'#f87171'};
-  list.innerHTML = userBusinesses.map(b => `
-    <div class="menu-biz-item" onclick="openBusinessFromMenu('${b.id}');closeBkMenu()">
-      <span>${b.icon||'🏢'}</span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escH(b.name)}</span>
-      <span class="menu-biz-dot" style="background:${statusColors[b.status]||'#4ade80'};"></span>
-    </div>`).join('');
-}
-
-async function openBusinessFromMenu(bizId) {
-  const biz = userBusinesses.find(b=>b.id===bizId);
-  if (!biz) return;
-  activeBusiness = biz;
-  await showSingleBusinessDashboard(biz);
-}
-
-// ── ALL BUSINESSES DASHBOARD ──────────────────────────────────
-async function showAllBusinessesDashboard() {
-  staffHideChrome();
-  activeBusiness = null;
-  bdSaveRoute('all-businesses');
-  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading businesses…</div>';
-  await loadUserBusinesses();
-
-  // Fetch metrics for each business
-  const bizMetrics = await fetchAllBusinessMetrics();
-  renderAllBusinessesDashboard(bizMetrics);
-}
-
-async function fetchAllBusinessMetrics() {
-  // For primary business, use existing bk_transactions data
-  const metrics = [];
-  for (const biz of userBusinesses) {
-    let revenue=0, expenses=0, receivables=0;
-    if (biz.is_primary) {
-      try {
-        const {data:T} = await bkDb.from('bk_transactions')
-          .select('record_type,debit,credit').eq('user_id',bkUser.id);
-        (T||[]).forEach(r=>{
-          if(r.record_type==='income') revenue+=(parseFloat(r.credit)||0)-(parseFloat(r.debit)||0);
-          if(r.record_type==='expenditure') expenses+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
-          if(r.record_type==='asset'&&r.account_name==='Debtors') receivables+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
-        });
-      } catch(e) {}
-    }
-    const profit = revenue - expenses;
-    const margin = revenue > 0 ? Math.round(profit/revenue*100) : 0;
-    const status = profit < 0 ? 'critical' : margin < 15 ? 'attention' : 'healthy';
-    metrics.push({...biz, revenue, expenses, profit, margin, receivables, status});
-  }
-  return metrics;
-}
-
-function renderAllBusinessesDashboard(metrics) {
-  const hour = new Date().getHours();
-  const greeting = hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
-  const name = businessDisplayName || bkUser?.email?.split('@')[0] || 'there';
-  const sym = CURRENCIES[activeCurrency]?.symbol || '₦';
-
-  const totalRevenue    = metrics.reduce((s,b)=>s+b.revenue,0);
-  const totalExpenses   = metrics.reduce((s,b)=>s+b.expenses,0);
-  const totalProfit     = metrics.reduce((s,b)=>s+b.profit,0);
-  const totalReceivables= metrics.reduce((s,b)=>s+b.receivables,0);
-  const criticalCount   = metrics.filter(b=>b.status==='critical').length;
-  const attentionCount  = metrics.filter(b=>b.status==='attention').length;
-  const alertCount      = criticalCount + attentionCount;
-
-  const bizCards = metrics.map(b => {
-    const iconBg = b.status==='critical'?'rgba(248,113,113,0.15)':b.status==='attention'?'rgba(251,191,36,0.15)':'rgba(74,222,128,0.15)';
-    const marginBarColor = b.profit<0?'#f87171':b.margin<15?'#fbbf24':'#4ade80';
-    return `
-    <div class="biz-card">
-      <div class="biz-card-header">
-        <div style="display:flex;align-items:center;flex:1;">
-          <div class="biz-icon" style="background:${iconBg};">${b.icon||'🏢'}</div>
-          <div class="biz-info">
-            <div class="biz-name">${escH(b.name)}</div>
-            <div class="biz-industry">${escH(b.industry||'General')}</div>
-          </div>
-        </div>
-        <span class="biz-status ${b.status}">${b.status==='healthy'?'● Healthy':b.status==='attention'?'● Attention':'● Critical'}</span>
-      </div>
-      <div class="biz-metrics">
-        <div>
-          <div class="biz-metric-label">Revenue</div>
-          <div class="biz-metric-val">${sym}${fmt(b.revenue)}</div>
-        </div>
-        <div>
-          <div class="biz-metric-label">Expenses</div>
-          <div class="biz-metric-val">${sym}${fmt(b.expenses)}</div>
-        </div>
-        <div>
-          <div class="biz-metric-label">Net Profit</div>
-          <div class="biz-metric-val ${b.profit>=0?'green':'red'}">${b.profit<0?'-':''}${sym}${fmt(Math.abs(b.profit))}</div>
-        </div>
-      </div>
-      <div style="font-size:0.68rem;color:var(--muted);margin-bottom:4px;">PROFIT MARGIN</div>
-      <div class="biz-margin-bar"><div class="biz-margin-fill" style="width:${Math.max(0,Math.min(100,b.margin))}%;background:${marginBarColor};"></div></div>
-      <div class="biz-footer">
-        <span class="biz-vs-last">${sym}${fmt(Math.abs(b.profit))} ${b.profit>=0?'profit':'loss'}</span>
-        <span style="font-size:0.72rem;font-weight:700;color:${marginBarColor};">${b.margin}%</span>
-        <button class="biz-open-btn" onclick="openBusiness('${b.id}')">👁 Open</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  // Recent activity from primary business transactions
-  document.getElementById('bkContent').innerHTML = `
-    <div class="ab-header">
-      <div class="ab-greeting">${greeting}</div>
-      <div class="ab-name">${escH(name)}</div>
-      ${alertCount>0?`<div class="ab-alert">You have <strong>${alertCount} alert${alertCount>1?'s':''}</strong> across your businesses today.</div>`:'<div class="ab-alert" style="color:#4ade80;">All businesses are healthy ✓</div>'}
-    </div>
-    <div class="ab-actions">
-      <button class="ab-btn ab-btn-primary" onclick="showAddBusinessModal()">+ Add Business</button>
-      <button class="ab-btn ab-btn-secondary" onclick="exportAllBusinesses()">⬇ Export All</button>
-    </div>
-    <div class="ab-portfolio">
-      <div class="ab-portfolio-title">Portfolio Overview</div>
-      <div class="ab-kpi-card">
-        <span class="ab-kpi-badge ${totalRevenue>0?'up':'neutral'}" style="float:right;">${totalRevenue>0?'↑':'—'} ${metrics.length} businesses</span>
-        <div class="ab-kpi-icon">💰</div>
-        <div class="ab-kpi-amount">${sym}${fmt(totalRevenue)}</div>
-        <div class="ab-kpi-label">Portfolio Revenue</div>
-      </div>
-      <div class="ab-kpi-card">
-        <span class="ab-kpi-badge down" style="float:right;">↑ ${metrics.length} active</span>
-        <div class="ab-kpi-icon">💳</div>
-        <div class="ab-kpi-amount">${sym}${fmt(totalExpenses)}</div>
-        <div class="ab-kpi-label">Total Expenses</div>
-      </div>
-      <div class="ab-kpi-card">
-        <span class="ab-kpi-badge ${totalProfit>=0?'up':'down'}" style="float:right;">${totalProfit>=0?'↑':'↓'} ${totalRevenue>0?Math.round(totalProfit/totalRevenue*100):0}%</span>
-        <div class="ab-kpi-icon">📈</div>
-        <div class="ab-kpi-amount" style="color:${totalProfit>=0?'#4ade80':'#f87171'};">${sym}${fmt(Math.abs(totalProfit))}</div>
-        <div class="ab-kpi-label">${totalProfit>=0?'Net Profit':'Net Loss'}</div>
-      </div>
-      ${totalReceivables>0?`<div class="ab-kpi-card">
-        <span class="ab-kpi-badge neutral" style="float:right;">${metrics.length} businesses</span>
-        <div class="ab-kpi-icon">⏰</div>
-        <div class="ab-kpi-amount" style="color:#60a5fa;">${sym}${fmt(totalReceivables)}</div>
-        <div class="ab-kpi-label">Total Receivables</div>
-      </div>`:''}
-    </div>
-    <div class="ab-section">
-      <div class="ab-section-header">
-        <div class="ab-section-title">My Businesses</div>
-        <div class="ab-section-sub">${metrics.length} ${metrics.length===1?'entity':'entities'}</div>
-      </div>
-      ${bizCards||'<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No businesses yet. Click + Add Business to get started.</div>'}
-    </div>
-    <div id="abChartSection" class="ab-section">
-      <div class="ab-section-title" style="margin-bottom:12px;">Revenue Overview</div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
-        <canvas id="abRevenueChart" height="180"></canvas>
-      </div>
-    </div>`;
-
-  // Draw simple revenue chart
-  setTimeout(()=>renderABChart(metrics),100);
-}
-
-function renderABChart(metrics) {
-  const canvas = document.getElementById('abRevenueChart');
-  if (!canvas || typeof Chart === 'undefined') return;
-  const sym = CURRENCIES[activeCurrency]?.symbol || '₦';
-  const labels = ['Revenue','Expenses','Profit'];
-  const colors = ['#4ade80','#f87171','#60a5fa'];
-  const data = [
-    metrics.reduce((s,b)=>s+b.revenue,0),
-    metrics.reduce((s,b)=>s+b.expenses,0),
-    metrics.reduce((s,b)=>s+b.profit,0),
-  ];
-  if (window._abChart) window._abChart.destroy();
-  window._abChart = new Chart(canvas, {
-    type:'bar',
-    data:{
-      labels,
-      datasets:[{data,backgroundColor:colors,borderRadius:8,borderSkipped:false}]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{
-        x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#888',font:{size:11}}},
-        y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#888',font:{size:11},callback:v=>sym+fmt(v)}}
-      }
-    }
-  });
-}
-
-// ── INDIVIDUAL BUSINESS DASHBOARD ────────────────────────────
-async function openBusiness(bizId) {
-  const biz = userBusinesses.find(b=>b.id===bizId);
-  if (!biz) return;
-  activeBusiness = biz;
-  await showSingleBusinessDashboard(biz);
-}
-
-async function showSingleBusinessDashboard(biz) {
-  staffHideChrome();
-  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
-
-  // Get metrics for this business
-  let revenue=0,expenses=0,profit=0,receivables=0;
-  let cashInHand=0,cashAtBank=0;
-  let recentTxns=[];
-  if (biz.is_primary) {
-    try {
-      const {data:T} = await bkDb.from('bk_transactions')
-        .select('*').eq('user_id',bkUser.id)
-        .order('txn_date',{ascending:false}).limit(20);
-      (T||[]).forEach(r=>{
-        if(r.record_type==='income') revenue+=(parseFloat(r.credit)||0)-(parseFloat(r.debit)||0);
-        if(r.record_type==='expenditure') expenses+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
-        if(r.account_name==='Cash in Hand'&&r.record_type==='asset') cashInHand+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
-        if(r.account_name==='Cash at Bank'&&r.record_type==='asset') cashAtBank+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
-        if(r.account_name==='Debtors'&&r.record_type==='asset') receivables+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
-      });
-      recentTxns = (T||[]).slice(0,8);
-    } catch(e) {}
-  }
-  profit = revenue - expenses;
-  const margin = revenue>0?Math.round(profit/revenue*100):0;
-  const sym = CURRENCIES[activeCurrency]?.symbol||'₦';
-  const statusColors = {healthy:'#4ade80',attention:'#fbbf24',critical:'#f87171'};
-  const sc = statusColors[biz.status]||'#4ade80';
-
-  const txnRows = recentTxns.map((t,i)=>`
-    <tr>
-      <td style="padding:8px 10px;font-size:0.7rem;color:var(--muted);white-space:nowrap;">TXN-${String(i+1).padStart(4,'0')}</td>
-      <td style="padding:8px 10px;font-size:0.72rem;color:var(--muted);">${t.txn_date||'—'}</td>
-      <td style="padding:8px 10px;font-size:0.78rem;">${escH(t.narration||'—')}</td>
-      <td style="padding:8px 10px;font-size:0.72rem;font-weight:700;color:${t.record_type==='income'?'#4ade80':'#f87171'};">${t.record_type==='income'?'INCOME':'EXPEND'}</td>
-      <td style="padding:8px 10px;font-size:0.78rem;text-align:right;font-weight:700;">${sym}${fmt(Math.abs((parseFloat(t.debit)||0)-(parseFloat(t.credit)||0)))}</td>
-    </tr>`).join('');
-
-  document.getElementById('bkContent').innerHTML = `
-    <!-- Breadcrumb -->
-    <div style="padding:12px 16px 0;display:flex;align-items:center;gap:6px;">
-      <div class="biz-breadcrumb">
-        <span class="crumb-link" onclick="showAllBusinessesDashboard()">All Businesses</span>
-        <span class="crumb-sep">›</span>
-        <span class="crumb-current">${escH(biz.name)}</span>
-      </div>
-    </div>
-
-    <!-- Business Header -->
-    <div style="padding:14px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);">
-      <button onclick="showAllBusinessesDashboard()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--off);width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">←</button>
-      <div style="width:44px;height:44px;border-radius:12px;background:rgba(74,222,128,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">${biz.icon||'🏢'}</div>
-      <div style="flex:1;">
-        <div style="font-size:1rem;font-weight:900;color:var(--white);">${escH(biz.name)}</div>
-        <div style="font-size:0.72rem;color:var(--muted);">${escH(biz.industry||'General')}</div>
-      </div>
-      <span class="biz-status ${biz.status}">● ${biz.status==='healthy'?'Healthy':biz.status==='attention'?'Attention':'Critical'}</span>
-    </div>
-
-    <!-- Action buttons -->
-    <div style="padding:12px 16px;display:flex;gap:8px;overflow-x:auto;">
-      <button class="ab-btn ab-btn-primary" style="white-space:nowrap;" onclick="showRecordChoice()">📝 Record</button>
-      <button class="ab-btn ab-btn-secondary" style="white-space:nowrap;" onclick="showDashboard()">📊 Full Dashboard</button>
-      <button class="ab-btn ab-btn-secondary" style="white-space:nowrap;" onclick="showReport('pl')">📈 Reports</button>
-    </div>
-
-    <!-- Tabs -->
-    <div class="biz-tabs" style="padding:0 16px;">
-      <div class="biz-tab active" id="bizTab-dashboard" onclick="switchBizTab('dashboard')">Dashboard</div>
-      <div class="biz-tab" id="bizTab-transactions" onclick="switchBizTab('transactions')">Transactions</div>
-      <div class="biz-tab" id="bizTab-reports" onclick="switchBizTab('reports')">Reports</div>
-    </div>
-    <div id="bizTabContent">
-
-    <!-- KPI Cards -->
-    <div class="ab-portfolio" style="padding-top:12px;">
-      <div class="ab-kpi-card">
-        <span class="ab-kpi-badge up" style="float:right;">Revenue</span>
-        <div class="ab-kpi-icon">💰</div>
-        <div class="ab-kpi-amount" style="color:#4ade80;">${sym}${fmt(revenue)}</div>
-        <div class="ab-kpi-label">Total Revenue</div>
-      </div>
-      <div class="ab-kpi-card">
-        <span class="ab-kpi-badge down" style="float:right;">Expenses</span>
-        <div class="ab-kpi-icon">💳</div>
-        <div class="ab-kpi-amount" style="color:#f87171;">${sym}${fmt(expenses)}</div>
-        <div class="ab-kpi-label">Total Expenses</div>
-      </div>
-      <div class="ab-kpi-card">
-        <span class="ab-kpi-badge ${profit>=0?'up':'down'}" style="float:right;">${margin}% margin</span>
-        <div class="ab-kpi-icon">${profit>=0?'📈':'📉'}</div>
-        <div class="ab-kpi-amount" style="color:${profit>=0?'#4ade80':'#f87171'};">${sym}${fmt(Math.abs(profit))}</div>
-        <div class="ab-kpi-label">${profit>=0?'Net Profit':'Net Loss'}</div>
-      </div>
-      ${receivables>0?`<div class="ab-kpi-card">
-        <span class="ab-kpi-badge neutral" style="float:right;">Receivable</span>
-        <div class="ab-kpi-icon">⏰</div>
-        <div class="ab-kpi-amount" style="color:#60a5fa;">${sym}${fmt(receivables)}</div>
-        <div class="ab-kpi-label">Debtors / Receivable</div>
-      </div>`:''}
-    </div>
-
-    <!-- Profit Margin Bar -->
-    <div class="ab-section">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
-        <div style="font-size:0.82rem;font-weight:800;margin-bottom:12px;">Profit Margin</div>
-        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Revenue</span><span style="font-weight:700;">${sym}${fmt(revenue)}</span></div>
-        <div class="biz-margin-bar" style="height:6px;margin-bottom:10px;"><div class="biz-margin-fill" style="width:100%;background:#4ade80;"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Expenses</span><span style="font-weight:700;">${sym}${fmt(expenses)}</span></div>
-        <div class="biz-margin-bar" style="height:6px;margin-bottom:10px;"><div class="biz-margin-fill" style="width:${revenue>0?Math.min(100,Math.round(expenses/revenue*100)):0}%;background:#f87171;"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Net Profit</span><span style="font-weight:700;">${sym}${fmt(profit)}</span></div>
-        <div class="biz-margin-bar" style="height:6px;margin-bottom:14px;"><div class="biz-margin-fill" style="width:${Math.max(0,margin)}%;background:#60a5fa;"></div></div>
-        <div style="font-size:1.5rem;font-weight:900;color:${sc};">${margin}%</div>
-        <div style="font-size:0.72rem;color:${sc};margin-top:2px;">● ${profit>=0?'On track':'Below target'}</div>
-      </div>
-    </div>
-
-    <!-- Recent Transactions -->
-    ${recentTxns.length>0?`
-    <div class="ab-section">
-      <div class="ab-section-header">
-        <div class="ab-section-title">Recent Transactions</div>
-        <button onclick="openJournal()" style="background:none;border:none;color:var(--gold);font-size:0.72rem;cursor:pointer;font-weight:700;">View all ›</button>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-        <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
-          <thead><tr style="border-bottom:1px solid var(--border);">
-            <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">ID</th>
-            <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">Date</th>
-            <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">Description</th>
-            <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">Type</th>
-            <th style="padding:8px 10px;text-align:right;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">Amount</th>
-          </tr></thead>
-          <tbody>${txnRows}</tbody>
-        </table>
-        </div>
-      </div>
-    </div>`:''}
-    </div>`;
-}
-
-function switchBizTab(tab) {
-  document.querySelectorAll('.biz-tab').forEach(t=>t.classList.remove('active'));
-  const el = document.getElementById('bizTab-'+tab);
-  if (el) el.classList.add('active');
-  if (tab==='transactions') openJournal();
-  if (tab==='reports')      showReport('pl');
-}
-
-// ── ADD BUSINESS MODAL ────────────────────────────────────────
-function showAddBusinessModal() {
-  const modal = document.createElement('div');
-  modal.id = 'addBizModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
-  modal.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:400px;">
-      <div style="font-size:1rem;font-weight:800;margin-bottom:16px;">Add a Business</div>
-      <div style="margin-bottom:12px;">
-        <label style="font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;">Business Name *</label>
-        <input id="newBizName" class="bk-input" placeholder="e.g. Okoro Barbing Palace" style="width:100%;"/>
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;">Industry</label>
-        <select id="newBizIndustry" class="bk-input" style="width:100%;">
-          <option>General</option><option>Retail</option><option>Food & Beverage</option>
-          <option>Consulting & Tech</option><option>Real Estate</option><option>Healthcare</option>
-          <option>Manufacturing</option><option>Transportation</option><option>Education</option>
-          <option>Beauty & Personal Care</option><option>Construction</option><option>Other</option>
-        </select>
-      </div>
-      <div style="margin-bottom:16px;">
-        <label style="font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;">Icon</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          ${['🏢','🛒','🍽️','💼','🏠','🏥','🏭','🚗','📚','💇','🔨','📦'].map(e=>`<button onclick="selectBizIcon(this,'${e}')" class="biz-icon-pick" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);font-size:1.1rem;cursor:pointer;">${e}</button>`).join('')}
-        </div>
-        <input type="hidden" id="newBizIcon" value="🏢"/>
-      </div>
-      <div style="display:flex;gap:10px;">
-        <button onclick="document.getElementById('addBizModal').remove()" class="bk-btn bk-btn-outline" style="flex:1;">Cancel</button>
-        <button onclick="submitNewBusiness()" class="bk-btn bk-btn-gold" style="flex:1;">Create Business</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-}
-
-function selectBizIcon(btn, icon) {
-  document.querySelectorAll('.biz-icon-pick').forEach(b=>b.style.borderColor='var(--border2)');
-  btn.style.borderColor='var(--gold)';
-  document.getElementById('newBizIcon').value = icon;
-}
-
-async function submitNewBusiness() {
-  const name = document.getElementById('newBizName')?.value?.trim();
-  if (!name) { alert('Please enter a business name'); return; }
-  const industry = document.getElementById('newBizIndustry')?.value || 'General';
-  const icon     = document.getElementById('newBizIcon')?.value || '🏢';
-  try {
-    const {data,error} = await bkDb.from('businesses').insert({
-      name, industry, icon,
-      owner_user_id:bkUser.id,
-      currency:activeCurrency||'NGN',
-      is_primary:false, status:'healthy',
-    }).select().single();
-    if (error) throw error;
-    userBusinesses.push(data);
-    await bkDb.from('user_businesses').upsert(
-      {user_id:bkUser.id,business_id:data.id,role:'owner'},
-      {onConflict:'user_id,business_id'}
-    );
-    document.getElementById('addBizModal')?.remove();
     renderMenuBusinesses();
-    await showAllBusinessesDashboard();
-  } catch(e) { alert('Error creating business: '+e.message); }
-}
 
-function exportAllBusinesses() {
-  alert('Export feature coming soon — will generate a combined Excel report across all businesses.');
-}
-
-
-const BD_DB_NAME    = 'bd_offline';
-const BD_DB_VERSION = 1;
-const BD_STORE      = 'pending_sales';
-
-function bdOpenDB() {
-  return new Promise(function(resolve, reject) {
-    const req = indexedDB.open(BD_DB_NAME, BD_DB_VERSION);
-    req.onupgradeneeded = function(e) {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(BD_STORE)) {
-        const store = db.createObjectStore(BD_STORE, { keyPath:'id', autoIncrement:true });
-        store.createIndex('synced', 'synced', { unique:false });
-      }
-    };
-    req.onsuccess = function(e) { resolve(e.target.result); };
-    req.onerror   = function(e) { reject(e.target.error); };
-  });
-}
-
-async function bdSaveOffline(row, customerName, txnDate) {
-  try {
-    const db    = await bdOpenDB();
-    const tx    = db.transaction(BD_STORE, 'readwrite');
-    const store = tx.objectStore(BD_STORE);
-    store.add({ row, customerName, txnDate, savedAt:new Date().toISOString(), synced:false, userId:bkUser?.id||null });
-    return new Promise(function(resolve, reject) {
-      tx.oncomplete = resolve;
-      tx.onerror    = function(e) { reject(e.target.error); };
-    });
-  } catch(e) {}
-}
-
-async function bdGetPendingSales() {
-  try {
-    const db    = await bdOpenDB();
-    const tx    = db.transaction(BD_STORE, 'readonly');
-    const index = tx.objectStore(BD_STORE).index('synced');
-    const req   = index.getAll(false);
-    return new Promise(function(resolve) {
-      req.onsuccess = function(e) { resolve(e.target.result||[]); };
-      req.onerror   = function()  { resolve([]); };
-    });
-  } catch(e) { return []; }
-}
-
-async function bdMarkSynced(id) {
-  try {
-    const db    = await bdOpenDB();
-    const tx    = db.transaction(BD_STORE, 'readwrite');
-    const store = tx.objectStore(BD_STORE);
-    const req   = store.get(id);
-    req.onsuccess = function(e) {
-      const r = e.target.result;
-      if (r) { r.synced = true; store.put(r); }
-    };
-  } catch(e) {}
-}
-
-async function bdSyncOfflineSales() {
-  if (!bkUser) return;
-  const pending = await bdGetPendingSales();
-  if (!pending.length) return;
-  let synced = 0;
-  for (const record of pending) {
-    try {
-      await autoPostSaleRow(record.row, record.customerName, record.txnDate);
-      await bdMarkSynced(record.id);
-      synced++;
-    } catch(e) {}
-  }
-  if (synced > 0) {
-    bdUpdateSyncBadge();
-    const msg = document.createElement('div');
-    msg.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a2a1a;border:1px solid var(--green);color:#4ade80;padding:10px 20px;border-radius:8px;font-size:0.82rem;font-weight:600;z-index:9999;white-space:nowrap;';
-    msg.textContent = '\u2713 ' + synced + ' offline sale' + (synced>1?'s':'') + ' synced to ledger';
-    document.body.appendChild(msg);
-    setTimeout(function() { msg.remove(); }, 3000);
-    refreshEquation();
-  }
-}
-
-async function bdUpdateSyncBadge() {
-  const pending = await bdGetPendingSales();
-  const count   = pending.length;
-  let badge     = document.getElementById('bdOfflineBadge');
-  if (count === 0) { if (badge) badge.remove(); return; }
-  if (!badge) {
-    badge = document.createElement('div');
-    badge.id = 'bdOfflineBadge';
-    badge.style.cssText = 'position:fixed;top:12px;right:12px;background:#d4af37;color:#000;font-size:0.72rem;font-weight:800;padding:5px 12px;border-radius:20px;z-index:9999;cursor:pointer;';
-    badge.onclick = function() { bdSyncOfflineSales(); };
-    document.body.appendChild(badge);
-  }
-  badge.textContent = count + ' offline sale' + (count>1?'s':'') + ' \u2014 tap to sync';
-}
-
-window.addEventListener('online',  function() { bdSyncOfflineSales(); });
-window.addEventListener('load',     function() {
-  setTimeout(bdUpdateSyncBadge, 2000);
-  if (navigator.onLine) setTimeout(bdSyncOfflineSales, 3000);
-});
-
-// Global comma formatter for any number input — call oninput
-// Preserves cursor position, strips non-numeric, inserts commas
-function fmtInputCommas(el) {
-  const raw = el.value.replace(/[^0-9.]/g, '');
-  if (!raw) return;
-  const parts = raw.split('.');
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const formatted = parts.join('.');
-  const cursor = el.selectionStart;
-  const prevLen = el.value.length;
-  el.value = formatted;
-  const diff = formatted.length - prevLen;
-  try { el.setSelectionRange(cursor + diff, cursor + diff); } catch(e) {}
-}
-
-// Maps payment method to the cash/bank account name
-function staffCashAccount(payMode) {
-  const m = (payMode||'').toLowerCase();
-  if (m === 'transfer' || m === 'pos' || m === 'bank') return 'Cash at Bank';
-  return 'Cash in Hand'; // cash, default
-}
-
-// Determines the correct income account for a narration/product name.
-// Tries to match against products in bk_products, then falls back to rules.
-async function staffIncomeAccount(narration) {
-  if (!bkUser || !narration) return 'Sales Revenue';
-  try {
-    const { data } = await bkDb.from('bk_products')
-      .select('product_name, income_account')
-      .eq('user_id', bkUser.id)
-      .ilike('product_name', '%' + narration.trim() + '%')
-      .limit(1);
-    if (data && data[0] && data[0].income_account) return data[0].income_account;
-  } catch(e) {}
-  // Rule-based fallback
-  const n = narration.toLowerCase();
-  if (n.includes('haircut')||n.includes('barb')||n.includes('shave')||n.includes('trim')||n.includes('cut')) return 'Barbing Revenue';
-  if (n.includes('laundry')||n.includes('wash')||n.includes('dry')||n.includes('iron')||n.includes('clean')) return 'Service Income';
-  if (n.includes('service')||n.includes('consult')||n.includes('repair')||n.includes('fix')) return 'Service Income';
-  return 'Sales Revenue';
-}
-
-// Auto-post a single sale row to the journal + ledger
-async function autoPostSaleRow(row, customerName, txnDate) {
-  if (!bkUser || !row.total || row.total <= 0) return;
-  const payMode = row.pay_mode || row.payMode || 'cash';
-  let cashAcct;
-  if (payMode === 'credit')            cashAcct = 'Debtors';
-  else if (payMode === 'transfer' || payMode === 'pos') cashAcct = 'Cash at Bank';
-  else                                  cashAcct = 'Cash in Hand';
-  const incomeAcct = await staffIncomeAccount(row.narration);
-  const amount     = parseFloat(row.total) || 0;
-  const narration  = (row.narration || 'Sale') + (customerName ? ' — ' + customerName : '');
-  const date       = txnDate || new Date().toISOString().slice(0,10);
-
-  // 1. Write to bk_journal
-  const { data: jnl, error: jErr } = await bkDb.from('bk_journal').insert({
-    user_id:              bkUser.id,
-    txn_date:             date,
-    narration:            narration,
-    debit_account_name:   cashAcct,
-    debit_record_type:    'asset',
-    credit_account_name:  incomeAcct,
-    credit_record_type:   'income',
-    debit_amount:         amount,
-    credit_amount:        amount,
-    created_at:           new Date().toISOString(),
-  }).select().single();
-
-  if (jErr || !jnl) return;
-
-  // 2. Find account IDs and calculate new running balances
-  const [cashRes, incomeRes] = await Promise.all([
-    bkDb.from('bk_accounts').select('id,opening_balance').eq('user_id',bkUser.id).eq('account_name',cashAcct).maybeSingle(),
-    bkDb.from('bk_accounts').select('id,opening_balance').eq('user_id',bkUser.id).eq('account_name',incomeAcct).maybeSingle(),
-  ]);
-
-  // 3. Get last balance for each account to calculate running balance
-  const getLastBal = async (acctName) => {
-    const { data } = await bkDb.from('bk_transactions')
-      .select('balance').eq('user_id',bkUser.id).eq('account_name',acctName)
-      .order('created_at',{ascending:false}).limit(1);
-    return parseFloat(data?.[0]?.balance) || 0;
-  };
-
-  const cashLastBal   = await getLastBal(cashAcct);
-  const incomeLastBal = await getLastBal(incomeAcct);
-
-  // 4. Post to bk_transactions (both sides of the entry)
-  const txns = [];
-  if (cashRes?.data) {
-    txns.push({
-      user_id:      bkUser.id,
-      journal_id:   jnl.id,
-      record_type:  'asset',
-      account_name: cashAcct,
-      txn_date:     date,
-      narration:    narration,
-      debit:        amount,
-      credit:       0,
-      balance:      cashLastBal + amount, // assets increase with debit
-      created_at:   new Date().toISOString(),
-    });
-  }
-  if (incomeRes?.data) {
-    txns.push({
-      user_id:      bkUser.id,
-      journal_id:   jnl.id,
-      record_type:  'income',
-      account_name: incomeAcct,
-      txn_date:     date,
-      narration:    narration,
-      debit:        0,
-      credit:       amount,
-      balance:      incomeLastBal + amount, // income increases with credit
-      created_at:   new Date().toISOString(),
-    });
-  }
-  if (txns.length) await bkDb.from('bk_transactions').insert(txns);
-}
-
-// Save a customer block AND auto-post all rows to the accounting ledger
-async function staffSaveCustomer(custId) {
-  const cust = staffGetCust(custId);
-  if (!cust) return;
-  if (cust._posting) return; // prevent double-post
-  cust._posting = true;
-
-  // Find the Save button and show saving state
-  let saveBtn = null;
-  document.querySelectorAll('.staff-save-static-btn').forEach(function(b){
-    if (b.getAttribute('onclick') === 'staffSaveCustomer('+custId+')') saveBtn = b;
-  });
-  if (saveBtn) { saveBtn.textContent = 'Posting…'; saveBtn.disabled = true; }
-
-  const date = new Date().toISOString().slice(0,10);
-  const rows  = (cust.rows || []).filter(function(r){ return r.total > 0; });
-
-  try {
-    const isOnline = navigator.onLine;
-    if (isOnline) {
-      // Online — post directly to Supabase
-      for (const row of rows) {
-        await autoPostSaleRow(row, cust.name, date);
-      }
-    } else {
-      // Offline — save to IndexedDB queue
-      for (const row of rows) {
-        await bdSaveOffline(row, cust.name, date);
-      }
-      bdUpdateSyncBadge();
-    }
-    // Mark saved
-    cust.posted = true;
-    if (saveBtn) {
-      saveBtn.textContent = isOnline ? '✓ Posted' : '✓ Saved offline';
-      saveBtn.style.background = 'var(--green)';
-      saveBtn.disabled = false;
-      setTimeout(function(){
-        saveBtn.textContent = '› Save';
-        saveBtn.style.background = '';
-        cust._posting = false;
-      }, 2500);
-    }
-    // Refresh equation bar if visible
-    if (document.getElementById('bkMainChrome')?.style.display !== 'none') {
-      refreshEquation();
-    }
+    if (btn) { btn.textContent='✓ Saved'; btn.style.background='var(--green)'; }
+    setTimeout(()=>closeProfileSheet(), 1200);
   } catch(e) {
-    cust._posting = false;
-    if (saveBtn) {
-      saveBtn.textContent = '⚠ Error — retry';
-      saveBtn.style.background = 'var(--red)';
-      saveBtn.disabled = false;
-    }
+    alert('Error: '+(e.message||'Unknown error'));
+    if(btn){btn.textContent='Save Changes';btn.disabled=false;btn.style.background='';}
   }
 }
 
-function staffDelRow(custId,ri){
-  const c=staffGetCust(custId);if(!c||c.rows.length<=1)return;
-  c.rows.splice(ri,1);c.rows.forEach((r,i)=>r.sn=i+1);renderAllCustomers();
-}
 
-function addStaffCustomer(){
-  staffCustomers.push(staffNewCustomer());
-  renderAllCustomers();
-  setTimeout(()=>{const b=document.querySelectorAll('.staff-customer-block');b[b.length-1]?.scrollIntoView({behavior:'smooth',block:'start'});},80);
-}
-
-function staffDeleteCustomer(custId){
-  if(staffCustomers.length<=1){return;}
-  staffCustomers=staffCustomers.filter(c=>c.id!==custId);renderAllCustomers();
-}
-
-// ── Lock/unlock a customer's spreadsheet ─────────────────────
-// Locked: every input/select/structural button is disabled — but the
-// spreadsheet remains swipeable on mobile/tablet since swiping is purely
-// navigation and is handled independently of the form controls.
-function staffToggleLock(custId){
-  const c = staffGetCust(custId);
-  if (!c) return;
-  c.locked = !c.locked;
-  renderAllCustomers();
-}
-
-function staffAddRowToCustomer(custId){
-  const c=staffGetCust(custId);if(!c)return;
-  c.rows.push(staffEmptyRow(c.rows.length+1));renderAllCustomers();
-}
-
-function staffShowAddMenu(btn,custId,ri){
-  document.querySelectorAll('.row-add-pop').forEach(p=>p.remove());
-  const pop=document.createElement('div');pop.className='row-add-pop';
-  pop.innerHTML='<div onclick="staffInsertRow('+custId+','+ri+',\'above\');this.closest(\'.row-add-pop\').remove()">Add row above</div>'
-    + '<div onclick="staffInsertRow('+custId+','+ri+',\'below\');this.closest(\'.row-add-pop\').remove()">Add row below</div>';
-  btn.closest('.staff-add-col').appendChild(pop);
-  setTimeout(()=>document.addEventListener('click',()=>pop.remove(),{once:true}),10);
-}
-
-function staffInsertRow(custId,ri,where){
-  const c=staffGetCust(custId);if(!c)return;
-  c.rows.splice(where==='above'?ri:ri+1,0,staffEmptyRow(0));
-  c.rows.forEach((r,i)=>r.sn=i+1);renderAllCustomers();
-}
-
-// ── SWIPE: mobile/tablet pane navigation ──────────────────────
-// Remembers which pane each customer's swipe view was on, across re-renders
-let staffActivePaneByCust = {};
-
-function initStaffSwipe(){
-  document.querySelectorAll('.staff-swipe-wrap').forEach(function(wrap){
-    const track  = wrap.querySelector('.staff-swipe-track');
-    const dots   = wrap.querySelectorAll('.staff-swipe-dot');
-    const custId = wrap.dataset.custid;
-    const paneCount = parseInt(wrap.dataset.panecount) || 1;
-    const paneUnit = 100 / paneCount; // % of track width per pane
-    let startX = 0, isDragging = false;
-    let currentPane = Math.min(staffActivePaneByCust[custId] || 0, paneCount - 1);
-
-    function goToPane(idx, animate){
-      currentPane = Math.max(0, Math.min(paneCount - 1, idx));
-      staffActivePaneByCust[custId] = currentPane; // remember for next re-render
-      track.style.transition = animate ? 'transform 0.25s ease' : 'none';
-      track.style.transform = 'translateX(-' + (currentPane*paneUnit) + '%)';
-      dots.forEach(function(d,i){ d.classList.toggle('active', i===currentPane); });
-    }
-    dots.forEach(function(d,i){ d.addEventListener('click', function(){ goToPane(i, true); }); });
-
-    track.addEventListener('touchstart', function(e){
-      startX = e.touches[0].clientX; isDragging = true;
-      track.style.transition = 'none';
-    }, {passive:true});
-
-    track.addEventListener('touchmove', function(e){
-      if (!isDragging) return;
-      const dx = e.touches[0].clientX - startX;
-      const pct = (dx / wrap.offsetWidth) * paneUnit;
-      track.style.transform = 'translateX(calc(-' + (currentPane*paneUnit) + '% + ' + pct + '%))';
-    }, {passive:true});
-
-    track.addEventListener('touchend', function(e){
-      isDragging = false;
-      const dx = e.changedTouches[0].clientX - startX;
-      if (Math.abs(dx) > 50) {
-        if (dx < 0) goToPane(currentPane+1, true); else goToPane(currentPane-1, true);
-      } else {
-        goToPane(currentPane, true);
-      }
-    });
-
-    // Restore to whatever pane this customer was on — no animation, instant
-    goToPane(currentPane, false);
-  });
-}
-
-// Expenses
-function showStaffExpenses(){
-  staffHideChrome();
-  if(staffExpRows.length===0) staffExpRows=[1,2,3].map(n=>staffEmptyExpRow(n));
-  renderStaffExpenses();
-}
-
-function renderStaffExpenses(){
-  const rows=staffExpRows.map((r,i)=>`
-    <tr id="erow_${i}">
-      <td class="staff-sn" style="white-space:nowrap;">${i+1}</td>
-      <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="What was the expense?"
-        oninput="staffExpRows[${i}].narration=this.value"/></td>
-      <td style="white-space:nowrap;"><div class="staff-price-wrap">
-        <span class="staff-curr-prefix">${staffSym()}</span>
-        <input class="staff-cell num" type="text" inputmode="decimal"
-        value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
-        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-        oninput="fmtInputCommas(this);staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
-      <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
-        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-        oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
-      <td style="white-space:nowrap;"><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
-      <td><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
-        onchange="staffExpRows[${i}].pay_mode=this.value">
-        <option value="cash"     ${(r.pay_mode||'cash')==='cash'    ?'selected':''}>Cash</option>
-        <option value="transfer" ${r.pay_mode==='transfer'?'selected':''}>Bank Transfer</option>
-        <option value="pos"      ${r.pay_mode==='pos'     ?'selected':''}>POS</option>
-        <option value="credit"   ${r.pay_mode==='credit'  ?'selected':''}>On Credit</option>
-      </select></td>
-      <td><button class="staff-save-row-btn" onclick="expSaveRow(${i})" title="Save">&rsaquo;</button></td>
-      <td><button class="staff-del-btn" onclick="staffExpDel(${i})">&#x2715;</button></td>
-    </tr>`).join('');
-  const totalExp=staffExpRows.reduce((a,r)=>a+(r.total||0),0);
-  document.getElementById('bkContent').innerHTML=`
-    <div class="bk-content-header">
-      <div class="bk-content-title">RECORD EXPENSES</div>
-      <div style="display:flex;gap:6px;align-items:center;position:relative;">
-        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="toggleExpToolbox()">&#9881; Tools</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">&larr; Back</button>
-        <div id="expToolbox" class="sales-toolbox hidden">
-          <div class="toolbox-title">Toolbox</div>
-          <button class="toolbox-btn" onclick="window.print();toggleExpToolbox()">&#128424; Print</button>
-        </div>
-      </div>
-    </div>
-    <div class="bk-sheet-wrap">
-      <table class="staff-table staff-table-compact" style="min-width:580px;">
-        <thead><tr>
-          <th style="width:34px;white-space:nowrap;">S/N</th>
-          <th style="width:180px;">Narration</th>
-          <th style="width:120px;">Unit Price</th>
-          <th style="width:80px;">Quantity</th>
-          <th style="width:110px;">Total</th>
-          <th style="width:120px;">Payment Mode</th>
-          <th style="width:30px;"></th>
-          <th style="width:30px;"></th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-        <tfoot><tr class="staff-total-row">
-          <td colspan="4" style="padding:7px 5px;">Total</td>
-          <td style="white-space:nowrap;padding:7px 5px;">${staffFmtAmt(totalExp)}</td>
-          <td colspan="3"></td>
-        </tr></tfoot>
-      </table>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:8px;padding:10px 16px;">
-      <button class="staff-add-cust-btn" onclick="staffExpAddRow()">+ Add Row</button>
-      <button class="staff-save-static-btn" onclick="saveAllExpenses()">Save All</button>
-    </div>`;
-}
-
-function staffExpNumChange(i,field,val){
-  staffExpRows[i][field]=parseFloat(String(val).replace(/,/g,''))||0;
-  staffExpRows[i].total=staffExpRows[i].unit_price*(staffExpRows[i].qty||1);
-  const el=document.getElementById(`etotal_${i}`);
-  if(el)el.textContent=staffFmtAmt(staffExpRows[i].total);
-  const totalExp=staffExpRows.reduce((a,r)=>a+(r.total||0),0);
-  const grand=document.getElementById('expGrandTotal');
-  if(grand)grand.textContent=staffFmtAmt(totalExp);
-}
-
-function staffExpSave(i){
-  const rows=document.querySelectorAll('#bkContent tbody tr');
-  const btn=rows[i]?.querySelector('.staff-save-btn');
-  if(btn){btn.textContent='✓';btn.style.color='var(--green)';setTimeout(()=>{btn.textContent='›';btn.style.color='';},1500);}
-}
-
-function staffExpDel(i){
-  if(staffExpRows.length<=1)return;
-  staffExpRows.splice(i,1);staffExpRows.forEach((r,idx)=>r.sn=idx+1);renderStaffExpenses();
-}
-
-function staffExpAddRow(){
-  staffExpRows.push(staffEmptyExpRow(staffExpRows.length+1));renderStaffExpenses();
-  setTimeout(()=>{const rows=document.querySelectorAll('#bkContent tbody tr');rows[rows.length-1]?.querySelector('input')?.focus();},60);
-}
-
-// ── SETTINGS — ADD BUSINESS PROFILE SECTION ───────────────────
-function eqNav(type) {
-  showSchedule(type);
-}
-
-// ── COLUMN HELP DEFINITIONS ───────────────────────────────────
-const COLUMN_HELP = {
-  'Date': {
-    title: 'Date',
-    text: 'The date the transaction actually took place — not the date you recorded it, but the actual date the money moved or the agreement was made.',
-    example: 'If you paid rent on 1st January, write 01/01/2026 here — even if you only sat down to record it a week later.',
-  },
-  'Payee': {
-    title: 'Payee',
-    text: 'The person or business receiving money in this transaction. Simply put — who did you pay?',
-    example: 'If your business paid rent, the landlord\'s name goes here. If you paid a supplier for goods, write the supplier\'s name.',
-  },
-  'Payer': {
-    title: 'Payer',
-    text: 'The person or business who sent the money — who paid? This is who the money came from.',
-    example: 'If a customer paid your business for a service, the customer\'s name goes here. If your business is making a payment, your business name goes here.',
-  },
-  'Narration': {
-    title: 'Narration',
-    text: 'A short plain-English note explaining what this transaction was for. Think of it as a memo to your future self — or to your accountant — explaining why this entry exists.',
-    example: '"January office rent payment to Mr. Adeyemi" or "Received payment for Invoice #005 from Tunde Tech."',
-  },
-  'Debit Account': {
-    title: 'Debit Account',
-    text: 'The account that is being debited. For asset and expense accounts, a debit INCREASES the balance. For capital and liability accounts, a debit DECREASES it.',
-    example: 'If you buy stock with cash, the Debit Account is "Inventory/Stock" — because your stock (an asset) is going up.',
-  },
-  'Credit Account': {
-    title: 'Credit Account',
-    text: 'The account that is being credited. For liability and capital accounts, a credit INCREASES the balance. For asset accounts, a credit DECREASES it.',
-    example: 'If you buy stock with cash, the Credit Account is "Cash and Bank" — because your cash (an asset) is going down.',
-  },
-  'Debit': {
-    title: 'Debit (Dr)',
-    text: 'In accounting — not banking — a debit increases assets and expenses, and decreases liabilities and capital. Enter the amount here when the debit account is being increased. Every debit must have a matching credit of the same amount.',
-    example: 'Paying ₦50,000 for stock: enter 50,000 in this Debit column because your Inventory (an asset) is increasing.',
-  },
-  'Credit': {
-    title: 'Credit (Cr)',
-    text: 'In accounting — not banking — a credit increases liabilities and capital, and decreases assets. Enter the amount here when the credit account is being reduced or a liability is being created. Must always equal the debit amount.',
-    example: 'Paying ₦50,000 for stock from your bank: enter 50,000 in this Credit column because Cash and Bank (an asset) is decreasing.',
-  },
-  'Balance': {
-    title: 'Balance',
-    text: 'The running total of this account after each transaction is applied. It starts from the opening balance and updates automatically with every entry. You never type here — it calculates itself.',
-    example: 'If your opening balance is ₦100,000 and you spend ₦30,000, the balance on that row shows ₦70,000.',
-  },
-  'S/N': {
-    title: 'Serial Number (S/N)',
-    text: 'The sequential number of each transaction in this ledger. It fills in automatically — you never need to type it. It helps you reference and trace specific entries quickly.',
-    example: 'The first transaction recorded is S/N 1, the second is S/N 2, and so on for the whole period.',
-  },
-};
-
-</script>
-  <script>
-    // Register service worker for PWA / offline support
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(function(reg) {
-            // Service worker registered
-          })
-          .catch(function(err) {
-            // Service worker registration failed silently
-          });
-      });
-    }
-
-    // PWA install prompt — show automatically when available
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', function(e) {
-      e.preventDefault();
-      deferredPrompt = e;
-      // Auto-prompt after 3 seconds if user hasn't dismissed
-      setTimeout(function() {
-        if (deferredPrompt) {
-          showPWAInstallBar();
-        }
-      }, 3000);
-    });
-
-    function showPWAInstallBar() {
-      // Don't show if already installed
-      if (window.matchMedia('(display-mode: standalone)').matches) return;
-      // Don't show if already visible
-      if (document.getElementById('pwaInstallBar')) return;
-
-      const bar = document.createElement('div');
-      bar.id = 'pwaInstallBar';
-      bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#d4af37;color:#000;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;z-index:9999;font-size:0.85rem;font-weight:600;';
-      bar.innerHTML = '<span>📲 Install BD Books as an app</span>'
-        + '<div style="display:flex;gap:8px;">'
-        + '<button onclick="installPWA()" style="background:#000;color:#d4af37;border:none;padding:8px 16px;border-radius:6px;font-weight:700;cursor:pointer;">Install</button>'
-        + '<button onclick="dismissPWABar()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;">✕</button>'
-        + '</div>';
-      document.body.appendChild(bar);
-    }
-
-    function installPWA() {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function(result) {
-          deferredPrompt = null;
-          dismissPWABar();
-        });
-      }
-    }
-
-    function dismissPWABar() {
-      const bar = document.getElementById('pwaInstallBar');
-      if (bar) bar.remove();
-    }
-
-    // Hide install bar if already running as installed PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      document.addEventListener('DOMContentLoaded', function() {
-        const bar = document.getElementById('pwaInstallBar');
-        if (bar) bar.remove();
-      });
-    }
-    // Listen for background sync message from service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', function(event) {
-        if (event.data && event.data.type === 'SYNC_OFFLINE_SALES') {
-          bdSyncOfflineSales();
-        }
-      });
-    }
-  </script>
-</body>
-</html>
