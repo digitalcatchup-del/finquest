@@ -768,10 +768,23 @@ body{padding-top:0;}
 .ps-save-btn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.95rem;font-weight:900;padding:4px 8px;}
 .ps-save-btn:hover{color:var(--white);}
 .ps-col-selector{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;min-width:270px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+
+/* ── SHEET TOOLBOX (Excel-style) ─────────────────────────── */
+.sheet-toolbox{display:flex;align-items:center;gap:4px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:8px 16px 0;padding:6px 8px;overflow-x:auto;}
+.sheet-toolbox.hidden{display:none;}
+.tb-icon{background:var(--surface2);border:1px solid var(--border2);color:var(--off);font-size:0.78rem;padding:6px 9px;border-radius:6px;cursor:pointer;white-space:nowrap;line-height:1;}
+.tb-icon:hover{border-color:var(--gold);color:var(--gold);}
+.tb-icon.tb-active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+.tb-select{background:var(--surface2);border:1px solid var(--border2);color:var(--off);font-size:0.74rem;padding:6px;border-radius:6px;}
+.sheet-panel{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:6px 16px 0;padding:8px 10px;}
+.sheet-panel.hidden{display:none;}
+.sheet-panel .bk-input{background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:7px 10px;font-size:0.78rem;font-family:inherit;outline:none;}
+.sheet-frozen-row td{position:sticky;top:0;background:var(--surface) !important;z-index:5;}
+
 /* ── PROFILE SHEET ────────────────────────────────────────── */
 .profile-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1200;opacity:0;transition:opacity 0.25s;}
 .profile-sheet-overlay.show{opacity:1;}
-.profile-sheet{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);border-radius:20px 20px 0 0;z-index:1210;max-height:92vh;overflow-y:auto;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);}
+.profile-sheet{position:fixed;inset:0;background:var(--bg,#0a0e14);z-index:1210;overflow-y:auto;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);}
 .profile-sheet.show{transform:translateY(0);}
 .profile-sheet-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;}
 .profile-sheet-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);}
@@ -1125,9 +1138,7 @@ body{padding-top:0;}
       <div id="menuBusinessesList" style="padding:0 0 8px;">
         <!-- Populated by renderMenuBusinesses() -->
       </div>
-      <div class="bk-menu-item" onclick="showAllBusinessesDashboard();closeBkMenu()" style="font-size:0.78rem;color:var(--muted);padding:8px 20px;">
-        <span style="margin-right:6px;">🏢</span> View All Businesses
-      </div>
+
     </div>
   </nav>
 
@@ -1141,6 +1152,7 @@ body{padding-top:0;}
       </div>
       <span style="color:var(--muted);font-size:0.8rem;">›</span>
     </div>
+    <button onclick="event.stopPropagation();bkSignOut()" style="margin-top:10px;width:100%;background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.74rem;padding:7px;border-radius:6px;cursor:pointer;">Sign Out</button>
   </div>
 </div>
 
@@ -1153,7 +1165,7 @@ body{padding-top:0;}
 
 
 <main class="bk-main">
-  <div id="bkGlobalHero">
+  <div id="bkGlobalHero" style="display:none;">
   <p class="bk-welcome" style="margin-bottom:4px;">Welcome,
     <strong id="bkUserName" onclick="showAccountSettings()"
       title="Account Settings"
@@ -1167,7 +1179,7 @@ body{padding-top:0;}
   </div>
   </div>
 
-  <div id="bkMainChrome">
+  <div id="bkMainChrome" style="display:none;">
   <div class="bk-eq-bar" style="position:relative;">
     <button id="eqCollapseBtn" onclick="toggleEqBar()" title="Collapse equation"
       style="position:absolute;top:10px;right:14px;background:none;border:none;color:var(--muted);font-size:0.85rem;cursor:pointer;padding:4px 6px;">▾</button>
@@ -2352,6 +2364,7 @@ async function continueInit() {
   // Load businesses (async, non-blocking for UI)
   if (userRole !== 'employee') {
     loadUserBusinesses().catch(()=>{});
+    loadProfileData().then(d=>{ profileData = d; }).catch(()=>{});
   }
 
   // Route by role — employees go to Staff Pages, owners/managers go to Dashboard
@@ -3111,6 +3124,10 @@ function bdRestoreRoute() {
     if (r === 'services') { showProductsPage('services'); return; }
     if (r === 'suppliers'){ showSuppliersPage(); return; }
     if (r === 'staff')    { showStaffDashboard(); return; }
+    if (r === 'record-biz-choice') { showRecordBusinessChoice(); return; }
+    if (r === 'record-choice') { showRecordChoice(); return; }
+    if (r === 'sales-record')  { showRecordSales(); return; }
+    if (r === 'expenses-record'){ showRecordExpenses(); return; }
     showDashboard();
   } catch(e) { showDashboard(); }
 }
@@ -3207,7 +3224,11 @@ async function showExpensesBreakdown() {
     </div>`;
 }
 
+
 async function showDashboard() {
+  return showAllBusinessesDashboard();
+}
+async function showClassicDashboard() {
   bdSaveRoute('dashboard');
   showDashboardHero(); // show title + Record button, hide equation
   hideDashToolbar();
@@ -7821,7 +7842,33 @@ function buildSalesSummarySpreadsheet(){
 
 // ── RECORD CHOICE (from equation bar — owner/manager context) ─
 let owingRows = [];
+// Record flow: first choose the business
+function showRecordBusinessChoice() {
+  staffHideChrome();
+  bdSaveRoute('record-biz-choice');
+  const cards = userBusinesses.length
+    ? userBusinesses.map(b=>`
+      <div class="staff-choice-btn" onclick="activeBusiness=userBusinesses.find(x=>x.id==='${b.id}');showRecordChoice()">
+        <div class="staff-choice-icon">${b.icon||'🏢'}</div>
+        <div class="staff-choice-label">${escH(b.name)}</div>
+        <div class="staff-choice-desc">${escH(b.industry||'General')}</div>
+      </div>`).join('')
+    : `<div style="grid-column:1/-1;text-align:center;padding:30px 16px;color:var(--muted);font-size:0.85rem;">
+        No business registered yet.<br><br>
+        <button class="bk-btn bk-btn-gold" onclick="openProfileSheet()">Register a business in your Profile</button>
+      </div>`;
+  document.getElementById('bkContent').innerHTML = `
+    <div style="text-align:center;padding:14px 16px 0;">
+      <button class="bk-btn bk-btn-outline" style="font-size:0.78rem;" onclick="showDashboard()">🏠 Back to Home</button>
+    </div>
+    <div class="bk-content-header" style="justify-content:center;">
+      <div class="bk-content-title">SELECT BUSINESS</div>
+    </div>
+    <div class="staff-choice-grid">${cards}</div>`;
+}
+
 function showRecordChoice() {
+  bdSaveRoute('record-choice');
   staffHideChrome(); // hide equation, hero, toolbar
   document.getElementById('bkContent').innerHTML = `
     <div class="bk-content-header">
@@ -7843,79 +7890,417 @@ function showRecordChoice() {
 }
 
 function showRecordSales() {
+  bdSaveRoute('sales-record');
   staffHideChrome();
   if (salesRows.length === 0) salesRows = [staffEmptySaleRow(1)];
   renderStaffSales();
 }
 
 function showRecordExpenses() {
+  bdSaveRoute('expenses-record');
   staffHideChrome();
   if (staffExpRows.length === 0) staffExpRows = [staffEmptyExpRow(1)];
   renderRecordExpenses();
 }
 
+
+function salesNumChange(i,field,val){
+  salesRows[i][field]=parseFloat(String(val).replace(/,/g,''))||0;
+  salesRows[i].total=salesRows[i].unit_price*(salesRows[i].qty||1);
+  salesRows[i]._posted=false;
+  const el=document.getElementById('sale_total_'+i);
+  if(el) el.textContent=staffFmtAmt(salesRows[i].total);
+  const gt=document.getElementById('sheetGrandTotal_sales');
+  if(gt) gt.textContent=staffFmtAmt(salesRows.reduce((a,r)=>a+(r.total||0),0));
+}
+
+async function salesSaveRow(i){
+  const r=salesRows[i];
+  if(!r||!r.total) return;
+  if(r._posted) return;
+  const btn=document.querySelector('#salesrow_'+i+' .staff-save-row-btn');
+  if(btn){btn.textContent='...';btn.disabled=true;}
+  try{
+    if(navigator.onLine){
+      await autoPostSaleRow(r,'',new Date().toISOString().slice(0,10));
+    } else {
+      await bdSaveOffline(r,'',new Date().toISOString().slice(0,10));
+      bdUpdateSyncBadge();
+    }
+    salesRows[i]._posted=true;
+    if(btn){btn.textContent='\u2713';btn.style.color='var(--green)';btn.disabled=true;}
+  }catch(e){
+    if(btn){btn.textContent='!';btn.style.color='var(--red)';btn.disabled=false;}
+  }
+}
+
+async function salesSaveAll(){
+  const rows=salesRows.filter(r=>r.total>0 && !r._posted);
+  if(!rows.length){ alert('No new rows to save — all have already been posted.'); return; }
+  const date=new Date().toISOString().slice(0,10);
+  for(const r of rows){
+    if(navigator.onLine) await autoPostSaleRow(r,'',date);
+    else { await bdSaveOffline(r,'',date); }
+    r._posted=true;
+  }
+  if(!navigator.onLine) bdUpdateSyncBadge();
+  const msg=document.createElement('div');
+  msg.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a2a1a;border:1px solid var(--green);color:#4ade80;padding:10px 20px;border-radius:8px;font-size:0.82rem;font-weight:600;z-index:9999;white-space:nowrap;';
+  msg.textContent='\u2713 '+rows.length+' sale'+(rows.length>1?'s':'')+(navigator.onLine?' posted':' saved offline');
+  document.body.appendChild(msg);
+  setTimeout(()=>msg.remove(),2500);
+}
+
 function renderRecordExpenses() {
-  const rows = staffExpRows.map((r,i) => `
-    <tr id="erow_${i}">
-      <td class="staff-sn" style="white-space:nowrap;">${i+1}</td>
-      <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="What was the expense?"
-        oninput="staffExpRows[${i}].narration=this.value"/></td>
-      <td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">${staffSym()}</span>
-        <input class="staff-cell num" type="text" inputmode="decimal"
-          value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
+  renderRecordSheet('expenses');
+}
+
+// ══ SHARED RECORD SPREADSHEET ENGINE (sales + expenses) ══════
+let sheetState = {
+  sales:    { search:'', decimals:0, font:'Nunito', wrap:'overflow', freezeRow:0, dateFrom:'', dateTo:'', customCols:[], undo:[], redo:[] },
+  expenses: { search:'', decimals:0, font:'Nunito', wrap:'overflow', freezeRow:0, dateFrom:'', dateTo:'', customCols:[], undo:[], redo:[] },
+};
+let sheetToolboxOpen = { sales:false, expenses:false };
+let _sheetLongPress = null, _sheetDragIdx = -1, _sheetKind = 'sales';
+
+function sheetRows(kind){ return kind==='sales' ? salesRows : staffExpRows; }
+function sheetSnapshot(kind){
+  const st = sheetState[kind];
+  st.undo.push(JSON.stringify(sheetRows(kind)));
+  if (st.undo.length > 40) st.undo.shift();
+  st.redo = [];
+}
+function sheetUndo(kind){
+  const st = sheetState[kind];
+  if (!st.undo.length) return;
+  st.redo.push(JSON.stringify(sheetRows(kind)));
+  const prev = JSON.parse(st.undo.pop());
+  if (kind==='sales') salesRows = prev; else staffExpRows = prev;
+  renderRecordSheet(kind);
+}
+function sheetRedo(kind){
+  const st = sheetState[kind];
+  if (!st.redo.length) return;
+  st.undo.push(JSON.stringify(sheetRows(kind)));
+  const nxt = JSON.parse(st.redo.pop());
+  if (kind==='sales') salesRows = nxt; else staffExpRows = nxt;
+  renderRecordSheet(kind);
+}
+
+function sheetFmtDate(d) {
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const day=d.getDate(); const suf=day%10===1&&day!==11?'st':day%10===2&&day!==12?'nd':day%10===3&&day!==13?'rd':'th';
+  return days[d.getDay()]+'-'+months[d.getMonth()]+'/'+day+suf+'/'+d.getFullYear();
+}
+
+function sheetHeaderDate(kind){
+  const st = sheetState[kind];
+  if (st.dateFrom && st.dateTo && st.dateFrom!==st.dateTo)
+    return sheetFmtDate(new Date(st.dateFrom+'T00:00'))+' → '+sheetFmtDate(new Date(st.dateTo+'T00:00'));
+  if (st.dateFrom) return sheetFmtDate(new Date(st.dateFrom+'T00:00'));
+  return sheetFmtDate(new Date());
+}
+
+function renderRecordSheet(kind) {
+  _sheetKind = kind;
+  const isSales = kind==='sales';
+  const st   = sheetState[kind];
+  const rows = sheetRows(kind);
+  const wrap = document.querySelector('.bk-sheet-wrap');
+  const keepScroll = wrap ? wrap.scrollLeft : 0;
+  const sym  = staffSym();
+  const title = isSales ? 'SALES RECORD' : 'EXPENSES RECORD';
+  const narrPh = isSales ? 'What was sold?' : 'What was the expense?';
+  const numFn  = isSales ? 'salesNumChange' : 'staffExpNumChange';
+  const saveFn = isSales ? 'salesSaveRow' : 'expSaveRow';
+  const dec    = st.decimals;
+
+  const fmtCell = n => (n||0).toLocaleString('en-NG',{minimumFractionDigits:dec,maximumFractionDigits:Math.max(dec,2)});
+
+  // filter by search
+  const visible = rows.map((r,i)=>({r,i})).filter(({r})=>{
+    if (st.search && !(r.narration||'').toLowerCase().includes(st.search.toLowerCase())) return false;
+    return true;
+  });
+
+  const customColsHead = st.customCols.map(c=>`<th style="width:120px;">${escH(c.name)}</th>`).join('');
+  const wrapCss = st.wrap==='wrap' ? 'white-space:normal;' : st.wrap==='clip' ? 'white-space:nowrap;overflow:hidden;text-overflow:clip;' : 'white-space:nowrap;';
+
+  const body = visible.map(({r,i},vi)=>{
+    const frozen = st.freezeRow > 0 && vi < st.freezeRow;
+    const customCells = st.customCols.map((c,ci)=>`<td><input class="staff-cell" type="text" value="${escH((r.custom&&r.custom[c.key])||'')}"
+      oninput="(sheetRows('${kind}')[${i}].custom=sheetRows('${kind}')[${i}].custom||{})['${c.key}']=this.value"/></td>`).join('');
+    return `
+    <tr id="${kind}row_${i}" data-idx="${i}" class="${frozen?'sheet-frozen-row':''}"
+        style="${_sheetDragIdx===i?'outline:2px solid var(--gold);':''}">
+      <td class="staff-sn" style="white-space:nowrap;">${vi+1}</td>
+      <td><input class="staff-cell" type="text" value="${escH(r.narration||'')}" placeholder="${narrPh}" style="${wrapCss}min-width:150px;"
+        oninput="sheetRows('${kind}')[${i}].narration=this.value;sheetRows('${kind}')[${i}]._posted=false"/></td>
+      ${customCells}
+      <td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">${sym}</span>
+        <input class="staff-cell num" type="text" inputmode="decimal" value="${r.unit_price>0?fmtCell(r.unit_price):''}" placeholder="0"
           onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-          oninput="fmtInputCommas(this);staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
+          oninput="fmtInputCommas(this);${numFn}(${i},'unit_price',this.value)"/></div></td>
       <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
         onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-        oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
-      <td style="white-space:nowrap;"><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
+        oninput="${numFn}(${i},'qty',this.value)"/></td>
+      <td style="white-space:nowrap;"><div class="staff-cell ro" id="${kind==='sales'?'sale_total_':'etotal_'}${i}">${staffFmtAmt(r.total)}</div></td>
       <td><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
-        onchange="staffExpRows[${i}].pay_mode=this.value">
-        <option value="cash"     ${(r.pay_mode||'cash')==='cash'    ?'selected':''}>Cash</option>
+        onchange="sheetRows('${kind}')[${i}].pay_mode=this.value">
+        <option value="cash"     ${(r.pay_mode||'cash')==='cash'?'selected':''}>Cash</option>
         <option value="transfer" ${r.pay_mode==='transfer'?'selected':''}>Bank Transfer</option>
-        <option value="pos"      ${r.pay_mode==='pos'     ?'selected':''}>POS</option>
-        <option value="credit"   ${r.pay_mode==='credit'  ?'selected':''}>On Credit</option>
+        <option value="pos"      ${r.pay_mode==='pos'?'selected':''}>POS</option>
+        <option value="credit"   ${r.pay_mode==='credit'?'selected':''}>On Credit</option>
       </select></td>
-      <td><button class="staff-save-row-btn" onclick="expSaveRow(${i})" title="Save">&rsaquo;</button></td>
-      <td><button class="staff-del-btn" onclick="staffExpRows.splice(${i},1);renderRecordExpenses()">&times;</button></td>
-    </tr>`).join('');
-  const totalExp = staffExpRows.reduce((a,r) => a+(r.total||0), 0);
+      <td><button class="staff-save-row-btn" onclick="${saveFn}(${i})" title="Save">&rsaquo;</button></td>
+      <td><button class="staff-del-btn" onclick="sheetDeleteRow('${kind}',${i})">&times;</button></td>
+    </tr>`;
+  }).join('');
+
+  const total = rows.reduce((a,r)=>a+(r.total||0),0);
+  const nCols = 8 + st.customCols.length;
+
   document.getElementById('bkContent').innerHTML = `
-    <div class="bk-content-header">
-      <div class="bk-content-title">RECORD EXPENSES</div>
-      <div style="display:flex;gap:6px;align-items:center;position:relative;">
-        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="toggleExpToolbox()">&#9881; Tools</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showRecordChoice()">&larr; Back</button>
-        <div id="expToolbox" class="sales-toolbox hidden">
-          <div class="toolbox-title">Toolbox</div>
-          <button class="toolbox-btn" onclick="window.print();toggleExpToolbox()">&#128424; Print</button>
-        </div>
-      </div>
+    <div style="text-align:center;padding:12px 16px 0;">
+      <button class="bk-btn bk-btn-outline" style="font-size:0.78rem;" onclick="showDashboard()">🏠 Back to Home</button>
     </div>
-    <div class="bk-sheet-wrap">
-      <table class="staff-table staff-table-compact" style="min-width:580px;">
+
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:8px 16px 0;">
+      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="sheetToggleToolbox('${kind}')">⚙ Tools</button>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="${isSales?'showRecordChoice()':'showRecordChoice()'}">← Back</button>
+    </div>
+
+    <div id="sheetToolbox_${kind}" class="sheet-toolbox ${sheetToolboxOpen[kind]?'':'hidden'}">
+      <button class="tb-icon" title="Search" onclick="sheetTogglePanel('${kind}','search')">🔍</button>
+      <button class="tb-icon" title="Undo" onclick="sheetUndo('${kind}')">↩</button>
+      <button class="tb-icon" title="Redo" onclick="sheetRedo('${kind}')">↪</button>
+      <button class="tb-icon" title="Print" onclick="sheetTogglePanel('${kind}','print')">🖨</button>
+      <button class="tb-icon" title="Decrease decimals" onclick="sheetDecimals('${kind}',-1)">.0←</button>
+      <button class="tb-icon" title="Increase decimals" onclick="sheetDecimals('${kind}',1)">.00→</button>
+      <select class="tb-select" title="Font" onchange="sheetSetFont('${kind}',this.value)">
+        ${['Nunito','EB Garamond','Lora','Arial'].map(f=>`<option ${st.font===f?'selected':''}>${f}</option>`).join('')}
+      </select>
+      <button class="tb-icon ${st.wrap==='overflow'?'tb-active':''}" title="Overflow" onclick="sheetSetWrap('${kind}','overflow')">⇥</button>
+      <button class="tb-icon ${st.wrap==='wrap'?'tb-active':''}" title="Wrap" onclick="sheetSetWrap('${kind}','wrap')">⤶</button>
+      <button class="tb-icon ${st.wrap==='clip'?'tb-active':''}" title="Clip" onclick="sheetSetWrap('${kind}','clip')">✂</button>
+      <button class="tb-icon" title="Freeze rows" onclick="sheetTogglePanel('${kind}','freeze')">❄</button>
+      <button class="tb-icon" title="Date filter" onclick="sheetTogglePanel('${kind}','date')">📅</button>
+      <button class="tb-icon" title="Today" onclick="sheetToday('${kind}')">Today</button>
+      <button class="tb-icon" title="Insert column" onclick="sheetTogglePanel('${kind}','inscol')">+▥</button>
+    </div>
+
+    <div id="sheetPanel_${kind}" class="sheet-panel hidden"></div>
+
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 16px 6px;">
+      <div id="sheetDateLabel_${kind}" style="color:var(--gold);font-size:0.72rem;font-weight:700;">${sheetHeaderDate(kind)}</div>
+      <div class="bk-content-title" style="text-align:center;">${title}</div>
+      <div></div>
+    </div>
+
+    <div class="bk-sheet-wrap" style="font-family:'${st.font}',sans-serif;">
+      <table class="staff-table staff-table-compact" id="sheetTable_${kind}" style="min-width:${640+st.customCols.length*120}px;table-layout:fixed;">
+        <colgroup>
+          <col style="width:40px;"><col style="width:185px;">
+          ${st.customCols.map(()=>'<col style="width:120px;">').join('')}
+          <col style="width:125px;"><col style="width:92px;"><col style="width:115px;"><col style="width:125px;"><col style="width:34px;"><col style="width:34px;">
+        </colgroup>
         <thead><tr>
-          <th style="width:34px;white-space:nowrap;">S/N</th>
-          <th style="width:180px;">Narration</th>
-          <th style="width:120px;">Unit Price</th>
-          <th style="width:80px;">Quantity</th>
-          <th style="width:110px;">Total</th>
-          <th style="width:120px;">Payment Mode</th>
-          <th style="width:30px;"></th>
-          <th style="width:30px;"></th>
+          <th style="white-space:nowrap;">S/N</th>
+          <th>Narration</th>
+          ${customColsHead}
+          <th>Unit Price</th>
+          <th style="white-space:nowrap;">Quantity</th>
+          <th>Total</th>
+          <th>Payment Mode</th>
+          <th></th><th></th>
         </tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody>${body}</tbody>
         <tfoot><tr class="staff-total-row">
-          <td colspan="4" style="padding:7px 5px;">Total</td>
-          <td style="white-space:nowrap;padding:7px 5px;">${staffFmtAmt(totalExp)}</td>
+          <td colspan="${2+st.customCols.length+2}" style="padding:7px 5px;">Total</td>
+          <td id="sheetGrandTotal_${kind}" style="white-space:nowrap;padding:7px 5px;text-align:right;font-weight:800;">${staffFmtAmt(total)}</td>
           <td colspan="3"></td>
         </tr></tfoot>
       </table>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;padding:10px 16px;">
-      <button class="staff-add-cust-btn" onclick="staffExpRows.push(staffEmptyExpRow(staffExpRows.length+1));renderRecordExpenses()">+ Add Row</button>
-      <button class="staff-save-static-btn" onclick="saveAllExpenses()">Save All</button>
+      <button class="staff-add-cust-btn" onclick="sheetAddRow('${kind}')">+ Add Row</button>
+      <button class="staff-save-static-btn" onclick="${isSales?'salesSaveAll()':'saveAllExpenses()'}">Save All</button>
     </div>`;
+
+  const newWrap = document.querySelector('.bk-sheet-wrap');
+  if (newWrap) newWrap.scrollLeft = keepScroll;
+  sheetInitLongPress(kind);
+}
+
+function sheetAddRow(kind){
+  sheetSnapshot(kind);
+  const rows = sheetRows(kind);
+  rows.push(kind==='sales'?staffEmptySaleRow(rows.length+1):staffEmptyExpRow(rows.length+1));
+  renderRecordSheet(kind);
+}
+
+function sheetDeleteRow(kind,i){
+  sheetSnapshot(kind);
+  sheetRows(kind).splice(i,1);
+  renderRecordSheet(kind);
+}
+
+function sheetToggleToolbox(kind){
+  sheetToolboxOpen[kind] = !sheetToolboxOpen[kind];
+  const tb = document.getElementById('sheetToolbox_'+kind);
+  if (tb) tb.classList.toggle('hidden', !sheetToolboxOpen[kind]);
+}
+
+function sheetDecimals(kind,delta){
+  const st = sheetState[kind];
+  st.decimals = Math.max(0, Math.min(4, st.decimals + delta));
+  renderRecordSheet(kind);
+}
+function sheetSetFont(kind,f){ sheetState[kind].font=f; renderRecordSheet(kind); }
+function sheetSetWrap(kind,w){ sheetState[kind].wrap=w; renderRecordSheet(kind); }
+function sheetToday(kind){
+  const t=new Date().toISOString().slice(0,10);
+  sheetState[kind].dateFrom=t; sheetState[kind].dateTo=t;
+  sheetLoadDateRange(kind);
+}
+
+function sheetTogglePanel(kind,panel){
+  const el = document.getElementById('sheetPanel_'+kind);
+  if (!el) return;
+  if (el.dataset.panel===panel && !el.classList.contains('hidden')) { el.classList.add('hidden'); return; }
+  el.dataset.panel = panel;
+  el.classList.remove('hidden');
+  const st = sheetState[kind];
+  if (panel==='search') {
+    el.innerHTML = `<input class="bk-input" placeholder="Search narration…" value="${escH(st.search)}" style="flex:1;"
+      oninput="sheetState['${kind}'].search=this.value" onkeydown="if(event.key==='Enter')renderRecordSheet('${kind}')"/>
+      <button class="bk-btn bk-btn-gold" style="font-size:0.74rem;" onclick="renderRecordSheet('${kind}')">Search</button>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="sheetState['${kind}'].search='';renderRecordSheet('${kind}')">Clear</button>`;
+  } else if (panel==='freeze') {
+    el.innerHTML = `<label style="font-size:0.74rem;color:var(--muted);">Freeze up to row:</label>
+      <input class="bk-input" type="number" min="0" max="20" value="${st.freezeRow}" style="width:70px;"
+        onchange="sheetState['${kind}'].freezeRow=parseInt(this.value)||0;renderRecordSheet('${kind}')"/>`;
+  } else if (panel==='date') {
+    el.innerHTML = `<label style="font-size:0.72rem;color:var(--muted);">From</label>
+      <input class="bk-input" type="date" value="${st.dateFrom}" onchange="sheetState['${kind}'].dateFrom=this.value"/>
+      <label style="font-size:0.72rem;color:var(--muted);">To</label>
+      <input class="bk-input" type="date" value="${st.dateTo}" onchange="sheetState['${kind}'].dateTo=this.value"/>
+      <button class="bk-btn bk-btn-gold" style="font-size:0.74rem;" onclick="sheetLoadDateRange('${kind}')">Load</button>`;
+  } else if (panel==='inscol') {
+    const positions = ['After S/N','After Narration'].concat(st.customCols.map(c=>'After '+c.name));
+    el.innerHTML = `<input id="insColName_${kind}" class="bk-input" placeholder="Column header…" style="flex:1;"/>
+      <select id="insColPos_${kind}" class="bk-input">${positions.map((p,i)=>`<option value="${i}">${escH(p)}</option>`).join('')}</select>
+      <button class="bk-btn bk-btn-gold" style="font-size:0.74rem;" onclick="sheetInsertColumn('${kind}')">Insert</button>`;
+  } else if (panel==='print') {
+    el.innerHTML = `<label style="font-size:0.74rem;color:var(--muted);">Orientation:</label>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="sheetPrint('${kind}','portrait')">Portrait</button>
+      <button class="bk-btn bk-btn-gold" style="font-size:0.74rem;" onclick="sheetPrint('${kind}','landscape')">Landscape</button>`;
+  }
+}
+
+function sheetInsertColumn(kind){
+  const name = document.getElementById('insColName_'+kind)?.value?.trim();
+  if (!name) { alert('Enter a column header'); return; }
+  const pos = parseInt(document.getElementById('insColPos_'+kind)?.value)||0;
+  const st = sheetState[kind];
+  // pos 0 = after S/N (custom index 0)... custom cols render between Narration and Unit Price;
+  // simplest honoring: pos 0/1 => start, otherwise after that custom col
+  const key = 'c'+Date.now();
+  const insertAt = Math.max(0, Math.min(st.customCols.length, pos-1));
+  st.customCols.splice(pos<=1?0:insertAt, 0, {name, key});
+  renderRecordSheet(kind);
+}
+
+async function sheetLoadDateRange(kind){
+  const st = sheetState[kind];
+  if (!st.dateFrom) { renderRecordSheet(kind); return; }
+  const to = st.dateTo || st.dateFrom;
+  try {
+    const rt = kind==='sales' ? 'income' : 'expenditure';
+    const {data:T} = await bkDb.from('bk_transactions').select('*')
+      .eq('user_id',bkUser.id).eq('record_type',rt)
+      .gte('txn_date',st.dateFrom).lte('txn_date',to)
+      .order('txn_date');
+    const loaded = (T||[]).map((t,n)=>({
+      sn:n+1, narration:t.narration||'', unit_price:Math.abs((parseFloat(t.credit)||0)-(parseFloat(t.debit)||0)),
+      qty:1, total:Math.abs((parseFloat(t.credit)||0)-(parseFloat(t.debit)||0)),
+      pay_mode:'cash', _posted:true, _txnId:t.id,
+    }));
+    if (kind==='sales') salesRows = loaded.length?loaded:[staffEmptySaleRow(1)];
+    else staffExpRows = loaded.length?loaded:[staffEmptyExpRow(1)];
+    renderRecordSheet(kind);
+  } catch(e) { renderRecordSheet(kind); }
+}
+
+function sheetPrint(kind, orientation){
+  const isSales = kind==='sales';
+  const bizName = activeBusiness?.name || userBusinesses[0]?.name || businessDisplayName || 'Business';
+  const title = isSales ? 'Sales Records' : 'Expenses Records';
+  const dateLabel = sheetHeaderDate(kind);
+  const table = document.getElementById('sheetTable_'+kind);
+  if (!table) return;
+  const clone = table.cloneNode(true);
+  // Replace inputs/selects with their values for printing
+  clone.querySelectorAll('input,select').forEach(el=>{
+    const span=document.createElement('span'); span.textContent=el.value||''; el.replaceWith(span);
+  });
+  clone.querySelectorAll('button').forEach(b=>b.remove());
+  const w = window.open('','_blank');
+  w.document.write(`<html><head><title>${title}</title><style>
+    @page{size:${orientation};margin:14mm;}
+    body{font-family:Arial,sans-serif;color:#000;}
+    h2{margin:0 0 2px;} h3{margin:0 0 4px;font-weight:600;}
+    .date{margin:0 0 12px;font-size:12px;}
+    table{width:100%;border-collapse:collapse;font-size:11px;}
+    th,td{border:1px solid #999;padding:4px 6px;text-align:left;}
+    th{background:#eee;}
+  </style></head><body>
+    <h2>${bizName}</h2><h3>${title}</h3><div class="date">${dateLabel}</div>
+    ${clone.outerHTML}
+  </body></html>`);
+  w.document.close();
+  setTimeout(()=>{ w.print(); }, 300);
+}
+
+// Long-press to select and drag rows
+function sheetInitLongPress(kind){
+  const tbody = document.querySelector('#sheetTable_'+kind+' tbody');
+  if (!tbody) return;
+  let timer=null, startY=0, dragging=false, dragRow=null;
+  tbody.addEventListener('touchstart', e=>{
+    const tr = e.target.closest('tr'); if (!tr) return;
+    if (e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='BUTTON') return;
+    startY = e.touches[0].clientY;
+    timer = setTimeout(()=>{
+      dragging=true; dragRow=tr; _sheetDragIdx=parseInt(tr.dataset.idx);
+      tr.style.outline='2px solid var(--gold)'; tr.style.opacity='0.85';
+      if (navigator.vibrate) navigator.vibrate(30);
+    }, 500);
+  }, {passive:true});
+  tbody.addEventListener('touchmove', e=>{
+    if (!dragging) { if (Math.abs(e.touches[0].clientY-startY)>10) clearTimeout(timer); return; }
+    e.preventDefault();
+    const y = e.touches[0].clientY;
+    const over = document.elementFromPoint(e.touches[0].clientX, y)?.closest('tr');
+    if (over && over!==dragRow && over.dataset.idx!==undefined) {
+      const rows = sheetRows(kind);
+      const from = parseInt(dragRow.dataset.idx), to = parseInt(over.dataset.idx);
+      if (from!==to) {
+        sheetSnapshot(kind);
+        const [moved] = rows.splice(from,1);
+        rows.splice(to,0,moved);
+        _sheetDragIdx = to;
+        renderRecordSheet(kind);
+        dragging=false; dragRow=null;
+      }
+    }
+  }, {passive:false});
+  tbody.addEventListener('touchend', ()=>{
+    clearTimeout(timer);
+    if (dragging) { _sheetDragIdx=-1; renderRecordSheet(kind); }
+    dragging=false; dragRow=null;
+  });
 }
 
 
@@ -7991,7 +8376,6 @@ function showStaffChoice(){
     <div class="bk-content-header">
       <div class="bk-content-title">RECORD</div>
       <div style="display:flex;gap:8px;">
-        <button class="staff-settings-btn" onclick="showStaffSettings()" title="Settings">\u2699\uFE0F</button>
         <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="goToHomepage()">\u2190 Back</button>
       </div>
     </div>
@@ -8011,119 +8395,13 @@ function showStaffChoice(){
 
 function showStaffSales(){
   staffHideChrome();
-  if(salesRows.length===0) salesRows=[1,2,3,4,5].map(n=>staffEmptySaleRow(n));
+  if(salesRows.length===0) salesRows=[staffEmptySaleRow(1)];
   salesRows.forEach(r=>{r._posted=false;});
   renderStaffSales();
 }
 
 function renderStaffSales(){
-  const tbody=salesRows.map((r,i)=>`
-    <tr id="srow_${i}">
-      <td class="staff-sn" style="white-space:nowrap;">${i+1}</td>
-      <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="What was sold&hellip;"
-        oninput="salesRows[${i}].narration=this.value"/></td>
-      <td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">${staffSym()}</span>
-        <input class="staff-cell num" type="text" inputmode="decimal" value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
-          onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-          oninput="fmtInputCommas(this);salesNumChange(${i},'unit_price',this.value)"/></div></td>
-      <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
-        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-        oninput="salesNumChange(${i},'qty',this.value)"/></td>
-      <td style="white-space:nowrap;"><div class="staff-cell ro" id="sale_total_${i}">${staffFmtAmt(r.total)}</div></td>
-      <td><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
-        onchange="salesRows[${i}].pay_mode=this.value">
-        <option value="cash"     ${r.pay_mode==='cash'    ?'selected':''}>Cash</option>
-        <option value="transfer" ${r.pay_mode==='transfer'?'selected':''}>Bank Transfer</option>
-        <option value="pos"      ${r.pay_mode==='pos'     ?'selected':''}>POS</option>
-        <option value="credit"   ${r.pay_mode==='credit'  ?'selected':''}>On Credit</option>
-      </select></td>
-      <td><button class="staff-save-row-btn" onclick="salesSaveRow(${i})" title="Save">&rsaquo;</button></td>
-      <td><button class="staff-del-btn" onclick="salesRows.splice(${i},1);renderStaffSales()">&times;</button></td>
-    </tr>`).join('');
-  const total=salesRows.reduce((a,r)=>a+(r.total||0),0);
-  document.getElementById('bkContent').innerHTML=`
-    <div class="bk-content-header">
-      <div class="bk-content-title">RECORD SALES</div>
-      <div style="display:flex;gap:6px;align-items:center;position:relative;">
-        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="toggleSalesToolbox()">&\#9881; Tools</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">&larr; Back</button>
-        <div id="salesToolbox" class="sales-toolbox hidden">
-          <div class="toolbox-title">Toolbox</div>
-          <button class="toolbox-btn" onclick="window.print();toggleSalesToolbox()">&#128424; Print</button>
-        </div>
-      </div>
-    </div>
-    <div class="bk-sheet-wrap">
-      <table class="staff-table staff-table-compact" style="min-width:600px;">
-        <thead><tr>
-          <th style="width:34px;white-space:nowrap;">S/N</th>
-          <th style="width:180px;">Narration</th>
-          <th style="width:120px;">Unit Price</th>
-          <th style="width:80px;">Quantity</th>
-          <th style="width:110px;">Total</th>
-          <th style="width:120px;">Payment Mode</th>
-          <th style="width:30px;"></th>
-          <th style="width:30px;"></th>
-        </tr></thead>
-        <tbody>${tbody}</tbody>
-        <tfoot><tr class="staff-total-row">
-          <td colspan="4" style="padding:7px 5px;">Total</td>
-          <td style="white-space:nowrap;padding:7px 5px;">${staffFmtAmt(total)}</td>
-          <td colspan="3"></td>
-        </tr></tfoot>
-      </table>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:8px;padding:10px 16px;">
-      <button class="staff-add-cust-btn" onclick="salesRows.push(staffEmptySaleRow(salesRows.length+1));renderStaffSales()">+ Add Row</button>
-      <button class="staff-save-static-btn" onclick="salesSaveAll()">Save All</button>
-    </div>`;
-}
-
-function salesNumChange(i,field,val){
-  salesRows[i][field]=parseFloat(String(val).replace(/,/g,''))||0;
-  salesRows[i].total=salesRows[i].unit_price*(salesRows[i].qty||1);
-  const el=document.getElementById('sale_total_'+i);
-  if(el) el.textContent=staffFmtAmt(salesRows[i].total);
-  const totEl=document.querySelector('#bkContent .staff-total-row td:nth-child(5)');
-  if(totEl) totEl.textContent=staffFmtAmt(salesRows.reduce((a,r)=>a+(r.total||0),0));
-}
-
-async function salesSaveRow(i){
-  const r=salesRows[i];
-  if(!r||!r.total) return;
-  if(r._posted) return; // already posted — prevent double posting
-  const btn=document.querySelector('#srow_'+i+' .staff-save-row-btn');
-  if(btn){btn.textContent='...';btn.disabled=true;}
-  try{
-    await autoPostSaleRow(r,'',new Date().toISOString().slice(0,10));
-    salesRows[i]._posted = true; // mark as posted
-    if(btn){btn.textContent='\u2713';btn.style.color='var(--green)';
-      setTimeout(()=>{btn.textContent='\u2713';btn.style.color='var(--green)';btn.disabled=true;},1500);}
-  }catch(e){
-    if(btn){btn.textContent='!';btn.style.color='var(--red)';btn.disabled=false;}
-  }
-}
-
-async function salesSaveAll(){
-  const rows=salesRows.filter(r=>r.total>0 && !r._posted); // skip already posted
-  if(!rows.length){ alert('No new rows to save — all have already been posted.'); return; }
-  const date=new Date().toISOString().slice(0,10);
-  for(const r of rows){ await autoPostSaleRow(r,'',date); r._posted=true; }
-  const msg=document.createElement('div');
-  msg.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a2a1a;border:1px solid var(--green);color:#4ade80;padding:10px 20px;border-radius:8px;font-size:0.82rem;font-weight:600;z-index:9999;white-space:nowrap;';
-  msg.textContent='\u2713 '+rows.length+' sale'+(rows.length>1?'s':'')+' posted';
-  document.body.appendChild(msg);
-  setTimeout(()=>msg.remove(),2500);
-}
-
-function toggleSalesToolbox(){
-  const tb=document.getElementById('salesToolbox');
-  if(tb) tb.classList.toggle('hidden');
-}
-
-function toggleExpToolbox(){
-  const tb=document.getElementById('expToolbox');
-  if(tb) tb.classList.toggle('hidden');
+  renderRecordSheet('sales');
 }
 
 function renderAllCustomers(){}
@@ -8459,18 +8737,6 @@ function renderProfileSheet() {
       </div>
     </div>
 
-    <div class="profile-section">
-      <div class="profile-section-title">Change Password</div>
-      <div class="profile-field">
-        <label>New Password <span style="color:var(--muted);font-weight:400;">(leave blank to keep current)</span></label>
-        <input id="pf_new_password" type="password" placeholder="Min 8 characters" autocomplete="new-password" oninput="document.getElementById('pf_confirm_wrap').style.display=this.value?'block':'none'"/>
-      </div>
-      <div class="profile-field" id="pf_confirm_wrap" style="display:none;">
-        <label>Confirm Password</label>
-        <input id="pf_confirm_password" type="password" placeholder="Confirm new password"/>
-      </div>
-    </div>
-
     ${userRole !== 'employee' ? `
     <div class="profile-section">
       <div class="profile-section-title" style="display:flex;align-items:center;justify-content:space-between;">
@@ -8490,9 +8756,21 @@ function renderProfileSheet() {
       <div id="profileBizFields">${_renderBizFields(profileActiveBiz)}</div>
     </div>` : ''}
 
-    <div style="padding:16px 20px 36px;display:flex;flex-direction:column;gap:10px;">
+    <div class="profile-section">
+      <div class="profile-section-title">Change Password</div>
+      <div class="profile-field">
+        <label>New Password <span style="color:var(--muted);font-weight:400;">(leave blank to keep current)</span></label>
+        <input id="pf_new_password" type="password" placeholder="Min 8 characters" autocomplete="new-password" oninput="document.getElementById('pf_confirm_wrap').style.display=this.value?'block':'none'"/>
+      </div>
+      <div class="profile-field" id="pf_confirm_wrap" style="display:none;">
+        <label>Confirm Password</label>
+        <input id="pf_confirm_password" type="password" placeholder="Confirm new password"/>
+      </div>
+    </div>
+
+
+    <div style="padding:16px 20px 36px;">
       <button class="profile-save-btn" onclick="saveProfile()">Save Changes</button>
-      <button class="profile-danger-btn" onclick="bkSignOut()">Sign Out</button>
     </div>`;
 
   document.body.appendChild(sheet);
@@ -8564,13 +8842,133 @@ function profileSwitchBiz(bizId) {
 }
 
 function profileAddBusiness() {
-  closeProfileSheet();
-  setTimeout(()=>showAddBusinessModal(), 200);
+  const el = document.getElementById('profileBizFields');
+  if (!el) return;
+  profileActiveBiz = null; // adding new
+  const sel = document.getElementById('pf_biz_selector');
+  if (sel) sel.value = '';
+  el.innerHTML = _renderAddBizForm();
+}
+
+const PROFILE_BIZ_STRUCTURES = ['Sole trader','Limited company','Partnership','Joint Venture','Government'];
+const PROFILE_IND_CATEGORIES = {
+  'Product industry': ['Retail & Trading','Manufacturing','Agriculture & Food','Fashion & Apparel','Electronics','Construction Materials','Pharmaceuticals','Cosmetics & Beauty Products','Furniture','Automotive Parts','Other Products'],
+  'Service industry': ['Research and Development','Consulting','Barbing / Hair Salon','Laundry & Dry Cleaning','Restaurants & Catering','Transportation & Logistics','Education & Training','Healthcare Services','Financial Services','Real Estate Services','Media & Entertainment','IT & Software Services','Legal Services','Hospitality & Tourism','Repairs & Maintenance','Other Services'],
+  'Government': ['Federal Agency','State Agency','Local Government','Parastatal','Other Government'],
+};
+let _newBizPS = [{sn:1, type:'', price:''}];
+let _newBizPSCols = [];
+
+function _renderAddBizForm() {
+  return `
+  <div style="border:1px solid var(--gold-dim);border-radius:10px;padding:12px;margin-top:4px;">
+    <div style="font-size:0.8rem;font-weight:800;color:var(--gold);margin-bottom:10px;">New Business</div>
+    <div class="profile-field"><label>Business Name</label>
+      <input id="nb_name" type="text" placeholder="Business name"/></div>
+    <div class="profile-field"><label>Business Structure</label>
+      <select id="nb_structure"><option value="">Select…</option>
+        ${PROFILE_BIZ_STRUCTURES.map(s=>`<option>${s}</option>`).join('')}</select></div>
+    <div class="profile-field"><label>Industry</label>
+      <select id="nb_ind_cat" onchange="nbIndCatChanged(this.value)"><option value="">Select industry…</option>
+        ${Object.keys(PROFILE_IND_CATEGORIES).map(c=>`<option>${c}</option>`).join('')}</select></div>
+    <div class="profile-field"><label>Business Type</label>
+      <select id="nb_biz_type"><option value="">Select industry first…</option></select></div>
+    <div class="profile-field"><label>Products / Services You Offer</label>
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <button type="button" class="bk-btn bk-btn-outline" style="font-size:0.7rem;" onclick="nbPSAddRow()">+ Add Row</button>
+        <button type="button" class="bk-btn bk-btn-outline" style="font-size:0.7rem;" onclick="nbPSAddCol()">+ Add Column</button>
+      </div>
+      <div style="overflow-x:auto;border:1px solid var(--border2);border-radius:8px;">
+        <table id="nbPSTable" style="width:100%;border-collapse:collapse;font-size:0.76rem;min-width:${320+_newBizPSCols.length*110}px;">
+          ${_nbPSTableHtml()}
+        </table>
+      </div></div>
+    <div class="profile-field"><label>Business Address</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <input id="nb_country" type="text" placeholder="Country" value="Nigeria"/>
+        <input id="nb_state" type="text" placeholder="State / Province"/>
+        <input id="nb_lga" type="text" placeholder="Local Government Area"/>
+        <input id="nb_town" type="text" placeholder="Town"/>
+        <input id="nb_street" type="text" placeholder="Street name"/>
+        <input id="nb_street_no" type="text" placeholder="Street number"/>
+      </div></div>
+    <div class="profile-field"><label>CAC Number (if registered)</label>
+      <input id="nb_cac" type="text" placeholder="RC 000000 — leave blank if not registered"/></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="bk-btn bk-btn-outline" style="flex:1;" onclick="profileSwitchBiz(userBusinesses[0]?.id||'');">Cancel</button>
+      <button class="bk-btn bk-btn-gold" style="flex:1;" onclick="nbSaveBusiness()">Save Business</button>
+    </div>
+  </div>`;
+}
+
+function _nbPSTableHtml() {
+  const extraH = _newBizPSCols.map(c=>`<th style="border:1px solid var(--border2);padding:5px;">${escH(c)}</th>`).join('');
+  const head = `<tr><th style="border:1px solid var(--border2);padding:5px;width:34px;">S/N</th>
+    <th style="border:1px solid var(--border2);padding:5px;">Product / Service Type</th>${extraH}
+    <th style="border:1px solid var(--border2);padding:5px;width:100px;">Price</th></tr>`;
+  const body = _newBizPS.map((r,i)=>{
+    const extraC = _newBizPSCols.map((c,ci)=>`<td style="border:1px solid var(--border2);padding:0;">
+      <input style="width:100%;background:transparent;border:none;color:var(--white);padding:6px;font-size:0.76rem;outline:none;"
+        value="${escH(r['col'+ci]||'')}" oninput="_newBizPS[${i}]['col${ci}']=this.value"/></td>`).join('');
+    return `<tr>
+      <td style="border:1px solid var(--border2);padding:5px;text-align:center;color:var(--muted);">${i+1}</td>
+      <td style="border:1px solid var(--border2);padding:0;"><input style="width:100%;background:transparent;border:none;color:var(--white);padding:6px;font-size:0.76rem;outline:none;"
+        value="${escH(r.type||'')}" placeholder="e.g. Haircut" oninput="_newBizPS[${i}].type=this.value"/></td>
+      ${extraC}
+      <td style="border:1px solid var(--border2);padding:0;"><input style="width:100%;background:transparent;border:none;color:var(--white);padding:6px;font-size:0.76rem;outline:none;"
+        inputmode="decimal" value="${escH(r.price||'')}" placeholder="0" oninput="fmtInputCommas(this);_newBizPS[${i}].price=this.value"/></td>
+    </tr>`;
+  }).join('');
+  return head + body;
+}
+
+function nbPSAddRow(){ _newBizPS.push({sn:_newBizPS.length+1,type:'',price:''}); const t=document.getElementById('nbPSTable'); if(t) t.innerHTML=_nbPSTableHtml(); }
+function nbPSAddCol(){
+  const name = prompt('Column header name:');
+  if (!name) return;
+  _newBizPSCols.push(name.trim());
+  const t=document.getElementById('nbPSTable'); if(t) t.innerHTML=_nbPSTableHtml();
+}
+function nbIndCatChanged(cat){
+  const sel = document.getElementById('nb_biz_type');
+  if (!sel) return;
+  const types = PROFILE_IND_CATEGORIES[cat]||[];
+  sel.innerHTML = '<option value="">Select…</option>' + types.map(t=>`<option>${t}</option>`).join('');
+}
+
+async function nbSaveBusiness(){
+  const name = document.getElementById('nb_name')?.value?.trim();
+  if (!name) { alert('Enter a business name'); return; }
+  const structure = document.getElementById('nb_structure')?.value||'';
+  const indCat    = document.getElementById('nb_ind_cat')?.value||'';
+  const bizType   = document.getElementById('nb_biz_type')?.value||'';
+  const cac       = document.getElementById('nb_cac')?.value?.trim()||'';
+  const addr = [
+    document.getElementById('nb_street_no')?.value, document.getElementById('nb_street')?.value,
+    document.getElementById('nb_town')?.value, document.getElementById('nb_lga')?.value,
+    document.getElementById('nb_state')?.value, document.getElementById('nb_country')?.value,
+  ].filter(Boolean).join(', ');
+  const products = _newBizPS.filter(r=>r.type).map(r=>r.type+(r.price?' ('+r.price+')':'')).join('; ');
+  try {
+    const {data,error} = await bkDb.from('businesses').insert({
+      name, industry: bizType||indCat||'General', business_type:structure,
+      products_services:products, business_address:addr,
+      cac_registered:!!cac, cac_number:cac||null,
+      owner_user_id:bkUser.id, currency:activeCurrency||'NGN', is_primary:userBusinesses.length===0, icon:'🏢',
+    }).select().single();
+    if (error) throw error;
+    userBusinesses.push(data);
+    await bkDb.from('user_businesses').upsert({user_id:bkUser.id,business_id:data.id,role:'owner'},{onConflict:'user_id,business_id'});
+    _newBizPS=[{sn:1,type:'',price:''}]; _newBizPSCols=[];
+    profileActiveBiz = data;
+    renderMenuBusinesses();
+    renderProfileSheet();
+  } catch(e){ alert('Error saving business: '+(e.message||'')); }
 }
 
 async function profileDeleteBusiness() {
   if (!profileActiveBiz) return;
-  if (!confirm('Delete "'+profileActiveBiz.name+'"? This cannot be undone.')) return;
+  if (!confirm('Delete "'+profileActiveBiz.name+'"?\n\nThis deletes ALL transactions and information for this business from the platform. You will need to contact support to restore it.')) return;
   try {
     await bkDb.from('businesses').delete().eq('id',profileActiveBiz.id).eq('owner_user_id',bkUser.id);
     userBusinesses = userBusinesses.filter(b=>b.id!==profileActiveBiz.id);
@@ -8587,7 +8985,7 @@ function triggerAvatarUpload() {
 async function handleAvatarUpload(input) {
   const file = input.files?.[0];
   if (!file) return;
-  if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB.'); return; }
+  if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB.'); return; }
   const ext  = file.name.split('.').pop().toLowerCase();
   const path = bkUser.id + '/avatar.' + ext;
   try {
@@ -8738,6 +9136,10 @@ function renderMenuBusinesses() {
   const list = document.getElementById('menuBusinessesList');
   if (!list) return;
   const statusColors = {healthy:'#4ade80',attention:'#fbbf24',critical:'#f87171'};
+  if (!userBusinesses.length) {
+    list.innerHTML = '<div style="padding:8px 20px;font-size:0.74rem;color:var(--muted);">No business registered yet</div>';
+    return;
+  }
   list.innerHTML = userBusinesses.map(b => `
     <div class="menu-biz-item" onclick="openBusinessFromMenu('${b.id}');closeBkMenu()">
       <span>${b.icon||'🏢'}</span>
@@ -8791,10 +9193,10 @@ async function fetchAllBusinessMetrics() {
 }
 
 function renderAllBusinessesDashboard(metrics) {
+  bdSaveRoute('dashboard');
   const hour = new Date().getHours();
   const greeting = hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
-  const name = businessDisplayName || bkUser?.email?.split('@')[0] || 'there';
-  const sym = CURRENCIES[activeCurrency]?.symbol || '₦';
+  const firstName = (profileData && profileData.first_name) || staffDisplayName?.split(' ')[0] || bkUser?.email?.split('@')[0] || '';
 
   const totalRevenue    = metrics.reduce((s,b)=>s+b.revenue,0);
   const totalExpenses   = metrics.reduce((s,b)=>s+b.expenses,0);
@@ -8808,7 +9210,7 @@ function renderAllBusinessesDashboard(metrics) {
     const iconBg = b.status==='critical'?'rgba(248,113,113,0.15)':b.status==='attention'?'rgba(251,191,36,0.15)':'rgba(74,222,128,0.15)';
     const marginBarColor = b.profit<0?'#f87171':b.margin<15?'#fbbf24':'#4ade80';
     return `
-    <div class="biz-card">
+    <div class="biz-card" onclick="openBusiness('${b.id}')" style="cursor:pointer;">
       <div class="biz-card-header">
         <div style="display:flex;align-items:center;flex:1;">
           <div class="biz-icon" style="background:${iconBg};">${b.icon||'🏢'}</div>
@@ -8817,68 +9219,60 @@ function renderAllBusinessesDashboard(metrics) {
             <div class="biz-industry">${escH(b.industry||'General')}</div>
           </div>
         </div>
-        <span class="biz-status ${b.status}">${b.status==='healthy'?'● Healthy':b.status==='attention'?'● Attention':'● Critical'}</span>
+        <span class="biz-status ${b.status}">● ${b.status==='healthy'?'Healthy':b.status==='attention'?'Attention':'Critical'}</span>
       </div>
       <div class="biz-metrics">
-        <div>
-          <div class="biz-metric-label">Revenue</div>
-          <div class="biz-metric-val">${sym}${fmt(b.revenue)}</div>
-        </div>
-        <div>
-          <div class="biz-metric-label">Expenses</div>
-          <div class="biz-metric-val">${sym}${fmt(b.expenses)}</div>
-        </div>
-        <div>
-          <div class="biz-metric-label">Net Profit</div>
-          <div class="biz-metric-val ${b.profit>=0?'green':'red'}">${b.profit<0?'-':''}${sym}${fmt(Math.abs(b.profit))}</div>
-        </div>
+        <div><div class="biz-metric-label">Revenue</div><div class="biz-metric-val">${fmt(b.revenue)}</div></div>
+        <div><div class="biz-metric-label">Expenses</div><div class="biz-metric-val">${fmt(b.expenses)}</div></div>
+        <div><div class="biz-metric-label">Net Profit</div><div class="biz-metric-val ${b.profit>=0?'green':'red'}">${fmt(b.profit)}</div></div>
       </div>
       <div style="font-size:0.68rem;color:var(--muted);margin-bottom:4px;">PROFIT MARGIN</div>
       <div class="biz-margin-bar"><div class="biz-margin-fill" style="width:${Math.max(0,Math.min(100,b.margin))}%;background:${marginBarColor};"></div></div>
       <div class="biz-footer">
-        <span class="biz-vs-last">${sym}${fmt(Math.abs(b.profit))} ${b.profit>=0?'profit':'loss'}</span>
         <span style="font-size:0.72rem;font-weight:700;color:${marginBarColor};">${b.margin}%</span>
-        <button class="biz-open-btn" onclick="openBusiness('${b.id}')">👁 Open</button>
+        <button class="biz-open-btn" onclick="event.stopPropagation();openBusiness('${b.id}')">👁 Open</button>
       </div>
     </div>`;
   }).join('');
 
-  // Recent activity from primary business transactions
   document.getElementById('bkContent').innerHTML = `
     <div class="ab-header">
-      <div class="ab-greeting">${greeting}</div>
-      <div class="ab-name">${escH(name)}</div>
-      ${alertCount>0?`<div class="ab-alert">You have <strong>${alertCount} alert${alertCount>1?'s':''}</strong> across your businesses today.</div>`:'<div class="ab-alert" style="color:#4ade80;">All businesses are healthy ✓</div>'}
+      <div class="ab-greeting">${greeting}${firstName?',':''}</div>
+      <div class="ab-name">${escH(firstName)}</div>
+      <h1 class="bk-think" style="font-size:clamp(1.05rem,4.5vw,1.5rem);text-align:left;margin:8px 0 4px;">How is business doing <span>today?</span></h1>
+      ${alertCount>0?`<div class="ab-alert">You have <strong>${alertCount} alert${alertCount>1?'s':''}</strong> across your businesses today.</div>`:''}
     </div>
-    <div class="ab-actions">
-      <button class="ab-btn ab-btn-primary" onclick="showAddBusinessModal()">+ Add Business</button>
+    <div style="text-align:center;padding:14px 16px 4px;">
+      <button class="eq-record-btn" onclick="showRecordBusinessChoice()">📝 Record</button>
+    </div>
+    <div class="ab-actions" style="border-bottom:none;">
       <button class="ab-btn ab-btn-secondary" onclick="exportAllBusinesses()">⬇ Export All</button>
     </div>
     <div class="ab-portfolio">
       <div class="ab-portfolio-title">Portfolio Overview</div>
       <div class="ab-kpi-card">
-        <span class="ab-kpi-badge ${totalRevenue>0?'up':'neutral'}" style="float:right;">${totalRevenue>0?'↑':'—'} ${metrics.length} businesses</span>
+        <span class="ab-kpi-badge ${totalRevenue>0?'up':'neutral'}" style="float:right;">${metrics.length} business${metrics.length===1?'':'es'}</span>
         <div class="ab-kpi-icon">💰</div>
-        <div class="ab-kpi-amount">${sym}${fmt(totalRevenue)}</div>
+        <div class="ab-kpi-amount">${fmt(totalRevenue)}</div>
         <div class="ab-kpi-label">Portfolio Revenue</div>
       </div>
       <div class="ab-kpi-card">
-        <span class="ab-kpi-badge down" style="float:right;">↑ ${metrics.length} active</span>
+        <span class="ab-kpi-badge down" style="float:right;">${metrics.length} active</span>
         <div class="ab-kpi-icon">💳</div>
-        <div class="ab-kpi-amount">${sym}${fmt(totalExpenses)}</div>
+        <div class="ab-kpi-amount">${fmt(totalExpenses)}</div>
         <div class="ab-kpi-label">Total Expenses</div>
       </div>
       <div class="ab-kpi-card">
-        <span class="ab-kpi-badge ${totalProfit>=0?'up':'down'}" style="float:right;">${totalProfit>=0?'↑':'↓'} ${totalRevenue>0?Math.round(totalProfit/totalRevenue*100):0}%</span>
+        <span class="ab-kpi-badge ${totalProfit>=0?'up':'down'}" style="float:right;">${totalRevenue>0?Math.round(totalProfit/totalRevenue*100):0}%</span>
         <div class="ab-kpi-icon">📈</div>
-        <div class="ab-kpi-amount" style="color:${totalProfit>=0?'#4ade80':'#f87171'};">${sym}${fmt(Math.abs(totalProfit))}</div>
+        <div class="ab-kpi-amount" style="color:${totalProfit>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(totalProfit))}</div>
         <div class="ab-kpi-label">${totalProfit>=0?'Net Profit':'Net Loss'}</div>
       </div>
       ${totalReceivables>0?`<div class="ab-kpi-card">
-        <span class="ab-kpi-badge neutral" style="float:right;">${metrics.length} businesses</span>
+        <span class="ab-kpi-badge neutral" style="float:right;">Receivables</span>
         <div class="ab-kpi-icon">⏰</div>
-        <div class="ab-kpi-amount" style="color:#60a5fa;">${sym}${fmt(totalReceivables)}</div>
-        <div class="ab-kpi-label">Total Receivables</div>
+        <div class="ab-kpi-amount" style="color:#60a5fa;">${fmt(totalReceivables)}</div>
+        <div class="ab-kpi-label">Receivables</div>
       </div>`:''}
     </div>
     <div class="ab-section">
@@ -8886,17 +9280,49 @@ function renderAllBusinessesDashboard(metrics) {
         <div class="ab-section-title">My Businesses</div>
         <div class="ab-section-sub">${metrics.length} ${metrics.length===1?'entity':'entities'}</div>
       </div>
-      ${bizCards||'<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No businesses yet. Click + Add Business to get started.</div>'}
+      ${bizCards||'<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No business registered yet. Add one from your Profile.</div>'}
     </div>
     <div id="abChartSection" class="ab-section">
       <div class="ab-section-title" style="margin-bottom:12px;">Revenue Overview</div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
         <canvas id="abRevenueChart" height="180"></canvas>
       </div>
+    </div>
+    <div class="ab-section">
+      <div class="ab-section-header">
+        <div class="ab-section-title">Recent Activity</div>
+      </div>
+      <div id="abRecentActivity" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px 16px;">
+        <div style="color:var(--muted);font-size:0.78rem;padding:12px 0;">Loading…</div>
+      </div>
     </div>`;
 
-  // Draw simple revenue chart
   setTimeout(()=>renderABChart(metrics),100);
+  loadRecentActivity();
+}
+
+async function loadRecentActivity() {
+  const el = document.getElementById('abRecentActivity');
+  if (!el || !bkUser) return;
+  try {
+    const {data:T} = await bkDb.from('bk_transactions').select('narration,record_type,debit,credit,txn_date,created_at')
+      .eq('user_id',bkUser.id).order('created_at',{ascending:false}).limit(8);
+    if (!T || !T.length) { el.innerHTML='<div style="color:var(--muted);font-size:0.78rem;padding:12px 0;">No activity yet — record your first transaction.</div>'; return; }
+    const bizName = (userBusinesses[0]?.name||businessDisplayName||'Business').toUpperCase();
+    el.innerHTML = T.map(t=>{
+      const isInc = t.record_type==='income';
+      const amt = Math.abs((parseFloat(t.debit)||0)-(parseFloat(t.credit)||0));
+      const when = t.txn_date||String(t.created_at||'').slice(0,10);
+      return `<div class="ab-activity-item">
+        <div class="ab-activity-dot" style="background:${isInc?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.12)'};">${isInc?'↗':'↘'}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="ab-activity-biz">${escH(bizName)}</div>
+          <div class="ab-activity-desc">${escH(t.narration||(isInc?'Sale recorded':'Expense recorded'))} — ${fmt(amt)}</div>
+          <div class="ab-activity-time">${escH(when)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML='<div style="color:var(--muted);font-size:0.78rem;padding:12px 0;">Could not load activity.</div>'; }
 }
 
 function renderABChart(metrics) {
@@ -8970,7 +9396,7 @@ async function showSingleBusinessDashboard(biz) {
       <td style="padding:8px 10px;font-size:0.72rem;color:var(--muted);">${t.txn_date||'—'}</td>
       <td style="padding:8px 10px;font-size:0.78rem;">${escH(t.narration||'—')}</td>
       <td style="padding:8px 10px;font-size:0.72rem;font-weight:700;color:${t.record_type==='income'?'#4ade80':'#f87171'};">${t.record_type==='income'?'INCOME':'EXPEND'}</td>
-      <td style="padding:8px 10px;font-size:0.78rem;text-align:right;font-weight:700;">${sym}${fmt(Math.abs((parseFloat(t.debit)||0)-(parseFloat(t.credit)||0)))}</td>
+      <td style="padding:8px 10px;font-size:0.78rem;text-align:right;font-weight:700;">${fmt(Math.abs((parseFloat(t.debit)||0)-(parseFloat(t.credit)||0)))}</td>
     </tr>`).join('');
 
   document.getElementById('bkContent').innerHTML = `
@@ -9014,25 +9440,25 @@ async function showSingleBusinessDashboard(biz) {
       <div class="ab-kpi-card">
         <span class="ab-kpi-badge up" style="float:right;">Revenue</span>
         <div class="ab-kpi-icon">💰</div>
-        <div class="ab-kpi-amount" style="color:#4ade80;">${sym}${fmt(revenue)}</div>
+        <div class="ab-kpi-amount" style="color:#4ade80;">${fmt(revenue)}</div>
         <div class="ab-kpi-label">Total Revenue</div>
       </div>
       <div class="ab-kpi-card">
         <span class="ab-kpi-badge down" style="float:right;">Expenses</span>
         <div class="ab-kpi-icon">💳</div>
-        <div class="ab-kpi-amount" style="color:#f87171;">${sym}${fmt(expenses)}</div>
+        <div class="ab-kpi-amount" style="color:#f87171;">${fmt(expenses)}</div>
         <div class="ab-kpi-label">Total Expenses</div>
       </div>
       <div class="ab-kpi-card">
         <span class="ab-kpi-badge ${profit>=0?'up':'down'}" style="float:right;">${margin}% margin</span>
         <div class="ab-kpi-icon">${profit>=0?'📈':'📉'}</div>
-        <div class="ab-kpi-amount" style="color:${profit>=0?'#4ade80':'#f87171'};">${sym}${fmt(Math.abs(profit))}</div>
+        <div class="ab-kpi-amount" style="color:${profit>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(profit))}</div>
         <div class="ab-kpi-label">${profit>=0?'Net Profit':'Net Loss'}</div>
       </div>
       ${receivables>0?`<div class="ab-kpi-card">
         <span class="ab-kpi-badge neutral" style="float:right;">Receivable</span>
         <div class="ab-kpi-icon">⏰</div>
-        <div class="ab-kpi-amount" style="color:#60a5fa;">${sym}${fmt(receivables)}</div>
+        <div class="ab-kpi-amount" style="color:#60a5fa;">${fmt(receivables)}</div>
         <div class="ab-kpi-label">Debtors / Receivable</div>
       </div>`:''}
     </div>
@@ -9041,11 +9467,11 @@ async function showSingleBusinessDashboard(biz) {
     <div class="ab-section">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
         <div style="font-size:0.82rem;font-weight:800;margin-bottom:12px;">Profit Margin</div>
-        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Revenue</span><span style="font-weight:700;">${sym}${fmt(revenue)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Revenue</span><span style="font-weight:700;">${fmt(revenue)}</span></div>
         <div class="biz-margin-bar" style="height:6px;margin-bottom:10px;"><div class="biz-margin-fill" style="width:100%;background:#4ade80;"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Expenses</span><span style="font-weight:700;">${sym}${fmt(expenses)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Expenses</span><span style="font-weight:700;">${fmt(expenses)}</span></div>
         <div class="biz-margin-bar" style="height:6px;margin-bottom:10px;"><div class="biz-margin-fill" style="width:${revenue>0?Math.min(100,Math.round(expenses/revenue*100)):0}%;background:#f87171;"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Net Profit</span><span style="font-weight:700;">${sym}${fmt(profit)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span style="color:var(--muted);">Net Profit</span><span style="font-weight:700;">${fmt(profit)}</span></div>
         <div class="biz-margin-bar" style="height:6px;margin-bottom:14px;"><div class="biz-margin-fill" style="width:${Math.max(0,margin)}%;background:#60a5fa;"></div></div>
         <div style="font-size:1.5rem;font-weight:900;color:${sc};">${margin}%</div>
         <div style="font-size:0.72rem;color:${sc};margin-top:2px;">● ${profit>=0?'On track':'Below target'}</div>
@@ -9541,78 +9967,16 @@ function showStaffExpenses(){
 }
 
 function renderStaffExpenses(){
-  const rows=staffExpRows.map((r,i)=>`
-    <tr id="erow_${i}">
-      <td class="staff-sn" style="white-space:nowrap;">${i+1}</td>
-      <td><input class="staff-cell" type="text" value="${escH(r.narration)}" placeholder="What was the expense?"
-        oninput="staffExpRows[${i}].narration=this.value"/></td>
-      <td style="white-space:nowrap;"><div class="staff-price-wrap">
-        <span class="staff-curr-prefix">${staffSym()}</span>
-        <input class="staff-cell num" type="text" inputmode="decimal"
-        value="${r.unit_price>0?r.unit_price.toLocaleString('en-NG'):''}" placeholder="0"
-        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-        oninput="fmtInputCommas(this);staffExpNumChange(${i},'unit_price',this.value)"/></div></td>
-      <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
-        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-        oninput="staffExpNumChange(${i},'qty',this.value)"/></td>
-      <td style="white-space:nowrap;"><div class="staff-cell ro" id="etotal_${i}">${staffFmtAmt(r.total)}</div></td>
-      <td><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
-        onchange="staffExpRows[${i}].pay_mode=this.value">
-        <option value="cash"     ${(r.pay_mode||'cash')==='cash'    ?'selected':''}>Cash</option>
-        <option value="transfer" ${r.pay_mode==='transfer'?'selected':''}>Bank Transfer</option>
-        <option value="pos"      ${r.pay_mode==='pos'     ?'selected':''}>POS</option>
-        <option value="credit"   ${r.pay_mode==='credit'  ?'selected':''}>On Credit</option>
-      </select></td>
-      <td><button class="staff-save-row-btn" onclick="expSaveRow(${i})" title="Save">&rsaquo;</button></td>
-      <td><button class="staff-del-btn" onclick="staffExpDel(${i})">&#x2715;</button></td>
-    </tr>`).join('');
-  const totalExp=staffExpRows.reduce((a,r)=>a+(r.total||0),0);
-  document.getElementById('bkContent').innerHTML=`
-    <div class="bk-content-header">
-      <div class="bk-content-title">RECORD EXPENSES</div>
-      <div style="display:flex;gap:6px;align-items:center;position:relative;">
-        <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="toggleExpToolbox()">&#9881; Tools</button>
-        <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showStaffChoice()">&larr; Back</button>
-        <div id="expToolbox" class="sales-toolbox hidden">
-          <div class="toolbox-title">Toolbox</div>
-          <button class="toolbox-btn" onclick="window.print();toggleExpToolbox()">&#128424; Print</button>
-        </div>
-      </div>
-    </div>
-    <div class="bk-sheet-wrap">
-      <table class="staff-table staff-table-compact" style="min-width:580px;">
-        <thead><tr>
-          <th style="width:34px;white-space:nowrap;">S/N</th>
-          <th style="width:180px;">Narration</th>
-          <th style="width:120px;">Unit Price</th>
-          <th style="width:80px;">Quantity</th>
-          <th style="width:110px;">Total</th>
-          <th style="width:120px;">Payment Mode</th>
-          <th style="width:30px;"></th>
-          <th style="width:30px;"></th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-        <tfoot><tr class="staff-total-row">
-          <td colspan="4" style="padding:7px 5px;">Total</td>
-          <td style="white-space:nowrap;padding:7px 5px;">${staffFmtAmt(totalExp)}</td>
-          <td colspan="3"></td>
-        </tr></tfoot>
-      </table>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:8px;padding:10px 16px;">
-      <button class="staff-add-cust-btn" onclick="staffExpAddRow()">+ Add Row</button>
-      <button class="staff-save-static-btn" onclick="saveAllExpenses()">Save All</button>
-    </div>`;
+  renderRecordSheet('expenses');
 }
-
 function staffExpNumChange(i,field,val){
   staffExpRows[i][field]=parseFloat(String(val).replace(/,/g,''))||0;
   staffExpRows[i].total=staffExpRows[i].unit_price*(staffExpRows[i].qty||1);
-  const el=document.getElementById(`etotal_${i}`);
-  if(el)el.textContent=staffFmtAmt(staffExpRows[i].total);
-  const totalExp=staffExpRows.reduce((a,r)=>a+(r.total||0),0);
-  const grand=document.getElementById('expGrandTotal');
-  if(grand)grand.textContent=staffFmtAmt(totalExp);
+  staffExpRows[i]._posted=false;
+  const el=document.getElementById('etotal_'+i);
+  if(el) el.textContent=staffFmtAmt(staffExpRows[i].total);
+  const gt=document.getElementById('sheetGrandTotal_expenses');
+  if(gt) gt.textContent=staffFmtAmt(staffExpRows.reduce((a,r)=>a+(r.total||0),0));
 }
 
 function staffExpSave(i){
