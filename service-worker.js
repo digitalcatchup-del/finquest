@@ -1,6 +1,6 @@
-// Butterfly Dynamix Bookkeeping — Service Worker v4
+// Butterfly Dynamix Bookkeeping — Service Worker v5
 // v4: force cache clear after profile/multi-business update
-const CACHE_NAME = 'bd-bookkeeping-v4';
+const CACHE_NAME = 'bd-bookkeeping-v5';
 const ASSETS_TO_CACHE = [
   '/bookkeeping',
   '/bookkeeping.html',
