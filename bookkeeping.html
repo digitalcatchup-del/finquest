@@ -8338,7 +8338,7 @@ const NG_STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Be
 const BIZ_TYPES = ['Sole Proprietorship','Partnership','Limited Liability Company (LLC)',
   'Public Limited Company (PLC)','Cooperative','NGO / Non-profit','Other'];
 
-const INDUSTRIES = ['General','Retail','Food & Beverage','Consulting & Tech','Real Estate',
+const PROFILE_INDUSTRIES = ['General','Retail','Food & Beverage','Consulting & Tech','Real Estate',
   'Healthcare','Manufacturing','Transportation','Education','Beauty & Personal Care',
   'Construction','Agriculture','Media & Entertainment','Financial Services','Other'];
 
@@ -8524,7 +8524,7 @@ function _renderBizFields(biz) {
     <div class="profile-field">
       <label>Industry</label>
       <select id="pf_biz_industry">
-        ${INDUSTRIES.map(i=>`<option ${(biz.industry||'General')===i?'selected':''}>${escH(i)}</option>`).join('')}
+        ${PROFILE_INDUSTRIES.map(i=>`<option ${(biz.industry||'General')===i?'selected':''}>${escH(i)}</option>`).join('')}
       </select>
     </div>
     <div class="profile-field">
