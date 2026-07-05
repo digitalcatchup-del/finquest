@@ -768,7 +768,25 @@ body{padding-top:0;}
 .ps-save-btn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.95rem;font-weight:900;padding:4px 8px;}
 .ps-save-btn:hover{color:var(--white);}
 .ps-col-selector{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;min-width:270px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
-/* ── ALL BUSINESSES DASHBOARD ─────────────────────────────── */
+/* ── PROFILE SHEET ────────────────────────────────────────── */
+.profile-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1200;opacity:0;transition:opacity 0.25s;}
+.profile-sheet-overlay.show{opacity:1;}
+.profile-sheet{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);border-radius:20px 20px 0 0;z-index:1210;max-height:92vh;overflow-y:auto;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);}
+.profile-sheet.show{transform:translateY(0);}
+.profile-sheet-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;}
+.profile-sheet-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);}
+.profile-avatar-large{width:64px;height:64px;border-radius:50%;background:var(--gold);color:#000;font-size:1.4rem;font-weight:900;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.profile-section{padding:16px 20px;border-bottom:1px solid var(--border);}
+.profile-section-title{font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px;}
+.profile-field{margin-bottom:14px;}
+.profile-field label{display:block;font-size:0.7rem;font-weight:700;color:var(--muted);margin-bottom:4px;}
+.profile-field input,.profile-field select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 12px;font-size:0.85rem;font-family:inherit;outline:none;}
+.profile-field input:focus,.profile-field select:focus{border-color:var(--gold);}
+.profile-field .field-note{font-size:0.68rem;color:var(--muted);margin-top:3px;}
+.profile-save-btn{width:100%;background:var(--gold);color:#000;border:none;font-size:0.88rem;font-weight:800;padding:13px;border-radius:10px;cursor:pointer;margin-top:4px;}
+.profile-save-btn:active{opacity:0.85;}
+.profile-danger-btn{width:100%;background:none;border:1px solid rgba(248,113,113,0.4);color:#f87171;font-size:0.82rem;font-weight:700;padding:11px;border-radius:10px;cursor:pointer;}
+.profile-plan-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.3);color:var(--gold);font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:20px;}
 .ab-header{padding:20px 16px 12px;background:var(--surface);border-bottom:1px solid var(--border);}
 .ab-greeting{font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;}
 .ab-name{font-size:1.4rem;font-weight:900;color:var(--white);margin-bottom:4px;}
@@ -1113,11 +1131,16 @@ body{padding-top:0;}
     </div>
   </nav>
 
-  <!-- Menu footer -->
-  <div style="padding:16px 20px;border-top:1px solid var(--border);flex-shrink:0;">
-    <div id="bkMenuUserName" style="font-size:0.8rem;font-weight:700;color:var(--off);margin-bottom:2px;">—</div>
-    <div id="bkMenuUserEmail" style="font-size:0.7rem;color:var(--muted);">—</div>
-    <button onclick="bkSignOut()" style="margin-top:10px;background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.74rem;padding:6px 14px;border-radius:6px;cursor:pointer;width:100%;">Sign Out</button>
+  <!-- Menu footer — click to open profile -->
+  <div onclick="openProfileSheet();closeBkMenu()" style="padding:16px 20px;border-top:1px solid var(--border);flex-shrink:0;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='var(--gold-dim)'" onmouseleave="this.style.background=''">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div id="menuAvatarCircle" style="width:36px;height:36px;border-radius:50%;background:var(--gold);color:#000;font-size:0.85rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;">?</div>
+      <div style="flex:1;min-width:0;">
+        <div id="bkMenuUserName" style="font-size:0.82rem;font-weight:700;color:var(--white);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
+        <div id="bkMenuUserEmail" style="font-size:0.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
+      </div>
+      <span style="color:var(--muted);font-size:0.8rem;">›</span>
+    </div>
   </div>
 </div>
 
@@ -6542,6 +6565,9 @@ function openBkMenu() {
   const name=document.getElementById('bkUserName')?.textContent;
   const mn=document.getElementById('bkMenuUserName'); if(mn) mn.textContent=name||'—';
   const me=document.getElementById('bkMenuUserEmail'); if(me) me.textContent=bkUser?.email||'—';
+  // Update avatar initials
+  const av=document.getElementById('menuAvatarCircle');
+  if(av&&name) av.textContent=(name.trim().split(' ').map(w=>w[0]).join('').slice(0,2)).toUpperCase();
 }
 function closeBkMenu() {
   bkMenuOpen=false;
@@ -8300,7 +8326,247 @@ function staffRefreshCustomerTotals(custId){
 
 
 
-// ══ MULTI-BUSINESS DASHBOARD ══════════════════════════════════
+// ══ USER PROFILE SHEET ════════════════════════════════════════
+let profileData = {}; // cached profile data
+
+async function openProfileSheet() {
+  // Load latest profile data
+  profileData = await loadProfileData();
+  renderProfileSheet();
+}
+
+async function loadProfileData() {
+  const data = { email: bkUser?.email||'', name: staffDisplayName||'' };
+  try {
+    const [profileRes, bizRes] = await Promise.all([
+      bkDb.from('profiles').select('*').eq('id', bkUser.id).maybeSingle(),
+      bkDb.from('bk_business_profiles').select('*').eq('user_id', bkUser.id).maybeSingle(),
+    ]);
+    if (profileRes.data) {
+      data.username    = profileRes.data.username || '';
+      data.full_name   = profileRes.data.full_name || staffDisplayName || '';
+      data.phone       = profileRes.data.phone || '';
+      data.job_title   = profileRes.data.job_title || '';
+    }
+    if (bizRes.data) {
+      data.business_name    = bizRes.data.business_name || businessDisplayName || '';
+      data.business_address = bizRes.data.business_address || '';
+      data.cac_number       = bizRes.data.cac_number || '';
+      data.business_phone   = bizRes.data.business_phone || '';
+      data.industry         = bizRes.data.industry || '';
+    }
+  } catch(e) {}
+  return data;
+}
+
+function renderProfileSheet() {
+  // Remove existing sheet if any
+  document.getElementById('profileSheetOverlay')?.remove();
+  document.getElementById('profileSheet')?.remove();
+
+  const initials = (profileData.full_name||profileData.username||profileData.email||'?')
+    .trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const isOwner = userRole !== 'employee';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'profileSheetOverlay';
+  overlay.className = 'profile-sheet-overlay';
+  overlay.onclick = closeProfileSheet;
+  document.body.appendChild(overlay);
+
+  const sheet = document.createElement('div');
+  sheet.id = 'profileSheet';
+  sheet.className = 'profile-sheet';
+  sheet.innerHTML = `
+    <div class="profile-sheet-handle"></div>
+
+    <!-- Header -->
+    <div class="profile-sheet-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-size:1rem;font-weight:800;">My Profile</div>
+        <button onclick="closeProfileSheet()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px;">✕</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="profile-avatar-large" id="profileAvatarLarge">${initials}</div>
+        <div>
+          <div style="font-size:1rem;font-weight:800;color:var(--white);">${escH(profileData.full_name||profileData.username||'—')}</div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">${escH(profileData.email)}</div>
+          <div style="margin-top:6px;"><span class="profile-plan-badge">★ ${userRole==='owner'?'Business Owner':userRole==='accountant'?'Accountant':'Staff'}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personal Info -->
+    <div class="profile-section">
+      <div class="profile-section-title">Personal Information</div>
+      <div class="profile-field">
+        <label>Full Name</label>
+        <input id="pf_full_name" type="text" value="${escH(profileData.full_name||profileData.username||'')}" placeholder="Your full name"/>
+      </div>
+      <div class="profile-field">
+        <label>Phone Number</label>
+        <input id="pf_phone" type="tel" value="${escH(profileData.phone||'')}" placeholder="+234 800 000 0000"/>
+      </div>
+      ${!isOwner?`<div class="profile-field">
+        <label>Job Title</label>
+        <input id="pf_job_title" type="text" value="${escH(profileData.job_title||'')}" placeholder="e.g. Cashier, Barber, Manager"/>
+      </div>`:''}
+    </div>
+
+    ${isOwner?`<!-- Business Info -->
+    <div class="profile-section">
+      <div class="profile-section-title">Business Information</div>
+      <div class="profile-field">
+        <label>Business Name</label>
+        <input id="pf_business_name" type="text" value="${escH(profileData.business_name||'')}" placeholder="Your business name"/>
+      </div>
+      <div class="profile-field">
+        <label>Industry</label>
+        <select id="pf_industry">
+          ${['General','Retail','Food & Beverage','Consulting & Tech','Real Estate','Healthcare','Manufacturing','Transportation','Education','Beauty & Personal Care','Construction','Other'].map(i=>`<option ${profileData.industry===i?'selected':''}>${i}</option>`).join('')}
+        </select>
+      </div>
+      <div class="profile-field">
+        <label>Business Address</label>
+        <input id="pf_business_address" type="text" value="${escH(profileData.business_address||'')}" placeholder="e.g. 12 Marina St, Lagos"/>
+      </div>
+      <div class="profile-field">
+        <label>Business Phone</label>
+        <input id="pf_business_phone" type="tel" value="${escH(profileData.business_phone||'')}" placeholder="+234 800 000 0000"/>
+      </div>
+      <div class="profile-field">
+        <label>CAC Number <span style="color:var(--muted);font-weight:400;">(Corporate Affairs Commission)</span></label>
+        <input id="pf_cac_number" type="text" value="${escH(profileData.cac_number||'')}" placeholder="RC 000000"/>
+        <div class="field-note">Used on invoices and official documents.</div>
+      </div>
+    </div>`:''}
+
+    <!-- Account -->
+    <div class="profile-section">
+      <div class="profile-section-title">Account</div>
+      <div class="profile-field">
+        <label>Email Address</label>
+        <input type="email" value="${escH(profileData.email)}" disabled style="opacity:0.5;cursor:not-allowed;"/>
+        <div class="field-note">Email cannot be changed here. Contact support to update it.</div>
+      </div>
+      <div class="profile-field">
+        <label>New Password <span style="color:var(--muted);font-weight:400;">(leave blank to keep current)</span></label>
+        <input id="pf_new_password" type="password" placeholder="New password (min 8 characters)" autocomplete="new-password"/>
+      </div>
+      <div class="profile-field" id="pf_confirm_wrap" style="display:none;">
+        <label>Confirm New Password</label>
+        <input id="pf_confirm_password" type="password" placeholder="Confirm new password"/>
+      </div>
+    </div>
+
+    <!-- Save + Sign Out -->
+    <div style="padding:16px 20px 32px;display:flex;flex-direction:column;gap:10px;">
+      <button class="profile-save-btn" onclick="saveProfile()">Save Changes</button>
+      <button class="profile-danger-btn" onclick="bkSignOut()">Sign Out</button>
+    </div>`;
+
+  document.body.appendChild(sheet);
+
+  // Show password confirm when password field has value
+  sheet.querySelector('#pf_new_password').addEventListener('input', function() {
+    document.getElementById('pf_confirm_wrap').style.display = this.value ? 'block' : 'none';
+  });
+
+  // Animate in
+  requestAnimationFrame(()=>{
+    overlay.classList.add('show');
+    sheet.classList.add('show');
+  });
+}
+
+function closeProfileSheet() {
+  const overlay = document.getElementById('profileSheetOverlay');
+  const sheet   = document.getElementById('profileSheet');
+  if (overlay) { overlay.classList.remove('show'); setTimeout(()=>overlay.remove(),300); }
+  if (sheet)   { sheet.classList.remove('show');   setTimeout(()=>sheet.remove(),300); }
+}
+
+async function saveProfile() {
+  const btn = document.querySelector('.profile-save-btn');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+
+  const fullName      = document.getElementById('pf_full_name')?.value?.trim()||'';
+  const phone         = document.getElementById('pf_phone')?.value?.trim()||'';
+  const jobTitle      = document.getElementById('pf_job_title')?.value?.trim()||'';
+  const bizName       = document.getElementById('pf_business_name')?.value?.trim()||'';
+  const industry      = document.getElementById('pf_industry')?.value||'';
+  const bizAddress    = document.getElementById('pf_business_address')?.value?.trim()||'';
+  const bizPhone      = document.getElementById('pf_business_phone')?.value?.trim()||'';
+  const cacNumber     = document.getElementById('pf_cac_number')?.value?.trim()||'';
+  const newPassword   = document.getElementById('pf_new_password')?.value||'';
+  const confirmPw     = document.getElementById('pf_confirm_password')?.value||'';
+
+  // Validate password if provided
+  if (newPassword) {
+    if (newPassword.length < 8) {
+      alert('Password must be at least 8 characters.');
+      if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
+      return;
+    }
+    if (newPassword !== confirmPw) {
+      alert('Passwords do not match.');
+      if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
+      return;
+    }
+  }
+
+  try {
+    // Save to profiles table
+    await bkDb.from('profiles').upsert({
+      id: bkUser.id,
+      full_name: fullName,
+      phone,
+      job_title: jobTitle,
+      updated_at: new Date().toISOString(),
+    }, { onConflict:'id' });
+
+    // Save business profile if owner/manager
+    if (userRole !== 'employee' && bizName) {
+      await bkDb.from('bk_business_profiles').upsert({
+        user_id: bkUser.id,
+        business_name: bizName,
+        industry,
+        business_address: bizAddress,
+        business_phone: bizPhone,
+        cac_number: cacNumber,
+        updated_at: new Date().toISOString(),
+      }, { onConflict:'user_id' });
+      // Update in-memory
+      businessDisplayName = bizName;
+    }
+
+    // Update display name in menu
+    if (fullName) {
+      staffDisplayName = fullName;
+      const mn = document.getElementById('bkMenuUserName');
+      if (mn) mn.textContent = fullName;
+      const av = document.getElementById('menuAvatarCircle');
+      if (av) av.textContent = fullName.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      document.getElementById('profileAvatarLarge').textContent =
+        fullName.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+
+    // Change password if provided
+    if (newPassword) {
+      const { error } = await bkDb.auth.updateUser({ password: newPassword });
+      if (error) throw new Error('Password update failed: ' + error.message);
+    }
+
+    if (btn) { btn.textContent = '✓ Saved'; btn.style.background='var(--green)'; }
+    setTimeout(()=>{ closeProfileSheet(); }, 1200);
+
+  } catch(e) {
+    alert('Error saving profile: ' + (e.message||'Unknown error'));
+    if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; btn.style.background=''; }
+  }
+}
+
+
 let userBusinesses = [];
 let activeBusiness = null; // null = "All Businesses" view
 
