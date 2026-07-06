@@ -1133,7 +1133,6 @@ body{padding-top:0;}
     <div id="menuBusinessesSection" data-role="owner-manager" style="margin-top:8px;">
       <div style="padding:10px 20px 6px;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;justify-content:space-between;">
         <span>Businesses</span>
-        <button onclick="showAddBusinessModal();closeBkMenu()" style="background:none;border:1px solid var(--border2);color:var(--gold);font-size:0.7rem;padding:2px 8px;border-radius:4px;cursor:pointer;">+ Add</button>
       </div>
       <div id="menuBusinessesList" style="padding:0 0 8px;">
         <!-- Populated by renderMenuBusinesses() -->
@@ -8877,6 +8876,7 @@ function _renderAddBizForm() {
       <div style="display:flex;gap:6px;margin-bottom:6px;">
         <button type="button" class="bk-btn bk-btn-outline" style="font-size:0.7rem;" onclick="nbPSAddRow()">+ Add Row</button>
         <button type="button" class="bk-btn bk-btn-outline" style="font-size:0.7rem;" onclick="nbPSAddCol()">+ Add Column</button>
+        <button type="button" class="bk-btn bk-btn-outline" style="font-size:0.7rem;" onclick="nbPSDelCol()">− Delete Column</button>
       </div>
       <div style="overflow-x:auto;border:1px solid var(--border2);border-radius:8px;">
         <table id="nbPSTable" style="width:100%;border-collapse:collapse;font-size:0.76rem;min-width:${320+_newBizPSCols.length*110}px;">
@@ -8905,7 +8905,8 @@ function _nbPSTableHtml() {
   const extraH = _newBizPSCols.map(c=>`<th style="border:1px solid var(--border2);padding:5px;">${escH(c)}</th>`).join('');
   const head = `<tr><th style="border:1px solid var(--border2);padding:5px;width:34px;">S/N</th>
     <th style="border:1px solid var(--border2);padding:5px;">Product / Service Type</th>${extraH}
-    <th style="border:1px solid var(--border2);padding:5px;width:100px;">Price</th></tr>`;
+    <th style="border:1px solid var(--border2);padding:5px;width:100px;">Price</th>
+    <th style="border:1px solid var(--border2);padding:5px;width:30px;"></th></tr>`;
   const body = _newBizPS.map((r,i)=>{
     const extraC = _newBizPSCols.map((c,ci)=>`<td style="border:1px solid var(--border2);padding:0;">
       <input style="width:100%;background:transparent;border:none;color:var(--white);padding:6px;font-size:0.76rem;outline:none;"
@@ -8917,6 +8918,7 @@ function _nbPSTableHtml() {
       ${extraC}
       <td style="border:1px solid var(--border2);padding:0;"><input style="width:100%;background:transparent;border:none;color:var(--white);padding:6px;font-size:0.76rem;outline:none;"
         inputmode="decimal" value="${escH(r.price||'')}" placeholder="0" oninput="fmtInputCommas(this);_newBizPS[${i}].price=this.value"/></td>
+      <td style="border:1px solid var(--border2);padding:0;text-align:center;"><button onclick="nbPSDelRow(${i})" style="background:none;border:none;color:var(--red,#f87171);cursor:pointer;font-size:0.85rem;padding:4px 6px;">&times;</button></td>
     </tr>`;
   }).join('');
   return head + body;
@@ -8927,6 +8929,20 @@ function nbPSAddCol(){
   const name = prompt('Column header name:');
   if (!name) return;
   _newBizPSCols.push(name.trim());
+  const t=document.getElementById('nbPSTable'); if(t) t.innerHTML=_nbPSTableHtml();
+}
+function nbPSDelCol(){
+  if (!_newBizPSCols.length) { alert('No custom columns to delete.'); return; }
+  const list = _newBizPSCols.map((c,i)=>(i+1)+'. '+c).join('\n');
+  const pick = prompt('Which column do you want to delete?\n'+list+'\n\nEnter the number:');
+  const n = parseInt(pick);
+  if (!n || n<1 || n>_newBizPSCols.length) return;
+  _newBizPSCols.splice(n-1,1);
+  const t=document.getElementById('nbPSTable'); if(t) t.innerHTML=_nbPSTableHtml();
+}
+function nbPSDelRow(i){
+  _newBizPS.splice(i,1);
+  if (!_newBizPS.length) _newBizPS=[{sn:1,type:'',price:''}];
   const t=document.getElementById('nbPSTable'); if(t) t.innerHTML=_nbPSTableHtml();
 }
 function nbIndCatChanged(cat){
@@ -9243,7 +9259,7 @@ function renderAllBusinessesDashboard(metrics) {
       ${alertCount>0?`<div class="ab-alert">You have <strong>${alertCount} alert${alertCount>1?'s':''}</strong> across your businesses today.</div>`:''}
     </div>
     <div style="text-align:center;padding:14px 16px 4px;">
-      <button class="eq-record-btn" onclick="showRecordBusinessChoice()">📝 Record</button>
+      <button class="eq-record-btn" onclick="showRecordBusinessChoice()" style="display:inline-flex;align-items:center;justify-content:center;text-align:center;">Record</button>
     </div>
     <div class="ab-actions" style="border-bottom:none;">
       <button class="ab-btn ab-btn-secondary" onclick="exportAllBusinesses()">⬇ Export All</button>
@@ -9577,8 +9593,36 @@ async function submitNewBusiness() {
   } catch(e) { alert('Error creating business: '+e.message); }
 }
 
-function exportAllBusinesses() {
-  alert('Export feature coming soon — will generate a combined Excel report across all businesses.');
+async function exportAllBusinesses() {
+  try {
+    const metrics = await fetchAllBusinessMetrics();
+    let csv = 'BUTTERFLY DYNAMIX ACCOUNTING — PORTFOLIO REPORT\n';
+    csv += 'Generated,' + new Date().toISOString().slice(0,10) + '\n\n';
+    csv += 'BUSINESS SUMMARY\n';
+    csv += 'Business,Industry,Revenue,Expenses,Net Profit,Margin %,Status\n';
+    metrics.forEach(b=>{
+      csv += `"${b.name}","${b.industry||''}",${b.revenue},${b.expenses},${b.profit},${b.margin},"${b.status}"\n`;
+    });
+    const tRev = metrics.reduce((s,b)=>s+b.revenue,0);
+    const tExp = metrics.reduce((s,b)=>s+b.expenses,0);
+    csv += `"TOTAL","",${tRev},${tExp},${tRev-tExp},,\n\n`;
+    // Transactions
+    const {data:T} = await bkDb.from('bk_transactions').select('txn_date,account_name,record_type,narration,debit,credit')
+      .eq('user_id',bkUser.id).order('txn_date');
+    if (T && T.length) {
+      csv += 'ALL TRANSACTIONS\n';
+      csv += 'Date,Account,Type,Narration,Debit,Credit\n';
+      T.forEach(t=>{
+        csv += `${t.txn_date||''},"${t.account_name||''}","${t.record_type||''}","${(t.narration||'').replace(/"/g,'""')}",${t.debit||0},${t.credit||0}\n`;
+      });
+    }
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'butterfly-dynamix-portfolio-' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+  } catch(e) { alert('Export failed: '+(e.message||'')); }
 }
 
 
@@ -10059,7 +10103,7 @@ const COLUMN_HELP = {
     // Register service worker for PWA / offline support
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/service-worker.js')
+        navigator.serviceWorker.register('/service-worker.js', {updateViaCache:'none'}).then(function(reg){ reg.update(); })
           .then(function(reg) {
             // Service worker registered
           })
@@ -10127,6 +10171,14 @@ const COLUMN_HELP = {
         if (event.data && event.data.type === 'SYNC_OFFLINE_SALES') {
           bdSyncOfflineSales();
         }
+      });
+    }
+
+    if ('serviceWorker' in navigator) {
+      let _swReloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        if (_swReloaded) return; _swReloaded = true;
+        window.location.reload();
       });
     }
   </script>
