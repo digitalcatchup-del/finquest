@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -769,6 +770,14 @@ body{padding-top:0;}
 .ps-save-btn:hover{color:var(--white);}
 .ps-col-selector{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;min-width:270px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
 
+
+.su-label{font-size:0.62rem;font-weight:800;letter-spacing:0.1em;color:var(--muted);margin-bottom:-4px;display:block;}
+.pwseg{flex:1;height:4px;border-radius:2px;background:var(--border2);transition:background 0.2s;}
+
+.pa-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden;}
+.pa-card-head{padding:12px 14px;font-weight:800;font-size:0.85rem;color:var(--white);border-bottom:1px solid var(--border);}
+.pa-card-body{padding:14px;display:flex;flex-direction:column;gap:10px;}
+.pa-card-body .bk-login-input{width:100%;}
 /* ── SHEET TOOLBOX (Excel-style) ─────────────────────────── */
 .sheet-toolbox{display:flex;align-items:center;gap:4px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:8px 16px 0;padding:6px 8px;overflow-x:auto;}
 .sheet-toolbox.hidden{display:none;}
@@ -1436,51 +1445,756 @@ function showAuthScreen(view) {
   const screen = document.getElementById('bkAuthScreen');
   const content = document.getElementById('bkAuthContent');
   if (!screen || !content) return;
-  screen.classList.remove('hidden'); // show it
+  screen.classList.remove('hidden');
+  const logo = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+    <div style="width:40px;height:40px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🏦</div>
+    <div><div style="font-weight:800;font-size:0.95rem;color:var(--white);">Butterfly Dynamix</div>
+    <div style="font-size:0.62rem;letter-spacing:0.18em;color:#22c55e;font-weight:700;">ACCOUNTING</div></div>
+  </div>`;
 
   if (view==='landing') {
     content.innerHTML = `
-      <div style="text-align:center;margin-bottom:32px;">
-        <div class="bk-land-small">Think Finance</div>
-        <div class="bk-land-big">Think <span>Butterfly</span> Dynamix</div>
-        <div class="bk-land-sub">Professional bookkeeping for every business.<br>Built for Nigeria. Designed for growth.</div>
-      </div>
-      <div class="bk-auth-btns">
-        <button class="bk-auth-btn-primary" onclick="showAuthScreen('signup')">Sign Up</button>
-        <button class="bk-auth-btn-secondary" onclick="showAuthScreen('login')">Log In</button>
+      ${logo}
+      <div style="padding:36px 0 0;">
+        <h1 style="font-size:2.2rem;font-weight:900;line-height:1.15;margin:0;color:var(--white);">One platform.<br>Every business.<br><span style="color:#22c55e;">Total clarity.</span></h1>
+        <p style="font-size:0.92rem;color:var(--muted);line-height:1.6;margin:20px 0 26px;">Built for micro, small and medium enterprises — manage multiple businesses, track finances, and grow with confidence.</p>
+        <button class="bk-auth-btn-primary" style="width:100%;background:#22c55e;color:#04240f;font-weight:800;border:none;padding:15px;border-radius:12px;font-size:1rem;cursor:pointer;" onclick="showAuthScreen('signup')">Sign Up</button>
+        <div style="text-align:center;margin-top:14px;font-size:0.82rem;color:var(--muted);">Already have an account? <span style="color:#22c55e;font-weight:700;cursor:pointer;" onclick="showAuthScreen('login')">Sign in</span></div>
+        <div style="margin-top:40px;display:flex;flex-direction:column;gap:14px;">
+          ${['Multi-business portfolio management','Real-time cash flow tracking','Invoices, expenses & payroll','Personal & business accounting'].map(f=>`
+            <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;color:var(--off);">
+              <span style="color:#22c55e;">✓</span> ${f}
+            </div>`).join('')}
+        </div>
       </div>`;
 
   } else if (view==='login') {
     content.innerHTML = `
-      <div class="bk-auth-think-1" style="text-align:center;margin-bottom:6px;">Log In</div>
-      <div style="text-align:center;font-size:0.78rem;color:var(--muted);margin-bottom:24px;">Welcome back — enter your details below</div>
+      ${logo}
+      <div style="font-size:1.4rem;font-weight:900;color:var(--white);margin:20px 0 4px;">Sign in</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:22px;">Welcome back — enter your details below.</div>
       <div class="bk-login-form">
-        <input class="bk-login-input" type="email" id="loginEmail" placeholder="Email address" autocomplete="email"/>
-        <input class="bk-login-input" type="password" id="loginPW" placeholder="Password"
-          onkeydown="if(event.key==='Enter')doLogin()"/>
+        <label class="su-label">EMAIL ADDRESS *</label>
+        <input class="bk-login-input" type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email"/>
+        <label class="su-label">PASSWORD *</label>
+        <input class="bk-login-input" type="password" id="loginPW" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"/>
         <div class="bk-login-err" id="loginErr"></div>
-        <button class="bk-login-btn" onclick="doLogin()">Log In →</button>
-        <button class="bk-login-back" onclick="showAuthScreen('landing')">← Back</button>
+        <button class="bk-login-btn" style="background:#22c55e;color:#04240f;" onclick="doLogin()">Sign In →</button>
+        <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">No account yet? <span style="color:#22c55e;font-weight:700;cursor:pointer;" onclick="showAuthScreen('signup')">Sign up</span></div>
       </div>`;
     setTimeout(()=>document.getElementById('loginEmail')?.focus(), 50);
 
   } else if (view==='signup') {
-    // Show email/password form FIRST — creates the Supabase auth user before the wizard
     content.innerHTML = `
-      <div class="bk-auth-think-1" style="text-align:center;margin-bottom:6px;">Create Account</div>
-      <div style="text-align:center;font-size:0.78rem;color:var(--muted);margin-bottom:24px;">Enter your email and a password to get started</div>
+      ${logo}
+      <div style="font-size:1.4rem;font-weight:900;color:var(--white);margin:20px 0 4px;">Create your account</div>
+      <div style="font-size:0.8rem;color:#22c55e;margin-bottom:22px;">Start managing your finances in minutes.</div>
       <div class="bk-login-form">
-        <input class="bk-login-input" type="email" id="suEmail" placeholder="Email address" autocomplete="email"/>
-        <input class="bk-login-input" type="password" id="suPW" placeholder="Password (min 6 characters)"
-          onkeydown="if(event.key==='Enter')doSignUp()"/>
-        <input class="bk-login-input" type="password" id="suPW2" placeholder="Confirm password"
-          onkeydown="if(event.key==='Enter')doSignUp()"/>
+        <label class="su-label">EMAIL ADDRESS *</label>
+        <input class="bk-login-input" type="email" id="suEmail" placeholder="you@example.com" autocomplete="email"/>
+        <label class="su-label">PASSWORD *</label>
+        <input class="bk-login-input" type="password" id="suPW" placeholder="Min 6 characters" oninput="suPwStrength(this.value)"/>
+        <div id="suPwBar" style="display:flex;gap:4px;margin:6px 0 2px;">
+          <div class="pwseg"></div><div class="pwseg"></div><div class="pwseg"></div><div class="pwseg"></div>
+        </div>
+        <div id="suPwLabel" style="text-align:right;font-size:0.68rem;color:var(--muted);margin-bottom:8px;"></div>
+        <label class="su-label">CONFIRM PASSWORD *</label>
+        <input class="bk-login-input" type="password" id="suPW2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doSignUp()"/>
         <div class="bk-login-err" id="suAuthErr"></div>
-        <button class="bk-login-btn" onclick="doSignUp()">Create Account →</button>
-        <button class="bk-login-back" onclick="showAuthScreen('landing')">← Back</button>
+        <button class="bk-login-btn" style="background:#22c55e;color:#04240f;" onclick="doSignUp()">Continue →</button>
+        <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">Already have an account? <span style="color:#22c55e;font-weight:700;cursor:pointer;" onclick="showAuthScreen('login')">Sign in</span></div>
       </div>`;
     setTimeout(()=>document.getElementById('suEmail')?.focus(), 50);
+
+  } else if (view==='personal-info') {
+    const stepper = `
+      <div style="display:flex;align-items:center;gap:0;margin:18px 0 24px;">
+        <div style="width:26px;height:26px;border-radius:50%;background:#22c55e;color:#04240f;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;">✓</div>
+        <div style="flex:1;height:2px;background:#22c55e;"></div>
+        <div style="width:26px;height:26px;border-radius:50%;border:2px solid #22c55e;color:#22c55e;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;">2</div>
+        <div style="flex:1;height:2px;background:var(--border2);"></div>
+        <div style="width:26px;height:26px;border-radius:50%;border:2px solid var(--border2);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;">3</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.08em;color:var(--muted);margin:-16px 0 20px;font-weight:700;">
+        <span>CREDENTIALS</span><span style="color:#22c55e;">PERSONAL INFO</span><span>DONE</span>
+      </div>`;
+    const stateOpts = NG_STATES.map(s=>`<option>${s}</option>`).join('');
+    content.innerHTML = `
+      ${logo}
+      <div style="font-size:1.4rem;font-weight:900;color:var(--white);margin:14px 0 4px;">Personal Information</div>
+      <div style="font-size:0.8rem;color:var(--muted);">Tell us a bit about yourself to set up your account.</div>
+      ${stepper}
+      <div class="bk-login-form" style="gap:12px;">
+        <div style="font-size:0.8rem;font-weight:800;color:var(--white);">Full Name</div>
+        <label class="su-label">FIRST NAME *</label>
+        <input class="bk-login-input" id="ri_first" placeholder="Jennifer"/>
+        <label class="su-label">MIDDLE NAME</label>
+        <input class="bk-login-input" id="ri_middle" placeholder="Grace"/>
+        <label class="su-label">LAST NAME *</label>
+        <input class="bk-login-input" id="ri_last" placeholder="Okafor"/>
+        <label class="su-label">DATE OF BIRTH *</label>
+        <input class="bk-login-input" type="date" id="ri_dob"/>
+        <label class="su-label">GENDER *</label>
+        <select class="bk-login-input" id="ri_gender"><option value="">Select Gender</option>
+          <option>Male</option><option>Female</option><option>Prefer not to say</option></select>
+        <label class="su-label">PHONE NUMBER *</label>
+        <input class="bk-login-input" type="tel" id="ri_phone" placeholder="+234 801 234 5678"/>
+        <label class="su-label">EMAIL ADDRESS</label>
+        <input class="bk-login-input" value="${escH(bkUser?.email||'')}" disabled style="opacity:0.55;"/>
+
+        <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin-top:8px;">Origin &amp; Residential Address</div>
+        <label class="su-label">COUNTRY OF ORIGIN *</label>
+        <input class="bk-login-input" id="ri_origin_country" value="Nigeria"/>
+        <label class="su-label">COUNTRY *</label>
+        <input class="bk-login-input" id="ri_country" value="Nigeria"/>
+        <label class="su-label">STATE *</label>
+        <select class="bk-login-input" id="ri_state"><option value="">Select State</option>${stateOpts}</select>
+        <label class="su-label">LOCAL GOVERNMENT AREA *</label>
+        <input class="bk-login-input" id="ri_lga" placeholder="Local Government Area"/>
+        <label class="su-label">TOWN / CITY</label>
+        <input class="bk-login-input" id="ri_town" placeholder="Enter your town or city"/>
+
+        <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin-top:8px;">Primary Location</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:-6px;">Where you currently live or primarily operate from.</div>
+        <label class="su-label">COUNTRY *</label>
+        <input class="bk-login-input" id="ri_p_country" value="Nigeria"/>
+        <label class="su-label">STATE *</label>
+        <select class="bk-login-input" id="ri_p_state"><option value="">Select State</option>${stateOpts}</select>
+        <label class="su-label">LOCAL GOVERNMENT AREA *</label>
+        <input class="bk-login-input" id="ri_p_lga" placeholder="Local Government Area"/>
+        <label class="su-label">TOWN</label>
+        <input class="bk-login-input" id="ri_p_town" placeholder="Enter your town"/>
+
+        <div class="bk-login-err" id="riErr"></div>
+        <div style="display:flex;gap:10px;">
+          <button class="bk-login-back" style="flex:0 0 auto;" onclick="showAuthScreen('signup')">← Back</button>
+          <button class="bk-login-btn" style="flex:1;background:#22c55e;color:#04240f;" onclick="riRegister()">Register →</button>
+        </div>
+      </div>`;
+
+  } else if (view==='success') {
+    const fname = profileData?.first_name || '';
+    content.innerHTML = `
+      ${logo}
+      <div style="text-align:center;padding:36px 0;">
+        <div style="width:74px;height:74px;border-radius:50%;background:rgba(34,197,94,0.15);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#22c55e;">✓</div>
+        <div style="font-size:1.5rem;font-weight:900;color:var(--white);">You're all set${fname?', '+escH(fname):''}!</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin:10px 0 26px;line-height:1.6;">Your account has been created successfully.<br>Welcome to Butterfly Dynamix Accounting.</div>
+        ${['Account verified','Profile saved','Ready to go'].map(t=>`
+          <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:0.82rem;color:var(--off);">
+            <span style="color:#22c55e;">✓</span> ${t}
+          </div>`).join('')}
+        <button class="bk-login-btn" style="width:100%;background:#22c55e;color:#04240f;margin-top:12px;" onclick="hideAuthScreen();showModeChoice()">Go to Dashboard</button>
+      </div>`;
   }
+}
+
+function suPwStrength(pw) {
+  const segs = document.querySelectorAll('#suPwBar .pwseg');
+  const label = document.getElementById('suPwLabel');
+  let score = 0;
+  if (pw.length >= 6) score++;
+  if (pw.length >= 10) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+  if (/\d/.test(pw) || /[^A-Za-z0-9]/.test(pw)) score++;
+  const names = ['','Weak','Fair','Good','Strong'];
+  segs.forEach((s,i)=>{ s.style.background = i < score ? '#22c55e' : 'var(--border2)'; });
+  if (label) { label.textContent = names[score]; label.style.color = score>=4?'#22c55e':'var(--muted)'; }
+}
+
+async function riRegister() {
+  const err = document.getElementById('riErr');
+  const first = document.getElementById('ri_first')?.value?.trim();
+  const last  = document.getElementById('ri_last')?.value?.trim();
+  if (!first || !last) { if(err) err.textContent='First and last name are required.'; return; }
+  if (err) { err.textContent='Saving…'; err.style.color='var(--muted)'; }
+  try {
+    profileData = {
+      first_name:first,
+      middle_name:document.getElementById('ri_middle')?.value?.trim()||'',
+      last_name:last,
+      full_name:first+' '+last,
+      date_of_birth:document.getElementById('ri_dob')?.value||null,
+      gender:document.getElementById('ri_gender')?.value||'',
+      phone:document.getElementById('ri_phone')?.value?.trim()||'',
+      country:document.getElementById('ri_country')?.value?.trim()||'Nigeria',
+      state:document.getElementById('ri_state')?.value||'',
+      lga:document.getElementById('ri_lga')?.value?.trim()||'',
+      town:document.getElementById('ri_town')?.value?.trim()||'',
+      email:bkUser?.email||'',
+    };
+    await bkDb.from('profiles').upsert({ id:bkUser.id, ...Object.fromEntries(Object.entries(profileData).filter(([k])=>k!=='email')), updated_at:new Date().toISOString() }, {onConflict:'id'});
+    staffDisplayName = profileData.full_name;
+    showAuthScreen('success');
+  } catch(e) { if(err){ err.textContent='Error: '+(e.message||'could not save'); err.style.color='var(--red)'; } }
+}
+
+
+
+// ══ PERSONAL ACCOUNTING MODULE ═══════════════════════════════
+let personalProfile = null;
+let personalDebts = [];
+let personalItems = [];
+let personalTxns = [];
+
+async function loadPersonalData() {
+  if (!bkUser) return;
+  try {
+    const [p, d, it, tx] = await Promise.all([
+      bkDb.from('personal_profiles').select('*').eq('user_id',bkUser.id).maybeSingle(),
+      bkDb.from('personal_debts').select('*').eq('user_id',bkUser.id).order('created_at'),
+      bkDb.from('personal_items').select('*').eq('user_id',bkUser.id).order('created_at'),
+      bkDb.from('personal_transactions').select('*').eq('user_id',bkUser.id).order('txn_date',{ascending:false}).limit(50),
+    ]);
+    personalProfile = p.data || null;
+    personalDebts   = d.data || [];
+    personalItems   = it.data || [];
+    personalTxns    = tx.data || [];
+  } catch(e) {}
+}
+
+function showPersonalSetup() {
+  staffHideChrome();
+  bdSaveRoute('personal-setup');
+  document.getElementById('bkContent').innerHTML = `
+    <div style="max-width:520px;margin:0 auto;padding:20px 16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(96,165,250,0.15);display:flex;align-items:center;justify-content:center;">👤</div>
+        <div>
+          <div style="font-weight:900;font-size:1rem;color:var(--white);">Personal Accounts</div>
+          <div style="font-size:0.7rem;color:var(--muted);">Register your financial accounts to get started</div>
+        </div>
+      </div>
+
+      <div class="pa-card">
+        <div class="pa-card-head" style="background:rgba(34,197,94,0.1);">🏛 Salary Account</div>
+        <div class="pa-card-body">
+          <label class="su-label">BANK NAME *</label>
+          <input class="bk-login-input" id="pa_sal_bank" placeholder="e.g. Zenith Bank"/>
+          <label class="su-label">ACCOUNT NUMBER *</label>
+          <input class="bk-login-input" id="pa_sal_acctno" inputmode="numeric" placeholder="0123456789"/>
+          <label class="su-label">ACCOUNT NAME *</label>
+          <input class="bk-login-input" id="pa_sal_acctname" placeholder="Jennifer Grace Okafor"/>
+          <label class="su-label">MONTHLY SALARY (₦) *</label>
+          <input class="bk-login-input" id="pa_sal_amount" inputmode="decimal" placeholder="350,000" oninput="fmtInputCommas(this)"/>
+        </div>
+      </div>
+
+      <div class="pa-card">
+        <div class="pa-card-head" style="background:rgba(96,165,250,0.1);">🐷 Savings &amp; Emergency Fund</div>
+        <div class="pa-card-body">
+          <label class="su-label">BANK NAME</label>
+          <input class="bk-login-input" id="pa_sav_bank" placeholder="e.g. GTBank"/>
+          <label class="su-label">ACCOUNT NUMBER</label>
+          <input class="bk-login-input" id="pa_sav_acctno" inputmode="numeric" placeholder="0987654321"/>
+          <label class="su-label">CURRENT BALANCE (₦)</label>
+          <input class="bk-login-input" id="pa_sav_balance" inputmode="decimal" placeholder="500,000" oninput="fmtInputCommas(this)"/>
+          <label class="su-label">SAVINGS GOAL (₦)</label>
+          <input class="bk-login-input" id="pa_sav_goal" inputmode="decimal" placeholder="2,000,000" oninput="fmtInputCommas(this)"/>
+        </div>
+      </div>
+
+      <div class="pa-card">
+        <div class="pa-card-head" style="background:rgba(248,113,113,0.1);">💳 Debt Management</div>
+        <div class="pa-card-body" id="paDebtsWrap"></div>
+        <div style="padding:0 14px 14px;"><span style="color:#22c55e;font-size:0.78rem;font-weight:700;cursor:pointer;" onclick="paAddDebt()">+ Add another debt</span></div>
+      </div>
+
+      <div class="pa-card">
+        <div class="pa-card-head" style="background:rgba(167,139,250,0.1);">📈 Net Worth Tracking</div>
+        <div class="pa-card-body">
+          <div style="font-size:0.7rem;font-weight:800;color:#4ade80;margin-bottom:6px;">ASSETS</div>
+          <div id="paAssetsWrap"></div>
+          <span style="color:#22c55e;font-size:0.76rem;font-weight:700;cursor:pointer;" onclick="paAddItem('asset')">+ Add asset</span>
+          <div style="font-size:0.7rem;font-weight:800;color:#f87171;margin:14px 0 6px;">LIABILITIES</div>
+          <div id="paLiabWrap"></div>
+          <span style="color:#f87171;font-size:0.76rem;font-weight:700;cursor:pointer;" onclick="paAddItem('liability')">+ Add liability</span>
+        </div>
+      </div>
+
+      <div class="bk-login-err" id="paErr"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="bk-login-back" onclick="showModeChoice()">← Back</button>
+        <button class="bk-login-btn" style="flex:1;background:#60a5fa;color:#04121f;" onclick="paSaveSetup()">Save &amp; Continue →</button>
+      </div>
+    </div>`;
+  _paDebtRows = [{}]; _paAssetRows = [{}]; _paLiabRows = [{}];
+  paRenderDebts(); paRenderItems();
+}
+
+let _paDebtRows=[{}], _paAssetRows=[{}], _paLiabRows=[{}];
+const PA_DEBT_TYPES = ['Bank Loan','Loan App','Cooperative Loan','Family / Friend','Mortgage','Car Loan','Business Loan','Other'];
+
+function paRenderDebts(){
+  const w = document.getElementById('paDebtsWrap');
+  if (!w) return;
+  w.innerHTML = _paDebtRows.map((d,i)=>`
+    <div style="border:1px solid var(--border2);border-radius:10px;padding:10px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:0.7rem;color:var(--muted);font-weight:700;">Debt #${i+1}</span>
+        ${_paDebtRows.length>1?`<button onclick="_paDebtRows.splice(${i},1);paRenderDebts()" style="background:none;border:none;color:#f87171;cursor:pointer;">&times;</button>`:''}
+      </div>
+      <label class="su-label">DEBT TYPE</label>
+      <select class="bk-login-input" onchange="_paDebtRows[${i}].debt_type=this.value"><option value="">Select Debt Type</option>
+        ${PA_DEBT_TYPES.map(t=>`<option ${d.debt_type===t?'selected':''}>${t}</option>`).join('')}</select>
+      <label class="su-label">LENDER</label>
+      <input class="bk-login-input" value="${escH(d.lender||'')}" placeholder="e.g. UBA Bank" oninput="_paDebtRows[${i}].lender=this.value"/>
+      <label class="su-label">TOTAL AMOUNT (₦)</label>
+      <input class="bk-login-input" inputmode="decimal" value="${escH(d.total||'')}" placeholder="1,000,000" oninput="fmtInputCommas(this);_paDebtRows[${i}].total=this.value"/>
+      <label class="su-label">MONTHLY PAYMENT (₦)</label>
+      <input class="bk-login-input" inputmode="decimal" value="${escH(d.monthly||'')}" placeholder="50,000" oninput="fmtInputCommas(this);_paDebtRows[${i}].monthly=this.value"/>
+      <label class="su-label">OUTSTANDING BALANCE (₦)</label>
+      <input class="bk-login-input" inputmode="decimal" value="${escH(d.outstanding||'')}" placeholder="750,000" oninput="fmtInputCommas(this);_paDebtRows[${i}].outstanding=this.value"/>
+    </div>`).join('');
+}
+function paAddDebt(){ _paDebtRows.push({}); paRenderDebts(); }
+
+function paRenderItems(){
+  const aw = document.getElementById('paAssetsWrap'), lw = document.getElementById('paLiabWrap');
+  if (aw) aw.innerHTML = _paAssetRows.map((r,i)=>`
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <input class="bk-login-input" style="flex:1;" value="${escH(r.name||'')}" placeholder="e.g. Property, Car, Stocks" oninput="_paAssetRows[${i}].name=this.value"/>
+      <input class="bk-login-input" style="width:110px;" inputmode="decimal" value="${escH(r.value||'')}" placeholder="₦ Value" oninput="fmtInputCommas(this);_paAssetRows[${i}].value=this.value"/>
+      <button onclick="_paAssetRows.splice(${i},1);if(!_paAssetRows.length)_paAssetRows=[{}];paRenderItems()" style="background:none;border:none;color:#f87171;cursor:pointer;">&times;</button>
+    </div>`).join('');
+  if (lw) lw.innerHTML = _paLiabRows.map((r,i)=>`
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <input class="bk-login-input" style="flex:1;" value="${escH(r.name||'')}" placeholder="e.g. Mortgage, Student Loan" oninput="_paLiabRows[${i}].name=this.value"/>
+      <input class="bk-login-input" style="width:110px;" inputmode="decimal" value="${escH(r.value||'')}" placeholder="₦ Value" oninput="fmtInputCommas(this);_paLiabRows[${i}].value=this.value"/>
+      <button onclick="_paLiabRows.splice(${i},1);if(!_paLiabRows.length)_paLiabRows=[{}];paRenderItems()" style="background:none;border:none;color:#f87171;cursor:pointer;">&times;</button>
+    </div>`).join('');
+}
+function paAddItem(kind){ (kind==='asset'?_paAssetRows:_paLiabRows).push({}); paRenderItems(); }
+
+function _paNum(v){ return parseFloat(String(v||'').replace(/,/g,''))||0; }
+
+async function paSaveSetup(){
+  const err = document.getElementById('paErr');
+  if (err) { err.textContent='Saving…'; err.style.color='var(--muted)'; }
+  try {
+    const prof = {
+      user_id: bkUser.id,
+      salary_bank: document.getElementById('pa_sal_bank')?.value?.trim()||'',
+      salary_account_number: document.getElementById('pa_sal_acctno')?.value?.trim()||'',
+      salary_account_name: document.getElementById('pa_sal_acctname')?.value?.trim()||'',
+      monthly_salary: _paNum(document.getElementById('pa_sal_amount')?.value),
+      savings_bank: document.getElementById('pa_sav_bank')?.value?.trim()||'',
+      savings_account_number: document.getElementById('pa_sav_acctno')?.value?.trim()||'',
+      savings_balance: _paNum(document.getElementById('pa_sav_balance')?.value),
+      savings_goal: _paNum(document.getElementById('pa_sav_goal')?.value),
+      updated_at: new Date().toISOString(),
+    };
+    const {error} = await bkDb.from('personal_profiles').upsert(prof, {onConflict:'user_id'});
+    if (error) throw error;
+    personalProfile = prof;
+
+    const debts = _paDebtRows.filter(d=>d.lender||d.total).map(d=>({
+      user_id:bkUser.id, debt_type:d.debt_type||'', lender:d.lender||'',
+      total_amount:_paNum(d.total), monthly_payment:_paNum(d.monthly), outstanding_balance:_paNum(d.outstanding),
+    }));
+    if (debts.length) { await bkDb.from('personal_debts').insert(debts); personalDebts = debts; }
+
+    const items = _paAssetRows.filter(r=>r.name).map(r=>({user_id:bkUser.id,kind:'asset',name:r.name,value:_paNum(r.value)}))
+      .concat(_paLiabRows.filter(r=>r.name).map(r=>({user_id:bkUser.id,kind:'liability',name:r.name,value:_paNum(r.value)})));
+    if (items.length) { await bkDb.from('personal_items').insert(items); personalItems = items; }
+
+    localStorage.setItem('bd_mode','personal');
+    showPersonalHome();
+  } catch(e) { if(err){ err.textContent='Error: '+(e.message||''); err.style.color='var(--red)'; } }
+}
+
+// ── Personal homepage ─────────────────────────────────────────
+async function showPersonalHome() {
+  staffHideChrome();
+  bdSaveRoute('personal-home');
+  localStorage.setItem('bd_mode','personal');
+  applyModeMenu('personal');
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
+  await loadPersonalData();
+  const p = personalProfile || {};
+  const salary = parseFloat(p.monthly_salary)||0;
+  const savBal = parseFloat(p.savings_balance)||0;
+  const savGoal= parseFloat(p.savings_goal)||0;
+  const totalDebt = personalDebts.reduce((s,d)=>s+(parseFloat(d.outstanding_balance)||0),0);
+  const monthlyRepay = personalDebts.reduce((s,d)=>s+(parseFloat(d.monthly_payment)||0),0);
+  const assets = personalItems.filter(i=>i.kind==='asset').reduce((s,i)=>s+(parseFloat(i.value)||0),0) + savBal;
+  const liabs  = personalItems.filter(i=>i.kind==='liability').reduce((s,i)=>s+(parseFloat(i.value)||0),0) + totalDebt;
+  const netWorth = assets - liabs;
+  const goalPct = savGoal>0 ? Math.min(100, Math.round(savBal/savGoal*100)) : 0;
+  const fname = profileData?.full_name || staffDisplayName || '';
+  const dateStr = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const nfmt = n => '₦' + (n||0).toLocaleString('en-NG');
+
+  const txnRows = personalTxns.slice(0,8).map(t=>`
+    <tr>
+      <td style="padding:8px 6px;font-size:0.7rem;color:var(--muted);white-space:nowrap;">${escH((t.txn_date||'').slice(5))}</td>
+      <td style="padding:8px 6px;font-size:0.78rem;font-weight:600;">${escH(t.description||'')}</td>
+      <td style="padding:8px 6px;"><span style="font-size:0.62rem;background:var(--surface2);border:1px solid var(--border2);padding:2px 8px;border-radius:10px;color:var(--muted);">${escH(t.category||'')}</span></td>
+      <td style="padding:8px 6px;text-align:right;font-weight:800;font-size:0.78rem;color:${t.direction==='income'?'#4ade80':'#f87171'};">${t.direction==='income'?'+':''}${nfmt(t.amount)}</td>
+    </tr>`).join('');
+
+  document.getElementById('bkContent').innerHTML = `
+    <div style="padding:14px 16px 8px;">
+      <div style="font-size:0.66rem;color:var(--muted);font-weight:700;">Personal Overview</div>
+      <div style="font-size:0.95rem;font-weight:900;color:var(--white);">${dateStr}</div>
+    </div>
+    <div style="padding:6px 16px 4px;">
+      <div style="font-size:0.62rem;letter-spacing:0.12em;color:var(--muted);font-weight:700;">WELCOME BACK</div>
+      <div style="font-size:1.35rem;font-weight:900;color:var(--white);">${escH(fname)}</div>
+    </div>
+    <div style="text-align:center;padding:10px 16px;">
+      <button class="eq-record-btn" style="background:#60a5fa;color:#04121f;" onclick="paAddTxnPrompt()">Record</button>
+    </div>
+    <div class="ab-portfolio" style="padding-top:6px;">
+      <div class="ab-kpi-card"><div class="ab-kpi-icon">🏛</div>
+        <div class="ab-kpi-amount">${nfmt(salary)}</div>
+        <div class="ab-kpi-label">Monthly Salary${p.salary_bank?' · '+escH(p.salary_bank):''}</div></div>
+      <div class="ab-kpi-card"><div class="ab-kpi-icon">🐷</div>
+        <div class="ab-kpi-amount">${nfmt(savBal)}</div>
+        <div class="ab-kpi-label">Savings Balance · ${goalPct}% of goal</div></div>
+      <div class="ab-kpi-card"><div class="ab-kpi-icon">💳</div>
+        <div class="ab-kpi-amount" style="color:${totalDebt>0?'#f87171':'var(--white)'};">${nfmt(totalDebt)}</div>
+        <div class="ab-kpi-label">Total Debt · ${nfmt(monthlyRepay)}/mo repayment</div></div>
+      <div class="ab-kpi-card"><div class="ab-kpi-icon">📈</div>
+        <div class="ab-kpi-amount" style="color:${netWorth>=0?'#a78bfa':'#f87171'};">${nfmt(netWorth)}</div>
+        <div class="ab-kpi-label">Net Worth · Assets − Liabilities</div></div>
+    </div>
+    <div class="ab-section">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="font-weight:800;font-size:0.85rem;margin-bottom:10px;">Income vs. Expenses</div>
+        <canvas id="paChart" height="170"></canvas>
+      </div>
+    </div>
+    <div class="ab-section">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="font-weight:800;font-size:0.85rem;">Savings Goal</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:10px;">Emergency Fund Target</div>
+        <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px;">
+          <span style="color:var(--muted);">Progress</span><span style="color:#60a5fa;font-weight:800;">${goalPct}%</span></div>
+        <div class="biz-margin-bar" style="height:7px;"><div class="biz-margin-fill" style="width:${goalPct}%;background:#60a5fa;"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-top:4px;">
+          <span>${nfmt(savBal)}</span><span>${nfmt(savGoal)}</span></div>
+        <div style="font-weight:800;font-size:0.85rem;margin:18px 0 8px;">Net Worth Breakdown</div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:5px;"><span style="color:#4ade80;">● Total Assets</span><span style="font-weight:800;color:#4ade80;">${nfmt(assets)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:5px;"><span style="color:#f87171;">● Total Liabilities</span><span style="font-weight:800;color:#f87171;">${nfmt(liabs)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;"><span style="color:#a78bfa;">● Net Worth</span><span style="font-weight:800;color:#a78bfa;">${nfmt(netWorth)}</span></div>
+      </div>
+    </div>
+    <div class="ab-section">
+      <div class="ab-section-header"><div class="ab-section-title">Recent Transactions</div>
+        <span style="color:#60a5fa;font-size:0.72rem;font-weight:700;cursor:pointer;" onclick="showPersonalTransactions()">All ›</span></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+        <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="border-bottom:1px solid var(--border);">
+            ${['DATE','DESCRIPTION','CATEGORY','AMOUNT'].map((h,i)=>`<th style="padding:8px 6px;text-align:${i===3?'right':'left'};color:var(--muted);font-size:0.62rem;letter-spacing:0.08em;">${h}</th>`).join('')}
+          </tr></thead>
+          <tbody>${txnRows||'<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--muted);font-size:0.78rem;">No transactions yet — tap Record to add one.</td></tr>'}</tbody>
+        </table></div>
+      </div>
+    </div>`;
+  setTimeout(paRenderChart, 100);
+}
+
+function paRenderChart(){
+  const c = document.getElementById('paChart');
+  if (!c || typeof Chart==='undefined') return;
+  const months=[]; const inc=[]; const exp=[];
+  for (let i=5;i>=0;i--){
+    const d=new Date(); d.setMonth(d.getMonth()-i);
+    const key=d.toISOString().slice(0,7);
+    months.push(d.toLocaleDateString('en-GB',{month:'short'}));
+    inc.push(personalTxns.filter(t=>t.direction==='income'&&(t.txn_date||'').startsWith(key)).reduce((s,t)=>s+(parseFloat(t.amount)||0),0));
+    exp.push(personalTxns.filter(t=>t.direction==='expense'&&(t.txn_date||'').startsWith(key)).reduce((s,t)=>s+(parseFloat(t.amount)||0),0));
+  }
+  if (window._paChart) window._paChart.destroy();
+  window._paChart = new Chart(c, {type:'line',
+    data:{labels:months,datasets:[
+      {label:'Income',data:inc,borderColor:'#4ade80',backgroundColor:'rgba(74,222,128,0.08)',fill:true,tension:0.4},
+      {label:'Expenses',data:exp,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,0.08)',fill:true,tension:0.4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#888',font:{size:10}}}},
+      scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#888',font:{size:10}}},
+              y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#888',font:{size:10},callback:v=>'₦'+(v/1000)+'k'}}}}});
+}
+
+const PA_CATEGORIES = ['Income','Food','Housing','Transport','Data & Airtime','Family Support','Savings','Debt','Health','Education','Entertainment','Other'];
+
+function paAddTxnPrompt(){
+  const overlay=document.createElement('div');
+  overlay.id='paTxnModal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;width:100%;max-width:380px;">
+    <div style="font-weight:900;font-size:0.95rem;margin-bottom:14px;">Record Transaction</div>
+    <label class="su-label">TYPE</label>
+    <select class="bk-login-input" id="patx_dir" style="width:100%;"><option value="income">Income</option><option value="expense">Expense</option></select>
+    <label class="su-label">DESCRIPTION</label>
+    <input class="bk-login-input" id="patx_desc" style="width:100%;" placeholder="e.g. Salary Credit"/>
+    <label class="su-label">CATEGORY</label>
+    <select class="bk-login-input" id="patx_cat" style="width:100%;">${PA_CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</select>
+    <label class="su-label">AMOUNT (₦)</label>
+    <input class="bk-login-input" id="patx_amt" style="width:100%;" inputmode="decimal" placeholder="0" oninput="fmtInputCommas(this)"/>
+    <label class="su-label">DATE</label>
+    <input class="bk-login-input" id="patx_date" type="date" style="width:100%;" value="${new Date().toISOString().slice(0,10)}"/>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="bk-login-back" onclick="document.getElementById('paTxnModal').remove()">Cancel</button>
+      <button class="bk-login-btn" style="flex:1;background:#60a5fa;color:#04121f;" onclick="paSaveTxn()">Save</button>
+    </div></div>`;
+  document.body.appendChild(overlay);
+}
+
+async function paSaveTxn(){
+  const amt=_paNum(document.getElementById('patx_amt')?.value);
+  if (!amt){ alert('Enter an amount'); return; }
+  try {
+    await bkDb.from('personal_transactions').insert({
+      user_id:bkUser.id,
+      direction:document.getElementById('patx_dir')?.value||'expense',
+      description:document.getElementById('patx_desc')?.value?.trim()||'',
+      category:document.getElementById('patx_cat')?.value||'Other',
+      amount:amt,
+      txn_date:document.getElementById('patx_date')?.value||new Date().toISOString().slice(0,10),
+    });
+    document.getElementById('paTxnModal')?.remove();
+    showPersonalHome();
+  } catch(e){ alert('Error: '+(e.message||'')); }
+}
+
+function showPersonalTransactions(){
+  staffHideChrome();
+  bdSaveRoute('personal-txns');
+  const nfmt = n => '₦'+(n||0).toLocaleString('en-NG');
+  const rows = personalTxns.map(t=>`
+    <tr><td style="padding:8px 6px;font-size:0.72rem;color:var(--muted);white-space:nowrap;">${escH(t.txn_date||'')}</td>
+    <td style="padding:8px 6px;font-size:0.78rem;">${escH(t.description||'')}</td>
+    <td style="padding:8px 6px;font-size:0.68rem;color:var(--muted);">${escH(t.category||'')}</td>
+    <td style="padding:8px 6px;text-align:right;font-weight:800;color:${t.direction==='income'?'#4ade80':'#f87171'};">${t.direction==='income'?'+':''}${nfmt(t.amount)}</td></tr>`).join('');
+  document.getElementById('bkContent').innerHTML=`
+    <div class="bk-content-header"><div class="bk-content-title">TRANSACTIONS</div>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;" onclick="showPersonalHome()">← Back</button></div>
+    <div style="padding:0 16px;"><div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><tbody>${rows||'<tr><td style="padding:16px;text-align:center;color:var(--muted);">None yet</td></tr>'}</tbody></table></div></div></div>`;
+}
+
+// ── Personal hamburger menu ───────────────────────────────────
+function applyModeMenu(mode) {
+  const nav = document.querySelector('#bkMenu nav');
+  if (!nav) return;
+  if (mode !== 'personal') return; // business menu stays as built
+  const fname = profileData?.full_name || staffDisplayName || '';
+  const initials = fname ? fname.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : 'ME';
+  nav.innerHTML = `
+    <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+      <div style="width:34px;height:34px;border-radius:10px;background:rgba(96,165,250,0.15);display:flex;align-items:center;justify-content:center;">👤</div>
+      <div><div style="font-weight:900;font-size:0.85rem;color:var(--white);">Personal Finance</div>
+      <div style="font-size:0.66rem;color:var(--muted);">${escH(fname)}</div></div>
+    </div>
+    ${[['Overview','▦','showPersonalHome()'],['Accounts','🏛','showPersonalSetup()'],['Savings','🐷','showPersonalHome()'],
+       ['Debts','💳','showPersonalHome()'],['Net Worth','📈','showPersonalHome()'],
+       ['Transactions','⇄','showPersonalTransactions()'],['Reports','📄','showPersonalHome()']].map(([label,ic,fn])=>`
+      <div class="bk-menu-item" onclick="${fn};closeBkMenu()"><span class="bk-menu-icon">${ic}</span> ${label}</div>`).join('')}
+    <div class="bk-menu-item" onclick="localStorage.setItem('bd_mode','business');window.location.reload()" style="margin-top:10px;color:var(--gold);">
+      <span class="bk-menu-icon">🏢</span> Switch to Business
+    </div>`;
+}
+
+// ══ BUSINESS REGISTRATION FLOW (Figma) ═══════════════════════
+let _regBizType = 'product';
+let _regPS = [{name:'',type:'',category:'',price:''}, {name:'',type:'',category:'',price:''}, {name:'',type:'',category:'',price:''}];
+let _regPSCols = ['NAME','TYPE','CATEGORY','PRICE'];
+
+function showRegisterBusinessPage() {
+  staffHideChrome();
+  bdSaveRoute('register-business');
+  document.getElementById('bkContent').innerHTML = `
+    <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;">
+        <div style="width:30px;height:30px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:0.9rem;">🏦</div>
+        <span style="font-weight:800;font-size:0.82rem;">Butterfly Dynamix Accounting</span>
+      </div>
+      <div style="font-size:1.4rem;font-weight:900;color:var(--white);">Register Your Business</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin:4px 0 22px;">Enter your business details to get started.</div>
+
+      <label class="su-label">BUSINESS NAME *</label>
+      <input class="bk-login-input" id="rb_name" placeholder="e.g. Butterfly Dynamix LLC" style="width:100%;margin-bottom:14px;"/>
+
+      <label class="su-label">BUSINESS STRUCTURE *</label>
+      <select class="bk-login-input" id="rb_structure" style="width:100%;margin-bottom:14px;">
+        <option value="">Select Business Structure</option>
+        ${PROFILE_BIZ_STRUCTURES.map(s=>`<option>${s}</option>`).join('')}
+      </select>
+
+      <label class="su-label">INDUSTRY *</label>
+      <select class="bk-login-input" id="rb_industry" style="width:100%;margin-bottom:14px;">
+        <option value="">Select Industry</option>
+        ${PROFILE_INDUSTRIES.map(i=>`<option>${i}</option>`).join('')}
+      </select>
+
+      <label class="su-label">BUSINESS TYPE *</label>
+      ${[['product','📦','Product','Sells physical goods'],['service','🧰','Service','Provides services'],['both','💲','Product & Service','Sells both']].map(([v,ic,t,d])=>`
+        <div onclick="_regBizType='${v}';document.querySelectorAll('.rb-type-card').forEach(c=>c.style.borderColor='var(--border2)');this.style.borderColor='#22c55e';"
+          class="rb-type-card" style="border:1px solid ${_regBizType===v?'#22c55e':'var(--border2)'};border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;background:var(--surface);">
+          <div style="font-size:1rem;">${ic}</div>
+          <div style="font-weight:800;font-size:0.85rem;color:var(--white);">${t}</div>
+          <div style="font-size:0.7rem;color:var(--muted);">${d}</div>
+        </div>`).join('')}
+
+      <label class="su-label" style="margin-top:6px;">BUSINESS ADDRESS *</label>
+      <textarea class="bk-login-input" id="rb_address" rows="2" placeholder="Full business address including street, city, state" style="width:100%;margin-bottom:14px;resize:vertical;"></textarea>
+
+      <label class="su-label">CAC REGISTRATION NUMBER (IF REGISTERED)</label>
+      <input class="bk-login-input" id="rb_cac" placeholder="e.g. RC-1234567" style="width:100%;margin-bottom:20px;"/>
+
+      <div class="bk-login-err" id="rbErr"></div>
+      <div style="display:flex;gap:10px;">
+        <button class="bk-login-back" onclick="showModeChoice()">← Back</button>
+        <button class="bk-login-btn" style="flex:1;background:#22c55e;color:#04240f;" onclick="rbSaveBusiness()">Save &amp; Continue →</button>
+      </div>
+    </div>`;
+}
+
+async function rbSaveBusiness() {
+  const err = document.getElementById('rbErr');
+  const name = document.getElementById('rb_name')?.value?.trim();
+  if (!name) { if(err) err.textContent='Business name is required.'; return; }
+  const cac = document.getElementById('rb_cac')?.value?.trim()||'';
+  if (err) { err.textContent='Saving…'; err.style.color='var(--muted)'; }
+  try {
+    const {data,error} = await bkDb.from('businesses').insert({
+      name,
+      industry: document.getElementById('rb_industry')?.value||'General',
+      business_type: document.getElementById('rb_structure')?.value||'',
+      products_services: _regBizType,
+      business_address: document.getElementById('rb_address')?.value?.trim()||'',
+      cac_registered: !!cac, cac_number: cac||null,
+      owner_user_id: bkUser.id, currency: activeCurrency||'NGN',
+      is_primary: userBusinesses.length===0, icon:'🏢',
+    }).select().single();
+    if (error) throw error;
+    userBusinesses.push(data);
+    activeBusiness = data;
+    await bkDb.from('user_businesses').upsert({user_id:bkUser.id,business_id:data.id,role:'owner'},{onConflict:'user_id,business_id'});
+    renderMenuBusinesses();
+    showRegisterProductsPage();
+  } catch(e) { if(err){ err.textContent='Error: '+(e.message||''); err.style.color='var(--red)'; } }
+}
+
+function showRegisterProductsPage() {
+  staffHideChrome();
+  bdSaveRoute('register-products');
+  const head = _regPSCols.map(c=>`<th style="border:1px solid var(--border2);padding:7px 8px;font-size:0.68rem;letter-spacing:0.06em;text-align:left;white-space:nowrap;">${escH(c)}</th>`).join('');
+  const body = _regPS.map((r,i)=>`
+    <tr>
+      <td style="border:1px solid var(--border2);padding:6px;text-align:center;color:var(--muted);font-size:0.72rem;">${i+1}</td>
+      ${_regPSCols.map((c,ci)=>`<td style="border:1px solid var(--border2);padding:0;">
+        <input style="width:100%;min-width:100px;background:transparent;border:none;color:var(--white);padding:8px;font-size:0.78rem;outline:none;"
+          value="${escH(r['c'+ci]||'')}" placeholder="—" oninput="_regPS[${i}]['c${ci}']=this.value"/></td>`).join('')}
+      <td style="border:1px solid var(--border2);padding:0;text-align:center;"><button onclick="_regPS.splice(${i},1);showRegisterProductsPage()" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:0.85rem;padding:6px;">&times;</button></td>
+    </tr>`).join('');
+  document.getElementById('bkContent').innerHTML = `
+    <div style="padding:20px 16px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:30px;height:30px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">🏦</div>
+          <div>
+            <div style="font-weight:900;font-size:0.95rem;color:var(--white);">Register Products &amp; Services</div>
+            <div style="font-size:0.66rem;color:var(--muted);">Butterfly Dynamix Accounting</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="tb-icon" onclick="alert('Barcode scanning coming soon — plug in a USB/Bluetooth scanner or use the camera in a future update.')">▦ Scan Barcode</button>
+          <button class="tb-icon" onclick="_regPS.push({});showRegisterProductsPage()">+ Add Row</button>
+          <button class="tb-icon" onclick="regPSAddCol()">+ Add Column</button>
+          <button class="tb-icon" onclick="regPSDelCol()">− Delete Column</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;border:1px solid var(--border2);border-radius:10px;">
+        <table style="width:100%;border-collapse:collapse;min-width:${140+_regPSCols.length*130}px;">
+          <thead><tr>
+            <th style="border:1px solid var(--border2);padding:7px 8px;width:34px;font-size:0.68rem;">#</th>
+            ${head}
+            <th style="border:1px solid var(--border2);width:32px;"></th>
+          </tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:8px;">${_regPS.length} rows · ${_regPSCols.length+1} columns</div>
+      <div style="display:flex;gap:10px;margin-top:22px;">
+        <button class="bk-login-back" onclick="showRegisterBusinessPage()">← Back</button>
+        <button class="bk-login-btn" style="flex:1;background:#22c55e;color:#04240f;" onclick="regPSSave()">Save &amp; Go to Dashboard →</button>
+      </div>
+    </div>`;
+}
+
+function regPSAddCol(){
+  const name = prompt('Column header name:');
+  if (!name) return;
+  _regPSCols.push(name.trim().toUpperCase());
+  showRegisterProductsPage();
+}
+function regPSDelCol(){
+  if (_regPSCols.length<=1) { alert('At least one column is required.'); return; }
+  const list = _regPSCols.map((c,i)=>(i+1)+'. '+c).join('\n');
+  const pick = prompt('Which column do you want to delete?\n'+list+'\n\nEnter the number:');
+  const n = parseInt(pick);
+  if (!n||n<1||n>_regPSCols.length) return;
+  _regPSCols.splice(n-1,1);
+  showRegisterProductsPage();
+}
+async function regPSSave(){
+  try {
+    const items = _regPS.filter(r=>r.c0).map(r=>_regPSCols.map((c,ci)=>r['c'+ci]||'').filter(Boolean).join(' | '));
+    if (items.length && activeBusiness) {
+      await bkDb.from('businesses').update({ products_services: items.join('; '), updated_at:new Date().toISOString() })
+        .eq('id', activeBusiness.id).eq('owner_user_id', bkUser.id);
+    }
+  } catch(e) {}
+  showAllBusinessesDashboard();
+}
+
+// ══ MODE CHOICE — first-user dashboard ═══════════════════════
+function showModeChoice() {
+  hideAuthScreen();
+  staffHideChrome();
+  bdSaveRoute('mode-choice');
+  const hour = new Date().getHours();
+  const greeting = hour<12?'GOOD MORNING':hour<17?'GOOD AFTERNOON':'GOOD EVENING';
+  const fname = profileData?.first_name || staffDisplayName?.split(' ')[0] || '';
+  document.getElementById('bkContent').innerHTML = `
+    <div style="text-align:center;padding:34px 20px 8px;">
+      <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:26px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;">🏦</div>
+        <span style="font-weight:800;font-size:0.85rem;">Butterfly Dynamix Accounting</span>
+      </div>
+      <div style="font-size:0.68rem;letter-spacing:0.16em;color:var(--muted);font-weight:700;">${greeting}</div>
+      <div style="font-size:1.7rem;font-weight:900;color:var(--white);margin:4px 0;">${escH(fname)} 👋</div>
+      <div style="font-size:0.85rem;color:var(--muted);">What would you like to do?</div>
+    </div>
+    <div style="padding:20px 16px;display:flex;flex-direction:column;gap:16px;max-width:520px;margin:0 auto;">
+      <div onclick="startBusinessMode()" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;cursor:pointer;">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(34,197,94,0.14);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:14px;">🏢</div>
+        <div style="font-size:1.05rem;font-weight:900;color:var(--white);margin-bottom:6px;">Business Accounting</div>
+        <div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">Register and manage one or more businesses. Track revenue, expenses, invoices, and team performance.</div>
+        <div style="color:#22c55e;font-size:0.78rem;font-weight:800;margin-top:12px;">Get started →</div>
+      </div>
+      <div onclick="startPersonalMode()" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;cursor:pointer;">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(96,165,250,0.14);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:14px;">👤</div>
+        <div style="font-size:1.05rem;font-weight:900;color:var(--white);margin-bottom:6px;">Personal Accounting</div>
+        <div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">Track your personal income, savings goals, debt repayment, and net worth all in one place.</div>
+        <div style="color:#60a5fa;font-size:0.78rem;font-weight:800;margin-top:12px;">Get started →</div>
+      </div>
+      <div style="text-align:center;font-size:0.72rem;color:var(--muted);">You can access both modes anytime from your profile.</div>
+    </div>`;
+}
+
+function startBusinessMode() {
+  localStorage.setItem('bd_mode','business');
+  if (userBusinesses.length) { showAllBusinessesDashboard(); }
+  else showRegisterBusinessPage();
+}
+
+function startPersonalMode() {
+  localStorage.setItem('bd_mode','personal');
+  if (personalProfile) { showPersonalHome(); }
+  else showPersonalSetup();
 }
 
 function hideAuthScreen() {
@@ -1507,21 +2221,9 @@ async function doSignUp() {
     return;
   }
 
-  // Auth user created and session set — now launch the profile wizard
+  // Auth user created and session set — continue to personal info (step 2)
   bkUser = data.user;
-  hideAuthScreen();
-
-  suStep = 1;
-  suData = { accountType:'business', whoAreYou:'owner', businessType:'',
-    isRegistered:null, industry:'', bizTypes:[], country:'Nigeria',
-    state:'Lagos', lga:'Ikeja', town:'', village:'', street:'',
-    businessName:'', offerType:'services', products:[], prodCurrency:'NGN' };
-
-  // Show the wizard in the main app area (auth screen is now hidden)
-  document.getElementById('bkContent').innerHTML = '';
-  staffHideChrome();
-  document.getElementById('bkAuthScreen')?.classList.remove('hidden');
-  renderSuStep();
+  showAuthScreen('personal-info');
 }
 
 async function doLogin() {
@@ -3124,6 +3826,12 @@ function bdRestoreRoute() {
     if (r === 'suppliers'){ showSuppliersPage(); return; }
     if (r === 'staff')    { showStaffDashboard(); return; }
     if (r === 'record-biz-choice') { showRecordBusinessChoice(); return; }
+    if (r === 'mode-choice')      { showModeChoice(); return; }
+    if (r === 'register-business'){ showRegisterBusinessPage(); return; }
+    if (r === 'register-products'){ showRegisterProductsPage(); return; }
+    if (r === 'personal-setup')   { showPersonalSetup(); return; }
+    if (r === 'personal-home')    { showPersonalHome(); return; }
+    if (r === 'personal-txns')    { showPersonalTransactions(); return; }
     if (r === 'record-choice') { showRecordChoice(); return; }
     if (r === 'sales-record')  { showRecordSales(); return; }
     if (r === 'expenses-record'){ showRecordExpenses(); return; }
@@ -3225,6 +3933,17 @@ async function showExpensesBreakdown() {
 
 
 async function showDashboard() {
+  const mode = localStorage.getItem('bd_mode');
+  if (mode === 'personal') {
+    if (!personalProfile) await loadPersonalData();
+    if (personalProfile) return showPersonalHome();
+  }
+  if (!userBusinesses.length) {
+    if (!personalProfile) await loadPersonalData();
+    if (!personalProfile) return showModeChoice();
+    if (mode !== 'business') return showPersonalHome();
+    return showModeChoice();
+  }
   return showAllBusinessesDashboard();
 }
 async function showClassicDashboard() {
@@ -3549,7 +4268,7 @@ function exportPDF() {
   doc.setFont('helvetica','bold');
   doc.setFontSize(14);
   doc.setTextColor(212,175,55);
-  doc.text('Butterfly Dynamix Bookkeeping', 14, 18);
+  doc.text('Butterfly Dynamix Accounting', 14, 18);
 
   doc.setFontSize(11);
   doc.setTextColor(30,30,50);
@@ -3911,7 +4630,7 @@ function exportJournalPDF(){
   const { jsPDF }=window.jspdf; if(!jsPDF){ alert('PDF library loading — try again.'); return; }
   const doc=new jsPDF({orientation:'landscape'});
   doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(212,175,55);
-  doc.text('Butterfly Dynamix Bookkeeping',14,18);
+  doc.text('Butterfly Dynamix Accounting',14,18);
   doc.setFontSize(11); doc.setTextColor(30,30,50);
   doc.text('GENERAL JOURNAL — MASTER RECORDS',14,28);
   doc.setFontSize(8); doc.setTextColor(100,100,120);
