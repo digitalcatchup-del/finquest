@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -178,6 +179,17 @@ select.bk-cell,input.bk-cell{min-height:34px;}
 .ps-wrap-wrap .ps-cell{white-space:normal;}
 .ps-wrap-clip .ps-cell{white-space:nowrap;overflow:hidden;text-overflow:clip;}
 .ps-wrap-overflow .ps-cell{white-space:nowrap;}
+
+.op-circle{width:18px;height:18px;border-radius:50%;border:2px solid var(--muted);display:inline-block;cursor:pointer;vertical-align:middle;}
+.op-circle.on{border-color:var(--gold);background:var(--gold);position:relative;}
+.op-circle.on::after{content:'\2713';color:#000;font-size:0.62rem;font-weight:900;position:absolute;left:3px;top:-1px;}
+.op-selbar{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--gold);border-radius:10px;padding:8px 12px;margin:8px 16px 0;font-size:0.78rem;}
+.op-bundle-btn{background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.72rem;padding:6px 16px;border-radius:7px;cursor:pointer;}
+.op-bundle-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.op-cancel-btn{background:none;color:var(--muted);border:1px solid var(--border2);font-size:0.72rem;padding:6px 14px;border-radius:7px;cursor:pointer;}
+.op-bundle-row{background:rgba(212,175,55,0.06);}
+.op-subrow td{background:rgba(0,0,0,0.35);}
+.op-badge{font-size:0.56rem;background:rgba(212,175,55,0.15);color:var(--gold);padding:2px 7px;border-radius:9px;font-weight:800;letter-spacing:0.04em;}
 .su-label{display:block;font-size:0.74rem;font-weight:700;color:var(--off);margin-bottom:5px;}
 .su-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 13px;font-size:0.88rem;font-family:inherit;outline:none;}
 .su-input:focus{border-color:var(--gold);}
@@ -8750,9 +8762,17 @@ async function salesSaveRow(i){
 }
 
 async function salesSaveAll(){
-  const rows=salesRows.filter(r=>r.total>0 && !r._posted);
-  if(!rows.length){ alert('No new rows to save — all have already been posted.'); return; }
   const date=new Date().toISOString().slice(0,10);
+  const flat=[];
+  for (const r of salesRows) {
+    if (r._bundle && !r._posted) {
+      const gid = (crypto.randomUUID ? crypto.randomUUID() : 'g'+Date.now()+Math.random().toString(16).slice(2));
+      r.items.forEach(x=>{ if(x.total>0 && !x._posted){ x.txn_group_id=gid; x.pay_mode=r.pay_mode; flat.push(x); } });
+      r._posted = true;
+    } else if (!r._bundle && r.total>0 && !r._posted) flat.push(r);
+  }
+  const rows=flat;
+  if(!rows.length){ alert('No new rows to save — all have already been posted.'); return; }
   for(const r of rows){
     if(navigator.onLine) await autoPostSaleRow(r,'',date);
     else { await bdSaveOffline(r,'',date); }
@@ -8817,10 +8837,15 @@ function sheetHeaderDate(kind){
   return sheetFmtDate(new Date());
 }
 
+let sheetSel = { sales:{active:false,picked:[]}, expenses:{active:false,picked:[]} };
+
+function sheetGrand(rows){ return rows.reduce((a,r)=>a+(r._bundle ? r.items.reduce((s,x)=>s+(x.total||0),0) : (r.total||0)),0); }
+
 function renderRecordSheet(kind) {
   _sheetKind = kind;
   const isSales = kind==='sales';
   const st   = sheetState[kind];
+  const sel  = sheetSel[kind];
   const rows = sheetRows(kind);
   const wrap = document.querySelector('.bk-sheet-wrap');
   const keepScroll = wrap ? wrap.scrollLeft : 0;
@@ -8830,25 +8855,77 @@ function renderRecordSheet(kind) {
   const numFn  = isSales ? 'salesNumChange' : 'staffExpNumChange';
   const saveFn = isSales ? 'salesSaveRow' : 'expSaveRow';
   const dec    = st.decimals;
-
   const fmtCell = n => (n||0).toLocaleString('en-NG',{minimumFractionDigits:dec,maximumFractionDigits:Math.max(dec,2)});
 
-  // filter by search
-  const visible = rows.map((r,i)=>({r,i})).filter(({r})=>{
-    if (st.search && !(r.narration||'').toLowerCase().includes(st.search.toLowerCase())) return false;
-    return true;
-  });
+  const matches = r => {
+    if (!st.search) return true;
+    const q = st.search.toLowerCase();
+    if (r._bundle) return r.items.some(x=>(x.narration||'').toLowerCase().includes(q));
+    return (r.narration||'').toLowerCase().includes(q);
+  };
+  const visible = rows.map((r,i)=>({r,i})).filter(({r})=>matches(r));
 
   const customColsHead = st.customCols.map(c=>`<th style="width:120px;">${escH(c.name)}</th>`).join('');
   const wrapCss = st.wrap==='wrap' ? 'white-space:normal;' : st.wrap==='clip' ? 'white-space:nowrap;overflow:hidden;text-overflow:clip;' : 'white-space:nowrap;';
+  const nCust = st.customCols.length;
+  const selCol = sel.active;
 
   const body = visible.map(({r,i},vi)=>{
     const frozen = st.freezeRow > 0 && vi < st.freezeRow;
-    const customCells = st.customCols.map((c,ci)=>`<td><input class="staff-cell" type="text" value="${escH((r.custom&&r.custom[c.key])||'')}"
+    const circle = selCol
+      ? (r._bundle
+          ? '<td style="text-align:center;color:var(--muted);">—</td>'
+          : `<td style="text-align:center;"><span onclick="sheetSelToggle('${kind}',${i})" class="op-circle ${sel.picked.includes(i)?'on':''}"></span></td>`)
+      : '';
+
+    if (r._bundle) {
+      const bTotal = r.items.reduce((s,x)=>s+(x.total||0),0);
+      const head = `
+      <tr id="${kind}row_${i}" data-idx="${i}" class="op-bundle-row ${frozen?'sheet-frozen-row':''}">
+        ${circle}
+        <td class="staff-sn" style="white-space:nowrap;">${vi+1}</td>
+        <td colspan="${2+nCust}" onclick="sheetToggleBundle('${kind}',${i})" style="cursor:pointer;">
+          <span style="color:var(--gold);font-weight:900;">${r.expanded?'▾':'▸'}</span>
+          🧺 <span style="color:var(--gold);font-weight:800;">${r.items.length} item${r.items.length>1?'s':''}</span>
+          <span class="op-badge">ONE-PAYMENT</span>
+          ${r.expanded?`<span onclick="event.stopPropagation();sheetUngroup('${kind}',${i})" style="color:#f87171;font-size:0.66rem;font-weight:700;margin-left:8px;">Ungroup</span>`:''}
+        </td>
+        <td style="white-space:nowrap;text-align:right;"><div class="staff-cell ro" id="bundleTotal_${kind}_${i}" style="color:var(--gold);font-weight:900;">${staffFmtAmt(bTotal)}</div></td>
+        <td><select class="staff-cell" style="font-size:0.75rem;min-width:110px;" onchange="sheetRows('${kind}')[${i}].pay_mode=this.value;sheetRows('${kind}')[${i}]._posted=false">
+          ${[['cash','Cash'],['transfer','Bank Transfer'],['pos','POS'],['credit','On Credit']].map(([v,l])=>`<option value="${v}" ${(r.pay_mode||'cash')===v?'selected':''}>${l}</option>`).join('')}
+        </select></td>
+        <td><button class="staff-save-row-btn" onclick="sheetSaveBundle('${kind}',${i})" title="Save bundle">&rsaquo;</button></td>
+        <td><button class="staff-del-btn" onclick="sheetDeleteRow('${kind}',${i})">&times;</button></td>
+      </tr>`;
+      const subs = r.expanded ? r.items.map((x,j)=>`
+      <tr class="op-subrow">
+        ${selCol?'<td></td>':''}
+        <td class="staff-sn" style="white-space:nowrap;color:var(--muted);">${vi+1}.${j+1}</td>
+        <td><input class="staff-cell" type="text" value="${escH(x.narration||'')}" placeholder="${narrPh}" style="${wrapCss}min-width:150px;"
+          oninput="bundleItemChange('${kind}',${i},${j},'narration',this.value)"/></td>
+        ${st.customCols.map(c=>`<td><input class="staff-cell" type="text" value="${escH((x.custom&&x.custom[c.key])||'')}"
+          oninput="(sheetRows('${kind}')[${i}].items[${j}].custom=sheetRows('${kind}')[${i}].items[${j}].custom||{})['${c.key}']=this.value"/></td>`).join('')}
+        <td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">${sym}</span>
+          <input class="staff-cell num" type="text" inputmode="decimal" value="${x.unit_price>0?fmtCell(x.unit_price):''}" placeholder="0"
+            onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+            oninput="fmtInputCommas(this);bundleItemChange('${kind}',${i},${j},'unit_price',this.value)"/></div></td>
+        <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${x.qty||1}"
+          onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+          oninput="bundleItemChange('${kind}',${i},${j},'qty',this.value)"/></td>
+        <td style="white-space:nowrap;"><div class="staff-cell ro" id="bItemTot_${kind}_${i}_${j}">${staffFmtAmt(x.total)}</div></td>
+        <td style="color:var(--muted);font-size:0.66rem;">—</td>
+        <td></td>
+        <td><button class="staff-del-btn" onclick="bundleItemDelete('${kind}',${i},${j})">&times;</button></td>
+      </tr>`).join('') : '';
+      return head + subs;
+    }
+
+    const customCells = st.customCols.map(c=>`<td><input class="staff-cell" type="text" value="${escH((r.custom&&r.custom[c.key])||'')}"
       oninput="(sheetRows('${kind}')[${i}].custom=sheetRows('${kind}')[${i}].custom||{})['${c.key}']=this.value"/></td>`).join('');
     return `
     <tr id="${kind}row_${i}" data-idx="${i}" class="${frozen?'sheet-frozen-row':''}"
         style="${_sheetDragIdx===i?'outline:2px solid var(--gold);':''}">
+      ${circle}
       <td class="staff-sn" style="white-space:nowrap;">${vi+1}</td>
       <td><input class="staff-cell" type="text" value="${escH(r.narration||'')}" placeholder="${narrPh}" style="${wrapCss}min-width:150px;"
         oninput="sheetRows('${kind}')[${i}].narration=this.value;sheetRows('${kind}')[${i}]._posted=false"/></td>
@@ -8873,8 +8950,13 @@ function renderRecordSheet(kind) {
     </tr>`;
   }).join('');
 
-  const total = rows.reduce((a,r)=>a+(r.total||0),0);
-  const nCols = 8 + st.customCols.length;
+  const total = sheetGrand(rows);
+  const selBar = sel.active ? `
+    <div class="op-selbar">
+      <span style="color:var(--gold);font-weight:800;">${sel.picked.length} selected</span>
+      <button class="op-bundle-btn" ${sel.picked.length<2?'disabled':''} onclick="sheetBundleSelected('${kind}')">🧺 One-Payment</button>
+      <button class="op-cancel-btn" onclick="sheetSelCancel('${kind}')">Cancel</button>
+    </div>` : '';
 
   document.getElementById('bkContent').innerHTML = `
     <div style="text-align:center;padding:12px 16px 0;">
@@ -8883,7 +8965,7 @@ function renderRecordSheet(kind) {
 
     <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:8px 16px 0;">
       <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="sheetToggleToolbox('${kind}')">⚙ Tools</button>
-      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="${isSales?'showRecordChoice()':'showRecordChoice()'}">← Back</button>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showRecordChoice()">← Back</button>
     </div>
 
     <div id="sheetToolbox_${kind}" class="sheet-toolbox ${sheetToolboxOpen[kind]?'':'hidden'}">
@@ -8906,6 +8988,7 @@ function renderRecordSheet(kind) {
     </div>
 
     <div id="sheetPanel_${kind}" class="sheet-panel hidden"></div>
+    ${selBar}
 
     <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 16px 6px;">
       <div id="sheetDateLabel_${kind}" style="color:var(--gold);font-size:0.72rem;font-weight:700;">${sheetHeaderDate(kind)}</div>
@@ -8914,13 +8997,15 @@ function renderRecordSheet(kind) {
     </div>
 
     <div class="bk-sheet-wrap" style="font-family:'${st.font}',sans-serif;">
-      <table class="staff-table staff-table-compact" id="sheetTable_${kind}" style="min-width:${640+st.customCols.length*120}px;table-layout:fixed;">
+      <table class="staff-table staff-table-compact" id="sheetTable_${kind}" style="min-width:${640+nCust*120+(selCol?34:0)}px;table-layout:fixed;">
         <colgroup>
+          ${selCol?'<col style="width:34px;">':''}
           <col style="width:40px;"><col style="width:185px;">
           ${st.customCols.map(()=>'<col style="width:120px;">').join('')}
           <col style="width:125px;"><col style="width:92px;"><col style="width:115px;"><col style="width:125px;"><col style="width:34px;"><col style="width:34px;">
         </colgroup>
         <thead><tr>
+          ${selCol?'<th></th>':''}
           <th style="white-space:nowrap;">S/N</th>
           <th>Narration</th>
           ${customColsHead}
@@ -8932,7 +9017,7 @@ function renderRecordSheet(kind) {
         </tr></thead>
         <tbody>${body}</tbody>
         <tfoot><tr class="staff-total-row">
-          <td colspan="${2+st.customCols.length+2}" style="padding:7px 5px;">Total</td>
+          <td colspan="${(selCol?1:0)+2+nCust+2}" style="padding:7px 5px;">Total</td>
           <td id="sheetGrandTotal_${kind}" style="white-space:nowrap;padding:7px 5px;text-align:right;font-weight:800;">${staffFmtAmt(total)}</td>
           <td colspan="3"></td>
         </tr></tfoot>
@@ -8946,6 +9031,101 @@ function renderRecordSheet(kind) {
   const newWrap = document.querySelector('.bk-sheet-wrap');
   if (newWrap) newWrap.scrollLeft = keepScroll;
   sheetInitLongPress(kind);
+}
+
+// ── Selection mode + One-Payment bundling ─────────────────────
+function sheetEnterSel(kind, idx) {
+  const sel = sheetSel[kind];
+  sel.active = true;
+  const r = sheetRows(kind)[idx];
+  sel.picked = (r && !r._bundle) ? [idx] : [];
+  renderRecordSheet(kind);
+}
+function sheetSelToggle(kind, i) {
+  const sel = sheetSel[kind];
+  const p = sel.picked.indexOf(i);
+  if (p >= 0) sel.picked.splice(p,1); else sel.picked.push(i);
+  renderRecordSheet(kind);
+}
+function sheetSelCancel(kind) {
+  sheetSel[kind] = {active:false, picked:[]};
+  renderRecordSheet(kind);
+}
+function sheetBundleSelected(kind) {
+  const sel = sheetSel[kind];
+  if (sel.picked.length < 2) return;
+  sheetSnapshot(kind);
+  const rows = sheetRows(kind);
+  const idxs = sel.picked.slice().sort((a,b)=>a-b);
+  const items = idxs.map(i=>rows[i]).filter(r=>r && !r._bundle);
+  const bundle = { _bundle:true, items, pay_mode:(items[0]?.pay_mode||'cash'), expanded:false, _posted:false };
+  for (let k = idxs.length-1; k >= 0; k--) rows.splice(idxs[k], 1);
+  rows.splice(idxs[0], 0, bundle);
+  sheetSel[kind] = {active:false, picked:[]};
+  renderRecordSheet(kind);
+}
+function sheetToggleBundle(kind, i) {
+  const r = sheetRows(kind)[i];
+  if (r && r._bundle) { r.expanded = !r.expanded; renderRecordSheet(kind); }
+}
+function sheetUngroup(kind, i) {
+  const rows = sheetRows(kind);
+  const r = rows[i];
+  if (!r || !r._bundle) return;
+  sheetSnapshot(kind);
+  rows.splice(i, 1, ...r.items);
+  renderRecordSheet(kind);
+}
+function bundleItemChange(kind, bIdx, j, field, val) {
+  const b = sheetRows(kind)[bIdx];
+  if (!b || !b._bundle) return;
+  const x = b.items[j];
+  if (field === 'narration') { x.narration = val; }
+  else { x[field] = parseFloat(String(val).replace(/,/g,''))||0; x.total = x.unit_price*(x.qty||1); }
+  x._posted = false; b._posted = false;
+  const it = document.getElementById('bItemTot_'+kind+'_'+bIdx+'_'+j);
+  if (it) it.textContent = staffFmtAmt(x.total);
+  const bt = document.getElementById('bundleTotal_'+kind+'_'+bIdx);
+  if (bt) bt.textContent = staffFmtAmt(b.items.reduce((s,r)=>s+(r.total||0),0));
+  const gt = document.getElementById('sheetGrandTotal_'+kind);
+  if (gt) gt.textContent = staffFmtAmt(sheetGrand(sheetRows(kind)));
+}
+function bundleItemDelete(kind, bIdx, j) {
+  const rows = sheetRows(kind);
+  const b = rows[bIdx];
+  if (!b || !b._bundle) return;
+  sheetSnapshot(kind);
+  b.items.splice(j,1);
+  if (b.items.length <= 1) rows.splice(bIdx, 1, ...b.items);
+  renderRecordSheet(kind);
+}
+async function sheetSaveBundle(kind, i) {
+  const b = sheetRows(kind)[i];
+  if (!b || !b._bundle || b._posted) return;
+  const valid = b.items.filter(x=>x.total>0);
+  if (!valid.length) return;
+  const btn = document.querySelector('#'+kind+'row_'+i+' .staff-save-row-btn');
+  if (btn) { btn.textContent='...'; btn.disabled=true; }
+  const gid = (crypto.randomUUID ? crypto.randomUUID() : 'g'+Date.now()+Math.random().toString(16).slice(2));
+  const date = new Date().toISOString().slice(0,10);
+  try {
+    for (const x of valid) {
+      x.txn_group_id = gid;
+      x.pay_mode = b.pay_mode;
+      if (kind === 'sales') {
+        if (navigator.onLine) await autoPostSaleRow(x, '', date);
+        else { await bdSaveOffline(x, '', date); }
+      } else {
+        await autoPostExpenseRow(x);
+      }
+      x._posted = true;
+    }
+    if (!navigator.onLine && kind==='sales') bdUpdateSyncBadge();
+    b._posted = true;
+    if (btn) { btn.textContent='\u2713'; btn.style.color='var(--green)'; }
+  } catch(e) {
+    if (btn) { btn.textContent='!'; btn.style.color='var(--red)'; btn.disabled=false; }
+  }
 }
 
 function sheetAddRow(kind){
@@ -9037,11 +9217,19 @@ async function sheetLoadDateRange(kind){
       .eq('user_id',bkUser.id).eq('record_type',rt)
       .gte('txn_date',st.dateFrom).lte('txn_date',to)
       .order('txn_date');
-    const loaded = (T||[]).map((t,n)=>({
+    const flat = (T||[]).map((t,n)=>({
       sn:n+1, narration:t.narration||'', unit_price:Math.abs((parseFloat(t.credit)||0)-(parseFloat(t.debit)||0)),
       qty:1, total:Math.abs((parseFloat(t.credit)||0)-(parseFloat(t.debit)||0)),
-      pay_mode:'cash', _posted:true, _txnId:t.id,
+      pay_mode:'cash', _posted:true, _txnId:t.id, _gid:t.txn_group_id||null,
     }));
+    const loaded=[]; const seen={};
+    for (const r of flat) {
+      if (r._gid) {
+        if (seen[r._gid]) { seen[r._gid].items.push(r); continue; }
+        const b = { _bundle:true, items:[r], pay_mode:r.pay_mode, expanded:false, _posted:true };
+        seen[r._gid]=b; loaded.push(b);
+      } else loaded.push(r);
+    }
     if (kind==='sales') salesRows = loaded.length?loaded:[staffEmptySaleRow(1)];
     else staffExpRows = loaded.length?loaded:[staffEmptyExpRow(1)];
     renderRecordSheet(kind);
@@ -9082,41 +9270,53 @@ function sheetPrint(kind, orientation){
 function sheetInitLongPress(kind){
   const tbody = document.querySelector('#sheetTable_'+kind+' tbody');
   if (!tbody) return;
-  let timer=null, startY=0, dragging=false, dragRow=null;
+  let timer=null, startY=0, armed=false, dragging=false, dragRow=null;
   tbody.addEventListener('touchstart', e=>{
-    const tr = e.target.closest('tr'); if (!tr) return;
-    if (e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='BUTTON') return;
+    const tr = e.target.closest('tr'); if (!tr || tr.dataset.idx===undefined) return;
+    if (e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='BUTTON'||e.target.classList.contains('op-circle')) return;
     startY = e.touches[0].clientY;
+    armed=false; dragging=false; dragRow=tr;
     timer = setTimeout(()=>{
-      dragging=true; dragRow=tr; _sheetDragIdx=parseInt(tr.dataset.idx);
-      tr.style.outline='2px solid var(--gold)'; tr.style.opacity='0.85';
+      armed=true;
+      tr.style.outline='2px solid var(--gold)';
       if (navigator.vibrate) navigator.vibrate(30);
-    }, 500);
+    }, 450);
   }, {passive:true});
   tbody.addEventListener('touchmove', e=>{
-    if (!dragging) { if (Math.abs(e.touches[0].clientY-startY)>10) clearTimeout(timer); return; }
+    if (!armed) { if (Math.abs(e.touches[0].clientY-startY)>10) clearTimeout(timer); return; }
+    dragging = true;
     e.preventDefault();
     const y = e.touches[0].clientY;
     const over = document.elementFromPoint(e.touches[0].clientX, y)?.closest('tr');
     if (over && over!==dragRow && over.dataset.idx!==undefined) {
       const rows = sheetRows(kind);
       const from = parseInt(dragRow.dataset.idx), to = parseInt(over.dataset.idx);
-      if (from!==to) {
+      if (from!==to && !isNaN(from) && !isNaN(to)) {
         sheetSnapshot(kind);
         const [moved] = rows.splice(from,1);
         rows.splice(to,0,moved);
-        _sheetDragIdx = to;
         renderRecordSheet(kind);
-        dragging=false; dragRow=null;
+        armed=false; dragging=false; dragRow=null;
       }
     }
   }, {passive:false});
   tbody.addEventListener('touchend', ()=>{
     clearTimeout(timer);
-    if (dragging) { _sheetDragIdx=-1; renderRecordSheet(kind); }
-    dragging=false; dragRow=null;
+    if (armed && !dragging && dragRow) {
+      const idx = parseInt(dragRow.dataset.idx);
+      if (!isNaN(idx)) { sheetEnterSel(kind, idx); armed=false; dragRow=null; return; }
+    }
+    if (dragRow) dragRow.style.outline='';
+    armed=false; dragging=false; dragRow=null;
+  });
+  tbody.addEventListener('contextmenu', e=>{
+    const tr = e.target.closest('tr');
+    if (!tr || tr.dataset.idx===undefined) return;
+    e.preventDefault();
+    sheetEnterSel(kind, parseInt(tr.dataset.idx));
   });
 }
+
 
 
 function showOwingPage() {
@@ -9310,13 +9510,20 @@ async function expSaveRow(i){
 }
 
 async function saveAllExpenses() {
-  const rows = staffExpRows.filter(r => r.total > 0 && !r._posted);
-  if (!rows.length) { alert('No new expenses to save — all have already been posted.'); return; }
-  for (const r of rows) {
+  const flat=[];
+  for (const r of staffExpRows) {
+    if (r._bundle && !r._posted) {
+      const gid = (crypto.randomUUID ? crypto.randomUUID() : 'g'+Date.now()+Math.random().toString(16).slice(2));
+      r.items.forEach(x=>{ if(x.total>0 && !x._posted){ x.txn_group_id=gid; x.pay_mode=r.pay_mode; flat.push(x); } });
+      r._posted = true;
+    } else if (!r._bundle && r.total>0 && !r._posted) flat.push(r);
+  }
+  if (!flat.length) { alert('No new expenses to save — all have already been posted.'); return; }
+  for (const r of flat) {
     await autoPostExpenseRow(r);
     r._posted = true;
   }
-  alert('✓ Expenses posted to ledger');
+  alert('✓ '+flat.length+' expense'+(flat.length>1?'s':'')+' posted to ledger');
 }
 
 // Owing: placeholder save (stores in memory; full DB integration when bk_owing table is added)
@@ -9348,7 +9555,7 @@ async function autoPostExpenseRow(row) {
       const txns = [];
       if (cashR?.data) txns.push({user_id:bkUser.id,journal_id:jnl.id,record_type:'asset',account_name:cashAcct,txn_date:date,narration,debit:0,credit:amount,balance:0,created_at:new Date().toISOString()});
       if (expR?.data)  txns.push({user_id:bkUser.id,journal_id:jnl.id,record_type:'expenditure',account_name:expAcct,txn_date:date,narration,debit:amount,credit:0,balance:amount,created_at:new Date().toISOString()});
-      if (activeBusiness?.id) txns.forEach(t=>t.business_id=activeBusiness.id);
+      txns.forEach(t=>{ if(activeBusiness?.id) t.business_id=activeBusiness.id; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; });
       if (txns.length) await bkDb.from('bk_transactions').insert(txns);
     }
   } catch(e) {}
@@ -10265,7 +10472,18 @@ async function showSingleBusinessDashboard(biz) {
         if(r.account_name==='Cash at Bank'&&r.record_type==='asset') cashAtBank+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
         if(r.account_name==='Debtors'&&r.record_type==='asset') receivables+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
       });
-      recentTxns = (T||[]).slice(0,8);
+      {
+        const flatT=(T||[]); const grouped=[]; const gSeen={};
+        for (const t of flatT) {
+          if (t.txn_group_id) {
+            if (gSeen[t.txn_group_id]) { gSeen[t.txn_group_id]._count++; continue; }
+            const g={...t, _count:1};
+            gSeen[t.txn_group_id]=g; grouped.push(g);
+          } else grouped.push(t);
+        }
+        grouped.forEach(g=>{ if(g._count>1){ g.narration='🧺 '+g._count+' items (One-Payment)'; } });
+        recentTxns = grouped.slice(0,8);
+      }
     } catch(e) {}
   }
   profit = revenue - expenses;
@@ -10717,7 +10935,7 @@ async function autoPostSaleRow(row, customerName, txnDate) {
       created_at:   new Date().toISOString(),
     });
   }
-  if (activeBusiness?.id) txns.forEach(t=>t.business_id=activeBusiness.id);
+  txns.forEach(t=>{ if(activeBusiness?.id) t.business_id=activeBusiness.id; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; });
   if (txns.length) await bkDb.from('bk_transactions').insert(txns);
 }
 
