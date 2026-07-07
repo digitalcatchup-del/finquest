@@ -168,6 +168,12 @@ select.bk-cell,input.bk-cell{min-height:34px;}
 @media(min-width:800px){.mode-cards{flex-direction:row;align-items:stretch;}.mode-cards>div{flex:1;}}
 .rb-typerow{display:flex;flex-direction:column;gap:10px;}
 @media(min-width:700px){.rb-typerow{flex-direction:row;}.rb-typerow>.rb-type-card{flex:1;margin-bottom:0 !important;}}
+
+.menu-profile-row{display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px;border-radius:10px;transition:background 0.15s;-webkit-tap-highlight-color:transparent;}
+.menu-profile-row:hover{background:var(--gold-dim);}
+.menu-signout-btn{margin-top:10px;width:100%;background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.74rem;padding:8px;border-radius:8px;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
+.menu-signout-btn:hover{border-color:#f87171;color:#f87171;}
+#bkSlideMenu *{-webkit-tap-highlight-color:transparent;}
 .su-label{display:block;font-size:0.74rem;font-weight:700;color:var(--off);margin-bottom:5px;}
 .su-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 13px;font-size:0.88rem;font-family:inherit;outline:none;}
 .su-input:focus{border-color:var(--gold);}
@@ -1173,7 +1179,7 @@ body{padding-top:0;}
 
   <!-- Menu footer — click to open profile -->
   <div style="padding:12px 14px 16px;border-top:1px solid var(--border);flex-shrink:0;">
-    <div onclick="openProfileSheet();closeBkMenu()" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px;border-radius:10px;transition:background 0.15s;" onmouseenter="this.style.background='var(--gold-dim)'" onmouseleave="this.style.background=''">
+    <div onclick="openProfileSheet();closeBkMenu()" class="menu-profile-row">
       <div id="menuAvatarCircle" style="width:36px;height:36px;border-radius:50%;background:var(--gold);color:#000;font-size:0.85rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">?</div>
       <div style="flex:1;min-width:0;">
         <div id="bkMenuUserName" style="font-size:0.82rem;font-weight:700;color:var(--white);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
@@ -1181,7 +1187,7 @@ body{padding-top:0;}
       </div>
       <span style="color:var(--muted);font-size:0.8rem;">›</span>
     </div>
-    <button onclick="bkSignOut()" style="margin-top:10px;width:100%;background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.74rem;padding:8px;border-radius:8px;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.borderColor='#f87171';this.style.color='#f87171'" onmouseleave="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">Sign Out</button>
+    <button onclick="bkSignOut()" class="menu-signout-btn">Sign Out</button>
   </div>
 </div>
 
@@ -1496,13 +1502,13 @@ function showAuthScreen(view) {
       <label class="su-label">EMAIL ADDRESS *</label>
       <input class="bk-login-input" type="email" id="suEmail" placeholder="you@example.com" autocomplete="email"/>
       <label class="su-label">PASSWORD *</label>
-      <input class="bk-login-input" type="password" id="suPW" placeholder="Min 6 characters" oninput="suPwStrength(this.value)"/>
+      <div style="position:relative;"><input class="bk-login-input" type="password" id="suPW" placeholder="Min 6 characters" style="padding-right:38px;" oninput="suPwStrength(this.value)"/><span onclick="togglePw(&#39;suPW&#39;,this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:0.9rem;opacity:0.7;">👁</span></div>
       <div id="suPwBar" style="display:flex;gap:4px;margin:6px 0 2px;">
         <div class="pwseg"></div><div class="pwseg"></div><div class="pwseg"></div><div class="pwseg"></div>
       </div>
       <div id="suPwLabel" style="text-align:right;font-size:0.68rem;color:var(--muted);margin-bottom:8px;"></div>
       <label class="su-label">CONFIRM PASSWORD *</label>
-      <input class="bk-login-input" type="password" id="suPW2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doSignUp()"/>
+      <div style="position:relative;"><input class="bk-login-input" type="password" id="suPW2" placeholder="Repeat password" style="padding-right:38px;" onkeydown="if(event.key===&#39;Enter&#39;)doSignUp()"/><span onclick="togglePw(&#39;suPW2&#39;,this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:0.9rem;opacity:0.7;">👁</span></div>
       <div class="bk-login-err" id="suAuthErr"></div>
       <button class="bk-login-btn" style="background:var(--gold);color:#000;" onclick="doSignUp()">Continue →</button>
       <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">Already have an account? <span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="showAuthScreen('login')">Sign in</span></div>
@@ -1515,7 +1521,7 @@ function showAuthScreen(view) {
       <label class="su-label">EMAIL ADDRESS *</label>
       <input class="bk-login-input" type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email"/>
       <label class="su-label">PASSWORD *</label>
-      <input class="bk-login-input" type="password" id="loginPW" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <div style="position:relative;"><input class="bk-login-input" type="password" id="loginPW" placeholder="Your password" style="padding-right:38px;" onkeydown="if(event.key===&#39;Enter&#39;)doLogin()"/><span onclick="togglePw(&#39;loginPW&#39;,this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:0.9rem;opacity:0.7;">👁</span></div>
       <div class="bk-login-err" id="loginErr"></div>
       <button class="bk-login-btn" style="background:var(--gold);color:#000;" onclick="doLogin()">Sign In →</button>
       <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">No account yet? <span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="showAuthScreen('signup')">Sign up</span></div>
@@ -1631,6 +1637,13 @@ function showAuthScreen(view) {
         <button class="bk-login-btn" style="width:100%;background:var(--gold);color:#000;margin-top:12px;" onclick="hideAuthScreen();showModeChoice()">Go to Dashboard</button>
       </div>`;
   }
+}
+
+function togglePw(id, el) {
+  const inp = document.getElementById(id);
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  el.textContent = inp.type === 'password' ? '\ud83d\udc41' : '\ud83d\ude48';
 }
 
 function suPwStrength(pw) {
@@ -2246,6 +2259,7 @@ function startPersonalMode() {
 }
 
 function hideAuthScreen() {
+  try { closeBkMenu(); } catch(e) {}
   document.getElementById('bkAuthScreen')?.classList.add('hidden');
 }
 
@@ -3224,6 +3238,7 @@ async function confirmAddAccount() {
 
 // ── OPEN ACCOUNT LEDGER ───────────────────────────────────────
 async function openAccount(type, acct) {
+  try { bdSaveRoute('ledger:'+type+':'+(acct?.id||'')); } catch(e) {}
   recordsPageChrome();
   activeType    = type;
   activeAccount = acct;
@@ -3881,6 +3896,11 @@ function bdRestoreRoute() {
     if (r === 'personal-setup')   { showPersonalSetup(); return; }
     if (r === 'personal-home')    { showPersonalHome(); return; }
     if (r === 'personal-txns')    { showPersonalTransactions(); return; }
+    if (r && r.startsWith('report:')) { showReport(r.slice(7)); return; }
+    if (r && r.startsWith('ledger:')) {
+      const parts = r.split(':');
+      if (parts[1] && parts[2] && typeof openAccountById === 'function') { openAccountById(parts[1], parts[2]); return; }
+    }
     if (r === 'record-choice') { showRecordChoice(); return; }
     if (r === 'sales-record')  { showRecordSales(); return; }
     if (r === 'expenses-record'){ showRecordExpenses(); return; }
@@ -7748,6 +7768,7 @@ async function psSaveRow(i) {
 
 // ── EXTENDED REPORTS ─────────────────────────────────────────
 async function showReport(type) {
+  bdSaveRoute('report:'+type);
   recordsPageChrome(); // hides toolbar, hero header; keeps equation
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const {data}=await bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date').eq('user_id',bkUser.id);
@@ -9835,7 +9856,7 @@ function renderMenuBusinesses() {
   }
   list.innerHTML = userBusinesses.map(b => `
     <div class="menu-biz-item" onclick="openBusinessFromMenu('${b.id}');closeBkMenu()">
-      <span>${b.icon||'🏢'}</span>
+      <span style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:5px;overflow:hidden;">${b.logo_url?`<img src="${b.logo_url}" style="width:100%;height:100%;object-fit:cover;"/>`:(b.icon||'🏢')}</span>
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escH(b.name)}</span>
       <span class="menu-biz-dot" style="background:${statusColors[b.status]||'#4ade80'};"></span>
     </div>`).join('');
@@ -9906,7 +9927,7 @@ function renderAllBusinessesDashboard(metrics) {
     <div class="biz-card" onclick="openBusiness('${b.id}')" style="cursor:pointer;">
       <div class="biz-card-header">
         <div style="display:flex;align-items:center;flex:1;">
-          <div class="biz-icon" style="background:${iconBg};">${b.icon||'🏢'}</div>
+          <div class="biz-icon" style="background:${iconBg};overflow:hidden;">${b.logo_url?`<img src="${b.logo_url}" style="width:100%;height:100%;object-fit:cover;"/>`:(b.icon||'🏢')}</div>
           <div class="biz-info">
             <div class="biz-name">${escH(b.name)}</div>
             <div class="biz-industry">${escH(b.industry||'General')}</div>
@@ -10040,7 +10061,7 @@ function renderABChart(metrics) {
       responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
       scales:{
         x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#888',font:{size:11}}},
-        y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#888',font:{size:11},callback:v=>sym+fmt(v)}}
+        y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#888',font:{size:11},callback:v=>fmt(v)}}
       }
     }
   });
@@ -10052,6 +10073,28 @@ async function openBusiness(bizId) {
   if (!biz) return;
   activeBusiness = biz;
   await showSingleBusinessDashboard(biz);
+}
+
+async function uploadBizLogo(bizId, input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { alert('Image must be under 5MB.'); return; }
+  const ext = file.name.split('.').pop().toLowerCase();
+  const path = bkUser.id + '/bizlogo_' + bizId + '.' + ext;
+  try {
+    const {error} = await bkDb.storage.from('avatars').upload(path, file, {upsert:true});
+    if (error) throw error;
+    const {data:u} = bkDb.storage.from('avatars').getPublicUrl(path);
+    const url = u.publicUrl + '?t=' + Date.now();
+    const {error:e2} = await bkDb.from('businesses').update({logo_url:url, updated_at:new Date().toISOString()})
+      .eq('id',bizId).eq('owner_user_id',bkUser.id);
+    if (e2) throw e2;
+    const idx = userBusinesses.findIndex(b=>b.id===bizId);
+    if (idx>=0) userBusinesses[idx].logo_url = url;
+    if (activeBusiness && activeBusiness.id===bizId) activeBusiness.logo_url = url;
+    renderMenuBusinesses();
+    showSingleBusinessDashboard(userBusinesses[idx]||activeBusiness);
+  } catch(e) { alert('Logo upload failed: '+(e.message||'')+'\n\nIf this mentions a column, run migration_bizlogo.sql in Supabase.'); }
 }
 
 async function showSingleBusinessDashboard(biz) {
@@ -10105,7 +10148,10 @@ async function showSingleBusinessDashboard(biz) {
     <!-- Business Header -->
     <div style="padding:14px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);">
       <button onclick="showAllBusinessesDashboard()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--off);width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">←</button>
-      <div style="width:44px;height:44px;border-radius:12px;background:rgba(74,222,128,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">${biz.icon||'🏢'}</div>
+      <div onclick="document.getElementById('bizLogoInput').click()" title="Click to upload logo" style="width:44px;height:44px;border-radius:12px;background:rgba(212,175,55,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;cursor:pointer;overflow:hidden;position:relative;">
+        ${biz.logo_url ? `<img src="${biz.logo_url}" style="width:100%;height:100%;object-fit:cover;"/>` : (biz.icon||'🏢')}
+      </div>
+      <input type="file" id="bizLogoInput" accept="image/*" style="display:none;" onchange="uploadBizLogo('${biz.id}', this)"/>
       <div style="flex:1;">
         <div style="font-size:1rem;font-weight:900;color:var(--white);">${escH(biz.name)}</div>
         <div style="font-size:0.72rem;color:var(--muted);">${escH(biz.industry||'General')}</div>
@@ -10780,7 +10826,7 @@ const COLUMN_HELP = {
     // Register service worker for PWA / offline support
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/service-worker.js', {updateViaCache:'none'}).then(function(reg){ reg.update(); })
+        navigator.serviceWorker.register('/service-worker.js', {updateViaCache:'none'}).then(function(reg){ reg.update(); if (reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'}); })
           .then(function(reg) {
             // Service worker registered
           })
