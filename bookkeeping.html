@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -1184,6 +1185,7 @@ body{padding-top:0;}
       <div style="flex:1;min-width:0;">
         <div id="bkMenuUserName" style="font-size:0.82rem;font-weight:700;color:var(--white);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
         <div id="bkMenuUserEmail" style="font-size:0.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
+        <div id="bkMenuActiveBiz" style="font-size:0.66rem;color:var(--gold);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
       </div>
       <span style="color:var(--muted);font-size:0.8rem;">›</span>
     </div>
@@ -7370,6 +7372,7 @@ function openBkMenu() {
   const mn=document.getElementById('bkMenuUserName'); if(mn) mn.textContent=name||'—';
   const me=document.getElementById('bkMenuUserEmail'); if(me) me.textContent=bkUser?.email||'—';
   bdUpdateMenuAvatar(name);
+  bdUpdateMenuBizLine();
 }
 
 function bdUpdateMenuAvatar(name) {
@@ -9325,6 +9328,7 @@ async function autoPostExpenseRow(row) {
       const txns = [];
       if (cashR?.data) txns.push({user_id:bkUser.id,journal_id:jnl.id,record_type:'asset',account_name:cashAcct,txn_date:date,narration,debit:0,credit:amount,balance:0,created_at:new Date().toISOString()});
       if (expR?.data)  txns.push({user_id:bkUser.id,journal_id:jnl.id,record_type:'expenditure',account_name:expAcct,txn_date:date,narration,debit:amount,credit:0,balance:amount,created_at:new Date().toISOString()});
+      if (activeBusiness?.id) txns.forEach(t=>t.business_id=activeBusiness.id);
       if (txns.length) await bkDb.from('bk_transactions').insert(txns);
     }
   } catch(e) {}
@@ -9444,6 +9448,87 @@ function closeProfileSheet() {
 function profileTab(tab) { _profileTab = tab; _profileEdit = {}; renderProfileSheet(); }
 function profileEditToggle(card) { _profileEdit[card] = !_profileEdit[card]; renderProfileSheet(); }
 
+let _wfResults = [], _wfSelected = null;
+
+function _renderWorkForForm() {
+  return `
+  <div class="pf-card" style="border-color:var(--gold-dim);">
+    <div class="pf-card-head"><span>Find the business you work for</span></div>
+    <div style="display:flex;gap:8px;">
+      <input class="bk-login-input" id="wf_search" style="flex:1;margin:0;" placeholder="Search company name…" onkeydown="if(event.key==='Enter')wfSearch()"/>
+      <button onclick="wfSearch()" style="background:var(--gold);color:#000;border:none;font-size:0.74rem;font-weight:800;padding:0 16px;border-radius:8px;cursor:pointer;">Search</button>
+    </div>
+    <div id="wfResults" style="margin-top:10px;">
+      ${_wfResults.length ? _wfResults.map(b=>`
+        <div onclick="wfSelect('${b.id}')" style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid ${_wfSelected?.id===b.id?'var(--gold)':'var(--border2)'};border-radius:10px;margin-bottom:8px;cursor:pointer;">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(212,175,55,0.12);display:flex;align-items:center;justify-content:center;overflow:hidden;">${b.logo_url?`<img src="${b.logo_url}" style="width:100%;height:100%;object-fit:cover;"/>`:(b.icon||'🏢')}</div>
+          <div style="flex:1;"><div style="font-weight:800;font-size:0.82rem;">${escH(b.name)}</div>
+          <div style="font-size:0.68rem;color:var(--muted);">${escH(b.industry||'')}</div></div>
+          ${_wfSelected?.id===b.id?'<span style="color:var(--gold);font-weight:900;">✓</span>':''}
+        </div>`).join('') : '<div style="font-size:0.72rem;color:var(--muted);">Search for the registered business you work for.</div>'}
+    </div>
+    ${_wfSelected ? `
+      <label class="su-label">YOUR POSITION IN THE COMPANY</label>
+      <input class="bk-login-input" id="wf_position" placeholder="e.g. Cashier, Accountant, Manager"/>
+      <button class="pf-save-btn" onclick="wfSave()">Save</button>` : ''}
+  </div>`;
+}
+
+async function wfSearch() {
+  const q = document.getElementById('wf_search')?.value?.trim();
+  if (!q) return;
+  try {
+    const { data, error } = await bkDb.from('businesses')
+      .select('id,name,industry,icon,logo_url')
+      .ilike('name', '%'+q+'%')
+      .neq('owner_user_id', bkUser.id)
+      .limit(10);
+    if (error) throw error;
+    _wfResults = data || [];
+    _wfSelected = null;
+    renderProfileSheet();
+    setTimeout(()=>{ const s=document.getElementById('wf_search'); if(s){s.value=q;} }, 0);
+  } catch(e) { alert('Search failed: '+(e.message||'')+'\n\nIf this says "permission denied", run migration_workfor.sql in Supabase.'); }
+}
+
+function wfSelect(id) {
+  _wfSelected = _wfResults.find(b => b.id === id) || null;
+  const q = document.getElementById('wf_search')?.value || '';
+  renderProfileSheet();
+  setTimeout(()=>{ const s=document.getElementById('wf_search'); if(s) s.value=q; }, 0);
+}
+
+async function wfSave() {
+  if (!_wfSelected) return;
+  const position = document.getElementById('wf_position')?.value?.trim() || '';
+  try {
+    const { error } = await bkDb.from('user_businesses').upsert(
+      { user_id: bkUser.id, business_id: _wfSelected.id, role: 'employee', position },
+      { onConflict: 'user_id,business_id' });
+    if (error) throw error;
+    _wfResults = []; _wfSelected = null; _profileEdit.workfor = false;
+    await loadUserBusinesses();
+    renderProfileSheet();
+  } catch(e) { alert('Could not save: '+(e.message||'')+'\n\nIf this mentions "position", run migration_workfor.sql in Supabase.'); }
+}
+
+function pfSaveActiveBiz() {
+  const sel = document.getElementById('pfActiveBiz');
+  if (!sel || !sel.value) { alert('No business to select yet — register one first.'); return; }
+  const biz = userBusinesses.find(b => b.id === sel.value);
+  if (!biz) return;
+  activeBusiness = biz;
+  localStorage.setItem('bd_active_biz', biz.id);
+  bdUpdateMenuBizLine();
+  const btn = event?.target;
+  if (btn) { const t=btn.textContent; btn.textContent='✓'; setTimeout(()=>btn.textContent=t, 1200); }
+}
+
+function bdUpdateMenuBizLine() {
+  const el = document.getElementById('bkMenuActiveBiz');
+  if (el) el.textContent = activeBusiness ? activeBusiness.name : '';
+}
+
 function _profileInitials() {
   const name = ((profileData.first_name||'')+' '+(profileData.last_name||'')).trim() || profileData.email || '?';
   return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -9494,7 +9579,6 @@ function renderProfileSheet() {
             ${avatarUrl
               ? `<img src="${avatarUrl}" style="width:64px;height:64px;border-radius:14px;object-fit:cover;"/>`
               : `<div style="width:64px;height:64px;border-radius:14px;background:rgba(212,175,55,0.2);color:var(--gold);font-size:1.4rem;font-weight:900;display:flex;align-items:center;justify-content:center;">${initials}</div>`}
-            <div style="position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.62rem;">📷</div>
             <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this)"/>
           </div>
           <div style="flex:1;min-width:0;">
@@ -9511,6 +9595,15 @@ function renderProfileSheet() {
             ${loc?`<div style="font-size:0.72rem;color:var(--muted);">⚲ ${escH(loc)}</div>`:''}
           </div>
         </div>
+        <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
+          <select id="pfActiveBiz" class="bk-login-input" style="flex:1;margin:0;">
+            ${userBusinesses.length
+              ? userBusinesses.map(b=>`<option value="${b.id}" ${activeBusiness?.id===b.id?'selected':''}>${escH(b.name)}${b._owned?'':' (employee)'}</option>`).join('')
+              : '<option value="">No business registered yet</option>'}
+          </select>
+          <button onclick="pfSaveActiveBiz()" title="Select this business to work on" style="width:42px;height:42px;background:var(--gold);color:#000;border:none;border-radius:10px;font-size:1.1rem;font-weight:900;cursor:pointer;flex-shrink:0;">›</button>
+        </div>
+        <div style="font-size:0.64rem;color:var(--muted);margin-top:5px;">Select the business you want to work on. All recording is saved for the selected business.</div>
       </div>
 
       <!-- Tabs -->
@@ -9651,6 +9744,7 @@ function _profileTabBody() {
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
               <span style="font-weight:900;font-size:0.88rem;color:var(--white);">${escH(b.name)}</span>
               <span style="font-size:0.6rem;font-weight:800;padding:2px 8px;border-radius:10px;background:${badge[1]};color:${badge[2]};">${badge[0]}</span>
+              ${b._owned===false?`<span style="font-size:0.6rem;font-weight:800;padding:2px 8px;border-radius:10px;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);">💼 Employee${b._position?' · '+escH(b._position):''}</span>`:''}
             </div>
             <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${escH(b.industry||'General')}</div>
             ${m?`<div style="display:flex;gap:18px;margin-top:8px;">
@@ -9668,8 +9762,12 @@ function _profileTabBody() {
     return `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap;">
       <span style="font-size:0.72rem;color:var(--muted);">All registered businesses linked to your account.</span>
-      <button onclick="closeProfileSheet();showRegisterBusinessPage()" style="background:var(--gold);color:#000;border:none;font-size:0.72rem;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;">+ Register New Business</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="closeProfileSheet();showRegisterBusinessPage()" style="background:var(--gold);color:#000;border:none;font-size:0.72rem;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;">+ Register New Business</button>
+        <button onclick="profileEditToggle('workfor')" style="background:var(--surface2);color:var(--gold);border:1px solid var(--gold);font-size:0.72rem;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;">💼 I work for this Business</button>
+      </div>
     </div>
+    ${_profileEdit.workfor ? _renderWorkForForm() : ''}
     ${cards || '<div class="pf-card" style="text-align:center;color:var(--muted);font-size:0.8rem;">No business registered yet.</div>'}`;
   }
 
@@ -9777,6 +9875,14 @@ async function pfSaveBiz(bizId) {
 async function pfDeleteBiz(bizId) {
   const biz = userBusinesses.find(b=>b.id===bizId);
   if (!biz) return;
+  if (biz._owned === false) {
+    if (!confirm('Leave "'+biz.name+'"? You will no longer see this business in your account.')) return;
+    const {error} = await bkDb.from('user_businesses').delete().eq('user_id',bkUser.id).eq('business_id',bizId);
+    if (error) { alert('Could not leave: '+error.message); return; }
+    userBusinesses = userBusinesses.filter(b=>b.id!==bizId);
+    if (activeBusiness?.id===bizId) { activeBusiness=userBusinesses[0]||null; localStorage.removeItem('bd_active_biz'); }
+    renderMenuBusinesses(); renderProfileSheet(); return;
+  }
   if (!confirm('Delete "'+biz.name+'"?\n\nThis deletes ALL transactions and information for this business from the platform. You will need to contact support to restore it.')) return;
   const {error} = await bkDb.from('businesses').delete().eq('id',bizId).eq('owner_user_id',bkUser.id);
   if (error) { alert('Delete failed: '+error.message); return; }
@@ -9813,12 +9919,25 @@ let activeBusiness = null; // null = "All Businesses" view
 async function loadUserBusinesses() {
   if (!bkUser) return;
   try {
-    const { data } = await bkDb.from('businesses')
-      .select('*')
-      .eq('owner_user_id', bkUser.id)
-      .order('created_at');
-    userBusinesses = data || [];
-    if (userBusinesses.length === 0) await createDefaultBusiness();
+    const [own, links] = await Promise.all([
+      bkDb.from('businesses').select('*').eq('owner_user_id', bkUser.id).order('created_at'),
+      bkDb.from('user_businesses').select('business_id, role, position').eq('user_id', bkUser.id),
+    ]);
+    const owned = (own.data || []).map(b => ({...b, _owned:true}));
+    const linkRows = (links.data || []).filter(l => l.role === 'employee' && !owned.some(b => b.id === l.business_id));
+    let employed = [];
+    if (linkRows.length) {
+      const { data: eb } = await bkDb.from('businesses').select('*').in('id', linkRows.map(l => l.business_id));
+      employed = (eb || []).map(b => ({...b, _owned:false, _position:(linkRows.find(l => l.business_id === b.id)?.position || '')}));
+    }
+    userBusinesses = owned.concat(employed);
+    // Restore the selected working business
+    const savedId = localStorage.getItem('bd_active_biz');
+    if (savedId) {
+      const found = userBusinesses.find(b => b.id === savedId);
+      if (found) activeBusiness = found;
+    }
+    if (!activeBusiness && userBusinesses.length) activeBusiness = userBusinesses[0];
   } catch(e) { userBusinesses = []; }
   renderMenuBusinesses();
 }
@@ -10564,6 +10683,7 @@ async function autoPostSaleRow(row, customerName, txnDate) {
       created_at:   new Date().toISOString(),
     });
   }
+  if (activeBusiness?.id) txns.forEach(t=>t.business_id=activeBusiness.id);
   if (txns.length) await bkDb.from('bk_transactions').insert(txns);
 }
 
