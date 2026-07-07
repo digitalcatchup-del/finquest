@@ -174,6 +174,10 @@ select.bk-cell,input.bk-cell{min-height:34px;}
 .menu-signout-btn{margin-top:10px;width:100%;background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.74rem;padding:8px;border-radius:8px;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
 .menu-signout-btn:hover{border-color:#f87171;color:#f87171;}
 #bkSlideMenu *{-webkit-tap-highlight-color:transparent;}
+
+.ps-wrap-wrap .ps-cell{white-space:normal;}
+.ps-wrap-clip .ps-cell{white-space:nowrap;overflow:hidden;text-overflow:clip;}
+.ps-wrap-overflow .ps-cell{white-space:nowrap;}
 .su-label{display:block;font-size:0.74rem;font-weight:700;color:var(--off);margin-bottom:5px;}
 .su-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 13px;font-size:0.88rem;font-family:inherit;outline:none;}
 .su-input:focus{border-color:var(--gold);}
@@ -1593,14 +1597,12 @@ function showAuthScreen(view) {
         <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin:14px 0 4px;">Origin &amp; Residential Address</div>
         <div class="ri-grid2">
           <div><label class="su-label">COUNTRY OF ORIGIN *</label><input class="bk-login-input" id="ri_origin_country" value="Nigeria"/></div>
-          <div><label class="su-label">COUNTRY *</label><input class="bk-login-input" id="ri_country" value="Nigeria"/></div>
+          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_state"><option value="">Select State</option>${stateOpts}</select></div>
         </div>
         <div class="ri-grid2">
-          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_state"><option value="">Select State</option>${stateOpts}</select></div>
           <div><label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" id="ri_lga" placeholder="Local Government Area"/></div>
+          <div><label class="su-label">TOWN / CITY</label><input class="bk-login-input" id="ri_town" placeholder="Enter your town or city"/></div>
         </div>
-        <label class="su-label">TOWN / CITY</label>
-        <input class="bk-login-input" id="ri_town" placeholder="Enter your town or city"/>
         <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin:14px 0 0;">Primary Location</div>
         <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px;">Where you currently live or primarily operate from.</div>
         <div class="ri-grid2">
@@ -1670,7 +1672,7 @@ async function riRegister() {
       date_of_birth:document.getElementById('ri_dob')?.value||null,
       gender:document.getElementById('ri_gender')?.value||'',
       phone:document.getElementById('ri_phone')?.value?.trim()||'',
-      country:document.getElementById('ri_country')?.value?.trim()||'Nigeria',
+      country:document.getElementById('ri_origin_country')?.value?.trim()||'Nigeria',
       state:document.getElementById('ri_state')?.value||'',
       lga:document.getElementById('ri_lga')?.value?.trim()||'',
       town:document.getElementById('ri_town')?.value?.trim()||'',
@@ -2133,79 +2135,12 @@ async function rbSaveBusiness() {
   } catch(e) { if(err){ err.textContent='Error: '+(e.message||''); err.style.color='var(--red)'; } }
 }
 
+let _regOnboarding = false;
 function showRegisterProductsPage() {
-  staffHideChrome();
-  bdSaveRoute('register-products');
-  const head = _regPSCols.map(c=>`<th style="border:1px solid var(--border2);padding:7px 8px;font-size:0.68rem;letter-spacing:0.06em;text-align:left;white-space:nowrap;">${escH(c)}</th>`).join('');
-  const body = _regPS.map((r,i)=>`
-    <tr>
-      <td style="border:1px solid var(--border2);padding:6px;text-align:center;color:var(--muted);font-size:0.72rem;">${i+1}</td>
-      ${_regPSCols.map((c,ci)=>`<td style="border:1px solid var(--border2);padding:0;">
-        <input style="width:100%;min-width:100px;background:transparent;border:none;color:var(--white);padding:8px;font-size:0.78rem;outline:none;"
-          value="${escH(r['c'+ci]||'')}" placeholder="—" oninput="_regPS[${i}]['c${ci}']=this.value"/></td>`).join('')}
-      <td style="border:1px solid var(--border2);padding:0;text-align:center;"><button onclick="_regPS.splice(${i},1);showRegisterProductsPage()" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:0.85rem;padding:6px;">&times;</button></td>
-    </tr>`).join('');
-  document.getElementById('bkContent').innerHTML = `
-    <div style="padding:20px 16px;">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div style="width:30px;height:30px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:0.85rem;">🏦</div>
-          <div>
-            <div style="font-weight:900;font-size:0.95rem;color:var(--white);">Register Products &amp; Services</div>
-            <div style="font-size:0.66rem;color:var(--muted);">Butterfly Dynamix Accounting</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="tb-icon" onclick="alert('Barcode scanning coming soon — plug in a USB/Bluetooth scanner or use the camera in a future update.')">▦ Scan Barcode</button>
-          <button class="tb-icon" onclick="_regPS.push({});showRegisterProductsPage()">+ Add Row</button>
-          <button class="tb-icon" onclick="regPSAddCol()">+ Add Column</button>
-          <button class="tb-icon" onclick="regPSDelCol()">− Delete Column</button>
-        </div>
-      </div>
-      <div style="overflow-x:auto;border:1px solid var(--border2);border-radius:10px;">
-        <table style="width:100%;border-collapse:collapse;min-width:${140+_regPSCols.length*130}px;">
-          <thead><tr>
-            <th style="border:1px solid var(--border2);padding:7px 8px;width:34px;font-size:0.68rem;">#</th>
-            ${head}
-            <th style="border:1px solid var(--border2);width:32px;"></th>
-          </tr></thead>
-          <tbody>${body}</tbody>
-        </table>
-      </div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-top:8px;">${_regPS.length} rows · ${_regPSCols.length+1} columns</div>
-      <div class="bk-auth-btnrow" style="margin-top:22px;align-items:center;">
-        <button class="bk-login-back" onclick="showRegisterBusinessPage()">← Back</button>
-        <button class="bk-login-btn" style="flex:1 1 220px;background:var(--gold);color:#000;" onclick="regPSSave()">Save &amp; Go to Dashboard →</button>
-        <span style="font-size:0.72rem;color:var(--muted);flex:1 1 100%;text-align:center;margin-top:6px;">You can add more products &amp; services later from the Products &amp; Services section.</span>
-      </div>
-    </div>`;
+  _regOnboarding = true;
+  showProductsPage('products');
 }
 
-function regPSAddCol(){
-  const name = prompt('Column header name:');
-  if (!name) return;
-  _regPSCols.push(name.trim().toUpperCase());
-  showRegisterProductsPage();
-}
-function regPSDelCol(){
-  if (_regPSCols.length<=1) { alert('At least one column is required.'); return; }
-  const list = _regPSCols.map((c,i)=>(i+1)+'. '+c).join('\n');
-  const pick = prompt('Which column do you want to delete?\n'+list+'\n\nEnter the number:');
-  const n = parseInt(pick);
-  if (!n||n<1||n>_regPSCols.length) return;
-  _regPSCols.splice(n-1,1);
-  showRegisterProductsPage();
-}
-async function regPSSave(){
-  try {
-    const items = _regPS.filter(r=>r.c0).map(r=>_regPSCols.map((c,ci)=>r['c'+ci]||'').filter(Boolean).join(' | '));
-    if (items.length && activeBusiness) {
-      await bkDb.from('businesses').update({ products_services: items.join('; '), updated_at:new Date().toISOString() })
-        .eq('id', activeBusiness.id).eq('owner_user_id', bkUser.id);
-    }
-  } catch(e) {}
-  showAllBusinessesDashboard();
-}
 
 // ══ MODE CHOICE — first-user dashboard ═══════════════════════
 function showModeChoice() {
@@ -7594,8 +7529,78 @@ async function psSaveColPrefs() {
   if (btn) { btn.textContent = 'Saved ✓'; btn.disabled = false; }
 }
 
+
+// ── Products page toolbox (mirrors the sales-record toolbox) ──
+let psSheet = { open:false, search:'', decimals:null, font:'Nunito', wrap:'overflow', undo:[], redo:[] };
+function _psCustomCols(){ try { return JSON.parse(localStorage.getItem('bd_ps_custom_'+psType)||'[]'); } catch(e){ return []; } }
+function _psSetCustomCols(c){ localStorage.setItem('bd_ps_custom_'+psType, JSON.stringify(c)); }
+function _psCustomVals(){ try { return JSON.parse(localStorage.getItem('bd_ps_customvals')||'{}'); } catch(e){ return {}; } }
+function psCustomInput(i, key, val){
+  psRows[i].custom = psRows[i].custom || {};
+  psRows[i].custom[key] = val;
+  if (psRows[i].id) { const m=_psCustomVals(); m[psRows[i].id]=m[psRows[i].id]||{}; m[psRows[i].id][key]=val; localStorage.setItem('bd_ps_customvals', JSON.stringify(m)); }
+}
+function psSnapshot(){ psSheet.undo.push(JSON.stringify(psRows)); if(psSheet.undo.length>40)psSheet.undo.shift(); psSheet.redo=[]; }
+function psUndo(){ if(!psSheet.undo.length)return; psSheet.redo.push(JSON.stringify(psRows)); psRows=JSON.parse(psSheet.undo.pop()); renderProductsPage(); }
+function psRedo(){ if(!psSheet.redo.length)return; psSheet.undo.push(JSON.stringify(psRows)); psRows=JSON.parse(psSheet.redo.pop()); renderProductsPage(); }
+function psToggleToolbox(){ psSheet.open=!psSheet.open; renderProductsPage(); }
+function psSetFont(f){ psSheet.font=f; renderProductsPage(); }
+function psSetWrap(w){ psSheet.wrap=w; renderProductsPage(); }
+function psDecimals(d){ psSheet.decimals = Math.max(0, Math.min(4, (psSheet.decimals===null?0:psSheet.decimals)+d)); renderProductsPage(); }
+function psToolboxSearch(){ psSheet.search = document.getElementById('psToolSearch')?.value||''; psRenderTable(); }
+function psInsertColumn(){
+  const name = prompt('Column header name:');
+  if (!name) return;
+  const cols = _psCustomCols();
+  cols.push({name:name.trim(), key:'c'+Date.now()});
+  _psSetCustomCols(cols);
+  renderProductsPage();
+}
+function psDeleteColumn(){
+  const cols = _psCustomCols();
+  if (!cols.length) { alert('No custom columns to delete. Use the ⚙ Columns button to show or hide built-in columns.'); return; }
+  const pick = prompt('Which column do you want to delete?\n'+cols.map((c,i)=>(i+1)+'. '+c.name).join('\n')+'\n\nEnter the number:');
+  const n = parseInt(pick);
+  if (!n||n<1||n>cols.length) return;
+  cols.splice(n-1,1);
+  _psSetCustomCols(cols);
+  renderProductsPage();
+}
+function psPrint(orientation){
+  const bizName = activeBusiness?.name || businessDisplayName || 'Business';
+  const title = psType==='services' ? 'Services' : 'Products';
+  const table = document.querySelector('.ps-table');
+  if (!table) return;
+  const clone = table.cloneNode(true);
+  clone.querySelectorAll('input,select').forEach(el=>{ const s=document.createElement('span'); s.textContent=el.value||''; el.replaceWith(s); });
+  clone.querySelectorAll('button').forEach(b=>b.remove());
+  const w = window.open('','_blank');
+  w.document.write('<html><head><title>'+title+'</title><style>@page{size:'+(orientation||'portrait')+';margin:14mm;}body{font-family:Arial;color:#000;}h2{margin:0 0 2px;}h3{margin:0 0 10px;font-weight:600;}table{width:100%;border-collapse:collapse;font-size:11px;}th,td{border:1px solid #999;padding:4px 6px;text-align:left;}th{background:#eee;}</style></head><body><h2>'+bizName+'</h2><h3>'+title+'</h3>'+clone.outerHTML+'</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(), 300);
+}
+function psToolboxHtml(){
+  return '<div class="sheet-toolbox" style="margin:8px 16px 0;">'
+    + '<input id="psToolSearch" class="bk-input" placeholder="Search…" value="'+escH(psSheet.search)+'" style="width:130px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:6px 9px;font-size:0.74rem;outline:none;" oninput="psToolboxSearch()"/>'
+    + '<button class="tb-icon" title="Undo" onclick="psUndo()">↩</button>'
+    + '<button class="tb-icon" title="Redo" onclick="psRedo()">↪</button>'
+    + '<button class="tb-icon" title="Print portrait" onclick="psPrint(\'portrait\')">🖨</button>'
+    + '<button class="tb-icon" title="Print landscape" onclick="psPrint(\'landscape\')">🖨▭</button>'
+    + '<button class="tb-icon" title="Decrease decimals" onclick="psDecimals(-1)">.0←</button>'
+    + '<button class="tb-icon" title="Increase decimals" onclick="psDecimals(1)">.00→</button>'
+    + '<select class="tb-select" onchange="psSetFont(this.value)">'
+    + ['Nunito','EB Garamond','Lora','Arial'].map(f=>'<option '+(psSheet.font===f?'selected':'')+'>'+f+'</option>').join('')
+    + '</select>'
+    + '<button class="tb-icon '+(psSheet.wrap==='overflow'?'tb-active':'')+'" title="Overflow" onclick="psSetWrap(\'overflow\')">⇥</button>'
+    + '<button class="tb-icon '+(psSheet.wrap==='wrap'?'tb-active':'')+'" title="Wrap" onclick="psSetWrap(\'wrap\')">⤶</button>'
+    + '<button class="tb-icon '+(psSheet.wrap==='clip'?'tb-active':'')+'" title="Clip" onclick="psSetWrap(\'clip\')">✂</button>'
+    + '<button class="tb-icon" title="Insert column" onclick="psInsertColumn()">+▥</button>'
+    + '<button class="tb-icon" title="Delete column" onclick="psDeleteColumn()">−▥</button>'
+    + '</div>';
+}
+
 async function showProductsPage(type) {
-  bdSaveRoute('products');
+  bdSaveRoute(_regOnboarding ? 'register-products' : 'products');
   staffHideChrome();
   psType = type || 'products';
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
@@ -7614,6 +7619,8 @@ async function showProductsPage(type) {
     income_account: r.income_account || '',
     saved:          true,
   }));
+  const _cv = _psCustomVals();
+  psRows.forEach(r => { if (r.id && _cv[r.id]) r.custom = _cv[r.id]; });
   renderProductsPage();
 }
 
@@ -7639,6 +7646,7 @@ function renderProductsPage() {
     + '<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">'+(isSvc?'Track services and pricing.':'Track products, pricing and stock.')+'</div></div>'
     + '<div style="display:flex;gap:8px;align-items:center;position:relative;">'
     + '<button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showProductsPage(\''+(isSvc?'products':'services')+'\')">'+'Switch to '+(isSvc?'Products':'Services')+'</button>'
+    + '<button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="psToggleToolbox()">⚙ Tools</button>'
     + '<button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" id="psColBtn" onclick="togglePsColSelector()">⚙ Columns ▾</button>'
     + '<div id="psColSelector" class="ps-col-selector hidden">'
     + '<div class="ps-col-selector-title">Show / hide columns</div>'
@@ -7647,13 +7655,19 @@ function renderProductsPage() {
     + ' style="width:100%;margin-top:10px;background:var(--gold);color:#000;border:none;font-size:0.78rem;font-weight:700;padding:9px;border-radius:7px;cursor:pointer;">'
     + 'Save &amp; Close</button>'
     + '</div></div></div>'
-    + '<div class="bk-sheet-wrap"><table class="ps-table" style="min-width:400px;">'
+    + (psSheet.open ? psToolboxHtml() : '')
+    + '<div class="bk-sheet-wrap" style="font-family:\''+psSheet.font+'\',sans-serif;"><table class="ps-table ps-wrap-'+psSheet.wrap+'" style="min-width:400px;">'
     + '<thead id="psThead"></thead><tbody id="psBody"></tbody>'
     + '</table></div>'
     + '<div style="padding:10px 16px;display:flex;flex-direction:column;gap:8px;max-width:200px;">'
     + '<button class="ps-add-btn" onclick="psAddRow()">+ Add '+(isSvc?'Service':'Product')+'</button>'
     + '<button class="staff-save-static-btn" style="padding:9px 20px;font-size:0.78rem;" onclick="psSaveAll()">Save All</button>'
-    + '</div>';
+    + '</div>'
+    + (_regOnboarding ? '<div class="bk-auth-btnrow" style="padding:6px 16px 30px;align-items:center;">'
+      + '<button class="bk-login-back" onclick="_regOnboarding=false;showRegisterBusinessPage()">← Back</button>'
+      + '<button class="bk-login-btn" style="flex:1 1 220px;background:var(--gold);color:#000;" onclick="_regOnboarding=false;showAllBusinessesDashboard()">Save &amp; Go to Dashboard →</button>'
+      + '<span style="font-size:0.72rem;color:var(--muted);flex:1 1 100%;text-align:center;margin-top:6px;">You can add more products &amp; services later from the Products &amp; Services section.</span>'
+      + '</div>' : '');
 
   psRenderTable();
 }
@@ -7677,9 +7691,13 @@ function psRenderTable() {
   if (!isSvc && show('total_cost'))   thHtml += '<th class="num" style="width:120px;">Total — at cost</th>';
   if (!isSvc && show('total_sell'))   thHtml += '<th class="num" style="width:130px;">Total — at selling</th>';
   if (show('income_acct'))            thHtml += '<th style="width:160px;">Posts To</th>';
+  _psCustomCols().forEach(function(c){ thHtml += '<th style="min-width:110px;">'+escH(c.name)+'</th>'; });
   thHtml += '<th style="width:28px;"></th><th style="width:28px;"></th>';
 
-  const bodyHtml = psRows.map(function(r, i){
+  const _cCols = _psCustomCols();
+  const _visible = psRows.map(function(r,i){ return {r:r,i:i}; })
+    .filter(function(o){ return !psSheet.search || (o.r.name||'').toLowerCase().indexOf(psSheet.search.toLowerCase())>=0; });
+  const bodyHtml = _visible.map(function(o){ const r=o.r, i=o.i;
     const atCost = r.cost_price * r.qty;
     const atSell = r.sell_price * r.qty;
     let td = '<td class="ps-sn">'+(i+1)+'</td>'
@@ -7705,6 +7723,7 @@ function psRenderTable() {
       + '<option value="">Auto-detect</option>'
       + incomeAccts.replace('value="'+escH(r.income_account)+'"','value="'+escH(r.income_account)+'" selected')
       + '</select></td>';
+    _cCols.forEach(function(c){ td += '<td><input class="ps-cell" type="text" value="'+escH((r.custom&&r.custom[c.key])||'')+'" oninput="psCustomInput('+i+',\''+c.key+'\',this.value)"/></td>'; });
     td += '<td><button class="ps-del-btn" onclick="psDeleteRow('+i+')">&#x2715;</button></td>'
       + '<td><button class="ps-save-btn" onclick="psSaveRow('+i+')" title="Save">&#x203a;</button></td>';
     return '<tr id="psRow_'+i+'">'+td+'</tr>';
@@ -7732,12 +7751,14 @@ function psUpdateTotals(i) {
 }
 
 function psAddRow() {
+  psSnapshot();
   psRows.push({id:null,name:'',product_type:'',cost_price:0,sell_price:0,qty:0,qty_date:'',unit:'unit',income_account:'',saved:false});
   renderProductsPage();
   setTimeout(()=>{ document.querySelectorAll('#psBody tr').item(psRows.length-1)?.querySelector('input')?.focus(); },40);
 }
 
 async function psDeleteRow(i) {
+  psSnapshot();
   if(psRows[i].id) await bkDb.from('bk_products').update({is_active:false}).eq('id',psRows[i].id).eq('user_id',bkUser.id);
   psRows.splice(i,1); renderProductsPage();
 }
