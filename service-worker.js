@@ -1,6 +1,6 @@
-// Butterfly Dynamix Bookkeeping — Service Worker v11
+// Butterfly Dynamix Bookkeeping — Service Worker v12
 // v4: force cache clear after profile/multi-business update
-const CACHE_NAME = 'bd-bookkeeping-v11';
+const CACHE_NAME = 'bd-bookkeeping-v12';
 const ASSETS_TO_CACHE = [
   '/bookkeeping',
   '/bookkeeping.html',
@@ -48,7 +48,7 @@ self.addEventListener('fetch', function(event) {
     // Network first for HTML — bypass the browser HTTP cache so we
     // never get a stale copy served instantly (root cause of flashes)
     event.respondWith(
-      fetch(event.request, { cache: 'no-cache' }).then(function(response) {
+      fetch(event.request, { cache: 'reload' }).then(function(response) {
         if (response && response.status === 200) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, copy); });
@@ -85,4 +85,8 @@ self.addEventListener('sync', function(event) {
       })
     );
   }
+});
+
+self.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
