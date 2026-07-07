@@ -770,7 +770,7 @@ body{padding-top:0;}
 .ps-col-selector{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;min-width:270px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
 
 
-.su-label{font-size:0.62rem;font-weight:800;letter-spacing:0.1em;color:var(--muted);margin-bottom:-4px;display:block;}
+.su-label{font-size:0.62rem;font-weight:800;letter-spacing:0.1em;color:var(--muted);margin:8px 0 5px;display:block;line-height:1.3;}
 .pwseg{flex:1;height:4px;border-radius:2px;background:var(--border2);transition:background 0.2s;}
 
 .pa-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden;}
@@ -1461,7 +1461,7 @@ function showAuthScreen(view) {
     content.innerHTML = `
       ${logo}
       <div style="padding:36px 0 0;">
-        <h1 style="font-size:2.2rem;font-weight:900;line-height:1.15;margin:0;color:var(--white);">One platform.<br>Every business.<br><span style="color:var(--gold);">Total clarity.</span></h1>
+        <h1 style="font-size:2.1rem;font-weight:900;line-height:1.2;margin:0;color:var(--white);">Think Finance,<br>Think <span style="color:var(--gold);">Butterfly Dynamix</span></h1>
         <p style="font-size:0.92rem;color:var(--muted);line-height:1.6;margin:20px 0 26px;">Built for micro, small and medium enterprises — manage multiple businesses, track finances, and grow with confidence.</p>
         <button class="bk-auth-btn-primary" style="width:100%;background:var(--gold);color:#000;font-weight:800;border:none;padding:15px;border-radius:12px;font-size:1rem;cursor:pointer;" onclick="showAuthScreen('signup')">Sign Up</button>
         <div style="text-align:center;margin-top:14px;font-size:0.82rem;color:var(--muted);">Already have an account? <span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="showAuthScreen('login')">Sign in</span></div>
@@ -1628,7 +1628,7 @@ async function riRegister() {
       town:document.getElementById('ri_town')?.value?.trim()||'',
       email:bkUser?.email||'',
     };
-    await bkDb.from('profiles').upsert({ id:bkUser.id, ...Object.fromEntries(Object.entries(profileData).filter(([k])=>k!=='email')), updated_at:new Date().toISOString() }, {onConflict:'id'});
+    await bkDb.from('profiles').upsert({ id:bkUser.id, username:(bkUser?.email||'').split('@')[0]||'user', ...Object.fromEntries(Object.entries(profileData).filter(([k])=>k!=='email')), updated_at:new Date().toISOString() }, {onConflict:'id'});
     staffDisplayName = profileData.full_name;
     showAuthScreen('success');
   } catch(e) { if(err){ err.textContent='Error: '+(e.message||'could not save'); err.style.color='var(--red)'; } }
@@ -9634,7 +9634,8 @@ function _profileTabBody() {
 async function _pfUpsertProfile(fields, btnSel) {
   const btn = btnSel ? document.querySelector(btnSel) : null;
   if (btn) { btn.textContent='Saving…'; btn.disabled=true; }
-  const { error } = await bkDb.from('profiles').upsert({ id:bkUser.id, ...fields, updated_at:new Date().toISOString() }, {onConflict:'id'});
+  const _uname = profileData.username || (bkUser?.email||'').split('@')[0] || 'user';
+  const { error } = await bkDb.from('profiles').upsert({ id:bkUser.id, username:_uname, ...fields, updated_at:new Date().toISOString() }, {onConflict:'id'});
   if (error) { alert('Save failed: '+error.message+'\n\nIf this says "permission denied", run migration_grants.sql in Supabase.'); if(btn){btn.textContent='Save Changes';btn.disabled=false;} return false; }
   profileData = await loadProfileData();
   if (profileData.full_name) {
@@ -9719,7 +9720,7 @@ async function handleAvatarUpload(input) {
     if (error) throw error;
     const { data:urlData } = bkDb.storage.from('avatars').getPublicUrl(path);
     const url = urlData.publicUrl + '?t=' + Date.now();
-    const { error:e2 } = await bkDb.from('profiles').upsert({id:bkUser.id,avatar_url:url,updated_at:new Date().toISOString()},{onConflict:'id'});
+    const { error:e2 } = await bkDb.from('profiles').upsert({id:bkUser.id,username:(profileData.username||(bkUser?.email||'').split('@')[0]||'user'),avatar_url:url,updated_at:new Date().toISOString()},{onConflict:'id'});
     if (e2) throw e2;
     profileData.avatar_url = url;
     renderProfileSheet();
@@ -10800,6 +10801,7 @@ const COLUMN_HELP = {
         window.location.reload();
       });
     }
+    window.addEventListener('pageshow', function(e){ if (e.persisted) window.location.reload(); });
   </script>
 </body>
 </html>
