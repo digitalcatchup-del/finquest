@@ -147,6 +147,14 @@ select.bk-cell,input.bk-cell{min-height:34px;}
 .su-selected-count{font-size:0.72rem;color:var(--muted);margin-bottom:10px;}
 .su-selected-count span{color:var(--gold);font-weight:700;}
 .su-field{margin-bottom:14px;}
+
+#bkAuthContent{width:100%;box-sizing:border-box;}
+#bkAuthContent input,#bkAuthContent select,#bkAuthContent textarea{width:100%;box-sizing:border-box;max-width:100%;}
+#bkAuthContent .bk-login-form{width:100%;}
+#bkAuthContent .bk-login-btn,#bkAuthContent .bk-login-back{box-sizing:border-box;max-width:100%;}
+.bk-auth-btnrow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%;}
+.bk-auth-btnrow .bk-login-btn{flex:1 1 180px;min-width:150px;}
+.bk-auth-btnrow .bk-login-back{flex:0 1 auto;}
 .su-label{display:block;font-size:0.74rem;font-weight:700;color:var(--off);margin-bottom:5px;}
 .su-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 13px;font-size:0.88rem;font-family:inherit;outline:none;}
 .su-input:focus{border-color:var(--gold);}
@@ -1138,11 +1146,6 @@ body{padding-top:0;}
       <span class="bk-menu-icon">👥</span> Colleagues
     </div>
 
-    <!-- Settings — shown to everyone, but routes differently per role -->
-    <div class="bk-menu-item" onclick="roleAwareSettings();closeBkMenu()">
-      <span class="bk-menu-icon">⚙️</span> Settings
-    </div>
-
     <!-- BUSINESSES section (owner/manager only) — from Image 8 Figma -->
     <div id="menuBusinessesSection" data-role="owner-manager" style="margin-top:8px;">
       <div style="padding:10px 20px 6px;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;justify-content:space-between;">
@@ -1156,16 +1159,16 @@ body{padding-top:0;}
   </nav>
 
   <!-- Menu footer — click to open profile -->
-  <div onclick="openProfileSheet();closeBkMenu()" style="padding:16px 20px;border-top:1px solid var(--border);flex-shrink:0;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='var(--gold-dim)'" onmouseleave="this.style.background=''">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div id="menuAvatarCircle" style="width:36px;height:36px;border-radius:50%;background:var(--gold);color:#000;font-size:0.85rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;">?</div>
+  <div style="padding:12px 14px 16px;border-top:1px solid var(--border);flex-shrink:0;">
+    <div onclick="openProfileSheet();closeBkMenu()" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px;border-radius:10px;transition:background 0.15s;" onmouseenter="this.style.background='var(--gold-dim)'" onmouseleave="this.style.background=''">
+      <div id="menuAvatarCircle" style="width:36px;height:36px;border-radius:50%;background:var(--gold);color:#000;font-size:0.85rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">?</div>
       <div style="flex:1;min-width:0;">
         <div id="bkMenuUserName" style="font-size:0.82rem;font-weight:700;color:var(--white);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
         <div id="bkMenuUserEmail" style="font-size:0.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
       </div>
       <span style="color:var(--muted);font-size:0.8rem;">›</span>
     </div>
-    <button onclick="event.stopPropagation();bkSignOut()" style="margin-top:10px;width:100%;background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.74rem;padding:7px;border-radius:6px;cursor:pointer;">Sign Out</button>
+    <button onclick="bkSignOut()" style="margin-top:10px;width:100%;background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.74rem;padding:8px;border-radius:8px;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.borderColor='#f87171';this.style.color='#f87171'" onmouseleave="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">Sign Out</button>
   </div>
 </div>
 
@@ -1571,7 +1574,7 @@ function showAuthScreen(view) {
         <input class="bk-login-input" id="ri_p_town" placeholder="Enter your town"/>
 
         <div class="bk-login-err" id="riErr"></div>
-        <div style="display:flex;gap:10px;">
+        <div class="bk-auth-btnrow">
           <button class="bk-login-back" style="flex:0 0 auto;" onclick="showAuthScreen('signup')">← Back</button>
           <button class="bk-login-btn" style="flex:1;background:var(--gold);color:#000;" onclick="riRegister()">Register →</button>
         </div>
@@ -1718,7 +1721,7 @@ function showPersonalSetup() {
       </div>
 
       <div class="bk-login-err" id="paErr"></div>
-      <div style="display:flex;gap:10px;margin-top:14px;">
+      <div class="bk-auth-btnrow" style="margin-top:14px;">
         <button class="bk-login-back" onclick="showModeChoice()">← Back</button>
         <button class="bk-login-btn" style="flex:1;background:var(--gold);color:#000;" onclick="paSaveSetup()">Save &amp; Continue →</button>
       </div>
@@ -2049,7 +2052,7 @@ function showRegisterBusinessPage() {
       <input class="bk-login-input" id="rb_cac" placeholder="e.g. RC-1234567" style="width:100%;margin-bottom:20px;"/>
 
       <div class="bk-login-err" id="rbErr"></div>
-      <div style="display:flex;gap:10px;">
+      <div class="bk-auth-btnrow">
         <button class="bk-login-back" onclick="showModeChoice()">← Back</button>
         <button class="bk-login-btn" style="flex:1;background:var(--gold);color:#000;" onclick="rbSaveBusiness()">Save &amp; Continue →</button>
       </div>
@@ -2122,7 +2125,7 @@ function showRegisterProductsPage() {
         </table>
       </div>
       <div style="font-size:0.7rem;color:var(--muted);margin-top:8px;">${_regPS.length} rows · ${_regPSCols.length+1} columns</div>
-      <div style="display:flex;gap:10px;margin-top:22px;">
+      <div class="bk-auth-btnrow" style="margin-top:22px;">
         <button class="bk-login-back" onclick="showRegisterBusinessPage()">← Back</button>
         <button class="bk-login-btn" style="flex:1;background:var(--gold);color:#000;" onclick="regPSSave()">Save &amp; Go to Dashboard →</button>
       </div>
@@ -3066,6 +3069,7 @@ async function continueInit() {
   try { buildDropdowns(); } catch(e) { }
 
   applyRoleMenu(userRole);
+  try { closeBkMenu(); } catch(e) {}
 
   // Load businesses (async, non-blocking for UI)
   if (userRole !== 'employee') {
@@ -3831,7 +3835,7 @@ function bdRestoreRoute() {
     if (r === 'suppliers'){ showSuppliersPage(); return; }
     if (r === 'staff')    { showStaffDashboard(); return; }
     if (r === 'record-biz-choice') { showRecordBusinessChoice(); return; }
-    if (r === 'mode-choice')      { showModeChoice(); return; }
+    if (r === 'mode-choice')      { showDashboard(); return; }
     if (r === 'register-business'){ showRegisterBusinessPage(); return; }
     if (r === 'register-products'){ showRegisterProductsPage(); return; }
     if (r === 'personal-setup')   { showPersonalSetup(); return; }
@@ -3943,10 +3947,11 @@ async function showDashboard() {
     if (!personalProfile) await loadPersonalData();
     if (personalProfile) return showPersonalHome();
   }
+  // Ensure businesses are loaded before deciding (fixes refresh showing mode-choice)
+  if (!userBusinesses.length) await loadUserBusinesses();
   if (!userBusinesses.length) {
     if (!personalProfile) await loadPersonalData();
-    if (!personalProfile) return showModeChoice();
-    if (mode !== 'business') return showPersonalHome();
+    if (personalProfile) return showPersonalHome();
     return showModeChoice();
   }
   return showAllBusinessesDashboard();
@@ -7306,12 +7311,20 @@ function openBkMenu() {
   bkMenuOpen=true;
   document.getElementById('bkSlideMenu').classList.add('open');
   document.getElementById('bkMenuOverlay').classList.add('show');
-  const name=document.getElementById('bkUserName')?.textContent;
+  const name = profileData?.full_name || staffDisplayName || document.getElementById('bkUserName')?.textContent || '';
   const mn=document.getElementById('bkMenuUserName'); if(mn) mn.textContent=name||'—';
   const me=document.getElementById('bkMenuUserEmail'); if(me) me.textContent=bkUser?.email||'—';
-  // Update avatar initials
-  const av=document.getElementById('menuAvatarCircle');
-  if(av&&name) av.textContent=(name.trim().split(' ').map(w=>w[0]).join('').slice(0,2)).toUpperCase();
+  bdUpdateMenuAvatar(name);
+}
+
+function bdUpdateMenuAvatar(name) {
+  const av = document.getElementById('menuAvatarCircle');
+  if (!av) return;
+  if (profileData?.avatar_url) {
+    av.innerHTML = '<img src="'+profileData.avatar_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>';
+  } else if (name) {
+    av.textContent = name.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  }
 }
 function closeBkMenu() {
   bkMenuOpen=false;
@@ -9404,8 +9417,8 @@ function renderProfileSheet() {
   const avatarUrl = profileData.avatar_url || '';
   const memberSince = new Date(bkUser?.created_at||Date.now()).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
   const loc = [profileData.state, profileData.country||'Nigeria'].filter(Boolean).join(', ');
-  const tabs = ['personal','security','notifications','businesses','billing'];
-  const tabLabels = {personal:'Personal',security:'Security',notifications:'Notifications',businesses:'Businesses',billing:'Billing'};
+  const tabs = ['personal','security','notifications','businesses','billing','settings'];
+  const tabLabels = {personal:'Personal',security:'Security',notifications:'Notifications',businesses:'Businesses',billing:'Billing',settings:'Settings'};
 
   sheet.innerHTML = `
     <div style="max-width:640px;margin:0 auto;padding-bottom:50px;">
@@ -9445,7 +9458,7 @@ function renderProfileSheet() {
       </div>
 
       <!-- Tabs -->
-      <div style="display:flex;gap:6px;margin:0 16px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;overflow-x:auto;">
+      <div style="display:flex;gap:6px;margin:0 16px 26px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;overflow-x:auto;">
         ${tabs.map(t=>`<div onclick="profileTab('${t}')" style="flex:1;text-align:center;padding:8px 10px;border-radius:9px;font-size:0.74rem;font-weight:700;cursor:pointer;white-space:nowrap;
           ${_profileTab===t?'background:var(--gold);color:#000;':'color:var(--muted);'}">${tabLabels[t]}</div>`).join('')}
       </div>
@@ -9604,6 +9617,15 @@ function _profileTabBody() {
     ${cards || '<div class="pf-card" style="text-align:center;color:var(--muted);font-size:0.8rem;">No business registered yet.</div>'}`;
   }
 
+  if (_profileTab==='settings') {
+    return `
+    <div class="pf-card">
+      <div class="pf-card-head"><span>App Settings</span></div>
+      <div style="font-size:0.76rem;color:var(--muted);margin-bottom:14px;">Currency, date format, ledgers, data preferences and everything else lives in the full settings page.</div>
+      <button class="pf-save-btn" style="margin-top:0;" onclick="closeProfileSheet();showSettings()">Open App Settings</button>
+    </div>`;
+  }
+
   if (_profileTab==='billing') {
     return `
     <div class="pf-card">
@@ -9724,12 +9746,7 @@ async function handleAvatarUpload(input) {
     if (e2) throw e2;
     profileData.avatar_url = url;
     renderProfileSheet();
-    const av = document.getElementById('menuAvatarCircle');
-    if (av && av.tagName!=='IMG') {
-      const img=document.createElement('img'); img.id='menuAvatarCircle'; img.src=url;
-      img.style.cssText='width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;';
-      av.replaceWith(img);
-    } else if (av) av.src = url;
+    bdUpdateMenuAvatar();
   } catch(e) { alert('Upload failed: '+(e.message||'')+'\n\nIf this says "bucket not found" or "permission", run migration_profile_v3.sql in Supabase.'); }
 }
 
