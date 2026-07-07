@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -9448,27 +9447,34 @@ function closeProfileSheet() {
 function profileTab(tab) { _profileTab = tab; _profileEdit = {}; renderProfileSheet(); }
 function profileEditToggle(card) { _profileEdit[card] = !_profileEdit[card]; renderProfileSheet(); }
 
-let _wfResults = [], _wfSelected = null;
+let _wfResults = [], _wfSelected = null, _wfSearched = false, _wfQuery = '';
 
 function _renderWorkForForm() {
   return `
   <div class="pf-card" style="border-color:var(--gold-dim);">
-    <div class="pf-card-head"><span>Find the business you work for</span></div>
+    <div class="pf-card-head"><span>What business do you work for?</span></div>
     <div style="display:flex;gap:8px;">
-      <input class="bk-login-input" id="wf_search" style="flex:1;margin:0;" placeholder="Search company name…" onkeydown="if(event.key==='Enter')wfSearch()"/>
+      <input class="bk-login-input" id="wf_search" style="flex:1;margin:0;" value="${escH(_wfQuery)}" placeholder="Search company name…" onkeydown="if(event.key==='Enter')wfSearch()"/>
       <button onclick="wfSearch()" style="background:var(--gold);color:#000;border:none;font-size:0.74rem;font-weight:800;padding:0 16px;border-radius:8px;cursor:pointer;">Search</button>
     </div>
     <div id="wfResults" style="margin-top:10px;">
       ${_wfResults.length ? _wfResults.map(b=>`
         <div onclick="wfSelect('${b.id}')" style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid ${_wfSelected?.id===b.id?'var(--gold)':'var(--border2)'};border-radius:10px;margin-bottom:8px;cursor:pointer;">
           <div style="width:32px;height:32px;border-radius:8px;background:rgba(212,175,55,0.12);display:flex;align-items:center;justify-content:center;overflow:hidden;">${b.logo_url?`<img src="${b.logo_url}" style="width:100%;height:100%;object-fit:cover;"/>`:(b.icon||'🏢')}</div>
-          <div style="flex:1;"><div style="font-weight:800;font-size:0.82rem;">${escH(b.name)}</div>
+          <div style="flex:1;"><div style="font-weight:800;font-size:0.82rem;">${escH(b.name)}${b.owner_user_id===bkUser?.id?' <span style="font-size:0.6rem;color:var(--muted);font-weight:600;">(you own this)</span>':''}</div>
           <div style="font-size:0.68rem;color:var(--muted);">${escH(b.industry||'')}</div></div>
           ${_wfSelected?.id===b.id?'<span style="color:var(--gold);font-weight:900;">✓</span>':''}
-        </div>`).join('') : '<div style="font-size:0.72rem;color:var(--muted);">Search for the registered business you work for.</div>'}
+        </div>`).join('')
+      : _wfSearched
+        ? `<div style="font-size:0.74rem;color:var(--muted);padding:8px 0;">No businesses found matching "${escH(_wfQuery)}". Check the spelling — the business must already be registered on the platform.</div>`
+        : '<div style="font-size:0.72rem;color:var(--muted);">Search for the registered business you work for.</div>'}
     </div>
     ${_wfSelected ? `
-      <label class="su-label">YOUR POSITION IN THE COMPANY</label>
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.3);border-radius:10px;padding:10px 12px;margin-top:6px;">
+        <div style="width:34px;height:34px;border-radius:8px;background:rgba(212,175,55,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;">${_wfSelected.logo_url?`<img src="${_wfSelected.logo_url}" style="width:100%;height:100%;object-fit:cover;"/>`:(_wfSelected.icon||'🏢')}</div>
+        <div style="font-weight:900;font-size:0.92rem;color:var(--gold);">${escH(_wfSelected.name)}</div>
+      </div>
+      <label class="su-label">POSITION IN THE COMPANY *</label>
       <input class="bk-login-input" id="wf_position" placeholder="e.g. Cashier, Accountant, Manager"/>
       <button class="pf-save-btn" onclick="wfSave()">Save</button>` : ''}
   </div>`;
@@ -9477,36 +9483,40 @@ function _renderWorkForForm() {
 async function wfSearch() {
   const q = document.getElementById('wf_search')?.value?.trim();
   if (!q) return;
+  _wfQuery = q;
   try {
     const { data, error } = await bkDb.from('businesses')
-      .select('id,name,industry,icon,logo_url')
+      .select('id,name,industry,icon,logo_url,owner_user_id')
       .ilike('name', '%'+q+'%')
-      .neq('owner_user_id', bkUser.id)
       .limit(10);
     if (error) throw error;
     _wfResults = data || [];
     _wfSelected = null;
+    _wfSearched = true;
     renderProfileSheet();
-    setTimeout(()=>{ const s=document.getElementById('wf_search'); if(s){s.value=q;} }, 0);
-  } catch(e) { alert('Search failed: '+(e.message||'')+'\n\nIf this says "permission denied", run migration_workfor.sql in Supabase.'); }
+  } catch(e) { alert('Search failed: '+(e.message||'')+'\n\nIf this says "permission denied" or you get no results for a business you know exists, run migration_workfor.sql in Supabase — it allows searching registered businesses.'); }
 }
 
 function wfSelect(id) {
   _wfSelected = _wfResults.find(b => b.id === id) || null;
-  const q = document.getElementById('wf_search')?.value || '';
   renderProfileSheet();
-  setTimeout(()=>{ const s=document.getElementById('wf_search'); if(s) s.value=q; }, 0);
 }
 
 async function wfSave() {
   if (!_wfSelected) return;
+  if (_wfSelected.owner_user_id === bkUser?.id) {
+    alert('You own "'+_wfSelected.name+'" — it is already in your businesses list.');
+    return;
+  }
   const position = document.getElementById('wf_position')?.value?.trim() || '';
+  if (!position) { alert('Please enter your position in the company.'); return; }
   try {
     const { error } = await bkDb.from('user_businesses').upsert(
       { user_id: bkUser.id, business_id: _wfSelected.id, role: 'employee', position },
       { onConflict: 'user_id,business_id' });
     if (error) throw error;
-    _wfResults = []; _wfSelected = null; _profileEdit.workfor = false;
+    _wfResults = []; _wfSelected = null; _wfSearched = false; _wfQuery = '';
+    _profileEdit.workfor = false;
     await loadUserBusinesses();
     renderProfileSheet();
   } catch(e) { alert('Could not save: '+(e.message||'')+'\n\nIf this mentions "position", run migration_workfor.sql in Supabase.'); }
@@ -9764,7 +9774,7 @@ function _profileTabBody() {
       <span style="font-size:0.72rem;color:var(--muted);">All registered businesses linked to your account.</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="closeProfileSheet();showRegisterBusinessPage()" style="background:var(--gold);color:#000;border:none;font-size:0.72rem;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;">+ Register New Business</button>
-        <button onclick="profileEditToggle('workfor')" style="background:var(--surface2);color:var(--gold);border:1px solid var(--gold);font-size:0.72rem;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;">💼 I work for this Business</button>
+        <button onclick="profileEditToggle('workfor')" style="background:var(--surface2);color:var(--gold);border:1px solid var(--gold);font-size:0.72rem;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;">💼 What business do you work for?</button>
       </div>
     </div>
     ${_profileEdit.workfor ? _renderWorkForForm() : ''}
