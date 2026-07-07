@@ -155,6 +155,19 @@ select.bk-cell,input.bk-cell{min-height:34px;}
 .bk-auth-btnrow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%;}
 .bk-auth-btnrow .bk-login-btn{flex:1 1 180px;min-width:150px;}
 .bk-auth-btnrow .bk-login-back{flex:0 1 auto;}
+
+/* ── DESKTOP AUTH LAYOUTS ── */
+.auth-split{display:flex;gap:56px;align-items:stretch;}
+.auth-brand{flex:1 1 45%;display:flex;flex-direction:column;justify-content:space-between;min-height:70vh;padding:10px 0;}
+.auth-formcol{flex:1 1 55%;}
+@media(max-width:899px){.auth-split{display:block;}.auth-brand{display:none;}}
+.ri-grid2{display:grid;grid-template-columns:1fr;column-gap:16px;}
+.ri-grid3{display:grid;grid-template-columns:1fr;column-gap:16px;}
+@media(min-width:700px){.ri-grid2{grid-template-columns:1fr 1fr;}.ri-grid3{grid-template-columns:1fr 1fr 1fr;}}
+.mode-cards{display:flex;flex-direction:column;gap:16px;max-width:900px;margin:0 auto;padding:20px 16px 8px;}
+@media(min-width:800px){.mode-cards{flex-direction:row;align-items:stretch;}.mode-cards>div{flex:1;}}
+.rb-typerow{display:flex;flex-direction:column;gap:10px;}
+@media(min-width:700px){.rb-typerow{flex-direction:row;}.rb-typerow>.rb-type-card{flex:1;margin-bottom:0 !important;}}
 .su-label{display:block;font-size:0.74rem;font-weight:700;color:var(--off);margin-bottom:5px;}
 .su-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 13px;font-size:0.88rem;font-family:inherit;outline:none;}
 .su-input:focus{border-color:var(--gold);}
@@ -1454,14 +1467,66 @@ function showAuthScreen(view) {
   const content = document.getElementById('bkAuthContent');
   if (!screen || !content) return;
   screen.classList.remove('hidden');
+  const isDesk = window.innerWidth >= 900;
+  content.style.maxWidth = (isDesk && (view==='landing'||view==='signup'||view==='login')) ? '1100px' : '520px';
+
   const logo = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
     <div style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🏦</div>
     <div><div style="font-weight:800;font-size:0.95rem;color:var(--white);">Butterfly Dynamix</div>
     <div style="font-size:0.62rem;letter-spacing:0.18em;color:var(--gold);font-weight:700;">ACCOUNTING</div></div>
   </div>`;
 
+  const brandPanel = `<div class="auth-brand">
+    <div>
+      ${logo}
+      <h1 style="font-size:2.1rem;font-weight:900;line-height:1.2;margin:36px 0 0;color:var(--white);">Think Finance,<br>Think <span style="color:var(--gold);">Butterfly Dynamix</span></h1>
+      <p style="font-size:0.92rem;color:var(--muted);line-height:1.6;margin:20px 0 0;">Built for micro, small and medium enterprises — manage multiple businesses, track finances, and grow with confidence.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:40px;">
+      ${['Multi-business portfolio management','Real-time cash flow tracking','Invoices, expenses & payroll','Personal & business accounting'].map(f=>`
+        <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;color:var(--off);">
+          <span style="color:var(--gold);">✓</span> ${f}</div>`).join('')}
+    </div>
+  </div>`;
+
+  const signupForm = `
+    <div style="font-size:1.4rem;font-weight:900;color:var(--white);margin:${isDesk?'0':'20px'} 0 4px;">Create your account</div>
+    <div style="font-size:0.8rem;color:var(--gold);margin-bottom:22px;">Start managing your finances in minutes.</div>
+    <div class="bk-login-form">
+      <label class="su-label">EMAIL ADDRESS *</label>
+      <input class="bk-login-input" type="email" id="suEmail" placeholder="you@example.com" autocomplete="email"/>
+      <label class="su-label">PASSWORD *</label>
+      <input class="bk-login-input" type="password" id="suPW" placeholder="Min 6 characters" oninput="suPwStrength(this.value)"/>
+      <div id="suPwBar" style="display:flex;gap:4px;margin:6px 0 2px;">
+        <div class="pwseg"></div><div class="pwseg"></div><div class="pwseg"></div><div class="pwseg"></div>
+      </div>
+      <div id="suPwLabel" style="text-align:right;font-size:0.68rem;color:var(--muted);margin-bottom:8px;"></div>
+      <label class="su-label">CONFIRM PASSWORD *</label>
+      <input class="bk-login-input" type="password" id="suPW2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doSignUp()"/>
+      <div class="bk-login-err" id="suAuthErr"></div>
+      <button class="bk-login-btn" style="background:var(--gold);color:#000;" onclick="doSignUp()">Continue →</button>
+      <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">Already have an account? <span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="showAuthScreen('login')">Sign in</span></div>
+    </div>`;
+
+  const loginForm = `
+    <div style="font-size:1.4rem;font-weight:900;color:var(--white);margin:${isDesk?'0':'20px'} 0 4px;">Sign in</div>
+    <div style="font-size:0.8rem;color:var(--muted);margin-bottom:22px;">Welcome back — enter your details below.</div>
+    <div class="bk-login-form">
+      <label class="su-label">EMAIL ADDRESS *</label>
+      <input class="bk-login-input" type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email"/>
+      <label class="su-label">PASSWORD *</label>
+      <input class="bk-login-input" type="password" id="loginPW" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <div class="bk-login-err" id="loginErr"></div>
+      <button class="bk-login-btn" style="background:var(--gold);color:#000;" onclick="doLogin()">Sign In →</button>
+      <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">No account yet? <span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="showAuthScreen('signup')">Sign up</span></div>
+    </div>`;
+
   if (view==='landing') {
-    content.innerHTML = `
+    if (isDesk) {
+      content.innerHTML = `<div class="auth-split">${brandPanel}<div class="auth-formcol">${signupForm}</div></div>`;
+      setTimeout(()=>document.getElementById('suEmail')?.focus(), 50);
+    } else {
+      content.innerHTML = `
       ${logo}
       <div style="padding:36px 0 0;">
         <h1 style="font-size:2.1rem;font-weight:900;line-height:1.2;margin:0;color:var(--white);">Think Finance,<br>Think <span style="color:var(--gold);">Butterfly Dynamix</span></h1>
@@ -1471,47 +1536,21 @@ function showAuthScreen(view) {
         <div style="margin-top:40px;display:flex;flex-direction:column;gap:14px;">
           ${['Multi-business portfolio management','Real-time cash flow tracking','Invoices, expenses & payroll','Personal & business accounting'].map(f=>`
             <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;color:var(--off);">
-              <span style="color:var(--gold);">✓</span> ${f}
-            </div>`).join('')}
+              <span style="color:var(--gold);">✓</span> ${f}</div>`).join('')}
         </div>
       </div>`;
+    }
 
   } else if (view==='login') {
-    content.innerHTML = `
-      ${logo}
-      <div style="font-size:1.4rem;font-weight:900;color:var(--white);margin:20px 0 4px;">Sign in</div>
-      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:22px;">Welcome back — enter your details below.</div>
-      <div class="bk-login-form">
-        <label class="su-label">EMAIL ADDRESS *</label>
-        <input class="bk-login-input" type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email"/>
-        <label class="su-label">PASSWORD *</label>
-        <input class="bk-login-input" type="password" id="loginPW" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"/>
-        <div class="bk-login-err" id="loginErr"></div>
-        <button class="bk-login-btn" style="background:var(--gold);color:#000;" onclick="doLogin()">Sign In →</button>
-        <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">No account yet? <span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="showAuthScreen('signup')">Sign up</span></div>
-      </div>`;
+    content.innerHTML = isDesk
+      ? `<div class="auth-split">${brandPanel}<div class="auth-formcol">${loginForm}</div></div>`
+      : logo + loginForm;
     setTimeout(()=>document.getElementById('loginEmail')?.focus(), 50);
 
   } else if (view==='signup') {
-    content.innerHTML = `
-      ${logo}
-      <div style="font-size:1.4rem;font-weight:900;color:var(--white);margin:20px 0 4px;">Create your account</div>
-      <div style="font-size:0.8rem;color:var(--gold);margin-bottom:22px;">Start managing your finances in minutes.</div>
-      <div class="bk-login-form">
-        <label class="su-label">EMAIL ADDRESS *</label>
-        <input class="bk-login-input" type="email" id="suEmail" placeholder="you@example.com" autocomplete="email"/>
-        <label class="su-label">PASSWORD *</label>
-        <input class="bk-login-input" type="password" id="suPW" placeholder="Min 6 characters" oninput="suPwStrength(this.value)"/>
-        <div id="suPwBar" style="display:flex;gap:4px;margin:6px 0 2px;">
-          <div class="pwseg"></div><div class="pwseg"></div><div class="pwseg"></div><div class="pwseg"></div>
-        </div>
-        <div id="suPwLabel" style="text-align:right;font-size:0.68rem;color:var(--muted);margin-bottom:8px;"></div>
-        <label class="su-label">CONFIRM PASSWORD *</label>
-        <input class="bk-login-input" type="password" id="suPW2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doSignUp()"/>
-        <div class="bk-login-err" id="suAuthErr"></div>
-        <button class="bk-login-btn" style="background:var(--gold);color:#000;" onclick="doSignUp()">Continue →</button>
-        <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">Already have an account? <span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="showAuthScreen('login')">Sign in</span></div>
-      </div>`;
+    content.innerHTML = isDesk
+      ? `<div class="auth-split">${brandPanel}<div class="auth-formcol">${signupForm}</div></div>`
+      : logo + signupForm;
     setTimeout(()=>document.getElementById('suEmail')?.focus(), 50);
 
   } else if (view==='personal-info') {
@@ -1527,56 +1566,53 @@ function showAuthScreen(view) {
         <span>CREDENTIALS</span><span style="color:var(--gold);">PERSONAL INFO</span><span>DONE</span>
       </div>`;
     const stateOpts = NG_STATES.map(s=>`<option>${s}</option>`).join('');
+    content.style.maxWidth = window.innerWidth>=900 ? '860px' : '520px';
     content.innerHTML = `
       ${logo}
       <div style="font-size:1.4rem;font-weight:900;color:var(--white);margin:14px 0 4px;">Personal Information</div>
       <div style="font-size:0.8rem;color:var(--muted);">Tell us a bit about yourself to set up your account.</div>
       ${stepper}
-      <div class="bk-login-form" style="gap:12px;">
-        <div style="font-size:0.8rem;font-weight:800;color:var(--white);">Full Name</div>
-        <label class="su-label">FIRST NAME *</label>
-        <input class="bk-login-input" id="ri_first" placeholder="Jennifer"/>
-        <label class="su-label">MIDDLE NAME</label>
-        <input class="bk-login-input" id="ri_middle" placeholder="Grace"/>
-        <label class="su-label">LAST NAME *</label>
-        <input class="bk-login-input" id="ri_last" placeholder="Okafor"/>
-        <label class="su-label">DATE OF BIRTH *</label>
-        <input class="bk-login-input" type="date" id="ri_dob"/>
-        <label class="su-label">GENDER *</label>
-        <select class="bk-login-input" id="ri_gender"><option value="">Select Gender</option>
-          <option>Male</option><option>Female</option><option>Prefer not to say</option></select>
-        <label class="su-label">PHONE NUMBER *</label>
-        <input class="bk-login-input" type="tel" id="ri_phone" placeholder="+234 801 234 5678"/>
-        <label class="su-label">EMAIL ADDRESS</label>
-        <input class="bk-login-input" value="${escH(bkUser?.email||'')}" disabled style="opacity:0.55;"/>
-
-        <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin-top:8px;">Origin &amp; Residential Address</div>
-        <label class="su-label">COUNTRY OF ORIGIN *</label>
-        <input class="bk-login-input" id="ri_origin_country" value="Nigeria"/>
-        <label class="su-label">COUNTRY *</label>
-        <input class="bk-login-input" id="ri_country" value="Nigeria"/>
-        <label class="su-label">STATE *</label>
-        <select class="bk-login-input" id="ri_state"><option value="">Select State</option>${stateOpts}</select>
-        <label class="su-label">LOCAL GOVERNMENT AREA *</label>
-        <input class="bk-login-input" id="ri_lga" placeholder="Local Government Area"/>
+      <div class="bk-login-form" style="gap:2px;">
+        <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin-bottom:4px;">Full Name</div>
+        <div class="ri-grid3">
+          <div><label class="su-label">FIRST NAME *</label><input class="bk-login-input" id="ri_first" placeholder="Jennifer"/></div>
+          <div><label class="su-label">MIDDLE NAME</label><input class="bk-login-input" id="ri_middle" placeholder="Grace"/></div>
+          <div><label class="su-label">LAST NAME *</label><input class="bk-login-input" id="ri_last" placeholder="Okafor"/></div>
+        </div>
+        <div class="ri-grid2">
+          <div><label class="su-label">DATE OF BIRTH *</label><input class="bk-login-input" type="date" id="ri_dob"/></div>
+          <div><label class="su-label">GENDER *</label><select class="bk-login-input" id="ri_gender"><option value="">Select Gender</option>
+            <option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
+        </div>
+        <div class="ri-grid2">
+          <div><label class="su-label">PHONE NUMBER *</label><input class="bk-login-input" type="tel" id="ri_phone" placeholder="+234 801 234 5678"/></div>
+          <div><label class="su-label">EMAIL ADDRESS</label><input class="bk-login-input" value="${escH(bkUser?.email||'')}" disabled style="opacity:0.55;"/></div>
+        </div>
+        <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin:14px 0 4px;">Origin &amp; Residential Address</div>
+        <div class="ri-grid2">
+          <div><label class="su-label">COUNTRY OF ORIGIN *</label><input class="bk-login-input" id="ri_origin_country" value="Nigeria"/></div>
+          <div><label class="su-label">COUNTRY *</label><input class="bk-login-input" id="ri_country" value="Nigeria"/></div>
+        </div>
+        <div class="ri-grid2">
+          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_state"><option value="">Select State</option>${stateOpts}</select></div>
+          <div><label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" id="ri_lga" placeholder="Local Government Area"/></div>
+        </div>
         <label class="su-label">TOWN / CITY</label>
         <input class="bk-login-input" id="ri_town" placeholder="Enter your town or city"/>
-
-        <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin-top:8px;">Primary Location</div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-top:-6px;">Where you currently live or primarily operate from.</div>
-        <label class="su-label">COUNTRY *</label>
-        <input class="bk-login-input" id="ri_p_country" value="Nigeria"/>
-        <label class="su-label">STATE *</label>
-        <select class="bk-login-input" id="ri_p_state"><option value="">Select State</option>${stateOpts}</select>
-        <label class="su-label">LOCAL GOVERNMENT AREA *</label>
-        <input class="bk-login-input" id="ri_p_lga" placeholder="Local Government Area"/>
-        <label class="su-label">TOWN</label>
-        <input class="bk-login-input" id="ri_p_town" placeholder="Enter your town"/>
-
+        <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin:14px 0 0;">Primary Location</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px;">Where you currently live or primarily operate from.</div>
+        <div class="ri-grid2">
+          <div><label class="su-label">COUNTRY *</label><input class="bk-login-input" id="ri_p_country" value="Nigeria"/></div>
+          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_p_state"><option value="">Select State</option>${stateOpts}</select></div>
+        </div>
+        <div class="ri-grid2">
+          <div><label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" id="ri_p_lga" placeholder="Local Government Area"/></div>
+          <div><label class="su-label">TOWN</label><input class="bk-login-input" id="ri_p_town" placeholder="Enter your town"/></div>
+        </div>
         <div class="bk-login-err" id="riErr"></div>
-        <div class="bk-auth-btnrow">
-          <button class="bk-login-back" style="flex:0 0 auto;" onclick="showAuthScreen('signup')">← Back</button>
-          <button class="bk-login-btn" style="flex:1;background:var(--gold);color:#000;" onclick="riRegister()">Register →</button>
+        <div class="bk-auth-btnrow" style="margin-top:10px;">
+          <button class="bk-login-back" onclick="showAuthScreen('signup')">← Back</button>
+          <button class="bk-login-btn" style="background:var(--gold);color:#000;" onclick="riRegister()">Register →</button>
         </div>
       </div>`;
 
@@ -2013,7 +2049,7 @@ function showRegisterBusinessPage() {
   staffHideChrome();
   bdSaveRoute('register-business');
   document.getElementById('bkContent').innerHTML = `
-    <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
+    <div style="max-width:${window.innerWidth>=900?'760px':'520px'};margin:0 auto;padding:24px 16px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;">
         <div style="width:30px;height:30px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:0.9rem;">🏦</div>
         <span style="font-weight:800;font-size:0.82rem;">Butterfly Dynamix Accounting</span>
@@ -2024,19 +2060,21 @@ function showRegisterBusinessPage() {
       <label class="su-label">BUSINESS NAME *</label>
       <input class="bk-login-input" id="rb_name" placeholder="e.g. Butterfly Dynamix LLC" style="width:100%;margin-bottom:14px;"/>
 
-      <label class="su-label">BUSINESS STRUCTURE *</label>
-      <select class="bk-login-input" id="rb_structure" style="width:100%;margin-bottom:14px;">
-        <option value="">Select Business Structure</option>
-        ${PROFILE_BIZ_STRUCTURES.map(s=>`<option>${s}</option>`).join('')}
-      </select>
-
-      <label class="su-label">INDUSTRY *</label>
-      <select class="bk-login-input" id="rb_industry" style="width:100%;margin-bottom:14px;">
-        <option value="">Select Industry</option>
-        ${PROFILE_INDUSTRIES.map(i=>`<option>${i}</option>`).join('')}
-      </select>
+      <div class="ri-grid2">
+        <div><label class="su-label">BUSINESS STRUCTURE *</label>
+        <select class="bk-login-input" id="rb_structure" style="width:100%;margin-bottom:14px;">
+          <option value="">Select Business Structure</option>
+          ${PROFILE_BIZ_STRUCTURES.map(s=>`<option>${s}</option>`).join('')}
+        </select></div>
+        <div><label class="su-label">INDUSTRY *</label>
+        <select class="bk-login-input" id="rb_industry" style="width:100%;margin-bottom:14px;">
+          <option value="">Select Industry</option>
+          ${PROFILE_INDUSTRIES.map(i=>`<option>${i}</option>`).join('')}
+        </select></div>
+      </div>
 
       <label class="su-label">BUSINESS TYPE *</label>
+      <div class="rb-typerow">
       ${[['product','📦','Product','Sells physical goods'],['service','🧰','Service','Provides services'],['both','💲','Product & Service','Sells both']].map(([v,ic,t,d])=>`
         <div onclick="_regBizType='${v}';document.querySelectorAll('.rb-type-card').forEach(c=>c.style.borderColor='var(--border2)');this.style.borderColor='var(--gold)';"
           class="rb-type-card" style="border:1px solid ${_regBizType===v?'var(--gold)':'var(--border2)'};border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;background:var(--surface);">
@@ -2044,6 +2082,7 @@ function showRegisterBusinessPage() {
           <div style="font-weight:800;font-size:0.85rem;color:var(--white);">${t}</div>
           <div style="font-size:0.7rem;color:var(--muted);">${d}</div>
         </div>`).join('')}
+      </div>
 
       <label class="su-label" style="margin-top:6px;">BUSINESS ADDRESS *</label>
       <textarea class="bk-login-input" id="rb_address" rows="2" placeholder="Full business address including street, city, state" style="width:100%;margin-bottom:14px;resize:vertical;"></textarea>
@@ -2125,9 +2164,10 @@ function showRegisterProductsPage() {
         </table>
       </div>
       <div style="font-size:0.7rem;color:var(--muted);margin-top:8px;">${_regPS.length} rows · ${_regPSCols.length+1} columns</div>
-      <div class="bk-auth-btnrow" style="margin-top:22px;">
+      <div class="bk-auth-btnrow" style="margin-top:22px;align-items:center;">
         <button class="bk-login-back" onclick="showRegisterBusinessPage()">← Back</button>
-        <button class="bk-login-btn" style="flex:1;background:var(--gold);color:#000;" onclick="regPSSave()">Save &amp; Go to Dashboard →</button>
+        <button class="bk-login-btn" style="flex:1 1 220px;background:var(--gold);color:#000;" onclick="regPSSave()">Save &amp; Go to Dashboard →</button>
+        <span style="font-size:0.72rem;color:var(--muted);flex:1 1 100%;text-align:center;margin-top:6px;">You can add more products &amp; services later from the Products &amp; Services section.</span>
       </div>
     </div>`;
 }
@@ -2176,7 +2216,7 @@ function showModeChoice() {
       <div style="font-size:1.7rem;font-weight:900;color:var(--white);margin:4px 0;">${escH(fname)} 👋</div>
       <div style="font-size:0.85rem;color:var(--muted);">What would you like to do?</div>
     </div>
-    <div style="padding:20px 16px;display:flex;flex-direction:column;gap:16px;max-width:520px;margin:0 auto;">
+    <div class="mode-cards">
       <div onclick="startBusinessMode()" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;cursor:pointer;">
         <div style="width:44px;height:44px;border-radius:12px;background:rgba(212,175,55,0.14);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:14px;">🏢</div>
         <div style="font-size:1.05rem;font-weight:900;color:var(--white);margin-bottom:6px;">Business Accounting</div>
@@ -2189,8 +2229,8 @@ function showModeChoice() {
         <div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">Track your personal income, savings goals, debt repayment, and net worth all in one place.</div>
         <div style="color:var(--gold);font-size:0.78rem;font-weight:800;margin-top:12px;">Get started →</div>
       </div>
-      <div style="text-align:center;font-size:0.72rem;color:var(--muted);">You can access both modes anytime from your profile.</div>
-    </div>`;
+    </div>
+    <div style="text-align:center;font-size:0.72rem;color:var(--muted);padding:16px;">You can access both modes anytime from your profile.</div>`;
 }
 
 function startBusinessMode() {
