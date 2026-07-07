@@ -2124,7 +2124,7 @@ async function rbSaveBusiness() {
       business_address: document.getElementById('rb_address')?.value?.trim()||'',
       cac_registered: !!cac, cac_number: cac||null,
       owner_user_id: bkUser.id, currency: activeCurrency||'NGN',
-      is_primary: userBusinesses.length===0, icon:'🏢',
+      is_primary: !userBusinesses.some(b=>b._owned), icon:'🏢',
     }).select().single();
     if (error) throw error;
     userBusinesses.push(data);
@@ -3563,7 +3563,7 @@ async function saveAll() {
   if (newRows.length) {
     const { data, error } = await bkDb.from('bk_transactions').insert(
       newRows.map(r=>({
-        user_id:bkUser.id, record_type:activeType,
+        user_id:bkUser.id, business_id:activeBusiness?.id||null, record_type:activeType,
         account_name:activeAccount.account_name,
         serial_number:r.serial_number, txn_date:r.txn_date||null,
         payee:r.payee||null, payer:r.payer||null, narration:r.narration||null,
@@ -4615,7 +4615,7 @@ async function saveJournal(){
 }
 
 async function postToLedgers(journalId,row){
-  const base={ user_id:bkUser.id, journal_id:journalId, txn_date:row.txn_date||null,
+  const base={ user_id:bkUser.id, business_id:activeBusiness?.id||null, journal_id:journalId, txn_date:row.txn_date||null,
                payee:row.payee||null, payer:row.payer||null, narration:row.narration||null, row_order:row.row_order||0 };
   const postings=[];
   if(row.debit_account_name && row.debit_record_type && row.debit_amount>0){
@@ -6102,7 +6102,7 @@ async function saveRow(idx) {
 
   if (!r.id) {
     const { data, error } = await bkDb.from('bk_transactions').insert({
-      user_id: bkUser.id, record_type: activeType,
+      user_id: bkUser.id, business_id: activeBusiness?.id||null, record_type: activeType,
       account_name: activeAccount.account_name,
       serial_number: r.serial_number, txn_date: r.txn_date||null,
       payee: r.payee||null, payer: r.payer||null, narration: r.narration||null,
@@ -10028,21 +10028,20 @@ async function showAllBusinessesDashboard() {
 }
 
 async function fetchAllBusinessMetrics() {
-  // For primary business, use existing bk_transactions data
   const metrics = [];
   for (const biz of userBusinesses) {
     let revenue=0, expenses=0, receivables=0;
-    if (biz.is_primary) {
-      try {
-        const {data:T} = await bkDb.from('bk_transactions')
-          .select('record_type,debit,credit').eq('user_id',bkUser.id);
-        (T||[]).forEach(r=>{
-          if(r.record_type==='income') revenue+=(parseFloat(r.credit)||0)-(parseFloat(r.debit)||0);
-          if(r.record_type==='expenditure') expenses+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
-          if(r.record_type==='asset'&&r.account_name==='Debtors') receivables+=(parseFloat(r.debit)||0)-(parseFloat(r.credit)||0);
-        });
-      } catch(e) {}
-    }
+    try {
+      const {data:T} = await bkDb.from('bk_transactions')
+        .select('record_type,debit,credit,account_name')
+        .eq('business_id', biz.id);
+      (T||[]).forEach(r=>{
+        const dr=parseFloat(r.debit)||0, cr=parseFloat(r.credit)||0;
+        if(r.record_type==='income') revenue += cr-dr;
+        if(r.record_type==='expenditure') expenses += dr-cr;
+        if(r.record_type==='asset'&&(r.account_name==='Debtors'||r.account_name==='Accounts Receivable')) receivables += dr-cr;
+      });
+    } catch(e) {}
     const profit = revenue - expenses;
     const margin = revenue > 0 ? Math.round(profit/revenue*100) : 0;
     const status = profit < 0 ? 'critical' : margin < 15 ? 'attention' : 'healthy';
@@ -10164,10 +10163,14 @@ async function loadRecentActivity() {
   const el = document.getElementById('abRecentActivity');
   if (!el || !bkUser) return;
   try {
-    const {data:T} = await bkDb.from('bk_transactions').select('narration,record_type,debit,credit,txn_date,created_at')
-      .eq('user_id',bkUser.id).order('created_at',{ascending:false}).limit(8);
+    const bizIds = userBusinesses.map(b=>b.id);
+    let q = bkDb.from('bk_transactions').select('narration,record_type,debit,credit,txn_date,created_at,business_id');
+    q = bizIds.length
+      ? q.or('user_id.eq.'+bkUser.id+',business_id.in.('+bizIds.join(',')+')')
+      : q.eq('user_id',bkUser.id);
+    const {data:T} = await q.order('created_at',{ascending:false}).limit(8);
     if (!T || !T.length) { el.innerHTML='<div style="color:var(--muted);font-size:0.78rem;padding:12px 0;">No activity yet — record your first transaction.</div>'; return; }
-    const bizName = (userBusinesses[0]?.name||businessDisplayName||'Business').toUpperCase();
+    const bizNameFor = t => (userBusinesses.find(b=>b.id===t.business_id)?.name || userBusinesses[0]?.name || businessDisplayName || 'Business').toUpperCase();
     el.innerHTML = T.map(t=>{
       const isInc = t.record_type==='income';
       const amt = Math.abs((parseFloat(t.debit)||0)-(parseFloat(t.credit)||0));
@@ -10175,7 +10178,7 @@ async function loadRecentActivity() {
       return `<div class="ab-activity-item">
         <div class="ab-activity-dot" style="background:${isInc?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.12)'};">${isInc?'↗':'↘'}</div>
         <div style="flex:1;min-width:0;">
-          <div class="ab-activity-biz">${escH(bizName)}</div>
+          <div class="ab-activity-biz">${escH(bizNameFor(t))}</div>
           <div class="ab-activity-desc">${escH(t.narration||(isInc?'Sale recorded':'Expense recorded'))} — ${fmt(amt)}</div>
           <div class="ab-activity-time">${escH(when)}</div>
         </div>
@@ -10250,10 +10253,10 @@ async function showSingleBusinessDashboard(biz) {
   let revenue=0,expenses=0,profit=0,receivables=0;
   let cashInHand=0,cashAtBank=0;
   let recentTxns=[];
-  if (biz.is_primary) {
+  {
     try {
       const {data:T} = await bkDb.from('bk_transactions')
-        .select('*').eq('user_id',bkUser.id)
+        .select('*').eq('business_id',biz.id)
         .order('txn_date',{ascending:false}).limit(20);
       (T||[]).forEach(r=>{
         if(r.record_type==='income') revenue+=(parseFloat(r.credit)||0)-(parseFloat(r.debit)||0);
