@@ -158,7 +158,7 @@ select.bk-cell,input.bk-cell{min-height:34px;}
 
 /* ── DESKTOP AUTH LAYOUTS ── */
 .auth-split{display:flex;gap:56px;align-items:stretch;}
-.auth-brand{flex:1 1 45%;display:flex;flex-direction:column;justify-content:space-between;min-height:70vh;padding:10px 0;}
+.auth-brand{flex:1 1 45%;display:flex;flex-direction:column;padding:10px 0;}
 .auth-formcol{flex:1 1 55%;}
 @media(max-width:899px){.auth-split{display:block;}.auth-brand{display:none;}}
 .ri-grid2{display:grid;grid-template-columns:1fr;column-gap:16px;}
@@ -1247,7 +1247,7 @@ body{padding-top:0;}
   </div>
 
   <!-- TOOLBAR -->
-  <div class="bk-toolbar" id="bkToolbar">
+  <div class="bk-toolbar" id="bkToolbar" style="display:none;">
     <button class="tb-btn" id="tbUndo" onclick="undoAction()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
     <button class="tb-btn" id="tbRedo" onclick="redoAction()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
     <div class="tb-sep"></div>
@@ -1273,12 +1273,7 @@ body{padding-top:0;}
     <button class="tb-collapse-btn" id="tbCollapseBtn" onclick="toggleToolbar()" title="Toggle toolbar">▾</button>
   </div>
 
-  <div id="bkContent">
-    <div class="bk-empty">
-      <div class="bk-empty-icon">📒</div>
-      <p>Click <strong>Dashboard</strong> for a summary,<br>or select <strong>Records</strong> to open a ledger.</p>
-    </div>
-  </div>
+  <div id="bkContent"><div class="bk-loading" style="padding:60px 20px;text-align:center;color:var(--muted);font-size:0.85rem;">Loading…</div></div>
 </main>
 
 <!-- ADD ACCOUNT MODAL -->
@@ -1488,7 +1483,7 @@ function showAuthScreen(view) {
       <h1 style="font-size:2.1rem;font-weight:900;line-height:1.2;margin:36px 0 0;color:var(--white);">Think Finance,<br>Think <span style="color:var(--gold);">Butterfly Dynamix</span></h1>
       <p style="font-size:0.92rem;color:var(--muted);line-height:1.6;margin:20px 0 0;">Built for micro, small and medium enterprises — manage multiple businesses, track finances, and grow with confidence.</p>
     </div>
-    <div style="display:flex;flex-direction:column;gap:14px;margin-top:40px;">
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:24px;">
       ${['Multi-business portfolio management','Real-time cash flow tracking','Invoices, expenses & payroll','Personal & business accounting'].map(f=>`
         <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;color:var(--off);">
           <span style="color:var(--gold);">✓</span> ${f}</div>`).join('')}
