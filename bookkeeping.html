@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -778,6 +777,12 @@ body{padding-top:0;}
 .pa-card-head{padding:12px 14px;font-weight:800;font-size:0.85rem;color:var(--white);border-bottom:1px solid var(--border);}
 .pa-card-body{padding:14px;display:flex;flex-direction:column;gap:10px;}
 .pa-card-body .bk-login-input{width:100%;}
+
+.pf-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;}
+.pf-card-head{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:0.88rem;color:var(--white);margin-bottom:14px;}
+.pf-card .bk-login-input{width:100%;margin-bottom:10px;}
+.pf-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.pf-save-btn{width:100%;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.84rem;padding:12px;border-radius:10px;cursor:pointer;margin-top:6px;}
 /* ── SHEET TOOLBOX (Excel-style) ─────────────────────────── */
 .sheet-toolbox{display:flex;align-items:center;gap:4px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:8px 16px 0;padding:6px 8px;overflow-x:auto;}
 .sheet-toolbox.hidden{display:none;}
@@ -1447,23 +1452,23 @@ function showAuthScreen(view) {
   if (!screen || !content) return;
   screen.classList.remove('hidden');
   const logo = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-    <div style="width:40px;height:40px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🏦</div>
+    <div style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🏦</div>
     <div><div style="font-weight:800;font-size:0.95rem;color:var(--white);">Butterfly Dynamix</div>
-    <div style="font-size:0.62rem;letter-spacing:0.18em;color:#22c55e;font-weight:700;">ACCOUNTING</div></div>
+    <div style="font-size:0.62rem;letter-spacing:0.18em;color:var(--gold);font-weight:700;">ACCOUNTING</div></div>
   </div>`;
 
   if (view==='landing') {
     content.innerHTML = `
       ${logo}
       <div style="padding:36px 0 0;">
-        <h1 style="font-size:2.2rem;font-weight:900;line-height:1.15;margin:0;color:var(--white);">One platform.<br>Every business.<br><span style="color:#22c55e;">Total clarity.</span></h1>
+        <h1 style="font-size:2.2rem;font-weight:900;line-height:1.15;margin:0;color:var(--white);">One platform.<br>Every business.<br><span style="color:var(--gold);">Total clarity.</span></h1>
         <p style="font-size:0.92rem;color:var(--muted);line-height:1.6;margin:20px 0 26px;">Built for micro, small and medium enterprises — manage multiple businesses, track finances, and grow with confidence.</p>
-        <button class="bk-auth-btn-primary" style="width:100%;background:#22c55e;color:#04240f;font-weight:800;border:none;padding:15px;border-radius:12px;font-size:1rem;cursor:pointer;" onclick="showAuthScreen('signup')">Sign Up</button>
-        <div style="text-align:center;margin-top:14px;font-size:0.82rem;color:var(--muted);">Already have an account? <span style="color:#22c55e;font-weight:700;cursor:pointer;" onclick="showAuthScreen('login')">Sign in</span></div>
+        <button class="bk-auth-btn-primary" style="width:100%;background:var(--gold);color:#000;font-weight:800;border:none;padding:15px;border-radius:12px;font-size:1rem;cursor:pointer;" onclick="showAuthScreen('signup')">Sign Up</button>
+        <div style="text-align:center;margin-top:14px;font-size:0.82rem;color:var(--muted);">Already have an account? <span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="showAuthScreen('login')">Sign in</span></div>
         <div style="margin-top:40px;display:flex;flex-direction:column;gap:14px;">
           ${['Multi-business portfolio management','Real-time cash flow tracking','Invoices, expenses & payroll','Personal & business accounting'].map(f=>`
             <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;color:var(--off);">
-              <span style="color:#22c55e;">✓</span> ${f}
+              <span style="color:var(--gold);">✓</span> ${f}
             </div>`).join('')}
         </div>
       </div>`;
@@ -1479,8 +1484,8 @@ function showAuthScreen(view) {
         <label class="su-label">PASSWORD *</label>
         <input class="bk-login-input" type="password" id="loginPW" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"/>
         <div class="bk-login-err" id="loginErr"></div>
-        <button class="bk-login-btn" style="background:#22c55e;color:#04240f;" onclick="doLogin()">Sign In →</button>
-        <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">No account yet? <span style="color:#22c55e;font-weight:700;cursor:pointer;" onclick="showAuthScreen('signup')">Sign up</span></div>
+        <button class="bk-login-btn" style="background:var(--gold);color:#000;" onclick="doLogin()">Sign In →</button>
+        <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">No account yet? <span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="showAuthScreen('signup')">Sign up</span></div>
       </div>`;
     setTimeout(()=>document.getElementById('loginEmail')?.focus(), 50);
 
@@ -1488,7 +1493,7 @@ function showAuthScreen(view) {
     content.innerHTML = `
       ${logo}
       <div style="font-size:1.4rem;font-weight:900;color:var(--white);margin:20px 0 4px;">Create your account</div>
-      <div style="font-size:0.8rem;color:#22c55e;margin-bottom:22px;">Start managing your finances in minutes.</div>
+      <div style="font-size:0.8rem;color:var(--gold);margin-bottom:22px;">Start managing your finances in minutes.</div>
       <div class="bk-login-form">
         <label class="su-label">EMAIL ADDRESS *</label>
         <input class="bk-login-input" type="email" id="suEmail" placeholder="you@example.com" autocomplete="email"/>
@@ -1501,22 +1506,22 @@ function showAuthScreen(view) {
         <label class="su-label">CONFIRM PASSWORD *</label>
         <input class="bk-login-input" type="password" id="suPW2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doSignUp()"/>
         <div class="bk-login-err" id="suAuthErr"></div>
-        <button class="bk-login-btn" style="background:#22c55e;color:#04240f;" onclick="doSignUp()">Continue →</button>
-        <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">Already have an account? <span style="color:#22c55e;font-weight:700;cursor:pointer;" onclick="showAuthScreen('login')">Sign in</span></div>
+        <button class="bk-login-btn" style="background:var(--gold);color:#000;" onclick="doSignUp()">Continue →</button>
+        <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);">Already have an account? <span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="showAuthScreen('login')">Sign in</span></div>
       </div>`;
     setTimeout(()=>document.getElementById('suEmail')?.focus(), 50);
 
   } else if (view==='personal-info') {
     const stepper = `
       <div style="display:flex;align-items:center;gap:0;margin:18px 0 24px;">
-        <div style="width:26px;height:26px;border-radius:50%;background:#22c55e;color:#04240f;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;">✓</div>
-        <div style="flex:1;height:2px;background:#22c55e;"></div>
-        <div style="width:26px;height:26px;border-radius:50%;border:2px solid #22c55e;color:#22c55e;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;">2</div>
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;">✓</div>
+        <div style="flex:1;height:2px;background:var(--gold);"></div>
+        <div style="width:26px;height:26px;border-radius:50%;border:2px solid var(--gold);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;">2</div>
         <div style="flex:1;height:2px;background:var(--border2);"></div>
         <div style="width:26px;height:26px;border-radius:50%;border:2px solid var(--border2);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;">3</div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.08em;color:var(--muted);margin:-16px 0 20px;font-weight:700;">
-        <span>CREDENTIALS</span><span style="color:#22c55e;">PERSONAL INFO</span><span>DONE</span>
+        <span>CREDENTIALS</span><span style="color:var(--gold);">PERSONAL INFO</span><span>DONE</span>
       </div>`;
     const stateOpts = NG_STATES.map(s=>`<option>${s}</option>`).join('');
     content.innerHTML = `
@@ -1568,7 +1573,7 @@ function showAuthScreen(view) {
         <div class="bk-login-err" id="riErr"></div>
         <div style="display:flex;gap:10px;">
           <button class="bk-login-back" style="flex:0 0 auto;" onclick="showAuthScreen('signup')">← Back</button>
-          <button class="bk-login-btn" style="flex:1;background:#22c55e;color:#04240f;" onclick="riRegister()">Register →</button>
+          <button class="bk-login-btn" style="flex:1;background:var(--gold);color:#000;" onclick="riRegister()">Register →</button>
         </div>
       </div>`;
 
@@ -1577,14 +1582,14 @@ function showAuthScreen(view) {
     content.innerHTML = `
       ${logo}
       <div style="text-align:center;padding:36px 0;">
-        <div style="width:74px;height:74px;border-radius:50%;background:rgba(34,197,94,0.15);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#22c55e;">✓</div>
+        <div style="width:74px;height:74px;border-radius:50%;background:rgba(212,175,55,0.15);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--gold);">✓</div>
         <div style="font-size:1.5rem;font-weight:900;color:var(--white);">You're all set${fname?', '+escH(fname):''}!</div>
         <div style="font-size:0.82rem;color:var(--muted);margin:10px 0 26px;line-height:1.6;">Your account has been created successfully.<br>Welcome to Butterfly Dynamix Accounting.</div>
         ${['Account verified','Profile saved','Ready to go'].map(t=>`
           <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:0.82rem;color:var(--off);">
-            <span style="color:#22c55e;">✓</span> ${t}
+            <span style="color:var(--gold);">✓</span> ${t}
           </div>`).join('')}
-        <button class="bk-login-btn" style="width:100%;background:#22c55e;color:#04240f;margin-top:12px;" onclick="hideAuthScreen();showModeChoice()">Go to Dashboard</button>
+        <button class="bk-login-btn" style="width:100%;background:var(--gold);color:#000;margin-top:12px;" onclick="hideAuthScreen();showModeChoice()">Go to Dashboard</button>
       </div>`;
   }
 }
@@ -1598,8 +1603,8 @@ function suPwStrength(pw) {
   if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
   if (/\d/.test(pw) || /[^A-Za-z0-9]/.test(pw)) score++;
   const names = ['','Weak','Fair','Good','Strong'];
-  segs.forEach((s,i)=>{ s.style.background = i < score ? '#22c55e' : 'var(--border2)'; });
-  if (label) { label.textContent = names[score]; label.style.color = score>=4?'#22c55e':'var(--muted)'; }
+  segs.forEach((s,i)=>{ s.style.background = i < score ? 'var(--gold)' : 'var(--border2)'; });
+  if (label) { label.textContent = names[score]; label.style.color = score>=4?'var(--gold)':'var(--muted)'; }
 }
 
 async function riRegister() {
@@ -1659,7 +1664,7 @@ function showPersonalSetup() {
   document.getElementById('bkContent').innerHTML = `
     <div style="max-width:520px;margin:0 auto;padding:20px 16px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
-        <div style="width:34px;height:34px;border-radius:10px;background:rgba(96,165,250,0.15);display:flex;align-items:center;justify-content:center;">👤</div>
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(212,175,55,0.15);display:flex;align-items:center;justify-content:center;">👤</div>
         <div>
           <div style="font-weight:900;font-size:1rem;color:var(--white);">Personal Accounts</div>
           <div style="font-size:0.7rem;color:var(--muted);">Register your financial accounts to get started</div>
@@ -1667,7 +1672,7 @@ function showPersonalSetup() {
       </div>
 
       <div class="pa-card">
-        <div class="pa-card-head" style="background:rgba(34,197,94,0.1);">🏛 Salary Account</div>
+        <div class="pa-card-head" style="background:rgba(212,175,55,0.1);">🏛 Salary Account</div>
         <div class="pa-card-body">
           <label class="su-label">BANK NAME *</label>
           <input class="bk-login-input" id="pa_sal_bank" placeholder="e.g. Zenith Bank"/>
@@ -1697,7 +1702,7 @@ function showPersonalSetup() {
       <div class="pa-card">
         <div class="pa-card-head" style="background:rgba(248,113,113,0.1);">💳 Debt Management</div>
         <div class="pa-card-body" id="paDebtsWrap"></div>
-        <div style="padding:0 14px 14px;"><span style="color:#22c55e;font-size:0.78rem;font-weight:700;cursor:pointer;" onclick="paAddDebt()">+ Add another debt</span></div>
+        <div style="padding:0 14px 14px;"><span style="color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;" onclick="paAddDebt()">+ Add another debt</span></div>
       </div>
 
       <div class="pa-card">
@@ -1705,7 +1710,7 @@ function showPersonalSetup() {
         <div class="pa-card-body">
           <div style="font-size:0.7rem;font-weight:800;color:#4ade80;margin-bottom:6px;">ASSETS</div>
           <div id="paAssetsWrap"></div>
-          <span style="color:#22c55e;font-size:0.76rem;font-weight:700;cursor:pointer;" onclick="paAddItem('asset')">+ Add asset</span>
+          <span style="color:var(--gold);font-size:0.76rem;font-weight:700;cursor:pointer;" onclick="paAddItem('asset')">+ Add asset</span>
           <div style="font-size:0.7rem;font-weight:800;color:#f87171;margin:14px 0 6px;">LIABILITIES</div>
           <div id="paLiabWrap"></div>
           <span style="color:#f87171;font-size:0.76rem;font-weight:700;cursor:pointer;" onclick="paAddItem('liability')">+ Add liability</span>
@@ -1715,7 +1720,7 @@ function showPersonalSetup() {
       <div class="bk-login-err" id="paErr"></div>
       <div style="display:flex;gap:10px;margin-top:14px;">
         <button class="bk-login-back" onclick="showModeChoice()">← Back</button>
-        <button class="bk-login-btn" style="flex:1;background:#60a5fa;color:#04121f;" onclick="paSaveSetup()">Save &amp; Continue →</button>
+        <button class="bk-login-btn" style="flex:1;background:var(--gold);color:#000;" onclick="paSaveSetup()">Save &amp; Continue →</button>
       </div>
     </div>`;
   _paDebtRows = [{}]; _paAssetRows = [{}]; _paLiabRows = [{}];
@@ -1843,7 +1848,7 @@ async function showPersonalHome() {
       <div style="font-size:1.35rem;font-weight:900;color:var(--white);">${escH(fname)}</div>
     </div>
     <div style="text-align:center;padding:10px 16px;">
-      <button class="eq-record-btn" style="background:#60a5fa;color:#04121f;" onclick="paAddTxnPrompt()">Record</button>
+      <button class="eq-record-btn" style="background:var(--gold);color:#000;" onclick="paAddTxnPrompt()">Record</button>
     </div>
     <div class="ab-portfolio" style="padding-top:6px;">
       <div class="ab-kpi-card"><div class="ab-kpi-icon">🏛</div>
@@ -1936,7 +1941,7 @@ function paAddTxnPrompt(){
     <input class="bk-login-input" id="patx_date" type="date" style="width:100%;" value="${new Date().toISOString().slice(0,10)}"/>
     <div style="display:flex;gap:10px;margin-top:14px;">
       <button class="bk-login-back" onclick="document.getElementById('paTxnModal').remove()">Cancel</button>
-      <button class="bk-login-btn" style="flex:1;background:#60a5fa;color:#04121f;" onclick="paSaveTxn()">Save</button>
+      <button class="bk-login-btn" style="flex:1;background:var(--gold);color:#000;" onclick="paSaveTxn()">Save</button>
     </div></div>`;
   document.body.appendChild(overlay);
 }
@@ -1983,7 +1988,7 @@ function applyModeMenu(mode) {
   const initials = fname ? fname.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : 'ME';
   nav.innerHTML = `
     <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
-      <div style="width:34px;height:34px;border-radius:10px;background:rgba(96,165,250,0.15);display:flex;align-items:center;justify-content:center;">👤</div>
+      <div style="width:34px;height:34px;border-radius:10px;background:rgba(212,175,55,0.15);display:flex;align-items:center;justify-content:center;">👤</div>
       <div><div style="font-weight:900;font-size:0.85rem;color:var(--white);">Personal Finance</div>
       <div style="font-size:0.66rem;color:var(--muted);">${escH(fname)}</div></div>
     </div>
@@ -2007,7 +2012,7 @@ function showRegisterBusinessPage() {
   document.getElementById('bkContent').innerHTML = `
     <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;">
-        <div style="width:30px;height:30px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:0.9rem;">🏦</div>
+        <div style="width:30px;height:30px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:0.9rem;">🏦</div>
         <span style="font-weight:800;font-size:0.82rem;">Butterfly Dynamix Accounting</span>
       </div>
       <div style="font-size:1.4rem;font-weight:900;color:var(--white);">Register Your Business</div>
@@ -2030,8 +2035,8 @@ function showRegisterBusinessPage() {
 
       <label class="su-label">BUSINESS TYPE *</label>
       ${[['product','📦','Product','Sells physical goods'],['service','🧰','Service','Provides services'],['both','💲','Product & Service','Sells both']].map(([v,ic,t,d])=>`
-        <div onclick="_regBizType='${v}';document.querySelectorAll('.rb-type-card').forEach(c=>c.style.borderColor='var(--border2)');this.style.borderColor='#22c55e';"
-          class="rb-type-card" style="border:1px solid ${_regBizType===v?'#22c55e':'var(--border2)'};border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;background:var(--surface);">
+        <div onclick="_regBizType='${v}';document.querySelectorAll('.rb-type-card').forEach(c=>c.style.borderColor='var(--border2)');this.style.borderColor='var(--gold)';"
+          class="rb-type-card" style="border:1px solid ${_regBizType===v?'var(--gold)':'var(--border2)'};border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;background:var(--surface);">
           <div style="font-size:1rem;">${ic}</div>
           <div style="font-weight:800;font-size:0.85rem;color:var(--white);">${t}</div>
           <div style="font-size:0.7rem;color:var(--muted);">${d}</div>
@@ -2046,7 +2051,7 @@ function showRegisterBusinessPage() {
       <div class="bk-login-err" id="rbErr"></div>
       <div style="display:flex;gap:10px;">
         <button class="bk-login-back" onclick="showModeChoice()">← Back</button>
-        <button class="bk-login-btn" style="flex:1;background:#22c55e;color:#04240f;" onclick="rbSaveBusiness()">Save &amp; Continue →</button>
+        <button class="bk-login-btn" style="flex:1;background:var(--gold);color:#000;" onclick="rbSaveBusiness()">Save &amp; Continue →</button>
       </div>
     </div>`;
 }
@@ -2093,7 +2098,7 @@ function showRegisterProductsPage() {
     <div style="padding:20px 16px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <div style="width:30px;height:30px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">🏦</div>
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:0.85rem;">🏦</div>
           <div>
             <div style="font-weight:900;font-size:0.95rem;color:var(--white);">Register Products &amp; Services</div>
             <div style="font-size:0.66rem;color:var(--muted);">Butterfly Dynamix Accounting</div>
@@ -2119,7 +2124,7 @@ function showRegisterProductsPage() {
       <div style="font-size:0.7rem;color:var(--muted);margin-top:8px;">${_regPS.length} rows · ${_regPSCols.length+1} columns</div>
       <div style="display:flex;gap:10px;margin-top:22px;">
         <button class="bk-login-back" onclick="showRegisterBusinessPage()">← Back</button>
-        <button class="bk-login-btn" style="flex:1;background:#22c55e;color:#04240f;" onclick="regPSSave()">Save &amp; Go to Dashboard →</button>
+        <button class="bk-login-btn" style="flex:1;background:var(--gold);color:#000;" onclick="regPSSave()">Save &amp; Go to Dashboard →</button>
       </div>
     </div>`;
 }
@@ -2161,7 +2166,7 @@ function showModeChoice() {
   document.getElementById('bkContent').innerHTML = `
     <div style="text-align:center;padding:34px 20px 8px;">
       <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:26px;">
-        <div style="width:32px;height:32px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;">🏦</div>
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;">🏦</div>
         <span style="font-weight:800;font-size:0.85rem;">Butterfly Dynamix Accounting</span>
       </div>
       <div style="font-size:0.68rem;letter-spacing:0.16em;color:var(--muted);font-weight:700;">${greeting}</div>
@@ -2170,16 +2175,16 @@ function showModeChoice() {
     </div>
     <div style="padding:20px 16px;display:flex;flex-direction:column;gap:16px;max-width:520px;margin:0 auto;">
       <div onclick="startBusinessMode()" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;cursor:pointer;">
-        <div style="width:44px;height:44px;border-radius:12px;background:rgba(34,197,94,0.14);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:14px;">🏢</div>
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(212,175,55,0.14);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:14px;">🏢</div>
         <div style="font-size:1.05rem;font-weight:900;color:var(--white);margin-bottom:6px;">Business Accounting</div>
         <div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">Register and manage one or more businesses. Track revenue, expenses, invoices, and team performance.</div>
-        <div style="color:#22c55e;font-size:0.78rem;font-weight:800;margin-top:12px;">Get started →</div>
+        <div style="color:var(--gold);font-size:0.78rem;font-weight:800;margin-top:12px;">Get started →</div>
       </div>
       <div onclick="startPersonalMode()" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;cursor:pointer;">
-        <div style="width:44px;height:44px;border-radius:12px;background:rgba(96,165,250,0.14);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:14px;">👤</div>
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(212,175,55,0.14);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:14px;">👤</div>
         <div style="font-size:1.05rem;font-weight:900;color:var(--white);margin-bottom:6px;">Personal Accounting</div>
         <div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">Track your personal income, savings goals, debt repayment, and net worth all in one place.</div>
-        <div style="color:#60a5fa;font-size:0.78rem;font-weight:800;margin-top:12px;">Get started →</div>
+        <div style="color:var(--gold);font-size:0.78rem;font-weight:800;margin-top:12px;">Get started →</div>
       </div>
       <div style="text-align:center;font-size:0.72rem;color:var(--muted);">You can access both modes anytime from your profile.</div>
     </div>`;
@@ -9322,514 +9327,409 @@ function staffRefreshCustomerTotals(custId){
 
 
 
-// ══ USER PROFILE SHEET ════════════════════════════════════════
+// ══ USER PROFILE — Figma tabbed page (black & gold) ══════════
 let profileData = {};
 let profileActiveBiz = null;
+let _profileTab = 'personal';
+let _profileEdit = {};   // which card is in edit mode
+let _profileBizMetrics = null;
 
 const NG_STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno',
   'Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT (Abuja)','Gombe','Imo','Jigawa',
   'Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo',
   'Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
-
 const BIZ_TYPES = ['Sole Proprietorship','Partnership','Limited Liability Company (LLC)',
   'Public Limited Company (PLC)','Cooperative','NGO / Non-profit','Other'];
-
 const PROFILE_INDUSTRIES = ['General','Retail','Food & Beverage','Consulting & Tech','Real Estate',
   'Healthcare','Manufacturing','Transportation','Education','Beauty & Personal Care',
   'Construction','Agriculture','Media & Entertainment','Financial Services','Other'];
-
-async function openProfileSheet() {
-  profileData = await loadProfileData();
-  profileActiveBiz = userBusinesses[0] || null;
-  renderProfileSheet();
-}
-
-async function loadProfileData() {
-  const d = { email: bkUser?.email || '' };
-  try {
-    const { data:p } = await bkDb.from('profiles').select('*').eq('id',bkUser.id).maybeSingle();
-    if (p) Object.assign(d, p);
-  } catch(e) {}
-  return d;
-}
-
-function renderProfileSheet() {
-  document.getElementById('profileSheetOverlay')?.remove();
-  document.getElementById('profileSheet')?.remove();
-
-  const initials = _profileInitials();
-  const avatarUrl = profileData.avatar_url || '';
-
-  const overlay = document.createElement('div');
-  overlay.id = 'profileSheetOverlay';
-  overlay.className = 'profile-sheet-overlay';
-  overlay.onclick = closeProfileSheet;
-  document.body.appendChild(overlay);
-
-  const sheet = document.createElement('div');
-  sheet.id = 'profileSheet';
-  sheet.className = 'profile-sheet';
-  sheet.innerHTML = `
-    <div class="profile-sheet-handle"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0;">
-      <div style="font-size:1rem;font-weight:800;">My Profile</div>
-      <button onclick="closeProfileSheet()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:4px 8px;">&#x2715;</button>
-    </div>
-    <div style="padding:16px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);">
-      <div style="position:relative;cursor:pointer;" onclick="triggerAvatarUpload()">
-        ${avatarUrl
-          ? `<img id="profileAvatarImg" src="${avatarUrl}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;"/>`
-          : `<div class="profile-avatar-large" id="profileAvatarLarge">${initials}</div>`}
-        <div style="position:absolute;bottom:0;right:0;width:20px;height:20px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#000;font-weight:900;">&#x270E;</div>
-        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this)"/>
-      </div>
-      <div>
-        <div style="font-size:1rem;font-weight:800;">${escH(((profileData.first_name||'')+' '+(profileData.last_name||'')).trim())||escH(profileData.email)}</div>
-        <div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">${escH(profileData.email)}</div>
-        <div style="margin-top:6px;"><span class="profile-plan-badge">&#x2605; ${userRole==='owner'?'Business Owner':userRole==='accountant'?'Accountant':'Staff'}</span></div>
-      </div>
-    </div>
-
-    <div class="profile-section">
-      <div class="profile-section-title">Personal Information</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="profile-field">
-          <label>First Name</label>
-          <input id="pf_first_name" type="text" value="${escH(profileData.first_name||'')}" placeholder="First name"/>
-        </div>
-        <div class="profile-field">
-          <label>Middle Name</label>
-          <input id="pf_middle_name" type="text" value="${escH(profileData.middle_name||'')}" placeholder="Middle name"/>
-        </div>
-      </div>
-      <div class="profile-field">
-        <label>Last Name</label>
-        <input id="pf_last_name" type="text" value="${escH(profileData.last_name||'')}" placeholder="Last name"/>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="profile-field">
-          <label>Date of Birth</label>
-          <input id="pf_dob" type="date" value="${escH(profileData.date_of_birth||'')}"/>
-        </div>
-        <div class="profile-field">
-          <label>Gender</label>
-          <select id="pf_gender">
-            <option value="">Select&#8230;</option>
-            ${['Male','Female','Non-binary','Prefer not to say'].map(g=>`<option ${profileData.gender===g?'selected':''}>${escH(g)}</option>`).join('')}
-          </select>
-        </div>
-      </div>
-      <div class="profile-field">
-        <label>Phone Number</label>
-        <input id="pf_phone" type="tel" value="${escH(profileData.phone||'')}" placeholder="+234 800 000 0000"/>
-      </div>
-      <div class="profile-field">
-        <label>Email Address</label>
-        <input type="email" value="${escH(profileData.email)}" disabled style="opacity:0.5;cursor:not-allowed;"/>
-        <div class="field-note">Contact support to change your email.</div>
-      </div>
-      <div class="profile-field">
-        <label>Country</label>
-        <select id="pf_country" onchange="profileCountryChanged(this.value)">
-          <option ${(profileData.country||'Nigeria')==='Nigeria'?'selected':''}>Nigeria</option>
-          <option ${profileData.country==='Ghana'?'selected':''}>Ghana</option>
-          <option ${profileData.country==='Kenya'?'selected':''}>Kenya</option>
-          <option ${profileData.country==='South Africa'?'selected':''}>South Africa</option>
-          <option value="other" ${!['Nigeria','Ghana','Kenya','South Africa'].includes(profileData.country||'Nigeria')?'selected':''}>Other</option>
-        </select>
-      </div>
-      <div id="pf_ng_states_wrap" class="profile-field" style="${(profileData.country||'Nigeria')==='Nigeria'?'':'display:none;'}">
-        <label>State</label>
-        <select id="pf_state">
-          <option value="">Select state&#8230;</option>
-          ${NG_STATES.map(s=>`<option ${profileData.state===s?'selected':''}>${escH(s)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="profile-field">
-        <label>Local Government Area</label>
-        <input id="pf_lga" type="text" value="${escH(profileData.lga||'')}" placeholder="Enter LGA"/>
-      </div>
-      <div class="profile-field">
-        <label>Town / City</label>
-        <input id="pf_town" type="text" value="${escH(profileData.town||'')}" placeholder="e.g. Aba, Port Harcourt"/>
-      </div>
-    </div>
-
-    ${userRole !== 'employee' ? `
-    <div class="profile-section">
-      <div class="profile-section-title" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>Business Information</span>
-        <div style="display:flex;gap:6px;">
-          <button onclick="profileAddBusiness()" style="background:var(--gold);color:#000;border:none;font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">+ Add</button>
-          <button onclick="profileDeleteBusiness()" style="background:none;border:1px solid rgba(248,113,113,0.4);color:#f87171;font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">Delete</button>
-        </div>
-      </div>
-      <div class="profile-field">
-        <label>Select Business</label>
-        <select id="pf_biz_selector" onchange="profileSwitchBiz(this.value)">
-          ${userBusinesses.map(b=>`<option value="${b.id}" ${profileActiveBiz?.id===b.id?'selected':''}>${escH(b.name)}</option>`).join('')}
-          ${userBusinesses.length===0?'<option value="">No businesses yet</option>':''}
-        </select>
-      </div>
-      <div id="profileBizFields">${_renderBizFields(profileActiveBiz)}</div>
-    </div>` : ''}
-
-    <div class="profile-section">
-      <div class="profile-section-title">Change Password</div>
-      <div class="profile-field">
-        <label>New Password <span style="color:var(--muted);font-weight:400;">(leave blank to keep current)</span></label>
-        <input id="pf_new_password" type="password" placeholder="Min 8 characters" autocomplete="new-password" oninput="document.getElementById('pf_confirm_wrap').style.display=this.value?'block':'none'"/>
-      </div>
-      <div class="profile-field" id="pf_confirm_wrap" style="display:none;">
-        <label>Confirm Password</label>
-        <input id="pf_confirm_password" type="password" placeholder="Confirm new password"/>
-      </div>
-    </div>
-
-
-    <div style="padding:16px 20px 36px;">
-      <button class="profile-save-btn" onclick="saveProfile()">Save Changes</button>
-    </div>`;
-
-  document.body.appendChild(sheet);
-  requestAnimationFrame(()=>{ overlay.classList.add('show'); sheet.classList.add('show'); });
-}
-
-function _profileInitials() {
-  const name = (profileData.first_name||'') + ' ' + (profileData.last_name||'');
-  const trimmed = name.trim() || profileData.email || '?';
-  return trimmed.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-}
-
-function _renderBizFields(biz) {
-  if (!biz) return '<div style="color:var(--muted);font-size:0.8rem;padding:8px 0;">Select a business above or click + Add.</div>';
-  return `
-    <div class="profile-field">
-      <label>Business Name</label>
-      <input id="pf_biz_name" type="text" value="${escH(biz.name||'')}" placeholder="Business name"/>
-    </div>
-    <div class="profile-field">
-      <label>Industry</label>
-      <select id="pf_biz_industry">
-        ${PROFILE_INDUSTRIES.map(i=>`<option ${(biz.industry||'General')===i?'selected':''}>${escH(i)}</option>`).join('')}
-      </select>
-    </div>
-    <div class="profile-field">
-      <label>Business Type</label>
-      <select id="pf_biz_type">
-        <option value="">Select&#8230;</option>
-        ${BIZ_TYPES.map(t=>`<option ${biz.business_type===t?'selected':''}>${escH(t)}</option>`).join('')}
-      </select>
-    </div>
-    <div class="profile-field">
-      <label>Products / Services Offered</label>
-      <input id="pf_biz_products" type="text" value="${escH(biz.products_services||'')}" placeholder="e.g. Haircuts, beard trims, shaving"/>
-    </div>
-    <div class="profile-field">
-      <label>Business Address</label>
-      <input id="pf_biz_address" type="text" value="${escH(biz.business_address||'')}" placeholder="Full business address"/>
-    </div>
-    <div class="profile-field">
-      <label>Business Phone</label>
-      <input id="pf_biz_phone" type="tel" value="${escH(biz.business_phone||'')}" placeholder="+234 800 000 0000"/>
-    </div>
-    <div class="profile-field">
-      <label>Registered with CAC?</label>
-      <select id="pf_cac_registered" onchange="document.getElementById('pf_cac_num_wrap').style.display=this.value==='yes'?'block':'none'">
-        <option value="no" ${!biz.cac_registered?'selected':''}>No &#8212; not registered</option>
-        <option value="yes" ${biz.cac_registered?'selected':''}>Yes &#8212; registered with CAC</option>
-      </select>
-    </div>
-    <div class="profile-field" id="pf_cac_num_wrap" style="${biz.cac_registered?'':'display:none;'}">
-      <label>CAC Number</label>
-      <input id="pf_cac_number" type="text" value="${escH(biz.cac_number||'')}" placeholder="RC 000000 or BN 000000"/>
-    </div>`;
-}
-
-function profileCountryChanged(val) {
-  const wrap = document.getElementById('pf_ng_states_wrap');
-  if (wrap) wrap.style.display = val === 'Nigeria' ? 'block' : 'none';
-}
-
-function profileSwitchBiz(bizId) {
-  const biz = userBusinesses.find(b=>b.id===bizId);
-  if (!biz) return;
-  profileActiveBiz = biz;
-  const fieldsEl = document.getElementById('profileBizFields');
-  if (fieldsEl) fieldsEl.innerHTML = _renderBizFields(biz);
-}
-
-function profileAddBusiness() {
-  const el = document.getElementById('profileBizFields');
-  if (!el) return;
-  profileActiveBiz = null; // adding new
-  const sel = document.getElementById('pf_biz_selector');
-  if (sel) sel.value = '';
-  el.innerHTML = _renderAddBizForm();
-}
-
 const PROFILE_BIZ_STRUCTURES = ['Sole trader','Limited company','Partnership','Joint Venture','Government'];
 const PROFILE_IND_CATEGORIES = {
   'Product industry': ['Retail & Trading','Manufacturing','Agriculture & Food','Fashion & Apparel','Electronics','Construction Materials','Pharmaceuticals','Cosmetics & Beauty Products','Furniture','Automotive Parts','Other Products'],
   'Service industry': ['Research and Development','Consulting','Barbing / Hair Salon','Laundry & Dry Cleaning','Restaurants & Catering','Transportation & Logistics','Education & Training','Healthcare Services','Financial Services','Real Estate Services','Media & Entertainment','IT & Software Services','Legal Services','Hospitality & Tourism','Repairs & Maintenance','Other Services'],
   'Government': ['Federal Agency','State Agency','Local Government','Parastatal','Other Government'],
 };
-let _newBizPS = [{sn:1, type:'', price:''}];
-let _newBizPSCols = [];
 
-function _renderAddBizForm() {
-  return `
-  <div style="border:1px solid var(--gold-dim);border-radius:10px;padding:12px;margin-top:4px;">
-    <div style="font-size:0.8rem;font-weight:800;color:var(--gold);margin-bottom:10px;">New Business</div>
-    <div class="profile-field"><label>Business Name</label>
-      <input id="nb_name" type="text" placeholder="Business name"/></div>
-    <div class="profile-field"><label>Business Structure</label>
-      <select id="nb_structure"><option value="">Select…</option>
-        ${PROFILE_BIZ_STRUCTURES.map(s=>`<option>${s}</option>`).join('')}</select></div>
-    <div class="profile-field"><label>Industry</label>
-      <select id="nb_ind_cat" onchange="nbIndCatChanged(this.value)"><option value="">Select industry…</option>
-        ${Object.keys(PROFILE_IND_CATEGORIES).map(c=>`<option>${c}</option>`).join('')}</select></div>
-    <div class="profile-field"><label>Business Type</label>
-      <select id="nb_biz_type"><option value="">Select industry first…</option></select></div>
-    <div class="profile-field"><label>Products / Services You Offer</label>
-      <div style="display:flex;gap:6px;margin-bottom:6px;">
-        <button type="button" class="bk-btn bk-btn-outline" style="font-size:0.7rem;" onclick="nbPSAddRow()">+ Add Row</button>
-        <button type="button" class="bk-btn bk-btn-outline" style="font-size:0.7rem;" onclick="nbPSAddCol()">+ Add Column</button>
-        <button type="button" class="bk-btn bk-btn-outline" style="font-size:0.7rem;" onclick="nbPSDelCol()">− Delete Column</button>
+async function loadProfileData() {
+  const d = { email: bkUser?.email || '' };
+  try {
+    const { data:p, error } = await bkDb.from('profiles').select('*').eq('id',bkUser.id).maybeSingle();
+    if (error) console.warn('profile load:', error.message);
+    if (p) Object.assign(d, p);
+  } catch(e) { console.warn('profile load failed', e); }
+  return d;
+}
+
+async function openProfileSheet() {
+  profileData = await loadProfileData();
+  _profileTab = 'personal'; _profileEdit = {};
+  renderProfileSheet();
+  fetchAllBusinessMetrics().then(m=>{ _profileBizMetrics=m; if(_profileTab==='businesses') renderProfileSheet(); }).catch(()=>{});
+}
+
+function closeProfileSheet() {
+  document.getElementById('profileSheetOverlay')?.remove();
+  document.getElementById('profileSheet')?.remove();
+}
+
+function profileTab(tab) { _profileTab = tab; _profileEdit = {}; renderProfileSheet(); }
+function profileEditToggle(card) { _profileEdit[card] = !_profileEdit[card]; renderProfileSheet(); }
+
+function _profileInitials() {
+  const name = ((profileData.first_name||'')+' '+(profileData.last_name||'')).trim() || profileData.email || '?';
+  return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+}
+
+function _pfField(label, val) {
+  return `<div style="margin-bottom:14px;">
+    <div style="font-size:0.62rem;font-weight:800;letter-spacing:0.1em;color:var(--muted);margin-bottom:2px;">${label}</div>
+    <div style="font-size:0.88rem;color:var(--white);">${escH(val||'—')}</div></div>`;
+}
+function _pfEditBtn(card) {
+  return `<span onclick="profileEditToggle('${card}')" style="color:var(--gold);font-size:0.74rem;font-weight:700;cursor:pointer;">✎ ${_profileEdit[card]?'Cancel':'Edit'}</span>`;
+}
+function _pfToggle(key, defaultOn) {
+  const on = localStorage.getItem(key)===null ? defaultOn : localStorage.getItem(key)==='1';
+  return `<div onclick="localStorage.setItem('${key}', localStorage.getItem('${key}')==='1'?'0':(localStorage.getItem('${key}')===null?${defaultOn?"'0'":"'1'"}:'1'));renderProfileSheet()"
+    style="width:42px;height:24px;border-radius:12px;background:${on?'var(--gold)':'var(--border2)'};position:relative;cursor:pointer;flex-shrink:0;transition:background 0.2s;">
+    <div style="position:absolute;top:2px;${on?'right:2px;':'left:2px;'}width:20px;height:20px;border-radius:50%;background:#fff;"></div></div>`;
+}
+
+function renderProfileSheet() {
+  closeProfileSheet();
+  const sheet = document.createElement('div');
+  sheet.id = 'profileSheet';
+  sheet.className = 'profile-sheet show';
+  const initials = _profileInitials();
+  const avatarUrl = profileData.avatar_url || '';
+  const memberSince = new Date(bkUser?.created_at||Date.now()).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  const loc = [profileData.state, profileData.country||'Nigeria'].filter(Boolean).join(', ');
+  const tabs = ['personal','security','notifications','businesses','billing'];
+  const tabLabels = {personal:'Personal',security:'Security',notifications:'Notifications',businesses:'Businesses',billing:'Billing'};
+
+  sheet.innerHTML = `
+    <div style="max-width:640px;margin:0 auto;padding-bottom:50px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+        <span onclick="closeProfileSheet()" style="cursor:pointer;color:var(--muted);font-size:0.82rem;">← Back to Dashboard</span>
+        <button onclick="closeProfileSheet()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
       </div>
-      <div style="overflow-x:auto;border:1px solid var(--border2);border-radius:8px;">
-        <table id="nbPSTable" style="width:100%;border-collapse:collapse;font-size:0.76rem;min-width:${320+_newBizPSCols.length*110}px;">
-          ${_nbPSTableHtml()}
-        </table>
-      </div></div>
-    <div class="profile-field"><label>Business Address</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <input id="nb_country" type="text" placeholder="Country" value="Nigeria"/>
-        <input id="nb_state" type="text" placeholder="State / Province"/>
-        <input id="nb_lga" type="text" placeholder="Local Government Area"/>
-        <input id="nb_town" type="text" placeholder="Town"/>
-        <input id="nb_street" type="text" placeholder="Street name"/>
-        <input id="nb_street_no" type="text" placeholder="Street number"/>
-      </div></div>
-    <div class="profile-field"><label>CAC Number (if registered)</label>
-      <input id="nb_cac" type="text" placeholder="RC 000000 — leave blank if not registered"/></div>
-    <div style="display:flex;gap:8px;margin-top:8px;">
-      <button class="bk-btn bk-btn-outline" style="flex:1;" onclick="profileSwitchBiz(userBusinesses[0]?.id||'');">Cancel</button>
-      <button class="bk-btn bk-btn-gold" style="flex:1;" onclick="nbSaveBusiness()">Save Business</button>
+      <div style="padding:0 16px 14px;">
+        <div style="font-size:1.4rem;font-weight:900;color:var(--white);">My Profile</div>
+        <div style="font-size:0.76rem;color:var(--muted);">Account, security &amp; preferences</div>
+      </div>
+
+      <!-- Profile card -->
+      <div style="margin:0 16px 16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;">
+        <div style="display:flex;gap:14px;">
+          <div style="position:relative;cursor:pointer;flex-shrink:0;" onclick="triggerAvatarUpload()">
+            ${avatarUrl
+              ? `<img src="${avatarUrl}" style="width:64px;height:64px;border-radius:14px;object-fit:cover;"/>`
+              : `<div style="width:64px;height:64px;border-radius:14px;background:rgba(212,175,55,0.2);color:var(--gold);font-size:1.4rem;font-weight:900;display:flex;align-items:center;justify-content:center;">${initials}</div>`}
+            <div style="position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.62rem;">📷</div>
+            <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this)"/>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;gap:10px;">
+              <div style="font-size:1.05rem;font-weight:900;color:var(--white);">${escH(((profileData.first_name||'')+' '+(profileData.middle_name||'')+' '+(profileData.last_name||'')).replace(/\s+/g,' ').trim()||profileData.email)}</div>
+              <div style="display:flex;gap:16px;text-align:center;flex-shrink:0;">
+                <div><div style="font-size:1rem;font-weight:900;color:var(--gold);">${userBusinesses.length}</div><div style="font-size:0.56rem;letter-spacing:0.08em;color:var(--muted);">BUSINESSES</div></div>
+              </div>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(212,175,55,0.15);color:var(--gold);font-size:0.62rem;font-weight:800;padding:2px 8px;border-radius:10px;margin:4px 0;">✓ Verified</span>
+            <div style="font-size:0.72rem;color:var(--muted);">${userRole==='owner'?'Business Owner':'Member'} · Member since ${memberSince}</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">✉ ${escH(profileData.email)}</div>
+            ${profileData.phone?`<div style="font-size:0.72rem;color:var(--muted);">✆ ${escH(profileData.phone)}</div>`:''}
+            ${loc?`<div style="font-size:0.72rem;color:var(--muted);">⚲ ${escH(loc)}</div>`:''}
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:6px;margin:0 16px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;overflow-x:auto;">
+        ${tabs.map(t=>`<div onclick="profileTab('${t}')" style="flex:1;text-align:center;padding:8px 10px;border-radius:9px;font-size:0.74rem;font-weight:700;cursor:pointer;white-space:nowrap;
+          ${_profileTab===t?'background:var(--gold);color:#000;':'color:var(--muted);'}">${tabLabels[t]}</div>`).join('')}
+      </div>
+
+      <div style="padding:0 16px;" id="profileTabBody">${_profileTabBody()}</div>
+    </div>`;
+  document.body.appendChild(sheet);
+}
+
+function _profileTabBody() {
+  const p = profileData;
+  if (_profileTab==='personal') {
+    const persEdit = _profileEdit.personal;
+    const contactEdit = _profileEdit.contact;
+    return `
+    <div class="pf-card">
+      <div class="pf-card-head"><span>Personal Information</span>${_pfEditBtn('personal')}</div>
+      ${persEdit ? `
+        <div class="pf-grid2">
+          <div><label class="su-label">FIRST NAME</label><input class="bk-login-input" id="pfe_first" value="${escH(p.first_name||'')}"/></div>
+          <div><label class="su-label">MIDDLE NAME</label><input class="bk-login-input" id="pfe_middle" value="${escH(p.middle_name||'')}"/></div>
+        </div>
+        <label class="su-label">LAST NAME</label><input class="bk-login-input" id="pfe_last" value="${escH(p.last_name||'')}"/>
+        <label class="su-label">DATE OF BIRTH</label><input class="bk-login-input" type="date" id="pfe_dob" value="${escH(p.date_of_birth||'')}"/>
+        <label class="su-label">GENDER</label><select class="bk-login-input" id="pfe_gender"><option value="">Select…</option>
+          ${['Male','Female','Prefer not to say'].map(g=>`<option ${p.gender===g?'selected':''}>${g}</option>`).join('')}</select>
+        <label class="su-label">COUNTRY OF ORIGIN</label><input class="bk-login-input" id="pfe_origin" value="${escH(p.country||'Nigeria')}"/>
+        <button class="pf-save-btn" onclick="pfSavePersonal()">Save Changes</button>`
+      : _pfField('FIRST NAME',p.first_name)+_pfField('MIDDLE NAME',p.middle_name)+_pfField('LAST NAME',p.last_name)
+        +_pfField('DATE OF BIRTH',p.date_of_birth)+_pfField('GENDER',p.gender)+_pfField('COUNTRY OF ORIGIN',p.country||'Nigeria')}
     </div>
-  </div>`;
+    <div class="pf-card">
+      <div class="pf-card-head"><span>Contact &amp; Location</span>${_pfEditBtn('contact')}</div>
+      ${contactEdit ? `
+        <label class="su-label">PHONE</label><input class="bk-login-input" id="pfe_phone" value="${escH(p.phone||'')}"/>
+        <label class="su-label">STATE</label><select class="bk-login-input" id="pfe_state"><option value="">Select…</option>
+          ${NG_STATES.map(s=>`<option ${p.state===s?'selected':''}>${s}</option>`).join('')}</select>
+        <label class="su-label">LGA</label><input class="bk-login-input" id="pfe_lga" value="${escH(p.lga||'')}"/>
+        <label class="su-label">TOWN / CITY</label><input class="bk-login-input" id="pfe_town" value="${escH(p.town||'')}"/>
+        <button class="pf-save-btn" onclick="pfSaveContact()">Save Changes</button>`
+      : `<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;"><span>✉</span><div>
+           <div style="font-size:0.6rem;letter-spacing:0.1em;color:var(--muted);font-weight:800;">EMAIL</div>
+           <div style="font-size:0.84rem;">${escH(p.email)}</div></div></div>
+         <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;"><span>✆</span><div>
+           <div style="font-size:0.6rem;letter-spacing:0.1em;color:var(--muted);font-weight:800;">PHONE</div>
+           <div style="font-size:0.84rem;">${escH(p.phone||'—')}</div></div></div>
+         <div style="display:flex;gap:10px;align-items:flex-start;"><span>⚲</span><div>
+           <div style="font-size:0.6rem;letter-spacing:0.1em;color:var(--muted);font-weight:800;">RESIDENTIAL</div>
+           <div style="font-size:0.84rem;">${escH([p.town,p.lga,p.state,p.country||'Nigeria'].filter(Boolean).join(' ')||'—')}</div></div></div>`}
+    </div>
+    <div class="pf-card">
+      <div class="pf-card-head"><span>Preferences</span></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.8rem;"><span style="color:var(--muted);">Currency</span><span style="color:var(--gold);font-weight:700;">${activeCurrency||'NGN'} — ${CURRENCIES[activeCurrency||'NGN']?.name||'Nigerian Naira'}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.8rem;"><span style="color:var(--muted);">Language</span><span>English (US)</span></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.8rem;"><span style="color:var(--muted);">Timezone</span><span>Africa/Lagos (UTC+1)</span></div>
+    </div>`;
+  }
+
+  if (_profileTab==='security') {
+    return `
+    <div class="pf-card">
+      <div class="pf-card-head"><span>Change Password</span></div>
+      <label class="su-label">CURRENT PASSWORD</label>
+      <input class="bk-login-input" type="password" id="sec_current" placeholder="••••••••"/>
+      <label class="su-label">NEW PASSWORD</label>
+      <input class="bk-login-input" type="password" id="sec_new" placeholder="••••••••"/>
+      <label class="su-label">CONFIRM PASSWORD</label>
+      <input class="bk-login-input" type="password" id="sec_confirm" placeholder="••••••••"/>
+      <button class="pf-save-btn" onclick="pfUpdatePassword()">Update Password</button>
+    </div>
+    <div class="pf-card">
+      <div class="pf-card-head"><span>Two-Factor Authentication<br><span style="font-size:0.66rem;color:var(--muted);font-weight:400;">Extra layer of security</span></span>${_pfToggle('bd_2fa', false)}</div>
+      ${localStorage.getItem('bd_2fa')==='1'?'<div style="background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:8px;padding:10px;font-size:0.74rem;color:var(--gold);">🛡 2FA active — account is protected</div>':''}
+    </div>
+    <div class="pf-card">
+      <div class="pf-card-head"><span>Active Sessions</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+        <div><div style="font-size:0.82rem;font-weight:700;">This device</div>
+        <div style="font-size:0.68rem;color:var(--muted);">${navigator.platform||'Device'} · Now · Current</div></div>
+        <span style="font-size:0.66rem;color:var(--gold);font-weight:800;background:rgba(212,175,55,0.12);padding:3px 10px;border-radius:10px;">Active</span>
+      </div>
+      <div style="font-size:0.68rem;color:var(--muted);margin-top:6px;">Sign out on other devices by changing your password.</div>
+    </div>
+    <div class="pf-card" style="border-color:rgba(248,113,113,0.4);">
+      <div style="color:#f87171;font-weight:800;font-size:0.8rem;margin-bottom:10px;">Danger Zone</div>
+      <button onclick="alert('To permanently delete your account and all data, please contact support at butterflydynamixllc.com. This protects you from accidental data loss.')"
+        style="background:none;border:1px solid rgba(248,113,113,0.5);color:#f87171;font-size:0.78rem;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;">🗑 Delete Account</button>
+    </div>`;
+  }
+
+  if (_profileTab==='notifications') {
+    const rows = (items) => items.map(([label,sub,key,def])=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+        <div><div style="font-size:0.82rem;font-weight:700;color:var(--gold);">${label}</div>
+        <div style="font-size:0.66rem;color:var(--muted);">${sub}</div></div>
+        ${_pfToggle(key,def)}
+      </div>`).join('');
+    return `
+    <div class="pf-card"><div class="pf-card-head"><span>Financial Alerts</span></div>
+      ${rows([['Email Alerts','Receive alerts via email','bd_n_email',true],
+              ['SMS Alerts','Receive alerts via SMS','bd_n_sms',false],
+              ['Low Cash Warning','Alert when balance drops','bd_n_lowcash',true],
+              ['Payment Confirmations','When a payment clears','bd_n_payconf',true]])}
+    </div>
+    <div class="pf-card"><div class="pf-card-head"><span>Reports &amp; Activity</span></div>
+      ${rows([['Weekly Report','Every Monday at 8 AM','bd_n_weekly',true],
+              ['Invoice Reminders','Remind clients before due','bd_n_invoice',true],
+              ['Team Activity','When employees log entries','bd_n_team',false],
+              ['New Login Alert','On new device sign-in','bd_n_login',true]])}
+    </div>`;
+  }
+
+  if (_profileTab==='businesses') {
+    const metrics = _profileBizMetrics;
+    const cards = userBusinesses.map(b => {
+      const m = metrics?.find(x=>x.id===b.id);
+      const status = m?.status || b.status || 'healthy';
+      const badge = {healthy:['● Healthy','rgba(212,175,55,0.15)','var(--gold)'],attention:['● Attention','rgba(251,191,36,0.15)','#fbbf24'],critical:['● Critical','rgba(248,113,113,0.15)','#f87171']}[status];
+      return `
+      <div class="pf-card" style="padding:14px;">
+        ${_profileEdit['biz_'+b.id] ? `
+          <label class="su-label">BUSINESS NAME</label><input class="bk-login-input" id="pbe_name_${b.id}" value="${escH(b.name)}"/>
+          <label class="su-label">INDUSTRY</label><select class="bk-login-input" id="pbe_ind_${b.id}">${PROFILE_INDUSTRIES.map(i=>`<option ${b.industry===i?'selected':''}>${i}</option>`).join('')}</select>
+          <label class="su-label">BUSINESS ADDRESS</label><input class="bk-login-input" id="pbe_addr_${b.id}" value="${escH(b.business_address||'')}"/>
+          <label class="su-label">CAC NUMBER</label><input class="bk-login-input" id="pbe_cac_${b.id}" value="${escH(b.cac_number||'')}"/>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="bk-login-back" onclick="profileEditToggle('biz_${b.id}')">Cancel</button>
+            <button class="pf-save-btn" style="flex:1;margin-top:0;" onclick="pfSaveBiz('${b.id}')">Save</button>
+          </div>`
+        : `
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(212,175,55,0.12);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">${b.icon||'🏢'}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="font-weight:900;font-size:0.88rem;color:var(--white);">${escH(b.name)}</span>
+              <span style="font-size:0.6rem;font-weight:800;padding:2px 8px;border-radius:10px;background:${badge[1]};color:${badge[2]};">${badge[0]}</span>
+            </div>
+            <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${escH(b.industry||'General')}</div>
+            ${m?`<div style="display:flex;gap:18px;margin-top:8px;">
+              <div><div style="font-size:0.58rem;color:var(--muted);letter-spacing:0.08em;">REVENUE</div><div style="font-weight:800;font-size:0.8rem;color:var(--gold);">${fmt(m.revenue)}</div></div>
+              <div><div style="font-size:0.58rem;color:var(--muted);letter-spacing:0.08em;">MARGIN</div><div style="font-weight:800;font-size:0.8rem;color:${m.margin>=0?'var(--gold)':'#f87171'};">${m.margin}%</div></div>
+            </div>`:''}
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button onclick="profileEditToggle('biz_${b.id}')" style="width:30px;height:30px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--off);cursor:pointer;">✎</button>
+            <button onclick="pfDeleteBiz('${b.id}')" style="width:30px;height:30px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:#f87171;cursor:pointer;">🗑</button>
+          </div>
+        </div>`}
+      </div>`;
+    }).join('');
+    return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:0.72rem;color:var(--muted);">All registered businesses linked to your account.</span>
+      <button onclick="closeProfileSheet();showRegisterBusinessPage()" style="background:var(--gold);color:#000;border:none;font-size:0.72rem;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;">+ Register New Business</button>
+    </div>
+    ${cards || '<div class="pf-card" style="text-align:center;color:var(--muted);font-size:0.8rem;">No business registered yet.</div>'}`;
+  }
+
+  if (_profileTab==='billing') {
+    return `
+    <div class="pf-card">
+      <div class="pf-card-head"><span>Current Plan</span></div>
+      <div style="background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.3);border-radius:12px;padding:14px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+          <span style="color:var(--gold);font-weight:900;font-size:0.9rem;">Business Pro</span>
+          <span style="font-weight:900;">₦25,000 <span style="font-size:0.68rem;color:var(--muted);">/ mo</span></span>
+        </div>
+        ${['Up to 10 businesses','Unlimited transactions','Advanced reports','Team access','Priority support'].map(f=>`
+          <div style="font-size:0.76rem;color:var(--off);padding:3px 0;"><span style="color:var(--gold);">⊘</span> ${f}</div>`).join('')}
+      </div>
+      <button onclick="alert('Subscription management is coming soon. Contact us to change your plan.')" style="width:100%;margin-top:12px;background:var(--surface2);border:1px solid var(--border2);color:var(--off);font-size:0.8rem;font-weight:700;padding:11px;border-radius:10px;cursor:pointer;">Manage Subscription</button>
+    </div>
+    <div class="pf-card">
+      <div class="pf-card-head"><span>Payment Method</span><span onclick="alert('Adding payment methods is coming soon.')" style="color:var(--gold);font-size:0.72rem;font-weight:700;cursor:pointer;">+ Add</span></div>
+      <div style="font-size:0.76rem;color:var(--muted);">No payment method on file yet.</div>
+    </div>
+    <div class="pf-card">
+      <div class="pf-card-head"><span>Billing History</span></div>
+      <div style="font-size:0.76rem;color:var(--muted);">Your invoices will appear here once billing begins.</div>
+    </div>`;
+  }
+  return '';
 }
 
-function _nbPSTableHtml() {
-  const extraH = _newBizPSCols.map(c=>`<th style="border:1px solid var(--border2);padding:5px;">${escH(c)}</th>`).join('');
-  const head = `<tr><th style="border:1px solid var(--border2);padding:5px;width:34px;">S/N</th>
-    <th style="border:1px solid var(--border2);padding:5px;">Product / Service Type</th>${extraH}
-    <th style="border:1px solid var(--border2);padding:5px;width:100px;">Price</th>
-    <th style="border:1px solid var(--border2);padding:5px;width:30px;"></th></tr>`;
-  const body = _newBizPS.map((r,i)=>{
-    const extraC = _newBizPSCols.map((c,ci)=>`<td style="border:1px solid var(--border2);padding:0;">
-      <input style="width:100%;background:transparent;border:none;color:var(--white);padding:6px;font-size:0.76rem;outline:none;"
-        value="${escH(r['col'+ci]||'')}" oninput="_newBizPS[${i}]['col${ci}']=this.value"/></td>`).join('');
-    return `<tr>
-      <td style="border:1px solid var(--border2);padding:5px;text-align:center;color:var(--muted);">${i+1}</td>
-      <td style="border:1px solid var(--border2);padding:0;"><input style="width:100%;background:transparent;border:none;color:var(--white);padding:6px;font-size:0.76rem;outline:none;"
-        value="${escH(r.type||'')}" placeholder="e.g. Haircut" oninput="_newBizPS[${i}].type=this.value"/></td>
-      ${extraC}
-      <td style="border:1px solid var(--border2);padding:0;"><input style="width:100%;background:transparent;border:none;color:var(--white);padding:6px;font-size:0.76rem;outline:none;"
-        inputmode="decimal" value="${escH(r.price||'')}" placeholder="0" oninput="fmtInputCommas(this);_newBizPS[${i}].price=this.value"/></td>
-      <td style="border:1px solid var(--border2);padding:0;text-align:center;"><button onclick="nbPSDelRow(${i})" style="background:none;border:none;color:var(--red,#f87171);cursor:pointer;font-size:0.85rem;padding:4px 6px;">&times;</button></td>
-    </tr>`;
-  }).join('');
-  return head + body;
+// ── Saves — explicit error surfacing, refresh from DB after save ──
+async function _pfUpsertProfile(fields, btnSel) {
+  const btn = btnSel ? document.querySelector(btnSel) : null;
+  if (btn) { btn.textContent='Saving…'; btn.disabled=true; }
+  const { error } = await bkDb.from('profiles').upsert({ id:bkUser.id, ...fields, updated_at:new Date().toISOString() }, {onConflict:'id'});
+  if (error) { alert('Save failed: '+error.message+'\n\nIf this says "permission denied", run migration_grants.sql in Supabase.'); if(btn){btn.textContent='Save Changes';btn.disabled=false;} return false; }
+  profileData = await loadProfileData();
+  if (profileData.full_name) {
+    staffDisplayName = profileData.full_name;
+    const mn=document.getElementById('bkMenuUserName'); if(mn) mn.textContent=profileData.full_name;
+  }
+  return true;
 }
 
-function nbPSAddRow(){ _newBizPS.push({sn:_newBizPS.length+1,type:'',price:''}); const t=document.getElementById('nbPSTable'); if(t) t.innerHTML=_nbPSTableHtml(); }
-function nbPSAddCol(){
-  const name = prompt('Column header name:');
-  if (!name) return;
-  _newBizPSCols.push(name.trim());
-  const t=document.getElementById('nbPSTable'); if(t) t.innerHTML=_nbPSTableHtml();
-}
-function nbPSDelCol(){
-  if (!_newBizPSCols.length) { alert('No custom columns to delete.'); return; }
-  const list = _newBizPSCols.map((c,i)=>(i+1)+'. '+c).join('\n');
-  const pick = prompt('Which column do you want to delete?\n'+list+'\n\nEnter the number:');
-  const n = parseInt(pick);
-  if (!n || n<1 || n>_newBizPSCols.length) return;
-  _newBizPSCols.splice(n-1,1);
-  const t=document.getElementById('nbPSTable'); if(t) t.innerHTML=_nbPSTableHtml();
-}
-function nbPSDelRow(i){
-  _newBizPS.splice(i,1);
-  if (!_newBizPS.length) _newBizPS=[{sn:1,type:'',price:''}];
-  const t=document.getElementById('nbPSTable'); if(t) t.innerHTML=_nbPSTableHtml();
-}
-function nbIndCatChanged(cat){
-  const sel = document.getElementById('nb_biz_type');
-  if (!sel) return;
-  const types = PROFILE_IND_CATEGORIES[cat]||[];
-  sel.innerHTML = '<option value="">Select…</option>' + types.map(t=>`<option>${t}</option>`).join('');
+async function pfSavePersonal() {
+  const first=document.getElementById('pfe_first')?.value?.trim()||'';
+  const last =document.getElementById('pfe_last')?.value?.trim()||'';
+  const okey = await _pfUpsertProfile({
+    first_name:first, middle_name:document.getElementById('pfe_middle')?.value?.trim()||'',
+    last_name:last, full_name:[first,last].filter(Boolean).join(' '),
+    date_of_birth:document.getElementById('pfe_dob')?.value||null,
+    gender:document.getElementById('pfe_gender')?.value||'',
+    country:document.getElementById('pfe_origin')?.value?.trim()||'Nigeria',
+  }, '#profileTabBody .pf-save-btn');
+  if (okey) { _profileEdit.personal=false; renderProfileSheet(); }
 }
 
-async function nbSaveBusiness(){
-  const name = document.getElementById('nb_name')?.value?.trim();
-  if (!name) { alert('Enter a business name'); return; }
-  const structure = document.getElementById('nb_structure')?.value||'';
-  const indCat    = document.getElementById('nb_ind_cat')?.value||'';
-  const bizType   = document.getElementById('nb_biz_type')?.value||'';
-  const cac       = document.getElementById('nb_cac')?.value?.trim()||'';
-  const addr = [
-    document.getElementById('nb_street_no')?.value, document.getElementById('nb_street')?.value,
-    document.getElementById('nb_town')?.value, document.getElementById('nb_lga')?.value,
-    document.getElementById('nb_state')?.value, document.getElementById('nb_country')?.value,
-  ].filter(Boolean).join(', ');
-  const products = _newBizPS.filter(r=>r.type).map(r=>r.type+(r.price?' ('+r.price+')':'')).join('; ');
-  try {
-    const {data,error} = await bkDb.from('businesses').insert({
-      name, industry: bizType||indCat||'General', business_type:structure,
-      products_services:products, business_address:addr,
-      cac_registered:!!cac, cac_number:cac||null,
-      owner_user_id:bkUser.id, currency:activeCurrency||'NGN', is_primary:userBusinesses.length===0, icon:'🏢',
-    }).select().single();
-    if (error) throw error;
-    userBusinesses.push(data);
-    await bkDb.from('user_businesses').upsert({user_id:bkUser.id,business_id:data.id,role:'owner'},{onConflict:'user_id,business_id'});
-    _newBizPS=[{sn:1,type:'',price:''}]; _newBizPSCols=[];
-    profileActiveBiz = data;
-    renderMenuBusinesses();
-    renderProfileSheet();
-  } catch(e){ alert('Error saving business: '+(e.message||'')); }
+async function pfSaveContact() {
+  const okey = await _pfUpsertProfile({
+    phone:document.getElementById('pfe_phone')?.value?.trim()||'',
+    state:document.getElementById('pfe_state')?.value||'',
+    lga:document.getElementById('pfe_lga')?.value?.trim()||'',
+    town:document.getElementById('pfe_town')?.value?.trim()||'',
+  }, '#profileTabBody .pf-save-btn');
+  if (okey) { _profileEdit.contact=false; renderProfileSheet(); }
 }
 
-async function profileDeleteBusiness() {
-  if (!profileActiveBiz) return;
-  if (!confirm('Delete "'+profileActiveBiz.name+'"?\n\nThis deletes ALL transactions and information for this business from the platform. You will need to contact support to restore it.')) return;
-  try {
-    await bkDb.from('businesses').delete().eq('id',profileActiveBiz.id).eq('owner_user_id',bkUser.id);
-    userBusinesses = userBusinesses.filter(b=>b.id!==profileActiveBiz.id);
-    profileActiveBiz = userBusinesses[0]||null;
-    renderMenuBusinesses();
-    renderProfileSheet();
-  } catch(e) { alert('Error deleting business: '+(e.message||'')); }
+async function pfUpdatePassword() {
+  const nw = document.getElementById('sec_new')?.value||'';
+  const cf = document.getElementById('sec_confirm')?.value||'';
+  if (nw.length < 8) { alert('New password must be at least 8 characters.'); return; }
+  if (nw !== cf) { alert('Passwords do not match.'); return; }
+  const {error} = await bkDb.auth.updateUser({password:nw});
+  if (error) { alert('Password update failed: '+error.message); return; }
+  alert('✓ Password updated.');
+  ['sec_current','sec_new','sec_confirm'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';});
 }
 
-function triggerAvatarUpload() {
-  document.getElementById('avatarFileInput')?.click();
+async function pfSaveBiz(bizId) {
+  const name = document.getElementById('pbe_name_'+bizId)?.value?.trim();
+  if (!name) { alert('Business name is required.'); return; }
+  const cac = document.getElementById('pbe_cac_'+bizId)?.value?.trim()||'';
+  const {error} = await bkDb.from('businesses').update({
+    name, industry:document.getElementById('pbe_ind_'+bizId)?.value||'General',
+    business_address:document.getElementById('pbe_addr_'+bizId)?.value?.trim()||'',
+    cac_registered:!!cac, cac_number:cac||null, updated_at:new Date().toISOString(),
+  }).eq('id',bizId).eq('owner_user_id',bkUser.id);
+  if (error) { alert('Save failed: '+error.message); return; }
+  const idx = userBusinesses.findIndex(b=>b.id===bizId);
+  if (idx>=0) { userBusinesses[idx].name=name; userBusinesses[idx].cac_number=cac; }
+  _profileEdit['biz_'+bizId]=false;
+  renderMenuBusinesses();
+  renderProfileSheet();
 }
+
+async function pfDeleteBiz(bizId) {
+  const biz = userBusinesses.find(b=>b.id===bizId);
+  if (!biz) return;
+  if (!confirm('Delete "'+biz.name+'"?\n\nThis deletes ALL transactions and information for this business from the platform. You will need to contact support to restore it.')) return;
+  const {error} = await bkDb.from('businesses').delete().eq('id',bizId).eq('owner_user_id',bkUser.id);
+  if (error) { alert('Delete failed: '+error.message); return; }
+  userBusinesses = userBusinesses.filter(b=>b.id!==bizId);
+  renderMenuBusinesses();
+  renderProfileSheet();
+}
+
+function triggerAvatarUpload() { document.getElementById('avatarFileInput')?.click(); }
 
 async function handleAvatarUpload(input) {
   const file = input.files?.[0];
   if (!file) return;
   if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB.'); return; }
-  const ext  = file.name.split('.').pop().toLowerCase();
+  const ext = file.name.split('.').pop().toLowerCase();
   const path = bkUser.id + '/avatar.' + ext;
   try {
     const { error } = await bkDb.storage.from('avatars').upload(path, file, { upsert:true });
     if (error) throw error;
     const { data:urlData } = bkDb.storage.from('avatars').getPublicUrl(path);
     const url = urlData.publicUrl + '?t=' + Date.now();
+    const { error:e2 } = await bkDb.from('profiles').upsert({id:bkUser.id,avatar_url:url,updated_at:new Date().toISOString()},{onConflict:'id'});
+    if (e2) throw e2;
     profileData.avatar_url = url;
-    const wrap = input.closest('div');
-    const old = document.getElementById('profileAvatarImg') || document.getElementById('profileAvatarLarge');
-    if (old) {
-      const img = document.createElement('img');
-      img.id = 'profileAvatarImg'; img.src = url;
-      img.style.cssText = 'width:64px;height:64px;border-radius:50%;object-fit:cover;';
-      old.replaceWith(img);
-    }
+    renderProfileSheet();
     const av = document.getElementById('menuAvatarCircle');
-    if (av && av.tagName !== 'IMG') {
-      const img2 = document.createElement('img');
-      img2.id = 'menuAvatarCircle'; img2.src = url;
-      img2.style.cssText = 'width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;';
-      av.replaceWith(img2);
-    } else if (av) { av.src = url; }
-    await bkDb.from('profiles').upsert({id:bkUser.id,avatar_url:url,updated_at:new Date().toISOString()},{onConflict:'id'});
-  } catch(e) { alert('Upload failed: '+(e.message||'Check file size and try again.')); }
-}
-
-function closeProfileSheet() {
-  const overlay = document.getElementById('profileSheetOverlay');
-  const sheet   = document.getElementById('profileSheet');
-  if (overlay) { overlay.classList.remove('show'); setTimeout(()=>overlay.remove(),300); }
-  if (sheet)   { sheet.classList.remove('show');   setTimeout(()=>sheet.remove(),300); }
-}
-
-async function saveProfile() {
-  const btn = document.querySelector('.profile-save-btn');
-  if (btn) { btn.textContent = 'Saving\u2026'; btn.disabled = true; }
-
-  const firstName   = document.getElementById('pf_first_name')?.value?.trim()||'';
-  const middleName  = document.getElementById('pf_middle_name')?.value?.trim()||'';
-  const lastName    = document.getElementById('pf_last_name')?.value?.trim()||'';
-  const dob         = document.getElementById('pf_dob')?.value||null;
-  const gender      = document.getElementById('pf_gender')?.value||'';
-  const phone       = document.getElementById('pf_phone')?.value?.trim()||'';
-  const country     = document.getElementById('pf_country')?.value||'Nigeria';
-  const state       = document.getElementById('pf_state')?.value||'';
-  const lga         = document.getElementById('pf_lga')?.value?.trim()||'';
-  const town        = document.getElementById('pf_town')?.value?.trim()||'';
-  const newPw       = document.getElementById('pf_new_password')?.value||'';
-  const confirmPw   = document.getElementById('pf_confirm_password')?.value||'';
-
-  if (newPw && newPw.length < 8) { alert('Password must be at least 8 characters.'); if(btn){btn.textContent='Save Changes';btn.disabled=false;} return; }
-  if (newPw && newPw !== confirmPw) { alert('Passwords do not match.'); if(btn){btn.textContent='Save Changes';btn.disabled=false;} return; }
-
-  const fullName = [firstName, lastName].filter(Boolean).join(' ');
-
-  try {
-    await bkDb.from('profiles').upsert({
-      id:bkUser.id, first_name:firstName, middle_name:middleName, last_name:lastName,
-      full_name:fullName, phone, date_of_birth:dob||null, gender, country, state, lga, town,
-      updated_at:new Date().toISOString(),
-    }, {onConflict:'id'});
-
-    if (userRole !== 'employee' && profileActiveBiz) {
-      const bizName     = document.getElementById('pf_biz_name')?.value?.trim()||profileActiveBiz.name;
-      const industry    = document.getElementById('pf_biz_industry')?.value||'General';
-      const bizType     = document.getElementById('pf_biz_type')?.value||'';
-      const products    = document.getElementById('pf_biz_products')?.value?.trim()||'';
-      const bizAddress  = document.getElementById('pf_biz_address')?.value?.trim()||'';
-      const bizPhone    = document.getElementById('pf_biz_phone')?.value?.trim()||'';
-      const cacReg      = document.getElementById('pf_cac_registered')?.value === 'yes';
-      const cacNum      = document.getElementById('pf_cac_number')?.value?.trim()||'';
-
-      await bkDb.from('businesses').update({
-        name:bizName, industry, business_type:bizType, products_services:products,
-        business_address:bizAddress, business_phone:bizPhone,
-        cac_registered:cacReg, cac_number:cacNum||null, updated_at:new Date().toISOString(),
-      }).eq('id', profileActiveBiz.id).eq('owner_user_id', bkUser.id);
-
-      const idx = userBusinesses.findIndex(b=>b.id===profileActiveBiz.id);
-      if (idx>=0) Object.assign(userBusinesses[idx], {name:bizName,industry,business_type:bizType,products_services:products,business_address:bizAddress,business_phone:bizPhone,cac_registered:cacReg,cac_number:cacNum});
-
-      await bkDb.from('bk_business_profiles').upsert({
-        user_id:bkUser.id, business_name:bizName, industry, business_address:bizAddress,
-        business_phone:bizPhone, cac_number:cacNum, updated_at:new Date().toISOString(),
-      },{onConflict:'user_id'});
-
-      businessDisplayName = bizName;
-    }
-
-    if (newPw) {
-      const {error:pwErr} = await bkDb.auth.updateUser({password:newPw});
-      if (pwErr) throw new Error('Password update failed: '+pwErr.message);
-    }
-
-    if (fullName) {
-      staffDisplayName = fullName;
-      const mn=document.getElementById('bkMenuUserName'); if(mn) mn.textContent=fullName;
-      const initials=fullName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-      const av=document.getElementById('menuAvatarCircle'); if(av&&av.tagName!=='IMG') av.textContent=initials;
-    }
-    renderMenuBusinesses();
-
-    if (btn) { btn.textContent='\u2713 Saved'; btn.style.background='var(--green)'; }
-    setTimeout(()=>closeProfileSheet(), 1200);
-  } catch(e) {
-    alert('Error: '+(e.message||'Unknown error'));
-    if(btn){btn.textContent='Save Changes';btn.disabled=false;btn.style.background='';}
-  }
+    if (av && av.tagName!=='IMG') {
+      const img=document.createElement('img'); img.id='menuAvatarCircle'; img.src=url;
+      img.style.cssText='width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;';
+      av.replaceWith(img);
+    } else if (av) av.src = url;
+  } catch(e) { alert('Upload failed: '+(e.message||'')+'\n\nIf this says "bucket not found" or "permission", run migration_profile_v3.sql in Supabase.'); }
 }
 
 let userBusinesses = [];
