@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -180,6 +179,8 @@ select.bk-cell,input.bk-cell{min-height:34px;}
 .ps-wrap-clip .ps-cell{white-space:nowrap;overflow:hidden;text-overflow:clip;}
 .ps-wrap-overflow .ps-cell{white-space:nowrap;}
 
+
+#sheetTable_sales td,#sheetTable_expenses td{-webkit-touch-callout:none;}
 .op-circle{width:18px;height:18px;border-radius:50%;border:2px solid var(--muted);display:inline-block;cursor:pointer;vertical-align:middle;}
 .op-circle.on{border-color:var(--gold);background:var(--gold);position:relative;}
 .op-circle.on::after{content:'\2713';color:#000;font-size:0.62rem;font-weight:900;position:absolute;left:3px;top:-1px;}
@@ -8964,6 +8965,7 @@ function renderRecordSheet(kind) {
     </div>
 
     <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:8px 16px 0;">
+      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;${sel.active?'border-color:var(--gold);color:var(--gold);':''}" onclick="sheetSelButton('${kind}')">☑ Select</button>
       <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="sheetToggleToolbox('${kind}')">⚙ Tools</button>
       <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showRecordChoice()">← Back</button>
     </div>
@@ -9034,6 +9036,13 @@ function renderRecordSheet(kind) {
 }
 
 // ── Selection mode + One-Payment bundling ─────────────────────
+function sheetSelButton(kind) {
+  const sel = sheetSel[kind];
+  if (sel.active) { sheetSelCancel(kind); return; }
+  sel.active = true; sel.picked = [];
+  renderRecordSheet(kind);
+}
+
 function sheetEnterSel(kind, idx) {
   const sel = sheetSel[kind];
   sel.active = true;
@@ -9271,23 +9280,35 @@ function sheetInitLongPress(kind){
   const tbody = document.querySelector('#sheetTable_'+kind+' tbody');
   if (!tbody) return;
   let timer=null, startY=0, armed=false, dragging=false, dragRow=null;
+
+  const arm = (tr) => {
+    armed = true;
+    dragRow = tr;
+    tr.style.outline = '2px solid var(--gold)';
+    const ae = document.activeElement;
+    if (ae && (ae.tagName==='INPUT' || ae.tagName==='SELECT')) ae.blur();
+    if (navigator.vibrate) navigator.vibrate(30);
+  };
+  const disarm = () => {
+    clearTimeout(timer); timer=null;
+    if (dragRow) dragRow.style.outline='';
+    armed=false; dragging=false; dragRow=null;
+  };
+
+  // ── Touch (mobile): hold anywhere on the row; release = select, drag = move ──
   tbody.addEventListener('touchstart', e=>{
     const tr = e.target.closest('tr'); if (!tr || tr.dataset.idx===undefined) return;
-    if (e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='BUTTON'||e.target.classList.contains('op-circle')) return;
+    if (e.target.tagName==='BUTTON' || e.target.classList.contains('op-circle')) return;
     startY = e.touches[0].clientY;
     armed=false; dragging=false; dragRow=tr;
-    timer = setTimeout(()=>{
-      armed=true;
-      tr.style.outline='2px solid var(--gold)';
-      if (navigator.vibrate) navigator.vibrate(30);
-    }, 450);
+    timer = setTimeout(()=>arm(tr), 450);
   }, {passive:true});
+
   tbody.addEventListener('touchmove', e=>{
     if (!armed) { if (Math.abs(e.touches[0].clientY-startY)>10) clearTimeout(timer); return; }
     dragging = true;
     e.preventDefault();
-    const y = e.touches[0].clientY;
-    const over = document.elementFromPoint(e.touches[0].clientX, y)?.closest('tr');
+    const over = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY)?.closest('tr');
     if (over && over!==dragRow && over.dataset.idx!==undefined) {
       const rows = sheetRows(kind);
       const from = parseInt(dragRow.dataset.idx), to = parseInt(over.dataset.idx);
@@ -9295,20 +9316,42 @@ function sheetInitLongPress(kind){
         sheetSnapshot(kind);
         const [moved] = rows.splice(from,1);
         rows.splice(to,0,moved);
+        disarm();
         renderRecordSheet(kind);
-        armed=false; dragging=false; dragRow=null;
       }
     }
   }, {passive:false});
-  tbody.addEventListener('touchend', ()=>{
-    clearTimeout(timer);
+
+  tbody.addEventListener('touchend', e=>{
     if (armed && !dragging && dragRow) {
       const idx = parseInt(dragRow.dataset.idx);
-      if (!isNaN(idx)) { sheetEnterSel(kind, idx); armed=false; dragRow=null; return; }
+      e.preventDefault();           // stop the input under the finger from focusing
+      disarm();
+      if (!isNaN(idx)) sheetEnterSel(kind, idx);
+      return;
     }
-    if (dragRow) dragRow.style.outline='';
-    armed=false; dragging=false; dragRow=null;
+    disarm();
+  }, {passive:false});
+
+  tbody.addEventListener('touchcancel', disarm);
+
+  // ── Desktop: hold the mouse button 450ms on a row = selection mode ──
+  tbody.addEventListener('mousedown', e=>{
+    if (e.button !== 0) return;
+    const tr = e.target.closest('tr'); if (!tr || tr.dataset.idx===undefined) return;
+    if (e.target.tagName==='BUTTON' || e.target.classList.contains('op-circle')) return;
+    dragRow = tr;
+    timer = setTimeout(()=>{
+      arm(tr);
+      const idx = parseInt(tr.dataset.idx);
+      disarm();
+      if (!isNaN(idx)) sheetEnterSel(kind, idx);
+    }, 450);
   });
+  tbody.addEventListener('mouseup', ()=>{ if (!armed) clearTimeout(timer); });
+  tbody.addEventListener('mousemove', ()=>{ if (!armed) clearTimeout(timer); });
+
+  // ── Desktop: right-click a row = selection mode ──
   tbody.addEventListener('contextmenu', e=>{
     const tr = e.target.closest('tr');
     if (!tr || tr.dataset.idx===undefined) return;
@@ -9316,6 +9359,7 @@ function sheetInitLongPress(kind){
     sheetEnterSel(kind, parseInt(tr.dataset.idx));
   });
 }
+
 
 
 
