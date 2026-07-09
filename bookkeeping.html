@@ -3198,7 +3198,7 @@ async function openAccount(type, acct) {
 
   const { data } = await bkDb.from('bk_transactions')
     .select('*')
-    .eq('user_id', bkUser.id)
+    .match(bizMatch())
     .eq('record_type', type)
     .or(`account_name.eq."${acct.account_name}",account_name.is.null`)
     .order('row_order', { ascending:true });
@@ -3616,7 +3616,7 @@ async function refreshEquation() {
   if (!document.getElementById('bkMainChrome') ||
       document.getElementById('bkMainChrome').style.display === 'none') return;
   const { data } = await bkDb.from('bk_transactions')
-    .select('record_type,debit,credit').eq('user_id',bkUser.id);
+    .select('record_type,debit,credit').match(bizMatch());
   const { data:accts } = await bkDb.from('bk_accounts')
     .select('record_type,opening_balance').eq('user_id',bkUser.id);
 
@@ -3706,7 +3706,7 @@ async function smartErrorDetect(diff) {
 
   // Fetch all journal entries
   const { data:jnl } = await bkDb.from('bk_journal')
-    .select('*').eq('user_id', bkUser.id)
+    .select('*').match(bizMatch())
     .order('created_at', { ascending: false }).limit(50);
 
   if (!jnl || jnl.length === 0) {
@@ -3858,10 +3858,10 @@ async function showSalesBreakdown() {
   staffHideChrome();
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading sales breakdown...</div>';
   const { data:T } = await bkDb.from('bk_transactions').select('*')
-    .eq('user_id',bkUser.id).eq('record_type','income').order('txn_date',{ascending:false});
+    .match(bizMatch()).eq('record_type','income').order('txn_date',{ascending:false});
   const rows = T||[];
   // Group by payment mode based on account name (debit side)
-  const { data:J } = await bkDb.from('bk_journal').select('*').eq('user_id',bkUser.id);
+  const { data:J } = await bkDb.from('bk_journal').select('*').match(bizMatch());
   const jMap = {};
   (J||[]).forEach(j=>{ jMap[j.id]=j; });
   // Categorise each transaction
@@ -3904,9 +3904,9 @@ async function showExpensesBreakdown() {
   staffHideChrome();
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading expenses breakdown...</div>';
   const { data:T } = await bkDb.from('bk_transactions').select('*')
-    .eq('user_id',bkUser.id).eq('record_type','expenditure').order('txn_date',{ascending:false});
+    .match(bizMatch()).eq('record_type','expenditure').order('txn_date',{ascending:false});
   const rows = T||[];
-  const { data:J } = await bkDb.from('bk_journal').select('*').eq('user_id',bkUser.id);
+  const { data:J } = await bkDb.from('bk_journal').select('*').match(bizMatch());
   const jMap = {};
   (J||[]).forEach(j=>{ jMap[j.id]=j; });
   let cash=0,bank=0,credit=0;
@@ -3974,9 +3974,9 @@ async function showClassicDashboard() {
     const [txnRes, jnlRes] = await Promise.all([
       bkDb.from('bk_transactions')
         .select('record_type,account_name,debit,credit,txn_date,narration')
-        .eq('user_id', bkUser.id).order('txn_date',{ascending:false}),
+        .match(bizMatch()).order('txn_date',{ascending:false}),
       bkDb.from('bk_journal')
-        .select('*').eq('user_id',bkUser.id)
+        .select('*').match(bizMatch())
         .order('created_at',{ascending:false}).limit(8),
     ]);
     txns   = txnRes.data  || [];
@@ -4358,7 +4358,7 @@ async function openJournal() {
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading General Journal…</div>';
 
   const { data } = await bkDb.from('bk_journal')
-    .select('*').eq('user_id',bkUser.id).order('row_order',{ascending:true});
+    .select('*').match(bizMatch()).order('row_order',{ascending:true});
 
   journalRows=(data||[]).map(r=>({
     id:r.id, txn_date:r.txn_date||today(),
@@ -4597,7 +4597,7 @@ async function saveJournal(){
   if(newRows.length){
     const { data:created, error }=await bkDb.from('bk_journal').insert(
       newRows.map(r=>({
-        user_id:bkUser.id, txn_date:r.txn_date||null, payee:r.payee||null, payer:r.payer||null,
+        user_id:bkUser.id, business_id:activeBusiness?.id||null, txn_date:r.txn_date||null, payee:r.payee||null, payer:r.payer||null,
         narration:r.narration||null, debit_account_name:r.debit_account_name||null,
         debit_record_type:r.debit_record_type||null, credit_account_name:r.credit_account_name||null,
         credit_record_type:r.credit_record_type||null, debit_amount:r.debit_amount||0,
@@ -6027,6 +6027,7 @@ async function postJournalEntry({ debitAccount, debitType, creditAccount, credit
   const today = new Date().toISOString().slice(0,10);
   const { data: journalEntry } = await bkDb.from('bk_journal').insert({
     user_id:             bkUser.id,
+    business_id:         activeBusiness?.id||null,
     txn_date:            today,
     payee:               payee || null,
     payer:               payer || null,
@@ -6169,7 +6170,7 @@ async function saveJournalRow(i) {
 
   if (!row.id) {
     const { data, error } = await bkDb.from('bk_journal').insert({
-      user_id: bkUser.id, txn_date: row.txn_date||null,
+      user_id: bkUser.id, business_id: activeBusiness?.id||null, txn_date: row.txn_date||null,
       payee: row.payee||null, payer: row.payer||null, narration: row.narration||null,
       debit_account_name: row.debit_account_name, debit_record_type: row.debit_record_type,
       credit_account_name: row.credit_account_name, credit_record_type: row.credit_record_type,
@@ -7371,7 +7372,7 @@ async function showSchedule(type) {
   try {
     const { data } = await bkDb.from('bk_transactions')
       .select('account_name, debit, credit, balance')
-      .eq('user_id', bkUser.id)
+      .match(bizMatch())
       .eq('record_type', type);
     (data||[]).forEach(function(r){
       const n = r.account_name;
@@ -7802,7 +7803,7 @@ async function showReport(type) {
   bdSaveRoute('report:'+type);
   recordsPageChrome(); // hides toolbar, hero header; keeps equation
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
-  const {data}=await bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date').eq('user_id',bkUser.id);
+  const {data}=await bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date').match(bizMatch());
   const T=data||[];
   const tots={capital:{dr:0,cr:0},liability:{dr:0,cr:0},asset:{dr:0,cr:0},income:{dr:0,cr:0},expenditure:{dr:0,cr:0}};
   T.forEach(r=>{tots[r.record_type].dr+=parseFloat(r.debit)||0;tots[r.record_type].cr+=parseFloat(r.credit)||0;});
@@ -8432,7 +8433,7 @@ async function showStaffDashboard(){
     const [txnRes, noticeRes] = await Promise.all([
       bkDb.from('bk_transactions')
         .select('account_name,record_type,debit,credit,narration,txn_date,created_at')
-        .eq('user_id', bkUser.id)
+        .match(bizMatch())
         .order('created_at', {ascending:false})
         .limit(50),
       bkDb.from('bk_notices')
@@ -8848,6 +8849,7 @@ function renderRecordSheet(kind) {
   const st   = sheetState[kind];
   const sel  = sheetSel[kind];
   const rows = sheetRows(kind);
+  if (!rows.length) rows.push(kind==='sales' ? staffEmptySaleRow(1) : staffEmptyExpRow(1));
   const wrap = document.querySelector('.bk-sheet-wrap');
   const keepScroll = wrap ? wrap.scrollLeft : 0;
   const sym  = staffSym();
@@ -8875,8 +8877,8 @@ function renderRecordSheet(kind) {
     const frozen = st.freezeRow > 0 && vi < st.freezeRow;
     const circle = selCol
       ? (r._bundle
-          ? '<td style="text-align:center;color:var(--muted);">—</td>'
-          : `<td style="text-align:center;"><span onclick="sheetSelToggle('${kind}',${i})" class="op-circle ${sel.picked.includes(i)?'on':''}"></span></td>`)
+          ? '<td style="text-align:center;vertical-align:middle;color:var(--muted);padding:12px 4px;">—</td>'
+          : `<td style="text-align:center;vertical-align:middle;padding:12px 4px;"><span onclick="sheetSelToggle('${kind}',${i})" class="op-circle ${sel.picked.includes(i)?'on':''}"></span></td>`)
       : '';
 
     if (r._bundle) {
@@ -8885,7 +8887,7 @@ function renderRecordSheet(kind) {
       <tr id="${kind}row_${i}" data-idx="${i}" class="op-bundle-row ${frozen?'sheet-frozen-row':''}">
         ${circle}
         <td class="staff-sn" style="white-space:nowrap;">${vi+1}</td>
-        <td colspan="${2+nCust}" onclick="sheetToggleBundle('${kind}',${i})" style="cursor:pointer;">
+        <td colspan="${3+nCust}" onclick="sheetToggleBundle('${kind}',${i})" style="cursor:pointer;">
           <span style="color:var(--gold);font-weight:900;">${r.expanded?'▾':'▸'}</span>
           🧺 <span style="color:var(--gold);font-weight:800;">${r.items.length} item${r.items.length>1?'s':''}</span>
           <span class="op-badge">ONE-PAYMENT</span>
@@ -9032,6 +9034,7 @@ function renderRecordSheet(kind) {
 
   const newWrap = document.querySelector('.bk-sheet-wrap');
   if (newWrap) newWrap.scrollLeft = keepScroll;
+  requestAnimationFrame(()=>{ const w2 = document.querySelector('.bk-sheet-wrap'); if (w2) w2.scrollLeft = keepScroll; });
   sheetInitLongPress(kind);
 }
 
@@ -9146,7 +9149,9 @@ function sheetAddRow(kind){
 
 function sheetDeleteRow(kind,i){
   sheetSnapshot(kind);
-  sheetRows(kind).splice(i,1);
+  const rows = sheetRows(kind);
+  rows.splice(i,1);
+  if (rows.length === 0) rows.push(kind==='sales' ? staffEmptySaleRow(1) : staffEmptyExpRow(1));
   renderRecordSheet(kind);
 }
 
@@ -9223,7 +9228,7 @@ async function sheetLoadDateRange(kind){
   try {
     const rt = kind==='sales' ? 'income' : 'expenditure';
     const {data:T} = await bkDb.from('bk_transactions').select('*')
-      .eq('user_id',bkUser.id).eq('record_type',rt)
+      .match(bizMatch()).eq('record_type',rt)
       .gte('txn_date',st.dateFrom).lte('txn_date',to)
       .order('txn_date');
     const flat = (T||[]).map((t,n)=>({
@@ -9585,7 +9590,7 @@ async function autoPostExpenseRow(row) {
   const date      = new Date().toISOString().slice(0,10);
   try {
     const { data:jnl } = await bkDb.from('bk_journal').insert({
-      user_id:bkUser.id, txn_date:date, narration:narration,
+      user_id:bkUser.id, business_id:activeBusiness?.id||null, txn_date:date, narration:narration,
       debit_account_name:expAcct, debit_record_type:'expenditure',
       credit_account_name:cashAcct, credit_record_type:'asset',
       debit_amount:amount, credit_amount:amount,
@@ -10198,6 +10203,10 @@ let userBusinesses = [];
 let activeBusiness = null; // null = "All Businesses" view
 
 // Load businesses from Supabase, creating a default one if none exist
+
+// Business-scoped query filter: books belong to the selected business.
+// Falls back to user-scoped when no business is selected.
+function bizMatch(){ return (activeBusiness && activeBusiness.id) ? {business_id: activeBusiness.id} : {user_id: bkUser.id}; }
 async function loadUserBusinesses() {
   if (!bkUser) return;
   try {
@@ -10497,6 +10506,12 @@ async function uploadBizLogo(bizId, input) {
 }
 
 async function showSingleBusinessDashboard(biz) {
+  // The business you're viewing becomes the active business —
+  // recording, ledgers, journal, reports and breakdowns all follow it.
+  if (biz && biz.id) {
+    activeBusiness = biz;
+    try { localStorage.setItem('bd_active_biz', biz.id); bdUpdateMenuBizLine(); } catch(e) {}
+  }
   staffHideChrome();
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
 
@@ -10741,7 +10756,7 @@ async function exportAllBusinesses() {
     csv += `"TOTAL","",${tRev},${tExp},${tRev-tExp},,\n\n`;
     // Transactions
     const {data:T} = await bkDb.from('bk_transactions').select('txn_date,account_name,record_type,narration,debit,credit')
-      .eq('user_id',bkUser.id).order('txn_date');
+      .match(bizMatch()).order('txn_date');
     if (T && T.length) {
       csv += 'ALL TRANSACTIONS\n';
       csv += 'Date,Account,Type,Narration,Debit,Credit\n';
@@ -10919,6 +10934,7 @@ async function autoPostSaleRow(row, customerName, txnDate) {
   // 1. Write to bk_journal
   const { data: jnl, error: jErr } = await bkDb.from('bk_journal').insert({
     user_id:              bkUser.id,
+    business_id:          activeBusiness?.id||null,
     txn_date:             date,
     narration:            narration,
     debit_account_name:   cashAcct,
@@ -10941,7 +10957,7 @@ async function autoPostSaleRow(row, customerName, txnDate) {
   // 3. Get last balance for each account to calculate running balance
   const getLastBal = async (acctName) => {
     const { data } = await bkDb.from('bk_transactions')
-      .select('balance').eq('user_id',bkUser.id).eq('account_name',acctName)
+      .select('balance').match(bizMatch()).eq('account_name',acctName)
       .order('created_at',{ascending:false}).limit(1);
     return parseFloat(data?.[0]?.balance) || 0;
   };
