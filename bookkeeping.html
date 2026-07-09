@@ -181,6 +181,16 @@ select.bk-cell,input.bk-cell{min-height:34px;}
 
 
 #sheetTable_sales td,#sheetTable_expenses td{-webkit-touch-callout:none;}
+
+.col-head{-webkit-user-select:none;user-select:none;}
+.col-head-hl{background:rgba(212,175,55,0.14) !important;}
+.col-tri{position:absolute;top:2px;right:3px;font-size:0.5rem;color:var(--gold);opacity:0;transition:opacity 0.15s;padding:3px;cursor:pointer;}
+.col-head:hover .col-tri{opacity:1;}
+.col-tri-show{opacity:1 !important;}
+.col-menu{position:absolute;top:100%;right:0;z-index:500;background:var(--surface2);border:1px solid var(--gold);border-radius:10px;min-width:190px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.5);text-align:left;}
+.col-menu-item{padding:8px 10px;font-size:0.72rem;color:var(--off);border-radius:7px;cursor:pointer;font-weight:600;text-transform:none;letter-spacing:0;white-space:nowrap;}
+.col-menu-item:hover{background:var(--gold-dim);color:var(--gold);}
+.receipt-link{color:var(--gold);font-size:0.7rem;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
 .op-circle{width:18px;height:18px;border-radius:50%;border:2px solid var(--muted);display:inline-block;cursor:pointer;vertical-align:middle;}
 .op-circle.on{border-color:var(--gold);background:var(--gold);position:relative;}
 .op-circle.on::after{content:'\2713';color:#000;font-size:0.62rem;font-weight:900;position:absolute;left:3px;top:-1px;}
@@ -2108,8 +2118,25 @@ function showRegisterBusinessPage() {
         </div>`).join('')}
       </div>
 
-      <label class="su-label" style="margin-top:6px;">BUSINESS ADDRESS *</label>
-      <textarea class="bk-login-input" id="rb_address" rows="2" placeholder="Full business address including street, city, state" style="width:100%;margin-bottom:14px;resize:vertical;"></textarea>
+      <label class="su-label" style="margin-top:6px;">POSITION IN THE BUSINESS *</label>
+      <select class="bk-login-input" id="rb_position" style="width:100%;margin-bottom:14px;">
+        <option>Owner</option><option>Co-Owner</option><option>Manager</option>
+        <option>Accountant</option><option>Employee</option><option>Other</option>
+      </select>
+
+      <label class="su-label">BUSINESS ADDRESS *</label>
+      <div class="ri-grid2">
+        <div><label class="su-label" style="font-size:0.56rem;">COUNTRY</label><input class="bk-login-input" id="rb_country" value="Nigeria"/></div>
+        <div><label class="su-label" style="font-size:0.56rem;">STATE / PROVINCE</label><input class="bk-login-input" id="rb_state" placeholder="e.g. Rivers"/></div>
+      </div>
+      <div class="ri-grid2">
+        <div><label class="su-label" style="font-size:0.56rem;">LOCAL GOVERNMENT AREA</label><input class="bk-login-input" id="rb_lga" placeholder="LGA"/></div>
+        <div><label class="su-label" style="font-size:0.56rem;">CITY</label><input class="bk-login-input" id="rb_city" placeholder="City"/></div>
+      </div>
+      <div class="ri-grid2" style="margin-bottom:14px;">
+        <div><label class="su-label" style="font-size:0.56rem;">STREET</label><input class="bk-login-input" id="rb_street" placeholder="Street name"/></div>
+        <div><label class="su-label" style="font-size:0.56rem;">STREET NUMBER</label><input class="bk-login-input" id="rb_streetno" placeholder="No."/></div>
+      </div>
 
       <label class="su-label">CAC REGISTRATION NUMBER (IF REGISTERED)</label>
       <input class="bk-login-input" id="rb_cac" placeholder="e.g. RC-1234567" style="width:100%;margin-bottom:20px;"/>
@@ -2127,14 +2154,34 @@ async function rbSaveBusiness() {
   const name = document.getElementById('rb_name')?.value?.trim();
   if (!name) { if(err) err.textContent='Business name is required.'; return; }
   const cac = document.getElementById('rb_cac')?.value?.trim()||'';
+  const position = document.getElementById('rb_position')?.value||'Owner';
+  const addr = ['rb_streetno','rb_street','rb_city','rb_lga','rb_state','rb_country']
+    .map(id=>document.getElementById(id)?.value?.trim()).filter(Boolean).join(', ');
   if (err) { err.textContent='Saving…'; err.style.color='var(--muted)'; }
   try {
+    // Does this business already exist on the platform?
+    const {data:existing} = await bkDb.from('businesses')
+      .select('id,name,owner_user_id').ilike('name', name).limit(1);
+    if (existing && existing.length) {
+      const ex = existing[0];
+      if (ex.owner_user_id === bkUser.id) {
+        if (err) { err.style.color='var(--red)'; err.textContent='You already registered "'+ex.name+'".'; }
+        return;
+      }
+      if (err) {
+        err.style.color='var(--gold)';
+        err.innerHTML = '“'+escH(ex.name)+'” already exists on the platform.'
+          + '<button onclick="rbJoinExisting(\''+ex.id+'\',\''+escH(ex.name).replace(/\'/g,'')+'\')" '
+          + 'style="display:block;width:100%;margin-top:10px;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.78rem;padding:10px;border-radius:8px;cursor:pointer;">Register with this company →</button>';
+      }
+      return;
+    }
     const {data,error} = await bkDb.from('businesses').insert({
       name,
       industry: document.getElementById('rb_industry')?.value||'General',
       business_type: document.getElementById('rb_structure')?.value||'',
       products_services: _regBizType,
-      business_address: document.getElementById('rb_address')?.value?.trim()||'',
+      business_address: addr,
       cac_registered: !!cac, cac_number: cac||null,
       owner_user_id: bkUser.id, currency: activeCurrency||'NGN',
       is_primary: !userBusinesses.some(b=>b._owned), icon:'🏢',
@@ -2142,10 +2189,32 @@ async function rbSaveBusiness() {
     if (error) throw error;
     userBusinesses.push(data);
     activeBusiness = data;
-    await bkDb.from('user_businesses').upsert({user_id:bkUser.id,business_id:data.id,role:'owner'},{onConflict:'user_id,business_id'});
+    await bkDb.from('user_businesses').upsert(
+      {user_id:bkUser.id, business_id:data.id, role: position==='Owner'||position==='Co-Owner'?'owner':'employee', position},
+      {onConflict:'user_id,business_id'});
     renderMenuBusinesses();
     showRegisterProductsPage();
   } catch(e) { if(err){ err.textContent='Error: '+(e.message||''); err.style.color='var(--red)'; } }
+}
+
+function rbJoinExisting(bizId, bizName) {
+  const err = document.getElementById('rbErr');
+  if (!err) return;
+  err.innerHTML = '<div style="color:var(--gold);font-weight:800;margin-bottom:6px;">Register with “'+bizName+'”</div>'
+    + '<input class="bk-login-input" id="rbJoinPos" placeholder="Your position in the company (e.g. Manager, Cashier)"/>'
+    + '<button onclick="rbJoinSave(\''+bizId+'\')" style="display:block;width:100%;margin-top:8px;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.78rem;padding:10px;border-radius:8px;cursor:pointer;">Save &amp; Continue →</button>';
+}
+
+async function rbJoinSave(bizId) {
+  const position = document.getElementById('rbJoinPos')?.value?.trim();
+  if (!position) { alert('Please enter your position in the company.'); return; }
+  try {
+    const {error} = await bkDb.from('user_businesses').upsert(
+      {user_id:bkUser.id, business_id:bizId, role:'employee', position},{onConflict:'user_id,business_id'});
+    if (error) throw error;
+    await loadUserBusinesses();
+    showAllBusinessesDashboard();
+  } catch(e){ alert('Could not save: '+(e.message||'')); }
 }
 
 let _regOnboarding = false;
@@ -2171,7 +2240,7 @@ function showModeChoice() {
       </div>
       <div style="font-size:0.68rem;letter-spacing:0.16em;color:var(--muted);font-weight:700;">${greeting}</div>
       <div style="font-size:1.7rem;font-weight:900;color:var(--white);margin:4px 0;">${escH(fname)} 👋</div>
-      <div style="font-size:0.85rem;color:var(--muted);">What would you like to do?</div>
+      <div style="font-size:0.85rem;color:var(--muted);">Let’s get started.</div>
     </div>
     <div class="mode-cards">
       <div onclick="startBusinessMode()" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;cursor:pointer;">
@@ -2180,16 +2249,81 @@ function showModeChoice() {
         <div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">Register and manage one or more businesses. Track revenue, expenses, invoices, and team performance.</div>
         <div style="color:var(--gold);font-size:0.78rem;font-weight:800;margin-top:12px;">Get started →</div>
       </div>
-      <div onclick="startPersonalMode()" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;cursor:pointer;">
-        <div style="width:44px;height:44px;border-radius:12px;background:rgba(212,175,55,0.14);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:14px;">👤</div>
-        <div style="font-size:1.05rem;font-weight:900;color:var(--white);margin-bottom:6px;">Personal Accounting</div>
-        <div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">Track your personal income, savings goals, debt repayment, and net worth all in one place.</div>
-        <div style="color:var(--gold);font-size:0.78rem;font-weight:800;margin-top:12px;">Get started →</div>
+      <div onclick="showSearchBusinessPage()" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;cursor:pointer;">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(212,175,55,0.14);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:14px;">🔍</div>
+        <div style="font-size:1.05rem;font-weight:900;color:var(--white);margin-bottom:6px;">Search for Business</div>
+        <div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">Your business is already registered on the platform? Find it, state your position, and continue to your dashboard.</div>
+        <div style="color:var(--gold);font-size:0.78rem;font-weight:800;margin-top:12px;">Search →</div>
       </div>
     </div>
-    <div style="text-align:center;font-size:0.72rem;color:var(--muted);padding:16px;">You can access both modes anytime from your profile.</div>`;
+    <div style="text-align:center;font-size:0.72rem;color:var(--muted);padding:16px;">Register a new business, or join one already on the platform.</div>`;
 }
 
+
+// ══ SEARCH FOR BUSINESS (onboarding) ═════════════════════════
+let _sfbResults=[], _sfbSelected=null, _sfbSearched=false;
+function showSearchBusinessPage() {
+  staffHideChrome();
+  bdSaveRoute('search-business');
+  localStorage.setItem('bd_mode','business');
+  document.getElementById('bkContent').innerHTML = `
+    <div style="max-width:560px;margin:0 auto;padding:28px 16px;">
+      <div style="font-size:1.35rem;font-weight:900;color:var(--white);">Search for your Business</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin:4px 0 18px;">Find the business you own or work for, state your position, and continue.</div>
+      <div style="display:flex;gap:8px;">
+        <input class="bk-login-input" id="sfb_q" style="flex:1;margin:0;" placeholder="Business name…" onkeydown="if(event.key==='Enter')sfbSearch()"/>
+        <button onclick="sfbSearch()" style="background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.76rem;padding:0 18px;border-radius:8px;cursor:pointer;">Search</button>
+      </div>
+      <div id="sfbResults" style="margin-top:12px;"></div>
+      <div id="sfbJoin" style="margin-top:12px;"></div>
+      <div class="bk-auth-btnrow" style="margin-top:20px;">
+        <button class="bk-login-back" onclick="showModeChoice()">← Back</button>
+      </div>
+    </div>`;
+  setTimeout(()=>document.getElementById('sfb_q')?.focus(),50);
+}
+async function sfbSearch() {
+  const q = document.getElementById('sfb_q')?.value?.trim();
+  if (!q) return;
+  try {
+    const {data,error} = await bkDb.from('businesses').select('id,name,industry,icon,logo_url,owner_user_id').ilike('name','%'+q+'%').limit(10);
+    if (error) throw error;
+    _sfbResults = data||[]; _sfbSelected=null; _sfbSearched=true;
+    sfbRender();
+  } catch(e){ alert('Search failed: '+(e.message||'')); }
+}
+function sfbRender() {
+  const box = document.getElementById('sfbResults');
+  if (!box) return;
+  box.innerHTML = _sfbResults.length ? _sfbResults.map(b=>`
+    <div onclick="sfbSelect('${b.id}')" style="display:flex;align-items:center;gap:10px;padding:11px;border:1px solid ${_sfbSelected?.id===b.id?'var(--gold)':'var(--border2)'};border-radius:10px;margin-bottom:8px;cursor:pointer;background:var(--surface);">
+      <div style="width:34px;height:34px;border-radius:8px;background:rgba(212,175,55,0.12);display:flex;align-items:center;justify-content:center;overflow:hidden;">${b.logo_url?`<img src="${b.logo_url}" style="width:100%;height:100%;object-fit:cover;"/>`:(b.icon||'🏢')}</div>
+      <div style="flex:1;"><div style="font-weight:800;font-size:0.84rem;color:var(--white);">${escH(b.name)}${b.owner_user_id===bkUser?.id?' <span style="font-size:0.6rem;color:var(--muted);">(you own this)</span>':''}</div>
+      <div style="font-size:0.68rem;color:var(--muted);">${escH(b.industry||'')}</div></div>
+      ${_sfbSelected?.id===b.id?'<span style="color:var(--gold);font-weight:900;">✓</span>':''}
+    </div>`).join('')
+  : (_sfbSearched ? '<div style="font-size:0.75rem;color:var(--muted);">No businesses found. Check the spelling, or go back and register it.</div>' : '');
+  const join = document.getElementById('sfbJoin');
+  if (join) join.innerHTML = _sfbSelected ? `
+    <label class="su-label">YOUR POSITION IN THE BUSINESS *</label>
+    <input class="bk-login-input" id="sfb_pos" placeholder="e.g. Owner, Manager, Cashier, Accountant"/>
+    <button class="bk-login-btn" style="width:100%;background:var(--gold);color:#000;margin-top:8px;" onclick="sfbSave()">Save &amp; Continue →</button>` : '';
+}
+function sfbSelect(id){ _sfbSelected=_sfbResults.find(b=>b.id===id)||null; sfbRender(); }
+async function sfbSave() {
+  if (!_sfbSelected) return;
+  const position = document.getElementById('sfb_pos')?.value?.trim();
+  if (!position) { alert('Please enter your position in the business.'); return; }
+  try {
+    if (_sfbSelected.owner_user_id === bkUser?.id) { alert('You own "'+_sfbSelected.name+'" — it is already in your account.'); return; }
+    const role = /owner/i.test(position) ? 'employee' : 'employee';
+    const {error} = await bkDb.from('user_businesses').upsert(
+      {user_id:bkUser.id, business_id:_sfbSelected.id, role, position},{onConflict:'user_id,business_id'});
+    if (error) throw error;
+    await loadUserBusinesses();
+    showAllBusinessesDashboard();
+  } catch(e){ alert('Could not save: '+(e.message||'')); }
+}
 function startBusinessMode() {
   localStorage.setItem('bd_mode','business');
   if (userBusinesses.length) { showAllBusinessesDashboard(); }
@@ -3840,6 +3974,7 @@ function bdRestoreRoute() {
     if (r === 'personal-setup')   { showPersonalSetup(); return; }
     if (r === 'personal-home')    { showPersonalHome(); return; }
     if (r === 'personal-txns')    { showPersonalTransactions(); return; }
+    if (r === 'search-business')  { showSearchBusinessPage(); return; }
     if (r && r.startsWith('report:')) { showReport(r.slice(7)); return; }
     if (r && r.startsWith('ledger:')) {
       const parts = r.split(':');
@@ -8843,13 +8978,44 @@ let sheetSel = { sales:{active:false,picked:[]}, expenses:{active:false,picked:[
 
 function sheetGrand(rows){ return rows.reduce((a,r)=>a+(r._bundle ? r.items.reduce((s,x)=>s+(x.total||0),0) : (r.total||0)),0); }
 
+// ── Column model ─────────────────────────────────────────────
+const SHEET_COL_W = { sn:40, narration:185, custom:120, unit_price:125, qty:92, total:115, pay_mode:125, save:34, del:34, receipt:82 };
+const SHEET_COL_LABEL = { sn:'S/N', narration:'Narration', unit_price:'Unit Price', qty:'Quantity', total:'Total', pay_mode:'Payment Mode', save:'', del:'', receipt:'Receipt' };
+const SHEET_DATA_COLS = ['narration','unit_price','qty','total','pay_mode'];
+
+function sheetColOrder(kind) {
+  const st = sheetState[kind];
+  if (!st.colOrder) {
+    try { st.colOrder = JSON.parse(localStorage.getItem('bd_cols_'+kind)||'null'); } catch(e){ st.colOrder=null; }
+    if (!st.colOrder) {
+      st.colOrder = [{k:'sn'},{k:'narration'},
+        ...(st.customCols||[]).map(c=>({k:c.key,t:'c',label:c.name})),
+        {k:'unit_price'},{k:'qty'},{k:'total'},{k:'pay_mode'},{k:'save'},{k:'del'}];
+    }
+  }
+  if (!st.hidden) { try { st.hidden = JSON.parse(localStorage.getItem('bd_hidden_'+kind)||'{}'); } catch(e){ st.hidden={}; } }
+  if (!st.colLabels) { try { st.colLabels = JSON.parse(localStorage.getItem('bd_collabels_'+kind)||'{}'); } catch(e){ st.colLabels={}; } }
+  return st.colOrder;
+}
+function sheetPersistCols(kind) {
+  const st = sheetState[kind];
+  localStorage.setItem('bd_cols_'+kind, JSON.stringify(st.colOrder));
+  localStorage.setItem('bd_hidden_'+kind, JSON.stringify(st.hidden||{}));
+  localStorage.setItem('bd_collabels_'+kind, JSON.stringify(st.colLabels||{}));
+}
+function sheetColLabel(kind, c) {
+  const st = sheetState[kind];
+  if (c.t==='c') return c.label||'Column';
+  return (st.colLabels&&st.colLabels[c.k]) || SHEET_COL_LABEL[c.k] || '';
+}
+
 function renderRecordSheet(kind) {
   _sheetKind = kind;
   const isSales = kind==='sales';
   const st   = sheetState[kind];
   const sel  = sheetSel[kind];
   const rows = sheetRows(kind);
-  if (!rows.length) rows.push(kind==='sales' ? staffEmptySaleRow(1) : staffEmptyExpRow(1));
+  sheetColOrder(kind);
   const wrap = document.querySelector('.bk-sheet-wrap');
   const keepScroll = wrap ? wrap.scrollLeft : 0;
   const sym  = staffSym();
@@ -8859,6 +9025,15 @@ function renderRecordSheet(kind) {
   const saveFn = isSales ? 'salesSaveRow' : 'expSaveRow';
   const dec    = st.decimals;
   const fmtCell = n => (n||0).toLocaleString('en-NG',{minimumFractionDigits:dec,maximumFractionDigits:Math.max(dec,2)});
+  const wrapCss = st.wrap==='wrap' ? 'white-space:normal;' : st.wrap==='clip' ? 'white-space:nowrap;overflow:hidden;text-overflow:clip;' : 'white-space:nowrap;';
+
+  // visible columns (+ receipt col when enabled)
+  let cols = st.colOrder.filter(c => !(st.hidden||{})[c.k]);
+  if (st.receipt) cols = cols.concat([{k:'receipt'}]);
+  const selCol = sel.active;
+  const colW = c => SHEET_COL_W[c.k] || SHEET_COL_W.custom;
+  const totalMinW = cols.reduce((s,c)=>s+colW(c),0) + (selCol?34:0);
+  const hlCss = c => (st.hlCol===c.k ? 'background:rgba(212,175,55,0.10);' : '');
 
   const matches = r => {
     if (!st.search) return true;
@@ -8868,92 +9043,147 @@ function renderRecordSheet(kind) {
   };
   const visible = rows.map((r,i)=>({r,i})).filter(({r})=>matches(r));
 
-  const customColsHead = st.customCols.map(c=>`<th style="width:120px;">${escH(c.name)}</th>`).join('');
-  const wrapCss = st.wrap==='wrap' ? 'white-space:normal;' : st.wrap==='clip' ? 'white-space:nowrap;overflow:hidden;text-overflow:clip;' : 'white-space:nowrap;';
-  const nCust = st.customCols.length;
-  const selCol = sel.active;
+  // ── header ──
+  const menuFor = c => `
+    <div class="col-menu" onclick="event.stopPropagation()">
+      <div class="col-menu-item" onclick="sheetColRename('${kind}','${c.k}')">✏️ Rename Header</div>
+      <div class="col-menu-item" onclick="sheetColInsert('${kind}','${c.k}','left')">+ Insert column left</div>
+      <div class="col-menu-item" onclick="sheetColInsert('${kind}','${c.k}','right')">+ Insert column right</div>
+      <div class="col-menu-item" onclick="sheetColDelete('${kind}','${c.k}')">🗑 Delete column</div>
+      <div class="col-menu-item" onclick="sheetColClear('${kind}','${c.k}')">✕ Clear column</div>
+      <div class="col-menu-item" onclick="sheetColHide('${kind}','${c.k}')">🚫👁 Hide column</div>
+    </div>`;
+  const thead = cols.map(c => {
+    const isData = SHEET_DATA_COLS.includes(c.k) || c.t==='c';
+    if (!isData) return `<th style="width:${colW(c)}px;">${sheetColLabel(kind,c)}</th>`;
+    const triVisible = st.hlCol===c.k || st.menuCol===c.k;
+    return `<th class="col-head ${st.hlCol===c.k?'col-head-hl':''}" style="width:${colW(c)}px;position:relative;cursor:pointer;"
+      onclick="sheetHlCol('${kind}','${c.k}')">
+      ${sheetColLabel(kind,c)}
+      <span class="col-tri ${triVisible?'col-tri-show':''}" onclick="event.stopPropagation();sheetColMenu('${kind}','${c.k}')">▼</span>
+      ${st.menuCol===c.k ? menuFor(c) : ''}
+    </th>`;
+  }).join('');
+
+  // ── cell renderers ──
+  const cellNormal = (c, r, i) => {
+    switch(c.t==='c'?'custom':c.k) {
+      case 'sn': return `<td class="staff-sn" style="white-space:nowrap;${hlCss(c)}">%%VI%%</td>`;
+      case 'narration': return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" value="${escH(r.narration||'')}" placeholder="${narrPh}" style="${wrapCss}min-width:150px;"
+        oninput="sheetRows('${kind}')[${i}].narration=this.value;sheetRows('${kind}')[${i}]._posted=false"/></td>`;
+      case 'custom': return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" value="${escH((r.custom&&r.custom[c.k])||'')}"
+        oninput="(sheetRows('${kind}')[${i}].custom=sheetRows('${kind}')[${i}].custom||{})['${c.k}']=this.value"/></td>`;
+      case 'unit_price': return `<td style="white-space:nowrap;${hlCss(c)}"><div class="staff-price-wrap"><span class="staff-curr-prefix">${sym}</span>
+        <input class="staff-cell num" type="text" inputmode="decimal" value="${r.unit_price>0?fmtCell(r.unit_price):''}" placeholder="0"
+          onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+          oninput="fmtInputCommas(this);${numFn}(${i},'unit_price',this.value)"/></div></td>`;
+      case 'qty': return `<td style="white-space:nowrap;${hlCss(c)}"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
+        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+        oninput="${numFn}(${i},'qty',this.value)"/></td>`;
+      case 'total': return `<td style="white-space:nowrap;${hlCss(c)}"><div class="staff-cell ro" id="${kind==='sales'?'sale_total_':'etotal_'}${i}">${staffFmtAmt(r.total)}</div></td>`;
+      case 'pay_mode': return `<td style="${hlCss(c)}"><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
+        onchange="sheetRows('${kind}')[${i}].pay_mode=this.value">
+        ${[['cash','Cash'],['transfer','Bank Transfer'],['pos','POS'],['cheque','Cheque'],['credit','On Credit']].map(([v,l])=>`<option value="${v}" ${(r.pay_mode||'cash')===v?'selected':''}>${l}</option>`).join('')}
+      </select></td>`;
+      case 'save': return `<td><button class="staff-save-row-btn" onclick="${saveFn}(${i})" title="Save">&rsaquo;</button></td>`;
+      case 'del': return `<td><button class="staff-del-btn" onclick="sheetDeleteRow('${kind}',${i})">&times;</button></td>`;
+      case 'receipt': return `<td style="text-align:center;"><span class="receipt-link" onclick="showReceipt('${kind}',${i})">Receipt</span></td>`;
+      default: return '<td></td>';
+    }
+  };
 
   const body = visible.map(({r,i},vi)=>{
     const frozen = st.freezeRow > 0 && vi < st.freezeRow;
     const circle = selCol
       ? (r._bundle
-          ? '<td style="text-align:center;vertical-align:middle;color:var(--muted);padding:12px 4px;">—</td>'
-          : `<td style="text-align:center;vertical-align:middle;padding:12px 4px;"><span onclick="sheetSelToggle('${kind}',${i})" class="op-circle ${sel.picked.includes(i)?'on':''}"></span></td>`)
+          ? '<td class="op-selcell" style="color:var(--muted);">—</td>'
+          : `<td class="op-selcell"><span onclick="sheetSelToggle('${kind}',${i})" class="op-circle ${sel.picked.includes(i)?'on':''}"></span></td>`)
       : '';
 
     if (r._bundle) {
       const bTotal = r.items.reduce((s,x)=>s+(x.total||0),0);
+      // colspan run: visible cols after sn until total/pay_mode/save
+      let spanStart = cols.findIndex(c=>c.k==='sn')+1;
+      if (spanStart===0) spanStart = 0;
+      let spanEnd = cols.findIndex(c=>['total','pay_mode','save','del','receipt'].includes(c.k) && cols.indexOf(c)>=spanStart);
+      if (spanEnd < 0) spanEnd = cols.length;
+      const spanCount = Math.max(1, spanEnd - spanStart);
+      const tail = cols.slice(spanEnd).map(c=>{
+        switch(c.t==='c'?'custom':c.k) {
+          case 'total': return `<td style="white-space:nowrap;text-align:right;${hlCss(c)}"><div class="staff-cell ro" id="bundleTotal_${kind}_${i}" style="color:var(--gold);font-weight:900;">${staffFmtAmt(bTotal)}</div></td>`;
+          case 'pay_mode': return `<td style="${hlCss(c)}"><select class="staff-cell" style="font-size:0.75rem;min-width:110px;" onchange="sheetRows('${kind}')[${i}].pay_mode=this.value;sheetRows('${kind}')[${i}]._posted=false">
+            ${[['cash','Cash'],['transfer','Bank Transfer'],['pos','POS'],['cheque','Cheque'],['credit','On Credit']].map(([v,l])=>`<option value="${v}" ${(r.pay_mode||'cash')===v?'selected':''}>${l}</option>`).join('')}
+          </select></td>`;
+          case 'save': return `<td><button class="staff-save-row-btn" onclick="sheetSaveBundle('${kind}',${i})" title="Save bundle">&rsaquo;</button></td>`;
+          case 'del': return `<td><button class="staff-del-btn" onclick="sheetDeleteRow('${kind}',${i})">&times;</button></td>`;
+          case 'receipt': return `<td style="text-align:center;"><span class="receipt-link" onclick="showReceipt('${kind}',${i})">Receipt</span></td>`;
+          default: return '<td></td>';
+        }
+      }).join('');
+      const snTd = cols.some(c=>c.k==='sn') ? `<td class="staff-sn" style="white-space:nowrap;">${vi+1}</td>` : '';
       const head = `
       <tr id="${kind}row_${i}" data-idx="${i}" class="op-bundle-row ${frozen?'sheet-frozen-row':''}">
-        ${circle}
-        <td class="staff-sn" style="white-space:nowrap;">${vi+1}</td>
-        <td colspan="${3+nCust}" onclick="sheetToggleBundle('${kind}',${i})" style="cursor:pointer;">
+        ${circle}${snTd}
+        <td colspan="${spanCount}" onclick="sheetToggleBundle('${kind}',${i})" style="cursor:pointer;">
           <span style="color:var(--gold);font-weight:900;">${r.expanded?'▾':'▸'}</span>
           🧺 <span style="color:var(--gold);font-weight:800;">${r.items.length} item${r.items.length>1?'s':''}</span>
           <span class="op-badge">ONE-PAYMENT</span>
           ${r.expanded?`<span onclick="event.stopPropagation();sheetUngroup('${kind}',${i})" style="color:#f87171;font-size:0.66rem;font-weight:700;margin-left:8px;">Ungroup</span>`:''}
         </td>
-        <td style="white-space:nowrap;text-align:right;"><div class="staff-cell ro" id="bundleTotal_${kind}_${i}" style="color:var(--gold);font-weight:900;">${staffFmtAmt(bTotal)}</div></td>
-        <td><select class="staff-cell" style="font-size:0.75rem;min-width:110px;" onchange="sheetRows('${kind}')[${i}].pay_mode=this.value;sheetRows('${kind}')[${i}]._posted=false">
-          ${[['cash','Cash'],['transfer','Bank Transfer'],['pos','POS'],['credit','On Credit']].map(([v,l])=>`<option value="${v}" ${(r.pay_mode||'cash')===v?'selected':''}>${l}</option>`).join('')}
-        </select></td>
-        <td><button class="staff-save-row-btn" onclick="sheetSaveBundle('${kind}',${i})" title="Save bundle">&rsaquo;</button></td>
-        <td><button class="staff-del-btn" onclick="sheetDeleteRow('${kind}',${i})">&times;</button></td>
+        ${tail}
       </tr>`;
       const subs = r.expanded ? r.items.map((x,j)=>`
       <tr class="op-subrow">
         ${selCol?'<td></td>':''}
-        <td class="staff-sn" style="white-space:nowrap;color:var(--muted);">${vi+1}.${j+1}</td>
-        <td><input class="staff-cell" type="text" value="${escH(x.narration||'')}" placeholder="${narrPh}" style="${wrapCss}min-width:150px;"
-          oninput="bundleItemChange('${kind}',${i},${j},'narration',this.value)"/></td>
-        ${st.customCols.map(c=>`<td><input class="staff-cell" type="text" value="${escH((x.custom&&x.custom[c.key])||'')}"
-          oninput="(sheetRows('${kind}')[${i}].items[${j}].custom=sheetRows('${kind}')[${i}].items[${j}].custom||{})['${c.key}']=this.value"/></td>`).join('')}
-        <td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">${sym}</span>
-          <input class="staff-cell num" type="text" inputmode="decimal" value="${x.unit_price>0?fmtCell(x.unit_price):''}" placeholder="0"
-            onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-            oninput="fmtInputCommas(this);bundleItemChange('${kind}',${i},${j},'unit_price',this.value)"/></div></td>
-        <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${x.qty||1}"
-          onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-          oninput="bundleItemChange('${kind}',${i},${j},'qty',this.value)"/></td>
-        <td style="white-space:nowrap;"><div class="staff-cell ro" id="bItemTot_${kind}_${i}_${j}">${staffFmtAmt(x.total)}</div></td>
-        <td style="color:var(--muted);font-size:0.66rem;">—</td>
-        <td></td>
-        <td><button class="staff-del-btn" onclick="bundleItemDelete('${kind}',${i},${j})">&times;</button></td>
+        ${cols.map(c=>{
+          switch(c.t==='c'?'custom':c.k) {
+            case 'sn': return `<td class="staff-sn" style="white-space:nowrap;color:var(--muted);">${vi+1}.${j+1}</td>`;
+            case 'narration': return `<td><input class="staff-cell" type="text" value="${escH(x.narration||'')}" placeholder="${narrPh}" style="${wrapCss}min-width:150px;"
+              oninput="bundleItemChange('${kind}',${i},${j},'narration',this.value)"/></td>`;
+            case 'custom': return `<td><input class="staff-cell" type="text" value="${escH((x.custom&&x.custom[c.k])||'')}"
+              oninput="(sheetRows('${kind}')[${i}].items[${j}].custom=sheetRows('${kind}')[${i}].items[${j}].custom||{})['${c.k}']=this.value"/></td>`;
+            case 'unit_price': return `<td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">${sym}</span>
+              <input class="staff-cell num" type="text" inputmode="decimal" value="${x.unit_price>0?fmtCell(x.unit_price):''}" placeholder="0"
+                onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+                oninput="fmtInputCommas(this);bundleItemChange('${kind}',${i},${j},'unit_price',this.value)"/></div></td>`;
+            case 'qty': return `<td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${x.qty||1}"
+              onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
+              oninput="bundleItemChange('${kind}',${i},${j},'qty',this.value)"/></td>`;
+            case 'total': return `<td style="white-space:nowrap;"><div class="staff-cell ro" id="bItemTot_${kind}_${i}_${j}">${staffFmtAmt(x.total)}</div></td>`;
+            case 'pay_mode': return '<td style="color:var(--muted);font-size:0.66rem;">—</td>';
+            case 'del': return `<td><button class="staff-del-btn" onclick="bundleItemDelete('${kind}',${i},${j})">&times;</button></td>`;
+            default: return '<td></td>';
+          }
+        }).join('')}
       </tr>`).join('') : '';
       return head + subs;
     }
 
-    const customCells = st.customCols.map(c=>`<td><input class="staff-cell" type="text" value="${escH((r.custom&&r.custom[c.key])||'')}"
-      oninput="(sheetRows('${kind}')[${i}].custom=sheetRows('${kind}')[${i}].custom||{})['${c.key}']=this.value"/></td>`).join('');
     return `
     <tr id="${kind}row_${i}" data-idx="${i}" class="${frozen?'sheet-frozen-row':''}"
         style="${_sheetDragIdx===i?'outline:2px solid var(--gold);':''}">
       ${circle}
-      <td class="staff-sn" style="white-space:nowrap;">${vi+1}</td>
-      <td><input class="staff-cell" type="text" value="${escH(r.narration||'')}" placeholder="${narrPh}" style="${wrapCss}min-width:150px;"
-        oninput="sheetRows('${kind}')[${i}].narration=this.value;sheetRows('${kind}')[${i}]._posted=false"/></td>
-      ${customCells}
-      <td style="white-space:nowrap;"><div class="staff-price-wrap"><span class="staff-curr-prefix">${sym}</span>
-        <input class="staff-cell num" type="text" inputmode="decimal" value="${r.unit_price>0?fmtCell(r.unit_price):''}" placeholder="0"
-          onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-          oninput="fmtInputCommas(this);${numFn}(${i},'unit_price',this.value)"/></div></td>
-      <td style="white-space:nowrap;"><input class="staff-cell num" type="text" inputmode="numeric" value="${r.qty||1}"
-        onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
-        oninput="${numFn}(${i},'qty',this.value)"/></td>
-      <td style="white-space:nowrap;"><div class="staff-cell ro" id="${kind==='sales'?'sale_total_':'etotal_'}${i}">${staffFmtAmt(r.total)}</div></td>
-      <td><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
-        onchange="sheetRows('${kind}')[${i}].pay_mode=this.value">
-        <option value="cash"     ${(r.pay_mode||'cash')==='cash'?'selected':''}>Cash</option>
-        <option value="transfer" ${r.pay_mode==='transfer'?'selected':''}>Bank Transfer</option>
-        <option value="pos"      ${r.pay_mode==='pos'?'selected':''}>POS</option>
-        <option value="credit"   ${r.pay_mode==='credit'?'selected':''}>On Credit</option>
-      </select></td>
-      <td><button class="staff-save-row-btn" onclick="${saveFn}(${i})" title="Save">&rsaquo;</button></td>
-      <td><button class="staff-del-btn" onclick="sheetDeleteRow('${kind}',${i})">&times;</button></td>
+      ${cols.map(c=>cellNormal(c,r,i)).join('').replace('%%VI%%', vi+1)}
     </tr>`;
   }).join('');
 
   const total = sheetGrand(rows);
+  // tfoot: label spans up to total column
+  let totIdx = cols.findIndex(c=>c.k==='total');
+  if (totIdx < 0) totIdx = cols.length-1;
+  const beforeCnt = (selCol?1:0) + totIdx;
+  const afterCnt  = cols.length - totIdx - 1;
+
+  const hiddenKeys = Object.keys(st.hidden||{}).filter(k=>st.hidden[k]);
+  const hiddenBar = hiddenKeys.length ? `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 16px 0;align-items:center;">
+      <span style="font-size:0.66rem;color:var(--muted);">Hidden:</span>
+      ${hiddenKeys.map(k=>{
+        const c = st.colOrder.find(x=>x.k===k)||{k};
+        return `<span onclick="sheetColUnhide('${kind}','${k}')" style="font-size:0.66rem;background:var(--surface2);border:1px solid var(--border2);color:var(--off);padding:3px 9px;border-radius:9px;cursor:pointer;">${sheetColLabel(kind,c)} ✕</span>`;
+      }).join('')}
+    </div>` : '';
+
   const selBar = sel.active ? `
     <div class="op-selbar">
       <span style="color:var(--gold);font-weight:800;">${sel.picked.length} selected</span>
@@ -8988,11 +9218,14 @@ function renderRecordSheet(kind) {
       <button class="tb-icon" title="Freeze rows" onclick="sheetTogglePanel('${kind}','freeze')">❄</button>
       <button class="tb-icon" title="Date filter" onclick="sheetTogglePanel('${kind}','date')">📅</button>
       <button class="tb-icon" title="Today" onclick="sheetToday('${kind}')">Today</button>
-      <button class="tb-icon" title="Insert column" onclick="sheetTogglePanel('${kind}','inscol')">+▥</button>
+      ${isSales ? `<label class="tb-icon" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
+        <input type="checkbox" ${st.receipt?'checked':''} onchange="sheetToggleReceipt('${kind}',this.checked)" style="accent-color:var(--gold);"/> Receipt
+      </label>` : ''}
     </div>
 
     <div id="sheetPanel_${kind}" class="sheet-panel hidden"></div>
     ${selBar}
+    ${hiddenBar}
 
     <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 16px 6px;">
       <div id="sheetDateLabel_${kind}" style="color:var(--gold);font-size:0.72rem;font-weight:700;">${sheetHeaderDate(kind)}</div>
@@ -9001,29 +9234,20 @@ function renderRecordSheet(kind) {
     </div>
 
     <div class="bk-sheet-wrap" style="font-family:'${st.font}',sans-serif;">
-      <table class="staff-table staff-table-compact" id="sheetTable_${kind}" style="min-width:${640+nCust*120+(selCol?34:0)}px;table-layout:fixed;">
+      <table class="staff-table staff-table-compact" id="sheetTable_${kind}" style="min-width:${totalMinW}px;table-layout:fixed;">
         <colgroup>
           ${selCol?'<col style="width:34px;">':''}
-          <col style="width:40px;"><col style="width:185px;">
-          ${st.customCols.map(()=>'<col style="width:120px;">').join('')}
-          <col style="width:125px;"><col style="width:92px;"><col style="width:115px;"><col style="width:125px;"><col style="width:34px;"><col style="width:34px;">
+          ${cols.map(c=>`<col style="width:${colW(c)}px;">`).join('')}
         </colgroup>
         <thead><tr>
-          ${selCol?'<th></th>':''}
-          <th style="white-space:nowrap;">S/N</th>
-          <th>Narration</th>
-          ${customColsHead}
-          <th>Unit Price</th>
-          <th style="white-space:nowrap;">Quantity</th>
-          <th>Total</th>
-          <th>Payment Mode</th>
-          <th></th><th></th>
+          ${selCol?'<th style="width:34px;"></th>':''}
+          ${thead}
         </tr></thead>
         <tbody>${body}</tbody>
         <tfoot><tr class="staff-total-row">
-          <td colspan="${(selCol?1:0)+2+nCust+2}" style="padding:7px 5px;">Total</td>
+          <td colspan="${Math.max(1,beforeCnt)}" style="padding:7px 5px;">Total</td>
           <td id="sheetGrandTotal_${kind}" style="white-space:nowrap;padding:7px 5px;text-align:right;font-weight:800;">${staffFmtAmt(total)}</td>
-          <td colspan="3"></td>
+          ${afterCnt>0?`<td colspan="${afterCnt}"></td>`:''}
         </tr></tfoot>
       </table>
     </div>
@@ -9036,6 +9260,175 @@ function renderRecordSheet(kind) {
   if (newWrap) newWrap.scrollLeft = keepScroll;
   requestAnimationFrame(()=>{ const w2 = document.querySelector('.bk-sheet-wrap'); if (w2) w2.scrollLeft = keepScroll; });
   sheetInitLongPress(kind);
+}
+
+// ── Header interactions ──────────────────────────────────────
+function sheetHlCol(kind, key) {
+  const st = sheetState[kind];
+  st.hlCol = (st.hlCol===key) ? null : key;
+  st.menuCol = null;
+  renderRecordSheet(kind);
+}
+function sheetColMenu(kind, key) {
+  const st = sheetState[kind];
+  st.menuCol = (st.menuCol===key) ? null : key;
+  renderRecordSheet(kind);
+}
+function sheetColRename(kind, key) {
+  const st = sheetState[kind];
+  const c = st.colOrder.find(x=>x.k===key);
+  const cur = c ? sheetColLabel(kind,c) : '';
+  const name = prompt('New header name:', cur);
+  st.menuCol = null;
+  if (!name) { renderRecordSheet(kind); return; }
+  if (c && c.t==='c') c.label = name.trim();
+  else { st.colLabels = st.colLabels||{}; st.colLabels[key] = name.trim(); }
+  sheetPersistCols(kind);
+  renderRecordSheet(kind);
+}
+function sheetColInsert(kind, key, side) {
+  const st = sheetState[kind];
+  const name = prompt('New column header name:');
+  st.menuCol = null;
+  if (!name) { renderRecordSheet(kind); return; }
+  const idx = st.colOrder.findIndex(x=>x.k===key);
+  const at = side==='left' ? idx : idx+1;
+  st.colOrder.splice(at, 0, {k:'c'+Date.now(), t:'c', label:name.trim()});
+  sheetPersistCols(kind);
+  renderRecordSheet(kind);
+}
+function sheetColDelete(kind, key) {
+  const st = sheetState[kind];
+  const c = st.colOrder.find(x=>x.k===key);
+  st.menuCol = null;
+  if (!c || c.t!=='c') { alert('Built-in columns cannot be deleted — use Hide column instead.'); renderRecordSheet(kind); return; }
+  if (!confirm('Delete column "'+sheetColLabel(kind,c)+'" and its contents?')) { renderRecordSheet(kind); return; }
+  sheetSnapshot(kind);
+  st.colOrder = st.colOrder.filter(x=>x.k!==key);
+  sheetRows(kind).forEach(r=>{
+    if (r._bundle) r.items.forEach(x=>{ if(x.custom) delete x.custom[key]; });
+    else if (r.custom) delete r.custom[key];
+  });
+  sheetPersistCols(kind);
+  renderRecordSheet(kind);
+}
+function sheetColClear(kind, key) {
+  const st = sheetState[kind];
+  st.menuCol = null;
+  if (key==='total') { alert('Total is calculated — clear Unit Price or Quantity instead.'); renderRecordSheet(kind); return; }
+  sheetSnapshot(kind);
+  const clear = r => {
+    if (key==='narration') r.narration='';
+    else if (key==='unit_price'){ r.unit_price=0; r.total=0; }
+    else if (key==='qty'){ r.qty=1; r.total=r.unit_price*1; }
+    else if (key==='pay_mode') r.pay_mode='cash';
+    else if (r.custom) delete r.custom[key];
+    r._posted=false;
+  };
+  sheetRows(kind).forEach(r=>{ if(r._bundle) r.items.forEach(clear); else clear(r); });
+  renderRecordSheet(kind);
+}
+function sheetColHide(kind, key) {
+  const st = sheetState[kind];
+  st.menuCol = null;
+  st.hidden = st.hidden||{};
+  st.hidden[key] = true;
+  if (st.hlCol===key) st.hlCol=null;
+  sheetPersistCols(kind);
+  renderRecordSheet(kind);
+}
+function sheetColUnhide(kind, key) {
+  const st = sheetState[kind];
+  if (st.hidden) delete st.hidden[key];
+  sheetPersistCols(kind);
+  renderRecordSheet(kind);
+}
+function sheetToggleReceipt(kind, on) {
+  sheetState[kind].receipt = !!on;
+  renderRecordSheet(kind);
+}
+
+// ── Receipt ──────────────────────────────────────────────────
+function _receiptData(kind, i) {
+  const r = sheetRows(kind)[i];
+  const items = r._bundle ? r.items : [r];
+  const subtotal = items.reduce((s,x)=>s+(x.total||0),0);
+  const biz = activeBusiness || {};
+  const payLabels = {cash:'Cash',transfer:'Bank Transfer',pos:'POS',cheque:'Cheque',credit:'On Credit'};
+  return {
+    bizName: biz.name || businessDisplayName || 'Business',
+    bizAddr: biz.business_address || biz.address || '',
+    bizPhone: profileData?.phone || '',
+    bizEmail: bkUser?.email || '',
+    when: new Date().toLocaleString('en-NG',{dateStyle:'full',timeStyle:'short'}),
+    number: 'BD-' + (r._txnId ? String(r._txnId).slice(0,8).toUpperCase() : Date.now().toString(36).toUpperCase()),
+    items, subtotal, vat: 0, discount: 0, total: subtotal,
+    pay: payLabels[r.pay_mode||'cash'] || 'Cash',
+  };
+}
+function showReceipt(kind, i) {
+  const d = _receiptData(kind, i);
+  const sym = staffSym();
+  const rowsHtml = d.items.map((x,n)=>`
+    <tr><td style="padding:4px 6px;border-bottom:1px solid var(--border);">${n+1}. ${escH(x.narration||'Item')}</td>
+    <td style="padding:4px 6px;border-bottom:1px solid var(--border);text-align:center;">${x.qty||1}</td>
+    <td style="padding:4px 6px;border-bottom:1px solid var(--border);text-align:right;">${staffFmtAmt(x.unit_price)}</td>
+    <td style="padding:4px 6px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;">${staffFmtAmt(x.total)}</td></tr>`).join('');
+  const overlay = document.createElement('div');
+  overlay.id = 'receiptOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = `
+    <div id="receiptCard" style="background:var(--surface);border:1px solid var(--gold);border-radius:14px;max-width:420px;width:100%;max-height:88vh;overflow-y:auto;padding:20px;">
+      <div style="text-align:center;border-bottom:1px dashed var(--border2);padding-bottom:12px;">
+        <div style="font-size:1.05rem;font-weight:900;color:var(--gold);">${escH(d.bizName)}</div>
+        ${d.bizAddr?`<div style="font-size:0.68rem;color:var(--muted);">${escH(d.bizAddr)}</div>`:''}
+        ${d.bizPhone?`<div style="font-size:0.68rem;color:var(--muted);">${escH(d.bizPhone)}</div>`:''}
+        <div style="font-size:0.68rem;color:var(--muted);">${escH(d.bizEmail)}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--off);padding:10px 0 6px;">
+        <span>${d.when}</span><span style="font-weight:800;">№ ${d.number}</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:0.74rem;color:var(--off);">
+        <thead><tr style="color:var(--muted);font-size:0.6rem;text-align:left;">
+          <th style="padding:4px 6px;">ITEM</th><th style="padding:4px 6px;text-align:center;">QTY</th>
+          <th style="padding:4px 6px;text-align:right;">UNIT</th><th style="padding:4px 6px;text-align:right;">TOTAL</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+      <div style="font-size:0.74rem;color:var(--off);padding-top:10px;">
+        <div style="display:flex;justify-content:space-between;"><span>Subtotal</span><span>${staffFmtAmt(d.subtotal)}</span></div>
+        <div style="display:flex;justify-content:space-between;color:var(--muted);"><span>VAT</span><span>${staffFmtAmt(d.vat)}</span></div>
+        <div style="display:flex;justify-content:space-between;color:var(--muted);"><span>Discount</span><span>${staffFmtAmt(d.discount)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:900;color:var(--gold);font-size:0.9rem;border-top:1px dashed var(--border2);margin-top:6px;padding-top:6px;">
+          <span>TOTAL PAID</span><span>${staffFmtAmt(d.total)}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;"><span>Payment method</span><span style="font-weight:700;">${d.pay}</span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button onclick="printReceipt()" style="flex:1;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.76rem;padding:10px;border-radius:8px;cursor:pointer;">🖨 Print</button>
+        <button onclick="emailReceipt('${kind}',${i})" style="flex:1;background:var(--surface2);color:var(--gold);border:1px solid var(--gold);font-weight:800;font-size:0.76rem;padding:10px;border-radius:8px;cursor:pointer;">✉ Email</button>
+        <button onclick="document.getElementById('receiptOverlay').remove()" style="background:none;color:var(--muted);border:1px solid var(--border2);font-size:0.76rem;padding:10px 14px;border-radius:8px;cursor:pointer;">Close</button>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+function printReceipt() {
+  const card = document.getElementById('receiptCard');
+  if (!card) return;
+  const w = window.open('','_blank');
+  w.document.write('<html><head><title>Receipt</title><style>body{font-family:Arial;color:#000;max-width:380px;margin:20px auto;}table{width:100%;border-collapse:collapse;}td,th{padding:4px 6px;}div,span{color:#000 !important;}</style></head><body>'+card.innerHTML.replace(/<div style="display:flex;gap:8px;margin-top:16px;">[\s\S]*$/,'')+'</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(), 300);
+}
+function emailReceipt(kind, i) {
+  const d = _receiptData(kind, i);
+  const body = encodeURIComponent(
+    d.bizName+'\n'+d.when+'\nReceipt '+d.number+'\n\n'
+    + d.items.map((x,n)=>(n+1)+'. '+(x.narration||'Item')+'  x'+(x.qty||1)+'  '+staffFmtAmt(x.total)).join('\n')
+    + '\n\nSubtotal: '+staffFmtAmt(d.subtotal)
+    + '\nTOTAL PAID: '+staffFmtAmt(d.total)
+    + '\nPayment: '+d.pay+'\n\nThank you for your patronage.');
+  window.location.href = 'mailto:?subject='+encodeURIComponent('Receipt '+d.number+' — '+d.bizName)+'&body='+body;
 }
 
 // ── Selection mode + One-Payment bundling ─────────────────────
@@ -10924,7 +11317,7 @@ async function autoPostSaleRow(row, customerName, txnDate) {
   const payMode = row.pay_mode || row.payMode || 'cash';
   let cashAcct;
   if (payMode === 'credit')            cashAcct = 'Debtors';
-  else if (payMode === 'transfer' || payMode === 'pos') cashAcct = 'Cash at Bank';
+  else if (payMode === 'transfer' || payMode === 'pos' || payMode === 'cheque') cashAcct = 'Cash at Bank';
   else                                  cashAcct = 'Cash in Hand';
   const incomeAcct = await staffIncomeAccount(row.narration);
   const amount     = parseFloat(row.total) || 0;
