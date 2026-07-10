@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -23,6 +24,8 @@
   <!-- MS Tiles (Windows) -->
   <meta name="msapplication-TileColor" content="#d4af37"/>
   <meta name="msapplication-TileImage" content="/icons/android-chrome-192x192.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Lora:wght@400;600;700&family=Oswald:wght@400;600;700&family=EB+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
 <style>html,body{background:#0f1117!important;}
 /* ── LANDING PAGE TYPOGRAPHY ─────────────────────────── */
 .bk-land-small{font-size:0.85rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:8px;}
@@ -182,12 +185,36 @@ select.bk-cell,input.bk-cell{min-height:34px;}
 
 #sheetTable_sales td,#sheetTable_expenses td{-webkit-touch-callout:none;}
 
+
+#sheetTable_sales th,#sheetTable_expenses th{white-space:nowrap;overflow:visible;}
+
+button,input,select,textarea{font-family:inherit;}
+body[data-theme="cyan"]{
+  --bg:#f5fafa;--surface:#ffffff;--surface2:#edf4f5;
+  --border:#d7e5e7;--border2:#c3d7da;--border3:#a3c2c6;
+  --white:#132428;--off:#2c4147;--muted:#5d757a;--muted2:#8aa2a6;
+  --gold:#d0e0e3;--gold-dim:rgba(208,224,227,0.45);
+}
+body[data-theme="cyan"] .bk-login-btn,body[data-theme="cyan"] .op-bundle-btn{color:#132428 !important;}
+body[data-theme="flow"]{
+  background:linear-gradient(135deg,#43a05e 0%,#5a7fb0 55%,#6b63b5 100%) fixed;
+  --bg:transparent;--surface:rgba(10,20,30,0.35);--surface2:rgba(10,20,30,0.5);
+  --border:rgba(255,255,255,0.22);--border2:rgba(255,255,255,0.32);--border3:rgba(255,255,255,0.5);
+  --white:#ffffff;--off:#eef2ff;--muted:rgba(255,255,255,0.72);--muted2:rgba(255,255,255,0.5);
+  --gold:#ffffff;--gold-dim:rgba(255,255,255,0.18);
+}
+.fill-hl{outline:1px dashed var(--gold);outline-offset:-1px;}
+#sheetTable_sales td,#sheetTable_expenses td,#ledgerTable td{position:relative;}
+#sheetTable_sales td:focus-within::after,#sheetTable_expenses td:focus-within::after,#ledgerTable td:focus-within::after{
+  content:'';position:absolute;right:1px;bottom:1px;width:9px;height:9px;background:var(--gold);border:1px solid var(--bg);cursor:crosshair;z-index:5;}
+
+.led-hide-date .col-date,.led-hide-payee .col-payee,.led-hide-payer .col-payer,.led-hide-narr .col-narr,.led-hide-dr .col-dr,.led-hide-cr .col-cr,.led-hide-bal .col-bal{display:none;}
 .col-head{-webkit-user-select:none;user-select:none;}
 .col-head-hl{background:rgba(212,175,55,0.14) !important;}
 .col-tri{position:absolute;top:2px;right:3px;font-size:0.5rem;color:var(--gold);opacity:0;transition:opacity 0.15s;padding:3px;cursor:pointer;}
 .col-head:hover .col-tri{opacity:1;}
 .col-tri-show{opacity:1 !important;}
-.col-menu{position:absolute;top:100%;right:0;z-index:500;background:var(--surface2);border:1px solid var(--gold);border-radius:10px;min-width:190px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.5);text-align:left;}
+.col-menu{z-index:500;background:var(--surface2);border:1px solid var(--gold);border-radius:10px;min-width:190px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.5);text-align:left;}
 .col-menu-item{padding:8px 10px;font-size:0.72rem;color:var(--off);border-radius:7px;cursor:pointer;font-weight:600;text-transform:none;letter-spacing:0;white-space:nowrap;}
 .col-menu-item:hover{background:var(--gold-dim);color:var(--gold);}
 .receipt-link{color:var(--gold);font-size:0.7rem;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
@@ -1659,6 +1686,18 @@ function showAuthScreen(view) {
       </div>`;
   }
 }
+
+// ── Appearance: theme + font ─────────────────────────────────
+function applyTheme(t) {
+  document.body.dataset.theme = (t==='cyan'||t==='flow') ? t : '';
+  localStorage.setItem('bd_theme', t||'default');
+}
+function applyFont(f) {
+  const font = f && f!=='default' ? f : 'Segoe UI';
+  document.body.style.fontFamily = "'"+font+"',Arial,sans-serif";
+  localStorage.setItem('bd_font', f||'default');
+}
+try { applyTheme(localStorage.getItem('bd_theme')||'default'); applyFont(localStorage.getItem('bd_font')||'default'); } catch(e){}
 
 function togglePw(id, el) {
   const inp = document.getElementById(id);
@@ -3362,6 +3401,120 @@ function today() {
 }
 
 // ── RENDER LEDGER ─────────────────────────────────────────────
+// ── Ledger column model + selection ─────────────────────────
+let ledSel = { active:false, picked:[] };
+function _ledCustom(){ try { return JSON.parse(localStorage.getItem('bd_led_custom')||'[]'); } catch(e){ return []; } }
+function _ledSetCustom(c){ localStorage.setItem('bd_led_custom', JSON.stringify(c)); }
+function _ledVals(){ try { return JSON.parse(localStorage.getItem('bd_led_custvals')||'{}'); } catch(e){ return {}; } }
+function _ledLabels(){ try { return JSON.parse(localStorage.getItem('bd_led_labels')||'{}'); } catch(e){ return {}; } }
+function _ledHidden(){ try { return JSON.parse(localStorage.getItem('bd_led_hidden')||'{}'); } catch(e){ return {}; } }
+function ledCustomInput(idx, key, val) {
+  const r = rows[idx]; if (!r) return;
+  r.custom = r.custom||{}; r.custom[key]=val;
+  if (r.id) { const m=_ledVals(); m[r.id]=m[r.id]||{}; m[r.id][key]=val; localStorage.setItem('bd_led_custvals', JSON.stringify(m)); }
+}
+function ledColMenu(ev, key) {
+  const custom = String(key).startsWith('lc');
+  openColMenuPortal(ev, [
+    ['✏️ Rename Header', "ledColRename('"+key+"')"],
+    ['+ Insert column left', "ledColInsert('"+key+"','left')"],
+    ['+ Insert column right', "ledColInsert('"+key+"','right')"],
+    ['🗑 Delete column', "ledColDelete('"+key+"')"],
+    ['✕ Clear column', "ledColClear('"+key+"')"],
+    ['🚫👁 Hide column', "ledColHide('"+key+"')"],
+  ]);
+}
+function ledColRename(key) {
+  const labels=_ledLabels();
+  const custom=_ledCustom().find(c=>c.key===key);
+  const cur = custom ? custom.label : (labels[key] || {date:'Date',payee:'Payee',payer:'Payer',narr:'Narration',dr:'Debit',cr:'Credit',bal:'Balance'}[key] || key);
+  const name = prompt('New header name:', cur);
+  if (!name) return;
+  if (custom) { custom.label=name.trim(); _ledSetCustom(_ledCustom().map(c=>c.key===key?custom:c)); }
+  else { labels[key]=name.trim(); localStorage.setItem('bd_led_labels', JSON.stringify(labels)); }
+  renderLedger();
+}
+function ledColInsert(key, side) {
+  const name = prompt('New column header name:');
+  if (!name) return;
+  const cols = _ledCustom();
+  const idx = cols.findIndex(c=>c.key===key);
+  const entry = { key:'lc'+Date.now(), label:name.trim() };
+  if (idx>=0) cols.splice(side==='left'?idx:idx+1, 0, entry);
+  else if (['dr','cr','bal'].includes(key) || side==='right' && key==='narr') cols.push(entry);
+  else cols.unshift(entry);
+  _ledSetCustom(cols);
+  renderLedger();
+}
+function ledColDelete(key) {
+  if (!String(key).startsWith('lc')) { alert('Built-in ledger columns cannot be deleted — use Hide column instead.'); return; }
+  if (!confirm('Delete this column and its contents?')) return;
+  _ledSetCustom(_ledCustom().filter(c=>c.key!==key));
+  renderLedger();
+}
+function ledColClear(key) {
+  if (!confirm('Clear all values in this column?')) return;
+  pushUndoState();
+  if (String(key).startsWith('lc')) { rows.forEach(r=>{ if(r.custom) delete r.custom[key]; }); }
+  else rows.forEach(r=>{
+    if (key==='payee') r.payee=''; else if (key==='payer') r.payer='';
+    else if (key==='narr') r.narration=''; else if (key==='date') r.txn_date='';
+    else if (key==='dr'){ r.debit=0; r.saved=false; } else if (key==='cr'){ r.credit=0; r.saved=false; }
+    else return;
+    r.saved=false;
+  });
+  recalcBalances();
+  renderRows(rows);
+}
+function ledColHide(key) {
+  const h=_ledHidden(); h[key]=true;
+  localStorage.setItem('bd_led_hidden', JSON.stringify(h));
+  renderLedger();
+}
+function ledColUnhide(key) {
+  const h=_ledHidden(); delete h[key];
+  localStorage.setItem('bd_led_hidden', JSON.stringify(h));
+  renderLedger();
+}
+function ledSelButton() {
+  ledSel.active = !ledSel.active;
+  ledSel.picked = [];
+  renderLedger();
+}
+function ledSelToggle(i) {
+  const p = ledSel.picked.indexOf(i);
+  if (p>=0) ledSel.picked.splice(p,1); else ledSel.picked.push(i);
+  const bar = document.getElementById('ledSelCount');
+  if (bar) bar.textContent = ledSel.picked.length + ' selected';
+  const el = document.querySelector('#row_'+i+' .op-circle');
+  if (el) el.classList.toggle('on');
+}
+async function ledDeleteSelected() {
+  if (!ledSel.picked.length) return;
+  if (!confirm('Delete '+ledSel.picked.length+' selected row(s)?')) return;
+  pushUndoState();
+  const idxs = ledSel.picked.slice().sort((a,b)=>b-a);
+  for (const i of idxs) {
+    if (rows[i]?.id) await bkDb.from('bk_transactions').delete().eq('id',rows[i].id);
+    rows.splice(i,1);
+  }
+  ledSel = { active:false, picked:[] };
+  recalcBalances();
+  renderLedger();
+  await refreshEquation();
+}
+function ledPrint() {
+  const table = document.getElementById('ledgerTable');
+  if (!table) return;
+  const clone = table.cloneNode(true);
+  clone.querySelectorAll('input').forEach(el=>{ const s=document.createElement('span'); s.textContent=el.value||''; el.replaceWith(s); });
+  clone.querySelectorAll('button').forEach(b=>b.remove());
+  const w = window.open('','_blank');
+  w.document.write('<html><head><title>'+(activeAccount?.account_name||'Ledger')+'</title><style>body{font-family:Arial;color:#000;}h2{margin:0 0 10px;}table{width:100%;border-collapse:collapse;font-size:11px;}th,td{border:1px solid #999;padding:4px 6px;text-align:left;}th{background:#eee;}</style></head><body><h2>'+(activeBusiness?.name||'')+' — '+(activeAccount?.account_name||'Ledger')+'</h2>'+clone.outerHTML+'</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(), 300);
+}
+
 function renderLedger() {
   const typeLabel = activeType.charAt(0).toUpperCase()+activeType.slice(1);
   const content   = document.getElementById('bkContent');
@@ -3394,18 +3547,38 @@ function renderLedger() {
       <div class="sched-total-label">Total ${activeAccount.account_name}</div>
       <div class="sched-total-val" id="ledgerTotalVal" style="color:${color};">${balText}</div>
     </div>
+    <div style="display:flex;justify-content:flex-end;gap:6px;padding:0 0 8px;flex-wrap:wrap;">
+      <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;${ledSel.active?'border-color:var(--gold);color:var(--gold);':''}" onclick="ledSelButton()">☑ Select</button>
+      <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;" onclick="ledPrint()">🖨 Print</button>
+    </div>
+    ${ledSel.active?`<div class="op-selbar" style="margin:0 0 8px;"><span id="ledSelCount" style="color:var(--gold);font-weight:800;">0 selected</span>
+      <button class="op-bundle-btn" onclick="ledDeleteSelected()">🗑 Delete selected</button>
+      <button class="op-cancel-btn" onclick="ledSelButton()">Cancel</button></div>`:''}
+    ${(()=>{ const h=_ledHidden(); const keys=Object.keys(h).filter(k=>h[k]); if(!keys.length) return '';
+      const lbl=Object.assign({date:'Date',payee:'Payee',payer:'Payer',narr:'Narration',dr:'Debit',cr:'Credit',bal:'Balance'}, _ledLabels());
+      return '<div style="display:flex;gap:6px;flex-wrap:wrap;padding:0 0 8px;align-items:center;"><span style="font-size:0.66rem;color:var(--muted);">Hidden:</span>'
+        + keys.map(k=>{ const c=_ledCustom().find(x=>x.key===k);
+          return '<span onclick="ledColUnhide(\''+k+'\')" style="font-size:0.66rem;background:var(--surface2);border:1px solid var(--border2);color:var(--off);padding:3px 9px;border-radius:9px;cursor:pointer;">'+escH(c?c.label:(lbl[k]||k))+' ✕</span>'; }).join('') + '</div>'; })()}
     <div class="bk-sheet-wrap">
-      <table class="bk-sheet" id="ledgerTable" style="min-width:960px;">
+      <table class="bk-sheet ${(()=>{const h=_ledHidden();return Object.keys(h).filter(k=>h[k]&&!String(k).startsWith('lc')).map(k=>'led-hide-'+k).join(' ');})()}" id="ledgerTable" style="min-width:960px;">
         <thead>
           <tr>
+            ${ledSel.active?'<th style="width:34px;"></th>':''}
             <th class="col-sn num" style="width:40px;">S/N</th>
-            <th class="col-date" style="width:110px;">Date <button class="jdate-filter-btn" onclick="toggleJDateFilter(event)" title="Filter by date">📅</button></th>
-            <th class="col-payee" style="width:120px;">Payee</th>
-            <th class="col-payer" style="width:120px;">Payer</th>
-            <th class="col-narr">Narration</th>
-            <th class="col-dr num" style="width:110px;">Debit (${CURRENCIES[activeCurrency].symbol})</th>
-            <th class="col-cr num" style="width:110px;">Credit (${CURRENCIES[activeCurrency].symbol})</th>
-            <th class="col-bal num" style="width:120px;">Balance (${CURRENCIES[activeCurrency].symbol})</th>
+            ${(()=>{ const lbl=Object.assign({date:'Date',payee:'Payee',payer:'Payer',narr:'Narration',dr:'Debit',cr:'Credit',bal:'Balance'}, _ledLabels());
+              const tri=k=>'<span class="col-tri col-tri-show" style="position:static;font-size:0.5rem;margin-left:3px;" onclick="event.stopPropagation();ledColMenu(event,\''+k+'\')">▼</span>';
+              const sym=CURRENCIES[activeCurrency].symbol;
+              let h='';
+              h+='<th class="col-date col-head" style="width:110px;">'+escH(lbl.date)+' <button class="jdate-filter-btn" onclick="toggleJDateFilter(event)" title="Filter by date">📅</button>'+tri('date')+'</th>';
+              h+='<th class="col-payee col-head" style="width:120px;">'+escH(lbl.payee)+tri('payee')+'</th>';
+              h+='<th class="col-payer col-head" style="width:120px;">'+escH(lbl.payer)+tri('payer')+'</th>';
+              h+='<th class="col-narr col-head">'+escH(lbl.narr)+tri('narr')+'</th>';
+              const hid=_ledHidden();
+              h+=_ledCustom().filter(c=>!hid[c.key]).map(c=>'<th class="col-head" style="width:120px;">'+escH(c.label)+tri(c.key)+'</th>').join('');
+              h+='<th class="col-dr num col-head" style="width:110px;">'+escH(lbl.dr)+' ('+sym+')'+tri('dr')+'</th>';
+              h+='<th class="col-cr num col-head" style="width:110px;">'+escH(lbl.cr)+' ('+sym+')'+tri('cr')+'</th>';
+              h+='<th class="col-bal num col-head" style="width:120px;">'+escH(lbl.bal)+' ('+sym+')'+tri('bal')+'</th>';
+              return h; })()}
             <th style="width:28px;"></th>
             <th style="width:28px;"></th>
           </tr>
@@ -3428,23 +3601,27 @@ function renderLedger() {
 }
 
 function renderRows(displayRows) {
+  displayRows = displayRows || rows;
   const tbody = document.getElementById('ledgerBody');
   if (!tbody) return;
   const ob = parseFloat(activeAccount?.opening_balance)||0;
 
   // Opening balance row
+  const _obHid = _ledHidden();
+  const _obSpan = 4 - ['date','payee','payer','narr'].filter(k=>_obHid[k]).length + _ledCustom().filter(c=>!_obHid[c.key]).length;
   const obRow = `
     <tr class="ob-row" id="row_ob">
+      ${ledSel.active?'<td></td>':''}
       <td style="text-align:center;padding:4px 2px;font-size:0.72rem;color:var(--muted);">—</td>
-      <td colspan="4" style="padding:6px 10px;">
+      <td colspan="${Math.max(1,_obSpan)}" style="padding:6px 10px;">
         <span style="font-size:0.76rem;font-weight:700;color:var(--gold);">Opening Balance</span>
       </td>
-      <td style="text-align:right;padding:4px 6px;color:var(--muted);">—</td>
-      <td style="text-align:right;padding:4px 6px;color:var(--muted);">—</td>
-      <td style="padding:4px 6px;position:relative;">
+      <td class="col-dr" style="text-align:right;padding:4px 6px;color:var(--muted);">—</td>
+      <td class="col-cr" style="text-align:right;padding:4px 6px;color:var(--muted);">—</td>
+      <td class="col-bal" style="padding:4px 6px;position:relative;">
         <span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:0.72rem;color:var(--gold);pointer-events:none;">${CURRENCIES[activeCurrency].symbol}</span>
         <input class="bk-cell num" id="obBalInput" type="text" inputmode="decimal"
-          value="${ob!==0?fmt(ob):''}" placeholder="0"
+          value="${ob!==0?fmtNum(ob):''}" placeholder="0"
           style="font-weight:800;color:var(--gold);padding-left:18px;"
           oninput="ledgerOBChanged(this.value)"
           onblur="saveOpeningBalance(this.value)"/>
@@ -3462,9 +3639,8 @@ function renderRows(displayRows) {
     return buildEditableRow(row, idx, i+1);
   }).join('');
 
-  // Always show 3 empty rows below for new entries
-  const emptyStart = rows.filter(r=>hasData(r)).length;
-  const extraEmpty = buildEmptyEditableRows(3, emptyStart);
+  // Exactly one trailing blank row for new entries
+  const extraEmpty = buildEmptyEditableRows(1, rows.length);
 
   tbody.innerHTML = obRow + existingHtml + extraEmpty;
   setTimeout(()=>{ initColumnResize(); initRowResize(); initDragRows(); }, 50);
@@ -3472,14 +3648,15 @@ function renderRows(displayRows) {
 
 // Format number with commas as user types
 function ledgerFmtInput(input, idx, field) {
-  const raw = input.value.replace(/[^0-9.]/g, '');
+  const raw = input.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
   const num = parseFloat(raw) || 0;
   rows[idx][field] = num;
   rows[idx].saved = false;
-  // Reformat with commas, preserve cursor
-  const parts = raw.split('.');
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const formatted = parts.join('.');
+  // Reformat with commas, preserve cursor and any trailing decimals
+  const dot = raw.indexOf('.');
+  const intPart = dot>=0 ? raw.slice(0,dot) : raw;
+  const decPart = dot>=0 ? '.'+raw.slice(dot+1) : '';
+  const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + decPart;
   const cursorPos = input.selectionStart;
   const prevLen = input.value.length;
   input.value = formatted;
@@ -3489,6 +3666,8 @@ function ledgerFmtInput(input, idx, field) {
   if (field === 'debit' || field === 'credit') ledgerCellChanged(idx);
 }
 
+function fmtNum(n){ n=parseFloat(n)||0; return n.toLocaleString('en-NG',{maximumFractionDigits:4}); }
+
 function buildEditableRow(row, idx, sn) {
   const bal      = parseFloat(row.balance)||0;
   const balClass = bal > 0 ? 'pos' : bal < 0 ? 'neg' : 'zero';
@@ -3496,6 +3675,7 @@ function buildEditableRow(row, idx, sn) {
   const sym      = CURRENCIES[activeCurrency]?.symbol || '₦';
 
   return `<tr id="row_${idx}">
+    ${ledSel.active?`<td class="op-selcell"><span onclick="ledSelToggle(${idx})" class="op-circle ${ledSel.picked.includes(idx)?'on':''}"></span></td>`:''}
     <td class="col-sn" style="text-align:center;padding:4px 2px;font-size:0.72rem;color:var(--muted);white-space:nowrap;">${sn}</td>
     <td class="col-date"><input class="bk-cell" type="date" value="${escH(dateVal)}"
       onchange="rows[${idx}].txn_date=this.value;rows[${idx}].saved=false;ledgerCellChanged(${idx})"/></td>
@@ -3505,16 +3685,19 @@ function buildEditableRow(row, idx, sn) {
       oninput="rows[${idx}].payer=this.value;rows[${idx}].saved=false"/></td>
     <td class="col-narr"><input class="bk-cell" type="text" value="${escH(row.narration||'')}" placeholder="Narration…"
       oninput="rows[${idx}].narration=this.value;rows[${idx}].saved=false"/></td>
+    ${(()=>{const hid=_ledHidden();const vals=(row.custom)||(row.id?(_ledVals()[row.id]||{}):{});
+      return _ledCustom().filter(c=>!hid[c.key]).map(c=>`<td><input class="bk-cell" type="text" value="${escH(vals[c.key]||'')}"
+      oninput="ledCustomInput(${idx},'${c.key}',this.value)"/></td>`).join('');})()}
     <td class="col-dr"><input class="bk-cell num" type="text" inputmode="decimal"
-      value="${row.debit>0?fmt(row.debit):''}" placeholder="0"
+      value="${row.debit>0?fmtNum(row.debit):''}" placeholder="0"
       oninput="ledgerFmtInput(this,${idx},'debit')"/></td>
     <td class="col-cr"><input class="bk-cell num" type="text" inputmode="decimal"
-      value="${row.credit>0?fmt(row.credit):''}" placeholder="0"
+      value="${row.credit>0?fmtNum(row.credit):''}" placeholder="0"
       oninput="ledgerFmtInput(this,${idx},'credit')"/></td>
     <td class="col-bal" style="position:relative;">
       <span style="position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:0.72rem;color:var(--muted);pointer-events:none;">${sym}</span>
       <input class="bk-cell num bal ${balClass}" id="balCell_${idx}" type="text" inputmode="decimal"
-        value="${bal!==0?fmt(bal):''}" placeholder="0" style="padding-left:18px;"
+        value="${bal!==0?fmtNum(bal):''}" placeholder="0" style="padding-left:18px;"
         oninput="ledgerFmtInput(this,${idx},'balance');ledgerUpdateTotalBanner()"/></td>
     <td><button class="del-btn" onclick="deleteRow(${idx})" title="Delete row">✕</button></td>
     <td><button class="save-row-btn" onclick="saveRow(${idx})" title="Save row">›</button></td>
@@ -3565,7 +3748,7 @@ async function saveOpeningBalance(val) {
     const idx = acctArr.findIndex(a => a.id === activeAccount.id);
     if (idx >= 0) acctArr[idx].opening_balance = newOB;
   } catch(e) {
-    setSaveMsg('Error saving opening balance', 'err');
+    if(typeof err!=='undefined'&&err&&err.message)alert('Save failed: '+err.message); setSaveMsg('Error saving opening balance', 'err');
   }
 }
 
@@ -3639,7 +3822,7 @@ function cellChange(i, field, val) {
 }
 
 function numChange(i, field, val) {
-  rows[i][field]=parseFloat(val)||0; rows[i].saved=false; isDirty=true;
+  rows[i][field]=parseFloat(String(val).replace(/,/g,''))||0; rows[i].saved=false; isDirty=true;
   pushUndoState();
   recalcBalances();
   // Update balance cells from row i onwards without full re-render
@@ -3648,7 +3831,7 @@ function numChange(i, field, val) {
     const inputs=tr.querySelectorAll('input');
     const bal=rows[j].balance;
     const balClass=bal>0?'pos':bal<0?'neg':'zero';
-    if(inputs[6]){inputs[6].value=bal!==0?fmt(bal):'';inputs[6].className=`bk-cell bal ${balClass}`;}
+    if(inputs[6]){inputs[6].value=bal!==0?fmtNum(bal):'';inputs[6].className=`bk-cell bal ${balClass}`;}
     if(inputs[7]){inputs[7].value=hasData(rows[j])?j+1:'';}
   }
   setSaveMsg('Unsaved…','pending');
@@ -3678,7 +3861,7 @@ function recalcBalances() {
 // ── ROW MANAGEMENT ───────────────────────────────────────────
 function addRow() {
   rows.push(emptyRow(rows.length));
-  renderRows();
+  renderRows(rows);
   setTimeout(()=>{
     const tr=document.getElementById(`row_${rows.length-1}`);
     if(tr) tr.querySelector('input')?.focus();
@@ -3691,7 +3874,7 @@ async function deleteRow(i) {
   }
   rows.splice(i,1);
   recalcBalances();
-  renderRows();
+  renderRows(rows);
   await refreshEquation();
   setSaveMsg('Deleted','ok');
 }
@@ -4525,14 +4708,16 @@ function renderJournal() {
     <div class="bk-sheet-wrap">
       <table class="bk-sheet" id="journalTable" style="min-width:1214px;">
         <thead><tr>
-          <th style="width:110px;">Date</th>
-          <th style="width:120px;">Payee</th>
-          <th style="width:120px;">Payer</th>
-          <th style="width:180px;">Narration</th>
-          <th style="width:175px;">Debit Account</th>
-          <th style="width:175px;">Credit Account</th>
-          <th class="num" style="width:110px;">Debit (${CURRENCIES[activeCurrency].symbol})</th>
-          <th class="num" style="width:110px;">Credit (${CURRENCIES[activeCurrency].symbol})</th>
+          ${(()=>{ const lbl=Object.assign({1:'Date',2:'Payee',3:'Payer',4:'Narration',5:'Debit Account',6:'Credit Account',7:'Debit',8:'Credit'}, _jrnLabels());
+            const sym=CURRENCIES[activeCurrency].symbol;
+            const tri=n=>'<span class="col-tri col-tri-show" style="position:static;font-size:0.5rem;margin-left:3px;" onclick="event.stopPropagation();jrnColMenu(event,'+n+')">▼</span>';
+            const w={1:110,2:120,3:120,4:180,5:175,6:175,7:110,8:110};
+            let h='';
+            for(let n=1;n<=8;n++){
+              const money=n>=7?' ('+sym+')':'';
+              h+='<th class="col-head'+(n>=7?' num':'')+'" style="width:'+w[n]+'px;">'+escH(lbl[n])+money+tri(n)+'</th>';
+            }
+            return h; })()}
           <th class="num" style="width:44px;">S/N</th>
           <th style="width:38px;"></th>
           <th style="width:32px;"></th>
@@ -4545,6 +4730,7 @@ function renderJournal() {
       <button class="bk-btn bk-btn-gold" style="font-size:0.8rem;padding:9px 24px;align-self:flex-start;" onclick="saveJournal()">Save &amp; Post</button>
     </div>`;
   renderJournalRows();
+  setTimeout(jrnApplyHidden, 0);
 }
 
 function renderJournalRows() {
@@ -4642,7 +4828,7 @@ function jAccountChange(i,side,val){
 }
 
 function jNumChange(i, field, val) {
-  journalRows[i][field] = parseFloat(val)||0;
+  journalRows[i][field] = parseFloat(String(val).replace(/,/g,''))||0;
   journalRows[i].saved  = false;
   pushUndoState();
   updateJournalBalance();
@@ -4650,17 +4836,23 @@ function jNumChange(i, field, val) {
 
 // ── Amount input: commas + auto-fill opposite column ──────────
 function jAmtInput(el, i, field) {
-  // Parse raw number
-  const raw = parseFloat(el.value.replace(/,/g, '')) || 0;
+  // Parse raw number, keeping any trailing decimals the user is typing
+  const rawStr = el.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  const raw = parseFloat(rawStr) || 0;
   journalRows[i][field] = raw;
   journalRows[i].saved  = false;
 
-  // Format with commas (preserve cursor)
-  const formatted = raw > 0 ? raw.toLocaleString('en-NG') : '';
-  if (el.value !== formatted && formatted) {
+  // Format with commas but never erase the decimal point mid-typing
+  const dot = rawStr.indexOf('.');
+  const intPart = dot >= 0 ? rawStr.slice(0, dot) : rawStr;
+  const decPart = dot >= 0 ? '.' + rawStr.slice(dot + 1) : '';
+  const formatted = (intPart ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '') + decPart;
+  if (el.value !== formatted) {
     const pos = el.selectionStart;
+    const prevLen = el.value.length;
     el.value = formatted;
-    try { el.setSelectionRange(pos, pos); } catch(e) {}
+    const diff = formatted.length - prevLen;
+    try { el.setSelectionRange(pos + diff, pos + diff); } catch(e) {}
   }
 
   // Always mirror to the other column so debit always equals credit
@@ -4669,7 +4861,7 @@ function jAmtInput(el, i, field) {
   const row2 = el.closest('tr');
   const amts = row2 ? row2.querySelectorAll('.bk-amt-input') : [];
   const other = field === 'debit_amount' ? amts[1] : amts[0];
-  if (other && other !== el) other.value = raw > 0 ? raw.toLocaleString('en-NG') : '';
+  if (other && other !== el) other.value = formatted;
 
   pushUndoState();
   updateJournalBalance();
@@ -4708,6 +4900,69 @@ async function deleteJournalRow(i){
   journalRows.splice(i,1);
   renderJournalRows();
   await refreshEquation();
+}
+
+// ── Master Records (journal) column controls ─────────────────
+function _jrnLabels(){ try { return JSON.parse(localStorage.getItem('bd_jrn_labels')||'{}'); } catch(e){ return {}; } }
+function _jrnHidden(){ try { return JSON.parse(localStorage.getItem('bd_jrn_hidden')||'{}'); } catch(e){ return {}; } }
+function jrnColMenu(ev, n) {
+  openColMenuPortal(ev, [
+    ['✏️ Rename Header', 'jrnColRename('+n+')'],
+    ['+ Insert column left', 'jrnColInsertInfo()'],
+    ['+ Insert column right', 'jrnColInsertInfo()'],
+    ['🗑 Delete column', 'jrnColInsertInfo()'],
+    ['✕ Clear column', 'jrnColClear('+n+')'],
+    ['🚫👁 Hide column', 'jrnColHide('+n+')'],
+  ]);
+}
+function jrnColInsertInfo(){ alert('Every column in the Master Records is part of the double-entry structure, so columns cannot be added or deleted here. You can rename, clear, or hide them — and add custom columns in the Sales, Expenses and Ledger sheets.'); }
+function jrnColRename(n) {
+  const lbl = Object.assign({1:'Date',2:'Payee',3:'Payer',4:'Narration',5:'Debit Account',6:'Credit Account',7:'Debit',8:'Credit'}, _jrnLabels());
+  const name = prompt('New header name:', lbl[n]);
+  if (!name) return;
+  const m=_jrnLabels(); m[n]=name.trim();
+  localStorage.setItem('bd_jrn_labels', JSON.stringify(m));
+  (typeof renderJournal==='function') ? renderJournal() : openJournal();
+}
+function jrnColClear(n) {
+  if (!confirm('Clear all values in this column?')) return;
+  const fields={1:'txn_date',2:'payee',3:'payer',4:'narration',5:'debit_account_name',6:'credit_account_name',7:'debit_amount',8:'credit_amount'};
+  const f=fields[n];
+  journalRows.forEach(r=>{ r[f] = (n>=7?0:''); r.saved=false; });
+  (typeof renderJournal==='function') ? renderJournal() : openJournal();
+}
+function jrnColHide(n) {
+  const h=_jrnHidden(); h[n]=true;
+  localStorage.setItem('bd_jrn_hidden', JSON.stringify(h));
+  jrnApplyHidden();
+}
+function jrnColUnhide(n) {
+  const h=_jrnHidden(); delete h[n];
+  localStorage.setItem('bd_jrn_hidden', JSON.stringify(h));
+  jrnApplyHidden();
+}
+function jrnApplyHidden() {
+  const table = document.getElementById('journalTable') || document.querySelector('.bk-sheet-wrap table');
+  if (!table) return;
+  const h=_jrnHidden();
+  for (let n=1;n<=8;n++) {
+    table.querySelectorAll('tr > *:nth-child('+n+')').forEach(cell=>{
+      cell.style.display = h[n] ? 'none' : '';
+    });
+  }
+  let bar = document.getElementById('jrnHiddenBar');
+  const keys = Object.keys(h).filter(k=>h[k]);
+  if (keys.length) {
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id='jrnHiddenBar';
+      bar.style.cssText='display:flex;gap:6px;flex-wrap:wrap;padding:6px 0;align-items:center;';
+      table.closest('.bk-sheet-wrap')?.before(bar);
+    }
+    const lbl = Object.assign({1:'Date',2:'Payee',3:'Payer',4:'Narration',5:'Debit Account',6:'Credit Account',7:'Debit',8:'Credit'}, _jrnLabels());
+    bar.innerHTML = '<span style="font-size:0.66rem;color:var(--muted);">Hidden:</span>'
+      + keys.map(k=>'<span onclick="jrnColUnhide('+k+')" style="font-size:0.66rem;background:var(--surface2);border:1px solid var(--border2);color:var(--off);padding:3px 9px;border-radius:9px;cursor:pointer;">'+escH(lbl[k]||k)+' ✕</span>').join('');
+  } else if (bar) bar.remove();
 }
 
 async function saveJournal(){
@@ -8853,17 +9108,23 @@ function showRecordChoice() {
     </div>`;
 }
 
-function showRecordSales() {
+async function showRecordSales() {
   bdSaveRoute('sales-record');
   staffHideChrome();
-  if (salesRows.length === 0) salesRows = [staffEmptySaleRow(1)];
+  if (salesRows.length === 0) {
+    await sheetRestore('sales');
+    if (salesRows.length === 0) salesRows = [staffEmptySaleRow(1)];
+  }
   renderStaffSales();
 }
 
-function showRecordExpenses() {
+async function showRecordExpenses() {
   bdSaveRoute('expenses-record');
   staffHideChrome();
-  if (staffExpRows.length === 0) staffExpRows = [staffEmptyExpRow(1)];
+  if (staffExpRows.length === 0) {
+    await sheetRestore('expenses');
+    if (staffExpRows.length === 0) staffExpRows = [staffEmptyExpRow(1)];
+  }
   renderRecordExpenses();
 }
 
@@ -8979,7 +9240,7 @@ let sheetSel = { sales:{active:false,picked:[]}, expenses:{active:false,picked:[
 function sheetGrand(rows){ return rows.reduce((a,r)=>a+(r._bundle ? r.items.reduce((s,x)=>s+(x.total||0),0) : (r.total||0)),0); }
 
 // ── Column model ─────────────────────────────────────────────
-const SHEET_COL_W = { sn:40, narration:185, custom:120, unit_price:125, qty:92, total:115, pay_mode:125, save:34, del:34, receipt:82 };
+const SHEET_COL_W = { sn:40, narration:185, custom:120, unit_price:125, qty:92, total:115, pay_mode:125, save:34, del:34, receipt:96 };
 const SHEET_COL_LABEL = { sn:'S/N', narration:'Narration', unit_price:'Unit Price', qty:'Quantity', total:'Total', pay_mode:'Payment Mode', save:'', del:'', receipt:'Receipt' };
 const SHEET_DATA_COLS = ['narration','unit_price','qty','total','pay_mode'];
 
@@ -9044,15 +9305,7 @@ function renderRecordSheet(kind) {
   const visible = rows.map((r,i)=>({r,i})).filter(({r})=>matches(r));
 
   // ── header ──
-  const menuFor = c => `
-    <div class="col-menu" onclick="event.stopPropagation()">
-      <div class="col-menu-item" onclick="sheetColRename('${kind}','${c.k}')">✏️ Rename Header</div>
-      <div class="col-menu-item" onclick="sheetColInsert('${kind}','${c.k}','left')">+ Insert column left</div>
-      <div class="col-menu-item" onclick="sheetColInsert('${kind}','${c.k}','right')">+ Insert column right</div>
-      <div class="col-menu-item" onclick="sheetColDelete('${kind}','${c.k}')">🗑 Delete column</div>
-      <div class="col-menu-item" onclick="sheetColClear('${kind}','${c.k}')">✕ Clear column</div>
-      <div class="col-menu-item" onclick="sheetColHide('${kind}','${c.k}')">🚫👁 Hide column</div>
-    </div>`;
+
   const thead = cols.map(c => {
     const isData = SHEET_DATA_COLS.includes(c.k) || c.t==='c';
     if (!isData) return `<th style="width:${colW(c)}px;">${sheetColLabel(kind,c)}</th>`;
@@ -9060,8 +9313,13 @@ function renderRecordSheet(kind) {
     return `<th class="col-head ${st.hlCol===c.k?'col-head-hl':''}" style="width:${colW(c)}px;position:relative;cursor:pointer;"
       onclick="sheetHlCol('${kind}','${c.k}')">
       ${sheetColLabel(kind,c)}
-      <span class="col-tri ${triVisible?'col-tri-show':''}" onclick="event.stopPropagation();sheetColMenu('${kind}','${c.k}')">▼</span>
-      ${st.menuCol===c.k ? menuFor(c) : ''}
+      <span class="col-tri ${triVisible?'col-tri-show':''}" onclick="event.stopPropagation();openColMenuPortal(event,[
+        ['✏️ Rename Header','sheetColRename(\'${kind}\',\'${c.k}\')'],
+        ['+ Insert column left','sheetColInsert(\'${kind}\',\'${c.k}\',\'left\')'],
+        ['+ Insert column right','sheetColInsert(\'${kind}\',\'${c.k}\',\'right\')'],
+        ['🗑 Delete column','sheetColDelete(\'${kind}\',\'${c.k}\')'],
+        ['✕ Clear column','sheetColClear(\'${kind}\',\'${c.k}\')'],
+        ['🚫👁 Hide column','sheetColHide(\'${kind}\',\'${c.k}\')']])">▼</span>
     </th>`;
   }).join('');
 
@@ -9260,9 +9518,133 @@ function renderRecordSheet(kind) {
   if (newWrap) newWrap.scrollLeft = keepScroll;
   requestAnimationFrame(()=>{ const w2 = document.querySelector('.bk-sheet-wrap'); if (w2) w2.scrollLeft = keepScroll; });
   sheetInitLongPress(kind);
+  if (newWrap && !newWrap._draftHook) {
+    newWrap._draftHook = true;
+    let _t = null;
+    newWrap.addEventListener('input', ()=>{ clearTimeout(_t); _t = setTimeout(()=>sheetSaveDraft(kind), 400); });
+  }
+  sheetSaveDraft(kind);
 }
 
 // ── Header interactions ──────────────────────────────────────
+// ── Portal column menu ──
+// ── Sheet persistence: drafts per business per date ──────────
+function sheetDraftKey(kind) {
+  const st = sheetState[kind];
+  const d = st.dateFrom || new Date().toISOString().slice(0,10);
+  return 'bd_draft_'+kind+'_'+(activeBusiness?.id||'me')+'_'+d;
+}
+function sheetSaveDraft(kind) {
+  try { localStorage.setItem(sheetDraftKey(kind), JSON.stringify(sheetRows(kind))); } catch(e){}
+}
+async function sheetRestore(kind) {
+  // 1) unsaved draft for today?
+  try {
+    const draft = localStorage.getItem(sheetDraftKey(kind));
+    if (draft) {
+      const parsed = JSON.parse(draft);
+      if (Array.isArray(parsed) && parsed.length) {
+        if (kind==='sales') salesRows = parsed; else staffExpRows = parsed;
+        return;
+      }
+    }
+  } catch(e){}
+  // 2) otherwise load today's posted transactions from the database
+  if (!bkUser || !navigator.onLine) return;
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const rt = kind==='sales' ? 'income' : 'expenditure';
+    const {data:T} = await bkDb.from('bk_transactions').select('*')
+      .match(bizMatch()).eq('record_type', rt)
+      .eq('txn_date', today).order('created_at');
+    if (!T || !T.length) return;
+    const flat = T.map((t,n)=>({
+      sn:n+1, narration:t.narration||'', unit_price:Math.abs((parseFloat(t.credit)||0)-(parseFloat(t.debit)||0)),
+      qty:1, total:Math.abs((parseFloat(t.credit)||0)-(parseFloat(t.debit)||0)),
+      pay_mode:'cash', _posted:true, _txnId:t.id, _gid:t.txn_group_id||null,
+    }));
+    const loaded=[]; const seen={};
+    for (const r of flat) {
+      if (r._gid) {
+        if (seen[r._gid]) { seen[r._gid].items.push(r); continue; }
+        const b = { _bundle:true, items:[r], pay_mode:r.pay_mode, expanded:false, _posted:true };
+        seen[r._gid]=b; loaded.push(b);
+      } else loaded.push(r);
+    }
+    loaded.push(kind==='sales' ? staffEmptySaleRow(loaded.length+1) : staffEmptyExpRow(loaded.length+1));
+    if (kind==='sales') salesRows = loaded; else staffExpRows = loaded;
+  } catch(e){}
+}
+
+// ── Excel-style drag fill: grab a cell's corner and drag down ─
+(function(){
+  let fill = null;
+  document.addEventListener('pointerdown', e=>{
+    const el = e.target;
+    if (!(el.tagName==='INPUT' && (el.classList.contains('staff-cell')||el.classList.contains('bk-cell')))) return;
+    const r = el.getBoundingClientRect();
+    if (e.clientX < r.right-14 || e.clientY < r.bottom-14) return;
+    const td = el.closest('td'), tr = el.closest('tr'), tb = el.closest('table');
+    if (!td || !tr || !tb || !tb.tBodies[0]) return;
+    e.preventDefault();
+    fill = { val: el.value, ci: td.cellIndex, tb, startTr: tr, range: null };
+  }, true);
+  document.addEventListener('pointermove', e=>{
+    if (!fill) return;
+    e.preventDefault();
+    const overTr = document.elementFromPoint(e.clientX, e.clientY)?.closest('tr');
+    if (!overTr || overTr.closest('table') !== fill.tb) return;
+    const trs = Array.from(fill.tb.tBodies[0].rows);
+    const a = trs.indexOf(fill.startTr), b = trs.indexOf(overTr);
+    if (a < 0 || b < 0) return;
+    trs.forEach(t=>t.classList.remove('fill-hl'));
+    const s = Math.min(a,b), en = Math.max(a,b);
+    fill.range = [s,en];
+    for (let k=s;k<=en;k++) trs[k].classList.add('fill-hl');
+  });
+  const finish = ()=>{
+    if (!fill) return;
+    const trs = Array.from(fill.tb.tBodies[0].rows);
+    trs.forEach(t=>t.classList.remove('fill-hl'));
+    if (fill.range) {
+      const [s,en] = fill.range;
+      for (let k=s;k<=en;k++) {
+        const cell = trs[k].cells[fill.ci];
+        const inp = cell && cell.querySelector('input');
+        if (inp && !inp.readOnly && inp.value !== fill.val) {
+          inp.value = fill.val;
+          inp.dispatchEvent(new Event('input',{bubbles:true}));
+        }
+      }
+    }
+    fill = null;
+  };
+  document.addEventListener('pointerup', finish);
+  document.addEventListener('pointercancel', finish);
+})();
+// ── Portal column menu: fixed-position, never clipped ──
+function closeColMenu(){ document.getElementById('colMenuPortal')?.remove(); }
+function openColMenuPortal(ev, items) {
+  ev.stopPropagation();
+  closeColMenu();
+  const rect = ev.target.getBoundingClientRect();
+  const wrap = document.createElement('div');
+  wrap.id = 'colMenuPortal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:9000;';
+  const menu = document.createElement('div');
+  menu.className = 'col-menu';
+  menu.style.cssText = 'position:fixed;z-index:9001;';
+  menu.innerHTML = items.map(([label,call])=>`<div class="col-menu-item" onclick="closeColMenu();${call}">${label}</div>`).join('');
+  wrap.addEventListener('click', closeColMenu);
+  wrap.appendChild(menu);
+  document.body.appendChild(wrap);
+  const mw = 200, mh = items.length*34+10;
+  let x = Math.min(rect.left, window.innerWidth - mw - 8);
+  let y = rect.bottom + 4;
+  if (y + mh > window.innerHeight) y = Math.max(8, rect.top - mh - 4);
+  menu.style.left = x+'px'; menu.style.top = y+'px'; menu.style.minWidth = mw+'px';
+}
+
 function sheetHlCol(kind, key) {
   const st = sheetState[kind];
   st.hlCol = (st.hlCol===key) ? null : key;
@@ -10452,7 +10834,28 @@ function _profileTabBody() {
   }
 
   if (_profileTab==='settings') {
+    const curTheme = localStorage.getItem('bd_theme')||'default';
+    const curFont  = localStorage.getItem('bd_font')||'default';
     return `
+    <div class="pf-card">
+      <div class="pf-card-head"><span>Appearance</span></div>
+      <label class="su-label">COLOR THEME</label>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        ${[['default','Black & Gold','#0f1117','#d4af37'],['cyan','White & Cyan','#ffffff','#d0e0e3'],['flow','Flow','#43a05e','#6b63b5']].map(([v,l,c1,c2])=>`
+          <div onclick="applyTheme('${v}');renderProfileSheet()" style="cursor:pointer;text-align:center;">
+            <div style="width:64px;height:40px;border-radius:9px;border:2px solid ${curTheme===v?'var(--gold)':'var(--border2)'};background:linear-gradient(135deg,${c1} 50%,${c2} 50%);"></div>
+            <div style="font-size:0.62rem;color:${curTheme===v?'var(--gold)':'var(--muted)'};font-weight:700;margin-top:4px;">${l}</div>
+          </div>`).join('')}
+      </div>
+      <label class="su-label">FONT</label>
+      <select class="bk-login-input" onchange="applyFont(this.value)" style="margin-bottom:4px;">
+        <option value="default" ${curFont==='default'?'selected':''}>Segoe UI (Default)</option>
+        <option value="Lora"    ${curFont==='Lora'?'selected':''}>Lora</option>
+        <option value="Nunito"  ${curFont==='Nunito'?'selected':''}>Nunito</option>
+        <option value="Oswald"  ${curFont==='Oswald'?'selected':''}>Oswald</option>
+      </select>
+      <div style="font-size:0.64rem;color:var(--muted);">Applies across the whole platform. Our default font is Segoe UI.</div>
+    </div>
     <div class="pf-card">
       <div class="pf-card-head"><span>App Settings</span></div>
       <div style="font-size:0.76rem;color:var(--muted);margin-bottom:14px;">Currency, date format, ledgers, data preferences and everything else lives in the full settings page.</div>
@@ -10681,8 +11084,7 @@ async function showAllBusinessesDashboard() {
 }
 
 async function fetchAllBusinessMetrics() {
-  const metrics = [];
-  for (const biz of userBusinesses) {
+  const results = await Promise.all(userBusinesses.map(async biz => {
     let revenue=0, expenses=0, receivables=0;
     try {
       const {data:T} = await bkDb.from('bk_transactions')
@@ -10698,10 +11100,11 @@ async function fetchAllBusinessMetrics() {
     const profit = revenue - expenses;
     const margin = revenue > 0 ? Math.round(profit/revenue*100) : 0;
     const status = profit < 0 ? 'critical' : margin < 15 ? 'attention' : 'healthy';
-    metrics.push({...biz, revenue, expenses, profit, margin, receivables, status});
-  }
-  return metrics;
+    return {...biz, revenue, expenses, profit, margin, receivables, status};
+  }));
+  return results;
 }
+
 
 function renderAllBusinessesDashboard(metrics) {
   bdSaveRoute('dashboard');
@@ -10754,10 +11157,9 @@ function renderAllBusinessesDashboard(metrics) {
       ${alertCount>0?`<div class="ab-alert">You have <strong>${alertCount} alert${alertCount>1?'s':''}</strong> across your businesses today.</div>`:''}
     </div>
     <div style="text-align:center;padding:14px 16px 4px;">
-      <button class="eq-record-btn" onclick="showRecordBusinessChoice()" style="display:inline-flex;align-items:center;justify-content:center;text-align:center;">Record</button>
+      <button class="eq-record-btn" onclick="showRecordChoice()" style="display:inline-flex;align-items:center;justify-content:center;text-align:center;">Record</button>
     </div>
     <div class="ab-actions" style="border-bottom:none;">
-      <button class="ab-btn ab-btn-secondary" onclick="exportAllBusinesses()">⬇ Export All</button>
     </div>
     <div class="ab-portfolio">
       <div class="ab-portfolio-title">Portfolio Overview</div>
@@ -10899,12 +11301,6 @@ async function uploadBizLogo(bizId, input) {
 }
 
 async function showSingleBusinessDashboard(biz) {
-  // The business you're viewing becomes the active business —
-  // recording, ledgers, journal, reports and breakdowns all follow it.
-  if (biz && biz.id) {
-    activeBusiness = biz;
-    try { localStorage.setItem('bd_active_biz', biz.id); bdUpdateMenuBizLine(); } catch(e) {}
-  }
   staffHideChrome();
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
 
@@ -11274,9 +11670,10 @@ window.addEventListener('load',     function() {
 function fmtInputCommas(el) {
   const raw = el.value.replace(/[^0-9.]/g, '');
   if (!raw) return;
-  const parts = raw.split('.');
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const formatted = parts.join('.');
+  const dot = raw.indexOf('.');
+  const intPart = dot>=0 ? raw.slice(0,dot) : raw;
+  const decPart = dot>=0 ? '.'+raw.slice(dot+1).replace(/\./g,'') : '';
+  const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + decPart;
   const cursor = el.selectionStart;
   const prevLen = el.value.length;
   el.value = formatted;
