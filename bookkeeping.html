@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -189,23 +188,25 @@ select.bk-cell,input.bk-cell{min-height:34px;}
 #sheetTable_sales th,#sheetTable_expenses th{white-space:nowrap;overflow:visible;}
 
 button,input,select,textarea{font-family:inherit;}
-body[data-theme="cyan"]{
-  --bg:#f5fafa;--surface:#ffffff;--surface2:#edf4f5;
-  --border:#d7e5e7;--border2:#c3d7da;--border3:#a3c2c6;
-  --white:#132428;--off:#2c4147;--muted:#5d757a;--muted2:#8aa2a6;
-  --gold:#d0e0e3;--gold-dim:rgba(208,224,227,0.45);
+body[data-theme="porcelain"]{
+  --bg:#f4f6f9;--surface:#ffffff;--surface2:#eaeef4;
+  --border:#d7dde8;--border2:#c2ccdc;--border3:#9fb0c9;
+  --white:#16202e;--off:#31415c;--muted:#5f7189;--muted2:#8b9ab0;
+  --gold:#0e8074;--gold-dim:rgba(14,128,116,0.12);
 }
-body[data-theme="cyan"] .bk-login-btn,body[data-theme="cyan"] .op-bundle-btn{color:#132428 !important;}
-body[data-theme="flow"]{
-  background:linear-gradient(135deg,#43a05e 0%,#5a7fb0 55%,#6b63b5 100%) fixed;
-  --bg:transparent;--surface:rgba(10,20,30,0.35);--surface2:rgba(10,20,30,0.5);
-  --border:rgba(255,255,255,0.22);--border2:rgba(255,255,255,0.32);--border3:rgba(255,255,255,0.5);
-  --white:#ffffff;--off:#eef2ff;--muted:rgba(255,255,255,0.72);--muted2:rgba(255,255,255,0.5);
-  --gold:#ffffff;--gold-dim:rgba(255,255,255,0.18);
+body[data-theme="porcelain"] .bk-login-btn,
+body[data-theme="porcelain"] .op-bundle-btn,
+body[data-theme="porcelain"] .pf-save-btn,
+body[data-theme="porcelain"] .staff-save-static-btn{color:#ffffff !important;}
+body[data-theme="midnight"]{
+  --bg:#0b1220;--surface:#111a2e;--surface2:#18233c;
+  --border:#223050;--border2:#2c3d63;--border3:#3d5488;
+  --white:#e9eeff;--off:#c3cdea;--muted:#7c8db3;--muted2:#5a6a8f;
+  --gold:#8fb0ff;--gold-dim:rgba(143,176,255,0.13);
 }
 .fill-hl{outline:1px dashed var(--gold);outline-offset:-1px;}
 #sheetTable_sales td,#sheetTable_expenses td,#ledgerTable td{position:relative;}
-#sheetTable_sales td:focus-within::after,#sheetTable_expenses td:focus-within::after,#ledgerTable td:focus-within::after{
+#sheetTable_sales td:focus-within:not(:has(button))::after,#sheetTable_expenses td:focus-within:not(:has(button))::after,#ledgerTable td:focus-within:not(:has(button))::after{
   content:'';position:absolute;right:1px;bottom:1px;width:9px;height:9px;background:var(--gold);border:1px solid var(--bg);cursor:crosshair;z-index:5;}
 
 .led-hide-date .col-date,.led-hide-payee .col-payee,.led-hide-payer .col-payer,.led-hide-narr .col-narr,.led-hide-dr .col-dr,.led-hide-cr .col-cr,.led-hide-bal .col-bal{display:none;}
@@ -1689,7 +1690,9 @@ function showAuthScreen(view) {
 
 // ── Appearance: theme + font ─────────────────────────────────
 function applyTheme(t) {
-  document.body.dataset.theme = (t==='cyan'||t==='flow') ? t : '';
+  if (t==='cyan') t='porcelain';
+  if (t==='flow') t='midnight';
+  document.body.dataset.theme = (t==='porcelain'||t==='midnight') ? t : '';
   localStorage.setItem('bd_theme', t||'default');
 }
 function applyFont(f) {
@@ -3369,10 +3372,11 @@ async function openAccount(type, acct) {
 
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
 
-  const { data } = await bkDb.from('bk_transactions')
-    .select('*')
-    .match(bizMatch())
-    .eq('record_type', type)
+  let _lq = bkDb.from('bk_transactions').select('*').eq('record_type', type);
+  _lq = activeBusiness?.id
+    ? _lq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+    : _lq.eq('user_id', bkUser.id);
+  const { data } = await _lq
     .or(`account_name.eq."${acct.account_name}",account_name.is.null`)
     .order('row_order', { ascending:true });
 
@@ -3543,6 +3547,7 @@ function renderLedger() {
   const balText = fmt(Math.abs(closingBal));
 
   content.innerHTML = `
+    <div style="padding:0 0 10px;"><button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="renderCOA()">← Back</button></div>
     <div class="sched-total-banner" id="ledgerTotalBanner" style="border-left:4px solid ${color};margin-bottom:12px;">
       <div class="sched-total-label">Total ${activeAccount.account_name}</div>
       <div class="sched-total-val" id="ledgerTotalVal" style="color:${color};">${balText}</div>
@@ -3586,6 +3591,7 @@ function renderLedger() {
         <tbody id="ledgerBody"></tbody>
       </table>
     </div>
+    <div style="padding:10px 0 0;"><button class="staff-add-cust-btn" onclick="addRow()">+ Add Row</button></div>
     <div class="sched-below-table">
       <div class="sched-subacct-wrap">
         <label class="sched-subacct-label">Sub Accounts</label>
@@ -3643,6 +3649,7 @@ function renderRows(displayRows) {
   const extraEmpty = buildEmptyEditableRows(1, rows.length);
 
   tbody.innerHTML = obRow + existingHtml + extraEmpty;
+  if (!tbody._autoHook) { tbody._autoHook=true; tbody.addEventListener('input', ()=>{ isDirty=true; ledgerAutosave(); }); }
   setTimeout(()=>{ initColumnResize(); initRowResize(); initDragRows(); }, 50);
 }
 
@@ -3738,17 +3745,27 @@ async function saveOpeningBalance(val) {
   recalcBalances();
   ledgerUpdateTotalBanner();
   try {
-    await bkDb.from('bk_accounts').update({
-      opening_balance: newOB,
-      updated_at: new Date().toISOString(),
-    }).eq('id', activeAccount.id).eq('user_id', bkUser.id);
+    if (!activeAccount.id) {
+      const {data:na, error:e0} = await bkDb.from('bk_accounts').insert({
+        user_id: bkUser.id, account_name: activeAccount.account_name,
+        record_type: activeType, opening_balance: newOB,
+      }).select().single();
+      if (e0) throw e0;
+      activeAccount.id = na.id;
+    } else {
+      const {error:e1} = await bkDb.from('bk_accounts').update({
+        opening_balance: newOB,
+        updated_at: new Date().toISOString(),
+      }).eq('id', activeAccount.id).eq('user_id', bkUser.id);
+      if (e1) throw e1;
+    }
     setSaveMsg('✓ Opening balance saved', 'ok');
     // Update the accounts cache too
     const acctArr = accounts[activeType] || [];
     const idx = acctArr.findIndex(a => a.id === activeAccount.id);
     if (idx >= 0) acctArr[idx].opening_balance = newOB;
   } catch(e) {
-    if(typeof err!=='undefined'&&err&&err.message)alert('Save failed: '+err.message); setSaveMsg('Error saving opening balance', 'err');
+    alert('Opening balance save failed: '+(e.message||'')); setSaveMsg('Error saving opening balance', 'err');
   }
 }
 
@@ -3760,7 +3777,7 @@ function ledgerCellChanged(changedIdx) {
     const cell = document.getElementById('balCell_'+i);
     if (cell) {
       const bal = parseFloat(r.balance)||0;
-      cell.value = bal !== 0 ? fmt(bal) : '';
+      cell.value = bal !== 0 ? fmtNum(bal) : '';
       cell.className = 'bk-cell num bal ' + (bal>0?'pos':bal<0?'neg':'zero');
     }
   });
@@ -3819,6 +3836,7 @@ function cellChange(i, field, val) {
   rows[i][field]=val; rows[i].saved=false; isDirty=true;
   pushUndoState();
   setSaveMsg('Unsaved…','pending');
+  ledgerAutosave();
 }
 
 function numChange(i, field, val) {
@@ -3880,6 +3898,9 @@ async function deleteRow(i) {
 }
 
 // ── SAVE ─────────────────────────────────────────────────────
+let _ledAutoT = null;
+function ledgerAutosave(){ clearTimeout(_ledAutoT); _ledAutoT = setTimeout(()=>{ if(isDirty) saveAll(); }, 2500); }
+
 async function saveAll() {
   if(!activeAccount||!bkUser) return;
   setSaveMsg('Saving…','pending');
@@ -4245,7 +4266,7 @@ async function showExpensesBreakdown() {
     </div>
     <div style="padding:16px;">
       <div class="dash-card" style="margin-bottom:12px;">
-        <div class="dash-kpi-label" style="margin-bottom:4px;">Total Expenses</div>
+        <div class="dash-kpi-label" style="margin-bottom:4px;">Total Expenses <span style="font-size:0.58rem;color:var(--muted);">(Cost of Sales + Operating)</span></div>
         <div style="font-size:1.4rem;font-weight:900;color:#f87171;">${fmt(total)}</div>
       </div>
       ${[['Cash Payments',cash,'#f87171'],['Bank Transfer / POS',bank,'#60a5fa'],['Credit (Owed)',credit,'#f97316']].map(([label,val,col])=>`
@@ -4500,85 +4521,90 @@ function renderTrialBalance(t) {
 }
 
 function renderPL(t) {
-  const income=t.income.cr-t.income.dr;
-  const exp=t.expenditure.dr-t.expenditure.cr;
-  const profit=income-exp;
+  const A = window._reportByAcct || {income:{},expenditure:{}};
+  const sym = CURRENCIES[activeCurrency].symbol;
+  const incomeItems = Object.entries(A.income).map(([n,v])=>[n,-v]).filter(([,v])=>Math.abs(v)>0.004);
+  const cosItems  = Object.entries(A.expenditure).filter(([n])=>isCOSAccount(n)).map(([n,v])=>[n,v]).filter(([,v])=>Math.abs(v)>0.004);
+  const opexItems = Object.entries(A.expenditure).filter(([n])=>!isCOSAccount(n)).map(([n,v])=>[n,v]).filter(([,v])=>Math.abs(v)>0.004);
+  const revenue = incomeItems.reduce((s,[,v])=>s+v,0);
+  const cos     = cosItems.reduce((s,[,v])=>s+v,0);
+  const gross   = revenue - cos;
+  const opex    = opexItems.reduce((s,[,v])=>s+v,0);
+  const profit  = gross - opex;
+  const line = ([n,v]) => `<tr><td style="padding-left:22px;">${escH(n)}</td><td class="num">${fmt(v)}</td></tr>`;
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
-      <div class="bk-content-title">PROFIT & LOSS ACCOUNT</div>
-      <div class="bk-header-actions">
-      </div>
+      <div><div class="bk-content-title">STATEMENT OF PROFIT OR LOSS</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${escH(activeBusiness?.name||'')} — IFRS presentation</div></div>
+      <div class="bk-header-actions"></div>
     </div>
     <div class="report-wrap">
       <table class="report-table">
-        <thead><tr><th>Item</th><th class="num">Amount (${CURRENCIES[activeCurrency].symbol})</th></tr></thead>
+        <thead><tr><th>Item</th><th class="num">Amount (${sym})</th></tr></thead>
         <tbody>
-          <tr class="section-hdr"><td colspan="2">Income</td></tr>
-          <tr><td>Total Income</td><td class="num">${fmt(income)}</td></tr>
-          <tr class="section-hdr"><td colspan="2">Expenditure</td></tr>
-          <tr><td>Total Expenditure</td><td class="num">${fmt(exp)}</td></tr>
-          <tr class="${profit>=0?'profit-row':'loss-row'} total-row">
-            <td>${profit>=0?'NET PROFIT':'NET LOSS'}</td>
-            <td class="num">${fmt(Math.abs(profit))}</td>
-          </tr>
+          <tr class="section-hdr"><td colspan="2">Revenue</td></tr>
+          ${incomeItems.map(line).join('')||'<tr><td style="padding-left:22px;color:var(--muted);">No revenue recorded</td><td class="num">—</td></tr>'}
+          <tr class="total-row"><td>Total Revenue</td><td class="num">${fmt(revenue)}</td></tr>
+          <tr class="section-hdr"><td colspan="2">Cost of Sales</td></tr>
+          ${cosItems.map(line).join('')||'<tr><td style="padding-left:22px;color:var(--muted);">—</td><td class="num">—</td></tr>'}
+          <tr class="total-row"><td>Total Cost of Sales</td><td class="num">(${fmt(cos)})</td></tr>
+          <tr class="total-row"><td><b>GROSS PROFIT</b></td><td class="num"><b>${fmt(gross)}</b></td></tr>
+          <tr class="section-hdr"><td colspan="2">Operating Expenses</td></tr>
+          ${opexItems.map(line).join('')||'<tr><td style="padding-left:22px;color:var(--muted);">—</td><td class="num">—</td></tr>'}
+          <tr class="total-row"><td>Total Operating Expenses</td><td class="num">(${fmt(opex)})</td></tr>
+          <tr class="${profit>=0?'profit-row':'loss-row'} total-row"><td><b>${profit>=0?'PROFIT':'LOSS'} FOR THE PERIOD</b></td><td class="num"><b>${fmt(profit)}</b></td></tr>
         </tbody>
       </table>
     </div>`;
 }
 
 function renderBS(t) {
-  const cap=t.capital.cr-t.capital.dr;
-  const lia=t.liability.cr-t.liability.dr;
-  const ast=t.asset.dr-t.asset.cr;
-  const profit=(t.income.cr-t.income.dr)-(t.expenditure.dr-t.expenditure.cr);
-  const equity=cap+profit;
-  const total=equity+lia;
-  const balanced=Math.abs(total-ast)<0.01;
+  const A = window._reportByAcct || {asset:{},liability:{},capital:{},income:{},expenditure:{}};
+  const sym = CURRENCIES[activeCurrency].symbol;
+  const assets = Object.entries(A.asset).filter(([,v])=>Math.abs(v)>0.004);
+  const fixedA = assets.filter(([n])=>isFixedAsset(n));
+  const currA  = assets.filter(([n])=>!isFixedAsset(n));
+  const liabs  = Object.entries(A.liability).map(([n,v])=>[n,-v]).filter(([,v])=>Math.abs(v)>0.004);
+  const ltl    = liabs.filter(([n])=>isLongTermLiab(n));
+  const ctl    = liabs.filter(([n])=>!isLongTermLiab(n));
+  const capItems = Object.entries(A.capital).map(([n,v])=>[n,-v]).filter(([,v])=>Math.abs(v)>0.004);
+  const income = -Object.values(A.income).reduce((s,v)=>s+v,0);
+  const exp    =  Object.values(A.expenditure).reduce((s,v)=>s+v,0);
+  const profit = income - exp;
+  const sum = arr => arr.reduce((s,[,v])=>s+v,0);
+  const totalAssets = sum(fixedA)+sum(currA);
+  const totalEq = sum(capItems)+profit;
+  const totalLiab = sum(ltl)+sum(ctl);
+  const line = ([n,v]) => `<tr><td style="padding-left:22px;">${escH(n)}</td><td class="num">${fmt(v)}</td></tr>`;
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
-      <div class="bk-content-title">BALANCE SHEET</div>
-      <div class="bk-header-actions">
-        <span style="font-size:0.78rem;font-weight:700;color:${balanced?'var(--green)':'var(--red)'}">
-          ${balanced?'✓ Balanced':'⚠ Not Balanced'}
-        </span>
-      </div>
-    </div>
-    <div style="padding:0 16px 12px;">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;text-align:center;">
-        <div style="font-size:0.68rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Accounting Equation</div>
-        <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;font-size:0.82rem;font-weight:700;">
-          <span style="color:var(--gold);">Capital</span><span style="color:var(--muted);">+</span>
-          <span style="color:${profit>=0?'#4ade80':'#f87171'};">${profit>=0?'Profit':'Loss'}</span><span style="color:var(--muted);">+</span>
-          <span style="color:#60a5fa;">Liabilities</span><span style="color:var(--muted);">=</span>
-          <span style="color:var(--gold);">Assets</span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;font-size:0.88rem;font-weight:900;margin-top:8px;">
-          <span style="color:var(--gold);">${fmt(cap)}</span><span style="color:var(--muted);">+</span>
-          <span style="color:${profit>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(profit))}</span><span style="color:var(--muted);">+</span>
-          <span style="color:#60a5fa;">${fmt(lia)}</span><span style="color:var(--muted);">=</span>
-          <span style="color:${balanced?'#4ade80':'#f87171'};">${fmt(ast)}</span>
-        </div>
-        <div style="font-size:0.7rem;margin-top:8px;color:${balanced?'#4ade80':'#f87171'};">${balanced?'✓ Equation balanced':'⚠ Difference of '+fmt(Math.abs(total-ast))}</div>
-      </div>
+      <div><div class="bk-content-title">STATEMENT OF FINANCIAL POSITION</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${escH(activeBusiness?.name||'')} — IFRS presentation</div></div>
+      <div class="bk-header-actions"></div>
     </div>
     <div class="report-wrap">
       <table class="report-table">
-        <thead><tr><th>Item</th><th class="num">Amount (${CURRENCIES[activeCurrency].symbol})</th></tr></thead>
+        <thead><tr><th>Item</th><th class="num">Amount (${sym})</th></tr></thead>
         <tbody>
-          <tr class="section-hdr"><td colspan="2">Capital &amp; Reserves</td></tr>
-          <tr><td>Capital</td><td class="num">${fmt(cap)}</td></tr>
-          <tr><td>${profit>=0?'Add: Net Profit':'Less: Net Loss'}</td>
-            <td class="num" style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(Math.abs(profit))}</td></tr>
-          <tr><td><strong>Total Equity</strong></td><td class="num"><strong>${fmt(equity)}</strong></td></tr>
-          <tr class="section-hdr"><td colspan="2">Liabilities</td></tr>
-          <tr><td>Total Liabilities</td><td class="num">${fmt(lia)}</td></tr>
-          <tr><td><strong>Total Capital + Liabilities</strong></td><td class="num"><strong>${fmt(total)}</strong></td></tr>
-          <tr class="section-hdr"><td colspan="2">Assets</td></tr>
-          <tr><td>Total Assets</td><td class="num">${fmt(ast)}</td></tr>
-          <tr class="total-row">
-            <td>TOTAL ASSETS</td>
-            <td class="num" style="color:${balanced?'var(--green)':'var(--red)'};">${fmt(ast)}</td>
-          </tr>
+          <tr class="section-hdr"><td colspan="2">ASSETS</td></tr>
+          <tr class="section-hdr"><td colspan="2" style="font-size:0.7rem;padding-left:12px;">Non-current Assets (Fixed Assets)</td></tr>
+          ${fixedA.map(line).join('')||'<tr><td style="padding-left:22px;color:var(--muted);">—</td><td class="num">—</td></tr>'}
+          <tr class="total-row"><td style="padding-left:12px;">Total Non-current Assets</td><td class="num">${fmt(sum(fixedA))}</td></tr>
+          <tr class="section-hdr"><td colspan="2" style="font-size:0.7rem;padding-left:12px;">Current Assets</td></tr>
+          ${currA.map(line).join('')||'<tr><td style="padding-left:22px;color:var(--muted);">—</td><td class="num">—</td></tr>'}
+          <tr class="total-row"><td style="padding-left:12px;">Total Current Assets</td><td class="num">${fmt(sum(currA))}</td></tr>
+          <tr class="total-row"><td><b>TOTAL ASSETS</b></td><td class="num"><b>${fmt(totalAssets)}</b></td></tr>
+          <tr class="section-hdr"><td colspan="2">EQUITY</td></tr>
+          ${capItems.map(line).join('')||'<tr><td style="padding-left:22px;color:var(--muted);">—</td><td class="num">—</td></tr>'}
+          <tr><td style="padding-left:22px;">Profit for the period</td><td class="num">${fmt(profit)}</td></tr>
+          <tr class="total-row"><td>Total Equity</td><td class="num">${fmt(totalEq)}</td></tr>
+          <tr class="section-hdr"><td colspan="2">LIABILITIES</td></tr>
+          <tr class="section-hdr"><td colspan="2" style="font-size:0.7rem;padding-left:12px;">Non-current Liabilities</td></tr>
+          ${ltl.map(line).join('')||'<tr><td style="padding-left:22px;color:var(--muted);">—</td><td class="num">—</td></tr>'}
+          <tr class="section-hdr"><td colspan="2" style="font-size:0.7rem;padding-left:12px;">Current Liabilities</td></tr>
+          ${ctl.map(line).join('')||'<tr><td style="padding-left:22px;color:var(--muted);">—</td><td class="num">—</td></tr>'}
+          <tr class="total-row"><td>Total Liabilities</td><td class="num">${fmt(totalLiab)}</td></tr>
+          <tr class="total-row"><td><b>TOTAL EQUITY &amp; LIABILITIES</b></td><td class="num"><b>${fmt(totalEq+totalLiab)}</b></td></tr>
         </tbody>
       </table>
     </div>`;
@@ -4668,6 +4694,111 @@ function emptyJournalRow(order) {
            debit_amount:0, credit_amount:0, row_order:order, saved:false };
 }
 
+// ── Journal: date-driven fill + row tools + toolbox ──────────
+let jrnDateFrom = null;
+let jrnTb = { open:false, search:'', font:'Nunito', wrap:'overflow', undoStack:[], redoStack:[] };
+function jrnOpenDatePicker() {
+  const el = document.getElementById('jrnHeadDate');
+  if (!el) return;
+  if (el.showPicker) { try { el.showPicker(); return; } catch(e){} }
+  el.click();
+}
+async function jrnDateFill(dateStr) {
+  if (!dateStr) return;
+  jrnDateFrom = dateStr;
+  try {
+    const { data } = await bkDb.from('bk_journal')
+      .select('*').match(bizMatch()).gte('txn_date', dateStr)
+      .order('txn_date',{ascending:true}).order('row_order',{ascending:true}).limit(300);
+    journalRows = (data||[]).map(r=>({
+      id:r.id, txn_date:r.txn_date||dateStr,
+      payee:r.payee||'', payer:r.payer||'', narration:r.narration||'',
+      debit_account_name:r.debit_account_name||'', debit_record_type:r.debit_record_type||'',
+      credit_account_name:r.credit_account_name||'', credit_record_type:r.credit_record_type||'',
+      debit_amount:parseFloat(r.debit_amount)||0, credit_amount:parseFloat(r.credit_amount)||0,
+      row_order:r.row_order, saved:true
+    }));
+  } catch(e) { journalRows = []; }
+  const base = new Date(dateStr+'T00:00:00');
+  const addDays = n => { const d=new Date(base); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+  for (let k=0; k<5; k++) {
+    journalRows.push({
+      txn_date: addDays(k), payee:'', payer:'', narration:'',
+      debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
+      debit_amount:0, credit_amount:0, saved:false });
+  }
+  renderJournal();
+}
+function jrnSnMenu(ev, idx) {
+  ev.stopPropagation();
+  openColMenuPortal(ev, [
+    ['+ Add new row above', 'jrnAddRowAt('+idx+',0)'],
+    ['+ Add new row below', 'jrnAddRowAt('+idx+',1)'],
+  ]);
+}
+function jrnAddRowAt(idx, after) {
+  const blank = { txn_date:'', payee:'', payer:'', narration:'',
+    debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
+    debit_amount:0, credit_amount:0, saved:false };
+  const neighbour = journalRows[idx];
+  if (neighbour && neighbour.txn_date) blank.txn_date = neighbour.txn_date;
+  journalRows.splice(idx + (after?1:0), 0, blank);
+  renderJournal();
+}
+function jrnInitRowDrag() {
+  const tbody = document.querySelector('#journalTable tbody');
+  if (!tbody || tbody._jrnDrag) return;
+  tbody._jrnDrag = true;
+  let drag = null;
+  tbody.addEventListener('pointerdown', e=>{
+    const sn = e.target.closest('.jrn-sn');
+    if (!sn) return;
+    drag = { from: parseInt(sn.dataset.jidx), started:false, y:e.clientY };
+  });
+  tbody.addEventListener('pointermove', e=>{
+    if (!drag) return;
+    if (!drag.started && Math.abs(e.clientY-drag.y)<8) return;
+    drag.started = true;
+    e.preventDefault();
+    const tr = document.elementFromPoint(e.clientX,e.clientY)?.closest('tr');
+    const sn = tr?.querySelector('.jrn-sn');
+    if (!sn) return;
+    const to = parseInt(sn.dataset.jidx);
+    if (!isNaN(to) && to !== drag.from) {
+      const [moved] = journalRows.splice(drag.from,1);
+      journalRows.splice(to,0,moved);
+      drag.from = to;
+      renderJournal();
+    }
+  }, {passive:false});
+  const end = ()=>{ drag=null; };
+  tbody.addEventListener('pointerup', end);
+  tbody.addEventListener('pointercancel', end);
+}
+function jrnToggleToolbox(){ jrnTb.open=!jrnTb.open; renderJournal(); }
+function jrnSearch(){ jrnTb.search=document.getElementById('jrnSearch')?.value||''; jrnApplySearch(); }
+function jrnApplySearch() {
+  const q = jrnTb.search.toLowerCase();
+  document.querySelectorAll('#journalTable tbody tr').forEach(tr=>{
+    tr.style.display = (!q || tr.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+}
+function jrnUndo(){ if(!jrnTb.undoStack.length)return; jrnTb.redoStack.push(JSON.stringify(journalRows)); journalRows=JSON.parse(jrnTb.undoStack.pop()); renderJournal(); }
+function jrnRedo(){ if(!jrnTb.redoStack.length)return; jrnTb.undoStack.push(JSON.stringify(journalRows)); journalRows=JSON.parse(jrnTb.redoStack.pop()); renderJournal(); }
+function jrnSetFont(f){ jrnTb.font=f; const t=document.getElementById('journalTable'); if(t) t.closest('.bk-sheet-wrap').style.fontFamily="'"+f+"',sans-serif"; }
+function jrnSetWrap(w){ jrnTb.wrap=w; const t=document.getElementById('journalTable'); if(!t)return; t.classList.remove('ps-wrap-overflow','ps-wrap-wrap','ps-wrap-clip'); t.classList.add('ps-wrap-'+w); }
+function jrnPrint(orientation) {
+  const table = document.getElementById('journalTable');
+  if (!table) return;
+  const clone = table.cloneNode(true);
+  clone.querySelectorAll('input,select').forEach(el=>{ const s=document.createElement('span'); s.textContent=el.value||''; el.replaceWith(s); });
+  clone.querySelectorAll('button').forEach(b=>b.remove());
+  const w = window.open('','_blank');
+  w.document.write('<html><head><title>Master Records</title><style>@page{size:'+(orientation||'landscape')+';margin:12mm;}body{font-family:Arial;color:#000;}h2{margin:0 0 8px;}table{width:100%;border-collapse:collapse;font-size:10px;}th,td{border:1px solid #999;padding:3px 5px;text-align:left;}th{background:#eee;}</style></head><body><h2>'+(activeBusiness?.name||'')+' — Master Records (General Journal)</h2>'+clone.outerHTML+'</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(), 300);
+}
+
 async function openJournal() {
   recordsPageChrome();
   activeType=null; activeAccount=null;
@@ -4702,12 +4833,25 @@ function renderJournal() {
       </div>
       <div class="bk-header-actions">
         <span class="bk-save-msg" id="journalSaveMsg"></span>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;" onclick="jrnToggleToolbox()">⚙ Tools</button>
       </div>
     </div>
+    ${jrnTb.open?`<div class="sheet-toolbox" style="margin:0 0 8px;">
+      <input id="jrnSearch" class="bk-input" placeholder="Search…" value="${escH(jrnTb.search)}" style="width:130px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:6px 9px;font-size:0.74rem;outline:none;" oninput="jrnSearch()"/>
+      <button class="tb-icon" title="Undo" onclick="jrnUndo()">↩</button>
+      <button class="tb-icon" title="Redo" onclick="jrnRedo()">↪</button>
+      <button class="tb-icon" title="Print portrait" onclick="jrnPrint('portrait')">🖨</button>
+      <button class="tb-icon" title="Print landscape" onclick="jrnPrint('landscape')">🖨▭</button>
+      <select class="tb-select" onchange="jrnSetFont(this.value)">${['Nunito','EB Garamond','Lora','Arial','Oswald'].map(f=>`<option ${jrnTb.font===f?'selected':''}>${f}</option>`).join('')}</select>
+      <button class="tb-icon ${jrnTb.wrap==='overflow'?'tb-active':''}" onclick="jrnSetWrap('overflow')">⇥</button>
+      <button class="tb-icon ${jrnTb.wrap==='wrap'?'tb-active':''}" onclick="jrnSetWrap('wrap')">⤶</button>
+      <button class="tb-icon ${jrnTb.wrap==='clip'?'tb-active':''}" onclick="jrnSetWrap('clip')">✂</button>
+    </div>`:''}
 
     <div class="bk-sheet-wrap">
       <table class="bk-sheet" id="journalTable" style="min-width:1214px;">
         <thead><tr>
+          <th class="num" style="width:44px;">S/N</th>
           ${(()=>{ const lbl=Object.assign({1:'Date',2:'Payee',3:'Payer',4:'Narration',5:'Debit Account',6:'Credit Account',7:'Debit',8:'Credit'}, _jrnLabels());
             const sym=CURRENCIES[activeCurrency].symbol;
             const tri=n=>'<span class="col-tri col-tri-show" style="position:static;font-size:0.5rem;margin-left:3px;" onclick="event.stopPropagation();jrnColMenu(event,'+n+')">▼</span>';
@@ -4715,10 +4859,12 @@ function renderJournal() {
             let h='';
             for(let n=1;n<=8;n++){
               const money=n>=7?' ('+sym+')':'';
-              h+='<th class="col-head'+(n>=7?' num':'')+'" style="width:'+w[n]+'px;">'+escH(lbl[n])+money+tri(n)+'</th>';
+              const label = n===1
+                ? '<span onclick="jrnOpenDatePicker()" style="cursor:pointer;text-decoration:underline;text-underline-offset:3px;">'+escH(lbl[1])+' 📅</span><input type="date" id="jrnHeadDate" style="position:absolute;width:1px;height:1px;opacity:0;left:0;bottom:0;" onchange="jrnDateFill(this.value)"/>'
+                : escH(lbl[n])+money;
+              h+='<th class="col-head'+(n>=7?' num':'')+'" style="width:'+w[n]+'px;position:relative;">'+label+tri(n)+'</th>';
             }
             return h; })()}
-          <th class="num" style="width:44px;">S/N</th>
           <th style="width:38px;"></th>
           <th style="width:32px;"></th>
         </tr></thead>
@@ -4730,7 +4876,7 @@ function renderJournal() {
       <button class="bk-btn bk-btn-gold" style="font-size:0.8rem;padding:9px 24px;align-self:flex-start;" onclick="saveJournal()">Save &amp; Post</button>
     </div>`;
   renderJournalRows();
-  setTimeout(jrnApplyHidden, 0);
+  setTimeout(function(){ jrnApplyHidden(); jrnInitRowDrag(); jrnApplySearch(); }, 0);
 }
 
 function renderJournalRows() {
@@ -4800,7 +4946,6 @@ function renderJournalRows() {
         onclick="this.select()"
         style="${(!balanced&&row.credit_amount>0)?'color:var(--red);':''}"
         oninput="jAmtInput(this,${idx},'credit_amount')"/></td>
-      <td><input class="bk-cell sn-cell" type="text" value="${sn}" readonly tabindex="-1"/></td>
       <td><button class="del-btn" onclick="deleteJournalRow(${idx})">✕</button></td>
       <td><button class="save-row-btn" onclick="saveJournalRow(${idx})" title="Save & Post this row">›</button></td>
     </tr>`;
@@ -4946,7 +5091,7 @@ function jrnApplyHidden() {
   if (!table) return;
   const h=_jrnHidden();
   for (let n=1;n<=8;n++) {
-    table.querySelectorAll('tr > *:nth-child('+n+')').forEach(cell=>{
+    table.querySelectorAll('tr > *:nth-child('+(n+1)+')').forEach(cell=>{
       cell.style.display = h[n] ? 'none' : '';
     });
   }
@@ -6705,7 +6850,8 @@ function toggleJDateFilter(e) {
         onclick="jApplyDateFilter(jDateFrom,jDateTo)">Apply Filter</button>
       <button class="bk-btn bk-btn-outline" style="font-size:0.76rem;"
         onclick="jClearDateFilter()">Clear</button>
-    </div>`;
+    </div>
+    <div style="padding:16px;"><button class="pf-save-btn" style="max-width:340px;" onclick="bdToast('\u2713 Settings saved')">Save Settings</button></div>`;
   th.appendChild(popup);
   // Close on outside click
   setTimeout(function(){
@@ -8189,6 +8335,10 @@ async function psSaveRow(i) {
 }
 
 // ── EXTENDED REPORTS ─────────────────────────────────────────
+function isCOSAccount(name){ return /cost of (goods|sales|production)|purchase|raw material|direct (labou?r|wages)|carriage inward|production/i.test(name||''); }
+function isFixedAsset(name){ return /equipment|machin|vehicle|motor|building|land|furniture|fixture|plant|computer|premise/i.test(name||''); }
+function isLongTermLiab(name){ return /loan|mortgage|debenture|long[- ]?term/i.test(name||''); }
+
 async function showReport(type) {
   bdSaveRoute('report:'+type);
   recordsPageChrome(); // hides toolbar, hero header; keeps equation
@@ -8196,7 +8346,13 @@ async function showReport(type) {
   const {data}=await bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date').match(bizMatch());
   const T=data||[];
   const tots={capital:{dr:0,cr:0},liability:{dr:0,cr:0},asset:{dr:0,cr:0},income:{dr:0,cr:0},expenditure:{dr:0,cr:0}};
-  T.forEach(r=>{tots[r.record_type].dr+=parseFloat(r.debit)||0;tots[r.record_type].cr+=parseFloat(r.credit)||0;});
+  const byAcct={capital:{},liability:{},asset:{},income:{},expenditure:{}};
+  T.forEach(r=>{
+    tots[r.record_type].dr+=parseFloat(r.debit)||0;tots[r.record_type].cr+=parseFloat(r.credit)||0;
+    const nm=r.account_name||'Unspecified';
+    byAcct[r.record_type][nm]=(byAcct[r.record_type][nm]||0)+((parseFloat(r.debit)||0)-(parseFloat(r.credit)||0));
+  });
+  window._reportByAcct = byAcct;
   if(type==='trial') renderTrialBalance(tots);
   else if(type==='pl')  renderPL(tots);
   else if(type==='bs')  renderBS(tots);
@@ -10794,6 +10950,16 @@ function _profileTabBody() {
           <label class="su-label">BUSINESS NAME</label><input class="bk-login-input" id="pbe_name_${b.id}" value="${escH(b.name)}"/>
           <label class="su-label">INDUSTRY</label><select class="bk-login-input" id="pbe_ind_${b.id}">${PROFILE_INDUSTRIES.map(i=>`<option ${b.industry===i?'selected':''}>${i}</option>`).join('')}</select>
           <label class="su-label">BUSINESS ADDRESS</label><input class="bk-login-input" id="pbe_addr_${b.id}" value="${escH(b.business_address||'')}"/>
+          <label class="su-label">BANK ACCOUNTS</label>
+          <div id="pbeBanks_${b.id}">
+            ${(b.bank_accounts||[]).map((ba,bi)=>`
+            <div class="ri-grid3" data-bank style="margin-bottom:6px;">
+              <input class="bk-login-input pbe-bank-name" placeholder="Bank name" value="${escH(ba.bank||'')}"/>
+              <input class="bk-login-input pbe-bank-no" placeholder="Account number" value="${escH(ba.number||'')}"/>
+              <input class="bk-login-input pbe-bank-acct" placeholder="Account name" value="${escH(ba.name||'')}"/>
+            </div>`).join('')}
+          </div>
+          <button type="button" onclick="pbeAddBank('${b.id}')" style="background:var(--surface2);color:var(--gold);border:1px dashed var(--gold);font-size:0.7rem;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;margin-bottom:10px;">+ Add bank account</button>
           <label class="su-label">CAC NUMBER</label><input class="bk-login-input" id="pbe_cac_${b.id}" value="${escH(b.cac_number||'')}"/>
           <div style="display:flex;gap:8px;margin-top:8px;">
             <button class="bk-login-back" onclick="profileEditToggle('biz_${b.id}')">Cancel</button>
@@ -10841,7 +11007,7 @@ function _profileTabBody() {
       <div class="pf-card-head"><span>Appearance</span></div>
       <label class="su-label">COLOR THEME</label>
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-        ${[['default','Black & Gold','#0f1117','#d4af37'],['cyan','White & Cyan','#ffffff','#d0e0e3'],['flow','Flow','#43a05e','#6b63b5']].map(([v,l,c1,c2])=>`
+        ${[['default','Black & Gold','#0f1117','#d4af37'],['porcelain','Porcelain Teal','#ffffff','#0e8074'],['midnight','Midnight Blue','#0b1220','#8fb0ff']].map(([v,l,c1,c2])=>`
           <div onclick="applyTheme('${v}');renderProfileSheet()" style="cursor:pointer;text-align:center;">
             <div style="width:64px;height:40px;border-radius:9px;border:2px solid ${curTheme===v?'var(--gold)':'var(--border2)'};background:linear-gradient(135deg,${c1} 50%,${c2} 50%);"></div>
             <div style="font-size:0.62rem;color:${curTheme===v?'var(--gold)':'var(--muted)'};font-weight:700;margin-top:4px;">${l}</div>
@@ -10938,6 +11104,26 @@ async function pfUpdatePassword() {
   ['sec_current','sec_new','sec_confirm'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';});
 }
 
+function pbeAddBank(bizId) {
+  const box = document.getElementById('pbeBanks_'+bizId);
+  if (!box) return;
+  const div = document.createElement('div');
+  div.className='ri-grid3'; div.setAttribute('data-bank',''); div.style.marginBottom='6px';
+  div.innerHTML = '<input class="bk-login-input pbe-bank-name" placeholder="Bank name"/>'
+    + '<input class="bk-login-input pbe-bank-no" placeholder="Account number"/>'
+    + '<input class="bk-login-input pbe-bank-acct" placeholder="Account name"/>';
+  box.appendChild(div);
+}
+function pbeCollectBanks(bizId) {
+  const box = document.getElementById('pbeBanks_'+bizId);
+  if (!box) return [];
+  return Array.from(box.querySelectorAll('[data-bank]')).map(d=>({
+    bank: d.querySelector('.pbe-bank-name')?.value?.trim()||'',
+    number: d.querySelector('.pbe-bank-no')?.value?.trim()||'',
+    name: d.querySelector('.pbe-bank-acct')?.value?.trim()||'',
+  })).filter(b=>b.bank||b.number);
+}
+
 async function pfSaveBiz(bizId) {
   const name = document.getElementById('pbe_name_'+bizId)?.value?.trim();
   if (!name) { alert('Business name is required.'); return; }
@@ -10945,6 +11131,7 @@ async function pfSaveBiz(bizId) {
   const {error} = await bkDb.from('businesses').update({
     name, industry:document.getElementById('pbe_ind_'+bizId)?.value||'General',
     business_address:document.getElementById('pbe_addr_'+bizId)?.value?.trim()||'',
+    bank_accounts: pbeCollectBanks(bizId),
     cac_registered:!!cac, cac_number:cac||null, updated_at:new Date().toISOString(),
   }).eq('id',bizId).eq('owner_user_id',bkUser.id);
   if (error) { alert('Save failed: '+error.message); return; }
@@ -11085,7 +11272,7 @@ async function showAllBusinessesDashboard() {
 
 async function fetchAllBusinessMetrics() {
   const results = await Promise.all(userBusinesses.map(async biz => {
-    let revenue=0, expenses=0, receivables=0;
+    let revenue=0, expenses=0, receivables=0, cos=0;
     try {
       const {data:T} = await bkDb.from('bk_transactions')
         .select('record_type,debit,credit,account_name')
@@ -11093,14 +11280,14 @@ async function fetchAllBusinessMetrics() {
       (T||[]).forEach(r=>{
         const dr=parseFloat(r.debit)||0, cr=parseFloat(r.credit)||0;
         if(r.record_type==='income') revenue += cr-dr;
-        if(r.record_type==='expenditure') expenses += dr-cr;
+        if(r.record_type==='expenditure'){ expenses += dr-cr; if(isCOSAccount(r.account_name)) cos += dr-cr; }
         if(r.record_type==='asset'&&(r.account_name==='Debtors'||r.account_name==='Accounts Receivable')) receivables += dr-cr;
       });
     } catch(e) {}
     const profit = revenue - expenses;
     const margin = revenue > 0 ? Math.round(profit/revenue*100) : 0;
     const status = profit < 0 ? 'critical' : margin < 15 ? 'attention' : 'healthy';
-    return {...biz, revenue, expenses, profit, margin, receivables, status};
+    return {...biz, revenue, expenses, cos, opex: expenses-cos, profit, margin, receivables, status};
   }));
   return results;
 }
@@ -11206,7 +11393,9 @@ function renderAllBusinessesDashboard(metrics) {
         <div class="ab-section-title">Recent Activity</div>
       </div>
       <div id="abRecentActivity" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px 16px;">
-        <div style="color:var(--muted);font-size:0.78rem;padding:12px 0;">Loading…</div>
+        <div style="color:var(--m
+function bdToast(msg){ const m=document.createElement('div'); m.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a2a1a;border:1px solid var(--green);color:#4ade80;padding:10px 20px;border-radius:8px;font-size:0.82rem;font-weight:600;z-index:9999;'; m.textContent=msg; document.body.appendChild(m); setTimeout(()=>m.remove(),2000); }
+uted);font-size:0.78rem;padding:12px 0;">Loading…</div>
       </div>
     </div>`;
 
@@ -11214,6 +11403,7 @@ function renderAllBusinessesDashboard(metrics) {
   loadRecentActivity();
 }
 
+const _rtLabel = t => ({income:'Income',expenditure:'Expense',asset:'Asset',liability:'Liability',capital:'Capital'})[t]||t;
 async function loadRecentActivity() {
   const el = document.getElementById('abRecentActivity');
   if (!el || !bkUser) return;
@@ -11305,7 +11495,7 @@ async function showSingleBusinessDashboard(biz) {
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
 
   // Get metrics for this business
-  let revenue=0,expenses=0,profit=0,receivables=0;
+  let revenue=0,expenses=0,profit=0,receivables=0,cos=0;
   let cashInHand=0,cashAtBank=0;
   let recentTxns=[];
   {
