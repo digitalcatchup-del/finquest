@@ -1,6 +1,6 @@
-// Butterfly Dynamix Bookkeeping — Service Worker v12
+// Butterfly Dynamix Bookkeeping — Service Worker v13
 // v4: force cache clear after profile/multi-business update
-const CACHE_NAME = 'bd-bookkeeping-v12';
+const CACHE_NAME = 'bd-bookkeeping-v13';
 const ASSETS_TO_CACHE = [
   '/bookkeeping',
   '/bookkeeping.html',
@@ -55,7 +55,12 @@ self.addEventListener('fetch', function(event) {
         }
         return response;
       }).catch(function() {
-        return caches.match('/bookkeeping') || caches.match('/bookkeeping.html');
+        return caches.match(event.request).then(function(r){
+          if (r) return r;
+          return caches.match('/bookkeeping').then(function(r2){
+            return r2 || caches.match('/bookkeeping.html');
+          });
+        });
       })
     );
   } else {
