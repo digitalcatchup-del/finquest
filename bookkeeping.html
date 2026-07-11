@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -209,6 +208,15 @@ body[data-theme="midnight"]{
 #sheetTable_sales td,#sheetTable_expenses td,#ledgerTable td{position:relative;}
 
 .led-hide-date .col-date,.led-hide-payee .col-payee,.led-hide-payer .col-payer,.led-hide-narr .col-narr,.led-hide-dr .col-dr,.led-hide-cr .col-cr,.led-hide-bal .col-bal{display:none;}
+
+.dash-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+@media(min-width:760px){.dash-cards{grid-template-columns:repeat(3,1fr);}}
+.dash-card2{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;aspect-ratio:1.15/1;display:flex;flex-direction:column;justify-content:center;cursor:pointer;transition:border-color 0.15s;-webkit-tap-highlight-color:transparent;}
+.dash-card2:hover{border-color:var(--gold);}
+.dash-card2-icon{font-size:1.3rem;margin-bottom:8px;}
+.dash-card2-amt{font-size:1.15rem;font-weight:900;line-height:1.1;word-break:break-word;}
+.dash-card2-label{font-size:0.74rem;font-weight:800;color:var(--white);margin-top:4px;}
+.dash-card2-sub{font-size:0.6rem;color:var(--muted);margin-top:3px;}
 .col-head{-webkit-user-select:none;user-select:none;}
 .col-head-hl{background:rgba(212,175,55,0.14) !important;}
 .col-tri{position:absolute;top:2px;right:3px;font-size:0.5rem;color:var(--gold);opacity:0;transition:opacity 0.15s;padding:3px;cursor:pointer;}
@@ -3418,6 +3426,18 @@ function ledCustomInput(idx, key, val) {
   r.custom = r.custom||{}; r.custom[key]=val;
   if (r.id) { const m=_ledVals(); m[r.id]=m[r.id]||{}; m[r.id][key]=val; localStorage.setItem('bd_led_custvals', JSON.stringify(m)); }
 }
+function _ledMeta(){ try { return JSON.parse(localStorage.getItem('bd_led_colmeta')||'{}'); } catch(e){ return {}; } }
+function ledColEditCells(key) {
+  if (!String(key).startsWith('lc')) { alert('Cell options can be set on custom columns you create.'); return; }
+  const meta = _ledMeta();
+  const c = _ledCustom().find(x=>x.key===key);
+  openOptionsPortal('CELL OPTIONS — '+(c?c.label:''), meta[key]||[], opts=>{
+    if (opts.length) meta[key]=opts; else delete meta[key];
+    localStorage.setItem('bd_led_colmeta', JSON.stringify(meta));
+    renderLedger();
+  });
+}
+
 function ledColMenu(ev, key) {
   const custom = String(key).startsWith('lc');
   openColMenuPortal(ev, [
@@ -3425,6 +3445,7 @@ function ledColMenu(ev, key) {
     ['+ Insert column left', "ledColInsert('"+key+"','left')"],
     ['+ Insert column right', "ledColInsert('"+key+"','right')"],
     ['🗑 Delete column', "ledColDelete('"+key+"')"],
+    ['⚙ Edit cells', "ledColEditCells('"+key+"')"],
     ['✕ Clear column', "ledColClear('"+key+"')"],
     ['🚫👁 Hide column', "ledColHide('"+key+"')"],
   ]);
@@ -3433,15 +3454,14 @@ function ledColRename(key) {
   const labels=_ledLabels();
   const custom=_ledCustom().find(c=>c.key===key);
   const cur = custom ? custom.label : (labels[key] || {date:'Date',payee:'Payee',payer:'Payer',narr:'Narration',dr:'Debit',cr:'Credit',bal:'Balance'}[key] || key);
-  const name = prompt('New header name:', cur);
-  if (!name) return;
-  if (custom) { custom.label=name.trim(); _ledSetCustom(_ledCustom().map(c=>c.key===key?custom:c)); }
-  else { labels[key]=name.trim(); localStorage.setItem('bd_led_labels', JSON.stringify(labels)); }
-  renderLedger();
+  openTextPortal('RENAME HEADER', cur, name=>{
+    if (custom) { custom.label=name; _ledSetCustom(_ledCustom().map(c=>c.key===key?custom:c)); }
+    else { labels[key]=name; localStorage.setItem('bd_led_labels', JSON.stringify(labels)); }
+    renderLedger();
+  });
 }
 function ledColInsert(key, side) {
-  const name = prompt('New column header name:');
-  if (!name) return;
+  const name = 'New Column';
   const cols = _ledCustom();
   const idx = cols.findIndex(c=>c.key===key);
   const entry = { key:'lc'+Date.now(), label:name.trim() };
@@ -3637,19 +3657,11 @@ function renderRows(displayRows) {
       <td><button class="save-row-btn" onclick="saveOpeningBalance(document.getElementById('obBalInput').value)" title="Save opening balance">›</button></td>
     </tr>`;
 
-  const dataRows = (displayRows||rows).filter(r => hasData(r));
-
-  // Always render existing data rows + empty rows — no "no entries" message
-  const existingHtml = dataRows.map((row, i) => {
-    const realIdx = rows.indexOf(row);
-    const idx = realIdx >= 0 ? realIdx : i;
-    return buildEditableRow(row, idx, i+1);
-  }).join('');
-
-  // Exactly one trailing blank row for new entries
-  const extraEmpty = buildEmptyEditableRows(1, rows.length);
-
-  tbody.innerHTML = obRow + existingHtml + extraEmpty;
+  // Ensure exactly one trailing blank row, then render ALL rows with true indexes
+  if (rows.length === 0 || hasData(rows[rows.length-1])) rows.push(emptyRow(rows.length));
+  let _sn = 0;
+  const bodyHtml = rows.map((row, i) => buildEditableRow(row, i, hasData(row) ? (++_sn) : '')).join('');
+  tbody.innerHTML = obRow + bodyHtml;
   if (!tbody._autoHook) { tbody._autoHook=true; tbody.addEventListener('input', ()=>{ isDirty=true; ledgerAutosave(); }); }
   setTimeout(()=>{ initColumnResize(); initRowResize(); initDragRows(); }, 50);
 }
@@ -3694,8 +3706,13 @@ function buildEditableRow(row, idx, sn) {
     <td class="col-narr"><input class="bk-cell" type="text" value="${escH(row.narration||'')}" placeholder="Narration…"
       oninput="rows[${idx}].narration=this.value;rows[${idx}].saved=false"/></td>
     ${(()=>{const hid=_ledHidden();const vals=(row.custom)||(row.id?(_ledVals()[row.id]||{}):{});
-      return _ledCustom().filter(c=>!hid[c.key]).map(c=>`<td><input class="bk-cell" type="text" value="${escH(vals[c.key]||'')}"
-      oninput="ledCustomInput(${idx},'${c.key}',this.value)"/></td>`).join('');})()}
+      const meta=_ledMeta();
+      return _ledCustom().filter(c=>!hid[c.key]).map(c=>{
+        const opts = meta[c.key];
+        if (opts && opts.length) return `<td><select class="bk-cell" onchange="ledCustomInput(${idx},'${c.key}',this.value)">
+          <option value=""></option>${opts.map(o=>`<option ${(vals[c.key]||'')===o?'selected':''}>${escH(o)}</option>`).join('')}</select></td>`;
+        return `<td><input class="bk-cell" type="text" value="${escH(vals[c.key]||'')}"
+      oninput="ledCustomInput(${idx},'${c.key}',this.value)"/></td>`;}).join('');})()}
     <td class="col-dr"><input class="bk-cell num" type="text" inputmode="decimal"
       value="${row.debit>0?fmtNum(row.debit):''}" placeholder="0"
       oninput="ledgerFmtInput(this,${idx},'debit')"/></td>
@@ -3756,7 +3773,6 @@ async function saveOpeningBalance(val) {
     } else {
       const {error:e1} = await bkDb.from('bk_accounts').update({
         opening_balance: newOB,
-        updated_at: new Date().toISOString(),
       }).eq('id', activeAccount.id).eq('user_id', bkUser.id);
       if (e1) throw e1;
     }
@@ -3879,6 +3895,7 @@ function recalcBalances() {
 
 // ── ROW MANAGEMENT ───────────────────────────────────────────
 function addRow() {
+  if (rows.length && !hasData(rows[rows.length-1])) { renderRows(rows); return; }
   rows.push(emptyRow(rows.length));
   renderRows(rows);
   setTimeout(()=>{
@@ -4536,7 +4553,7 @@ function renderPL(t) {
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
       <div><div class="bk-content-title">STATEMENT OF PROFIT OR LOSS</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${escH(activeBusiness?.name||'')} — IFRS presentation</div></div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${escH((window._reportBizName||activeBusiness?.name)||'')} — IFRS presentation</div></div>
       <div class="bk-header-actions"></div>
     </div>
     <div class="report-wrap">
@@ -4580,7 +4597,7 @@ function renderBS(t) {
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
       <div><div class="bk-content-title">STATEMENT OF FINANCIAL POSITION</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${escH(activeBusiness?.name||'')} — IFRS presentation</div></div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${escH((window._reportBizName||activeBusiness?.name)||'')} — IFRS presentation</div></div>
       <div class="bk-header-actions"></div>
     </div>
     <div class="report-wrap">
@@ -5067,11 +5084,11 @@ function jrnColMenu(ev, n) {
 function jrnColInsertInfo(){ alert('Every column in the Master Records is part of the double-entry structure, so columns cannot be added or deleted here. You can rename, clear, or hide them — and add custom columns in the Sales, Expenses and Ledger sheets.'); }
 function jrnColRename(n) {
   const lbl = Object.assign({1:'Date',2:'Payee',3:'Payer',4:'Narration',5:'Debit Account',6:'Credit Account',7:'Debit',8:'Credit'}, _jrnLabels());
-  const name = prompt('New header name:', lbl[n]);
-  if (!name) return;
-  const m=_jrnLabels(); m[n]=name.trim();
+  openTextPortal('RENAME HEADER', lbl[n], name=>{
+  const m=_jrnLabels(); m[n]=name;
   localStorage.setItem('bd_jrn_labels', JSON.stringify(m));
   (typeof renderJournal==='function') ? renderJournal() : openJournal();
+  });
 }
 function jrnColClear(n) {
   if (!confirm('Clear all values in this column?')) return;
@@ -8379,7 +8396,12 @@ async function showReport(type) {
   bdSaveRoute('report:'+type);
   recordsPageChrome(); // hides toolbar, hero header; keeps equation
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
-  const {data}=await bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date').match(bizMatch());
+  const _rb = window._reportBiz;
+  window._reportBizName = _rb ? _rb.name : null;
+  let _rq = bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date');
+  _rq = _rb ? _rq.eq('business_id', _rb.id) : _rq.match(bizMatch());
+  const {data}=await _rq;
+  window._reportBiz = null;
   const T=data||[];
   const tots={capital:{dr:0,cr:0},liability:{dr:0,cr:0},asset:{dr:0,cr:0},income:{dr:0,cr:0},expenditure:{dr:0,cr:0}};
   const byAcct={capital:{},liability:{},asset:{},income:{},expenditure:{}};
@@ -9515,8 +9537,14 @@ function renderRecordSheet(kind) {
       case 'sn': return `<td class="staff-sn" style="white-space:nowrap;${hlCss(c)}">%%VI%%</td>`;
       case 'narration': return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" value="${escH(r.narration||'')}" placeholder="${narrPh}" style="${wrapCss}min-width:150px;"
         oninput="sheetRows('${kind}')[${i}].narration=this.value;sheetRows('${kind}')[${i}]._posted=false"/></td>`;
-      case 'custom': return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" value="${escH((r.custom&&r.custom[c.k])||'')}"
+      case 'custom': {
+        const opts = _sheetMeta(kind)[c.k];
+        if (opts && opts.length) return `<td style="${hlCss(c)}"><select class="staff-cell" style="min-width:100px;"
+          onchange="(sheetRows('${kind}')[${i}].custom=sheetRows('${kind}')[${i}].custom||{})['${c.k}']=this.value">
+          <option value=""></option>${opts.map(o=>`<option ${((r.custom&&r.custom[c.k])||'')===o?'selected':''}>${escH(o)}</option>`).join('')}</select></td>`;
+        return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" value="${escH((r.custom&&r.custom[c.k])||'')}"
         oninput="(sheetRows('${kind}')[${i}].custom=sheetRows('${kind}')[${i}].custom||{})['${c.k}']=this.value"/></td>`;
+      }
       case 'unit_price': return `<td style="white-space:nowrap;${hlCss(c)}"><div class="staff-price-wrap"><span class="staff-curr-prefix">${sym}</span>
         <input class="staff-cell num" type="text" inputmode="decimal" value="${r.unit_price>0?fmtCell(r.unit_price):''}" placeholder="0"
           onclick="staffCursorEnd(this)" onfocus="staffCursorEnd(this)"
@@ -9570,8 +9598,9 @@ function renderRecordSheet(kind) {
         ${circle}${snTd}
         <td colspan="${spanCount}" onclick="sheetToggleBundle('${kind}',${i})" style="cursor:pointer;">
           <span style="color:var(--gold);font-weight:900;">${r.expanded?'▾':'▸'}</span>
-          🧺 <span style="color:var(--gold);font-weight:800;">${r.items.length} item${r.items.length>1?'s':''}</span>
+          🧺 <span style="color:var(--gold);font-weight:800;">${r.label?escH(r.label)+' · ':''}${r.items.length} item${r.items.length>1?'s':''}</span>
           <span class="op-badge">ONE-PAYMENT</span>
+          <span onclick="event.stopPropagation();sheetBundleRename('${kind}',${i})" title="Rename" style="cursor:pointer;font-size:0.7rem;margin-left:6px;">✏</span>
           ${r.expanded?`<span onclick="event.stopPropagation();sheetUngroup('${kind}',${i})" style="color:#f87171;font-size:0.66rem;font-weight:700;margin-left:8px;">Ungroup</span>`:''}
         </td>
         ${tail}
@@ -9632,6 +9661,7 @@ function renderRecordSheet(kind) {
     <div class="op-selbar">
       <span style="color:var(--gold);font-weight:800;">${sel.picked.length} selected</span>
       <button class="op-bundle-btn" ${sel.picked.length<2?'disabled':''} onclick="sheetBundleSelected('${kind}')">🧺 One-Payment</button>
+      <button class="op-cancel-btn" ${sel.picked.length<2?'disabled':''} onclick="sheetBundleRenamePick('${kind}')" title="Name the grouped row">✏ Rename</button>
       <button class="op-cancel-btn" onclick="sheetSelCancel('${kind}')">Cancel</button>
     </div>` : '';
 
@@ -9823,15 +9853,66 @@ async function sheetRestore(kind) {
   });
 })();
 // ── Portal column menu: fixed-position, never clipped ──
+function _sheetMeta(kind){ const st=sheetState[kind]; if(!st.colMeta){ try{ st.colMeta=JSON.parse(localStorage.getItem('bd_colmeta_'+kind)||'{}'); }catch(e){ st.colMeta={}; } } return st.colMeta; }
+function sheetColEditCells(kind, key) {
+  const st = sheetState[kind];
+  const c = st.colOrder.find(x=>x.k===key);
+  if (!c || c.t!=='c') { alert('Cell options can be set on custom columns you create. Built-in columns keep their formats.'); return; }
+  const meta = _sheetMeta(kind);
+  openOptionsPortal('CELL OPTIONS — '+sheetColLabel(kind,c), meta[key]||[], opts=>{
+    if (opts.length) meta[key]=opts; else delete meta[key];
+    localStorage.setItem('bd_colmeta_'+kind, JSON.stringify(meta));
+    renderRecordSheet(kind);
+  });
+}
+
 function sheetColMenuOpen(ev, kind, key) {
   openColMenuPortal(ev, [
     ['\u270F\uFE0F Rename Header', "sheetColRename('"+kind+"','"+key+"')"],
     ['+ Insert column left', "sheetColInsert('"+kind+"','"+key+"','left')"],
     ['+ Insert column right', "sheetColInsert('"+kind+"','"+key+"','right')"],
     ['\uD83D\uDDD1 Delete column', "sheetColDelete('"+kind+"','"+key+"')"],
+    ['\u2699 Edit cells', "sheetColEditCells('"+kind+"','"+key+"')"],
     ['\u2715 Clear column', "sheetColClear('"+kind+"','"+key+"')"],
     ['\uD83D\uDEAB\uD83D\uDC41 Hide column', "sheetColHide('"+kind+"','"+key+"')"],
   ]);
+}
+
+function openTextPortal(label, initial, cb) {
+  closeColMenu();
+  const wrap = document.createElement('div');
+  wrap.id = 'colMenuPortal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;';
+  wrap.innerHTML = `<div class="col-menu" style="padding:14px;min-width:250px;max-width:340px;" onclick="event.stopPropagation()">
+    <label class="su-label">${label}</label>
+    <input class="bk-login-input" id="tpInput" value="${escH(initial||'')}" style="margin-bottom:10px;"/>
+    <button id="tpOk" style="width:100%;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.76rem;padding:9px;border-radius:8px;cursor:pointer;">Save</button>
+  </div>`;
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) closeColMenu(); });
+  document.body.appendChild(wrap);
+  const inp = wrap.querySelector('#tpInput');
+  inp.focus(); inp.select();
+  const go = ()=>{ const v = inp.value.trim(); closeColMenu(); if (v) cb(v); };
+  wrap.querySelector('#tpOk').onclick = go;
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
+}
+function openOptionsPortal(label, initialArr, cb) {
+  closeColMenu();
+  const wrap = document.createElement('div');
+  wrap.id = 'colMenuPortal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;';
+  wrap.innerHTML = `<div class="col-menu" style="padding:14px;min-width:260px;max-width:360px;" onclick="event.stopPropagation()">
+    <label class="su-label">${label}</label>
+    <div style="font-size:0.64rem;color:var(--muted);margin-bottom:6px;">One option per line (e.g. Paid, Not paid). Leave empty to return to free text.</div>
+    <textarea class="bk-login-input" id="opInput" rows="4" style="margin-bottom:10px;resize:vertical;">${escH((initialArr||[]).join('\n'))}</textarea>
+    <button id="opOk" style="width:100%;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.76rem;padding:9px;border-radius:8px;cursor:pointer;">Save</button>
+  </div>`;
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) closeColMenu(); });
+  document.body.appendChild(wrap);
+  wrap.querySelector('#opOk').onclick = ()=>{
+    const v = wrap.querySelector('#opInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    closeColMenu(); cb(v);
+  };
 }
 
 function closeColMenu(){ document.getElementById('colMenuPortal')?.remove(); }
@@ -9871,22 +9952,20 @@ function sheetColRename(kind, key) {
   const st = sheetState[kind];
   const c = st.colOrder.find(x=>x.k===key);
   const cur = c ? sheetColLabel(kind,c) : '';
-  const name = prompt('New header name:', cur);
   st.menuCol = null;
-  if (!name) { renderRecordSheet(kind); return; }
-  if (c && c.t==='c') c.label = name.trim();
-  else { st.colLabels = st.colLabels||{}; st.colLabels[key] = name.trim(); }
-  sheetPersistCols(kind);
-  renderRecordSheet(kind);
+  openTextPortal('RENAME HEADER', cur, name=>{
+    if (c && c.t==='c') c.label = name;
+    else { st.colLabels = st.colLabels||{}; st.colLabels[key] = name; }
+    sheetPersistCols(kind);
+    renderRecordSheet(kind);
+  });
 }
 function sheetColInsert(kind, key, side) {
   const st = sheetState[kind];
-  const name = prompt('New column header name:');
   st.menuCol = null;
-  if (!name) { renderRecordSheet(kind); return; }
   const idx = st.colOrder.findIndex(x=>x.k===key);
   const at = side==='left' ? idx : idx+1;
-  st.colOrder.splice(at, 0, {k:'c'+Date.now(), t:'c', label:name.trim()});
+  st.colOrder.splice(at, 0, {k:'c'+Date.now(), t:'c', label:'New Column'});
   sheetPersistCols(kind);
   renderRecordSheet(kind);
 }
@@ -9944,7 +10023,10 @@ function sheetToggleReceipt(kind, on) {
 // ── Receipt ──────────────────────────────────────────────────
 function _receiptData(kind, i) {
   const r = sheetRows(kind)[i];
-  const items = r._bundle ? r.items : [r];
+  let items = r._bundle ? r.items : [r];
+  // Edited receipt rows (back page) override the item list
+  const _ov = window._rcptOverrideRows || (function(){ try { const rec=_rcptStore()[_rcptKey(kind,i)]; return rec&&rec.versions.length ? rec.rows : null; } catch(e){ return null; } })();
+  if (_ov && _ov.length) items = _ov.map(x=>({narration:x.narration + (x.s1?' — '+x.s1:'') + (x.s2?' / '+x.s2:''), unit_price:x.unit, qty:x.qty, total:x.total}));
   const subtotal = items.reduce((s,x)=>s+(x.total||0),0);
   const biz = activeBusiness || {};
   const payLabels = {cash:'Cash',transfer:'Bank Transfer',pos:'POS',cheque:'Cheque',credit:'On Credit'};
@@ -9959,6 +10041,150 @@ function _receiptData(kind, i) {
     pay: payLabels[r.pay_mode||'cash'] || 'Cash',
   };
 }
+// ── Receipt back page: editable spreadsheet + versions ───────
+function _rcptKey(kind, i) {
+  const r = sheetRows(kind)[i];
+  if (!r) return 'r'+i;
+  if (r._bundle) return 'g'+(r.items[0]?.txn_group_id || r.items[0]?._gid || r.items[0]?._txnId || i);
+  return 't'+(r._txnId || r.txn_group_id || i);
+}
+function _rcptStore(){ try { return JSON.parse(localStorage.getItem('bd_receipts')||'{}'); } catch(e){ return {}; } }
+function _rcptSave(store){ localStorage.setItem('bd_receipts', JSON.stringify(store)); }
+const RCPT_COLS_DEFAULT = [
+  {k:'sn',label:'S/N'},{k:'narration',label:'Narration'},{k:'unit',label:'Unit Price'},
+  {k:'qty',label:'Quantity'},{k:'total',label:'Total'},{k:'s1',label:'Status 1'},
+  {k:'s2',label:'Status 2'},{k:'pay',label:'Payment mode'},{k:'del',label:''},{k:'save',label:''}
+];
+let _rcptCtx = null; // {kind,i,key,rec}
+
+function showReceiptEdit(kind, i) {
+  const key = _rcptKey(kind, i);
+  const store = _rcptStore();
+  if (!store[key]) {
+    const d = _receiptData(kind, i);
+    store[key] = {
+      cols: JSON.parse(JSON.stringify(RCPT_COLS_DEFAULT)),
+      meta: {},
+      rows: d.items.map((x,n)=>({narration:x.narration||'', unit:x.unit_price||0, qty:x.qty||1, total:x.total||0, s1:'', s2:'', pay:d.pay})),
+      versions: []
+    };
+    if (!store[key].rows.length) store[key].rows=[{narration:'',unit:0,qty:1,total:0,s1:'',s2:'',pay:'Cash'}];
+    _rcptSave(store);
+  }
+  _rcptCtx = { kind, i, key };
+  renderReceiptEdit();
+}
+function renderReceiptEdit(viewVersion) {
+  const store = _rcptStore();
+  const rec = store[_rcptCtx.key];
+  const rows = (viewVersion!=null && rec.versions[viewVersion]) ? rec.versions[viewVersion].rows : rec.rows;
+  const readonly = viewVersion!=null;
+  const cols = rec.cols.filter(c=>!(rec.hidden||{})[c.k]);
+  const overlay = document.getElementById('receiptOverlay');
+  if (!overlay) return;
+  const th = cols.map((c,ci)=>{
+    const structural = c.k==='del'||c.k==='save'||c.k==='sn';
+    const tri = structural ? '' : `<span class="col-tri col-tri-show" style="position:static;font-size:0.5rem;margin-left:3px;" onclick="event.stopPropagation();rcptColMenu(event,'${c.k}')">▼</span>`;
+    return `<th style="white-space:nowrap;min-width:${c.k==='narration'?150:c.k==='sn'?40:(c.k==='del'||c.k==='save')?34:100}px;">${escH(c.label)}${tri}</th>`;
+  }).join('');
+  const body = rows.map((r,ri)=>'<tr>'+cols.map(c=>{
+    const opts = (rec.meta||{})[c.k];
+    const dis = readonly?'disabled':'';
+    switch(c.k){
+      case 'sn': return `<td style="text-align:center;color:var(--muted);">${ri+1}</td>`;
+      case 'total': return `<td style="text-align:right;font-weight:700;" id="rcptTot_${ri}">${staffFmtAmt(r.total)}</td>`;
+      case 'unit': case 'qty':
+        return `<td><input class="staff-cell num" ${dis} type="text" inputmode="decimal" value="${r[c.k]||''}"
+          oninput="rcptCell(${ri},'${c.k}',this.value)"/></td>`;
+      case 'pay':
+        return `<td><select class="staff-cell" ${dis} onchange="rcptCell(${ri},'pay',this.value)">
+          ${['Cash','Bank Transfer','POS','Cheque','On Credit'].map(o=>`<option ${(r.pay||'Cash')===o?'selected':''}>${o}</option>`).join('')}</select></td>`;
+      case 'del': return `<td><button class="staff-del-btn" ${dis} onclick="rcptDelRow(${ri})">&times;</button></td>`;
+      case 'save': return `<td><button class="staff-save-row-btn" ${dis} onclick="rcptSaveRow(${ri})">&rsaquo;</button></td>`;
+      default: {
+        if (opts && opts.length) return `<td><select class="staff-cell" ${dis} onchange="rcptCell(${ri},'${c.k}',this.value)">
+          <option value=""></option>${opts.map(o=>`<option ${(r[c.k]||'')===o?'selected':''}>${escH(o)}</option>`).join('')}</select></td>`;
+        return `<td><input class="staff-cell" ${dis} type="text" value="${escH(r[c.k]||'')}"
+          oninput="rcptCell(${ri},'${c.k}',this.value)"/></td>`;
+      }
+    }
+  }).join('')+'</tr>').join('');
+  overlay.innerHTML = `
+    <div id="receiptCard" style="background:var(--surface);border:1px solid var(--gold);border-radius:14px;max-width:640px;width:100%;max-height:90vh;overflow-y:auto;padding:18px;" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div style="font-weight:900;color:var(--gold);">Receipt — Back Page (Edit)</div>
+        <select class="bk-login-input" style="width:auto;margin:0;font-size:0.7rem;padding:6px 8px;" onchange="renderReceiptEdit(this.value===''?null:parseInt(this.value))">
+          <option value="">Current (editable)</option>
+          ${rec.versions.map((v,vi)=>`<option value="${vi}" ${viewVersion===vi?'selected':''}>Version ${vi+1} — ${new Date(v.t).toLocaleString()}</option>`).join('')}
+        </select>
+      </div>
+      <div style="font-size:0.64rem;color:var(--muted);margin:4px 0 10px;">Update items (e.g. 3 shirts deposited → 2 collected). Each › save creates a printable version.</div>
+      <div class="bk-sheet-wrap" style="overflow-x:auto;">
+        <table class="staff-table staff-table-compact" style="min-width:${cols.length*110}px;">
+          <thead><tr>${th}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+      ${readonly?'':'<button class="staff-add-cust-btn" style="margin-top:10px;" onclick="rcptAddRow()">+ Add Row</button>'}
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button onclick="${readonly?`rcptPrintVersion(${viewVersion})`:'rcptSaveAll()'}" style="flex:1;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.76rem;padding:10px;border-radius:8px;cursor:pointer;">${readonly?'🖨 Print this version':'💾 Save version'}</button>
+        <button onclick="showReceipt('${_rcptCtx.kind}',${_rcptCtx.i})" style="background:var(--surface2);color:var(--gold);border:1px solid var(--gold);font-weight:800;font-size:0.76rem;padding:10px 14px;border-radius:8px;cursor:pointer;">↩ Front</button>
+        <button onclick="document.getElementById('receiptOverlay').remove()" style="background:none;color:var(--muted);border:1px solid var(--border2);font-size:0.76rem;padding:10px 12px;border-radius:8px;cursor:pointer;">Close</button>
+      </div>
+    </div>`;
+}
+function rcptCell(ri, k, val) {
+  const store = _rcptStore(); const rec = store[_rcptCtx.key]; const r = rec.rows[ri];
+  if (k==='unit'||k==='qty') {
+    r[k] = parseFloat(String(val).replace(/,/g,''))||0;
+    r.total = (r.unit||0)*(r.qty||1);
+    const t = document.getElementById('rcptTot_'+ri); if (t) t.textContent = staffFmtAmt(r.total);
+  } else r[k] = val;
+  _rcptSave(store);
+}
+function rcptAddRow(){ const s=_rcptStore(); s[_rcptCtx.key].rows.push({narration:'',unit:0,qty:1,total:0,s1:'',s2:'',pay:'Cash'}); _rcptSave(s); renderReceiptEdit(); }
+function rcptDelRow(ri){ const s=_rcptStore(); const rec=s[_rcptCtx.key]; rec.rows.splice(ri,1); if(!rec.rows.length)rec.rows.push({narration:'',unit:0,qty:1,total:0,s1:'',s2:'',pay:'Cash'}); _rcptSave(s); renderReceiptEdit(); }
+function rcptSaveRow(ri){ rcptSaveAll(); }
+function rcptSaveAll() {
+  const s = _rcptStore(); const rec = s[_rcptCtx.key];
+  rec.versions.push({ t: Date.now(), rows: JSON.parse(JSON.stringify(rec.rows)) });
+  _rcptSave(s);
+  bdToast('\u2713 Receipt updated — version '+rec.versions.length+' saved');
+  renderReceiptEdit();
+}
+function rcptPrintVersion(vi) {
+  const rec = _rcptStore()[_rcptCtx.key];
+  const rows = vi!=null && rec.versions[vi] ? rec.versions[vi].rows : rec.rows;
+  window._rcptOverrideRows = rows;
+  showReceipt(_rcptCtx.kind, _rcptCtx.i);
+  setTimeout(()=>{ printReceipt(); window._rcptOverrideRows=null; }, 100);
+}
+function rcptColMenu(ev, key) {
+  openColMenuPortal(ev, [
+    ['\u270F\uFE0F Rename Header', "rcptColRename('"+key+"')"],
+    ['+ Insert column left', "rcptColInsert('"+key+"','left')"],
+    ['+ Insert column right', "rcptColInsert('"+key+"','right')"],
+    ['\u2699 Edit cells', "rcptColEditCells('"+key+"')"],
+    ['\uD83D\uDDD1 Delete column', "rcptColDelete('"+key+"')"],
+    ['\u2715 Clear column', "rcptColClear('"+key+"')"],
+    ['\uD83D\uDEAB\uD83D\uDC41 Hide column', "rcptColHide('"+key+"')"],
+  ]);
+}
+function rcptColRename(key){ const s=_rcptStore(); const rec=s[_rcptCtx.key]; const c=rec.cols.find(x=>x.k===key); if(!c)return;
+  openTextPortal('RENAME HEADER', c.label, v=>{ c.label=v; _rcptSave(s); renderReceiptEdit(); }); }
+function rcptColInsert(key, side){ const s=_rcptStore(); const rec=s[_rcptCtx.key];
+  const idx=rec.cols.findIndex(x=>x.k===key); const at=side==='left'?idx:idx+1;
+  rec.cols.splice(at,0,{k:'rc'+Date.now(),label:'New Column'}); _rcptSave(s); renderReceiptEdit(); }
+function rcptColDelete(key){ if(!String(key).startsWith('rc')&&!['s1','s2'].includes(key)){ alert('This column is part of the receipt structure — hide it instead.'); return; }
+  const s=_rcptStore(); const rec=s[_rcptCtx.key]; rec.cols=rec.cols.filter(x=>x.k!==key); _rcptSave(s); renderReceiptEdit(); }
+function rcptColClear(key){ const s=_rcptStore(); const rec=s[_rcptCtx.key]; rec.rows.forEach(r=>{ if(key==='unit'||key==='qty'){r[key]=0;r.total=0;} else if(key!=='total') r[key]=''; }); _rcptSave(s); renderReceiptEdit(); }
+function rcptColHide(key){ const s=_rcptStore(); const rec=s[_rcptCtx.key]; rec.hidden=rec.hidden||{}; rec.hidden[key]=true; _rcptSave(s); renderReceiptEdit(); }
+function rcptColEditCells(key){ const s=_rcptStore(); const rec=s[_rcptCtx.key]; const c=rec.cols.find(x=>x.k===key); if(!c)return;
+  rec.meta=rec.meta||{};
+  openOptionsPortal('CELL OPTIONS — '+c.label, rec.meta[key]||[], opts=>{
+    if(opts.length) rec.meta[key]=opts; else delete rec.meta[key];
+    _rcptSave(s); renderReceiptEdit(); }); }
+
 function showReceipt(kind, i) {
   const d = _receiptData(kind, i);
   const sym = staffSym();
@@ -9999,6 +10225,7 @@ function showReceipt(kind, i) {
       <div style="display:flex;gap:8px;margin-top:16px;">
         <button onclick="printReceipt()" style="flex:1;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.76rem;padding:10px;border-radius:8px;cursor:pointer;">🖨 Print</button>
         <button onclick="emailReceipt('${kind}',${i})" style="flex:1;background:var(--surface2);color:var(--gold);border:1px solid var(--gold);font-weight:800;font-size:0.76rem;padding:10px;border-radius:8px;cursor:pointer;">✉ Email</button>
+        <button onclick="showReceiptEdit('${kind}',${i})" style="flex:1;background:var(--surface2);color:var(--gold);border:1px solid var(--gold);font-weight:800;font-size:0.76rem;padding:10px;border-radius:8px;cursor:pointer;">✏ Edit</button>
         <button onclick="document.getElementById('receiptOverlay').remove()" style="background:none;color:var(--muted);border:1px solid var(--border2);font-size:0.76rem;padding:10px 14px;border-radius:8px;cursor:pointer;">Close</button>
       </div>
     </div>`;
@@ -10049,6 +10276,18 @@ function sheetSelCancel(kind) {
   sheetSel[kind] = {active:false, picked:[]};
   renderRecordSheet(kind);
 }
+function sheetBundleRenamePick(kind) {
+  openTextPortal('NARRATION FOR THE GROUPED ROW', sheetSel[kind].pendingLabel||'', v=>{
+    sheetSel[kind].pendingLabel = v;
+    renderRecordSheet(kind);
+  });
+}
+function sheetBundleRename(kind, i) {
+  const b = sheetRows(kind)[i];
+  if (!b || !b._bundle) return;
+  openTextPortal('RENAME GROUPED ROW', b.label||'', v=>{ b.label=v; renderRecordSheet(kind); });
+}
+
 function sheetBundleSelected(kind) {
   const sel = sheetSel[kind];
   if (sel.picked.length < 2) return;
@@ -10056,7 +10295,8 @@ function sheetBundleSelected(kind) {
   const rows = sheetRows(kind);
   const idxs = sel.picked.slice().sort((a,b)=>a-b);
   const items = idxs.map(i=>rows[i]).filter(r=>r && !r._bundle);
-  const bundle = { _bundle:true, items, pay_mode:(items[0]?.pay_mode||'cash'), expanded:false, _posted:false };
+  const bundle = { _bundle:true, items, pay_mode:(items[0]?.pay_mode||'cash'), expanded:false, _posted:false, label: sel.pendingLabel||'' };
+  sel.pendingLabel = '';
   for (let k = idxs.length-1; k >= 0; k--) rows.splice(idxs[k], 1);
   rows.splice(idxs[0], 0, bundle);
   sheetSel[kind] = {active:false, picked:[]};
@@ -11323,7 +11563,8 @@ async function fetchAllBusinessMetrics() {
     try {
       const {data:T} = await bkDb.from('bk_transactions')
         .select('record_type,debit,credit,account_name')
-        .eq('business_id', biz.id);
+        .eq('business_id', biz.id)
+        .gte('txn_date', dashDate.from).lte('txn_date', dashDate.to);
       (T||[]).forEach(r=>{
         const dr=parseFloat(r.debit)||0, cr=parseFloat(r.credit)||0;
         if(r.record_type==='income') revenue += cr-dr;
@@ -11340,6 +11581,161 @@ async function fetchAllBusinessMetrics() {
 }
 
 
+// ── Dashboard date filter (default: today) ──────────────────
+let dashDate = { from: new Date().toISOString().slice(0,10), to: new Date().toISOString().slice(0,10) };
+function dashDateLabel() {
+  const today = new Date().toISOString().slice(0,10);
+  if (dashDate.from===today && dashDate.to===today) return 'Today';
+  if (dashDate.from===dashDate.to) return dashDate.from;
+  return dashDate.from+' → '+dashDate.to;
+}
+function dashOpenDate(ev) {
+  openColMenuPortal(ev, []);
+  const menu = document.querySelector('#colMenuPortal .col-menu');
+  if (!menu) return;
+  menu.innerHTML = `
+    <div style="padding:10px;min-width:230px;">
+      <label class="su-label">DATE</label>
+      <input type="date" class="bk-login-input" id="ddSingle" value="${dashDate.from===dashDate.to?dashDate.from:''}" style="margin-bottom:8px;"/>
+      <label class="su-label">OR RANGE</label>
+      <div style="display:flex;gap:6px;">
+        <input type="date" class="bk-login-input" id="ddFrom" value="${dashDate.from}" style="margin:0;"/>
+        <input type="date" class="bk-login-input" id="ddTo" value="${dashDate.to}" style="margin:0;"/>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <button onclick="dashApplyDate()" style="flex:1;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.72rem;padding:8px;border-radius:7px;cursor:pointer;">Apply</button>
+        <button onclick="dashToday()" style="background:var(--surface);color:var(--muted);border:1px solid var(--border2);font-size:0.72rem;padding:8px 12px;border-radius:7px;cursor:pointer;">Today</button>
+      </div>
+    </div>`;
+  menu.querySelector('#ddSingle').addEventListener('change', e=>{ if(e.target.value){ menu.querySelector('#ddFrom').value=e.target.value; menu.querySelector('#ddTo').value=e.target.value; } });
+}
+function dashApplyDate() {
+  const f = document.getElementById('ddFrom')?.value, t = document.getElementById('ddTo')?.value;
+  if (f && t) dashDate = { from: f<=t?f:t, to: f<=t?t:f };
+  closeColMenu();
+  showAllBusinessesDashboard();
+}
+function dashToday() {
+  const today = new Date().toISOString().slice(0,10);
+  dashDate = { from: today, to: today };
+  closeColMenu();
+  showAllBusinessesDashboard();
+}
+
+// ── Breakdown pages for the dashboard cards ─────────────────
+async function dashOpenSheetFor(biz, kind) {
+  activeBusiness = biz.id ? (userBusinesses.find(b=>b.id===biz.id)||biz) : biz;
+  localStorage.setItem('bd_active_biz', activeBusiness.id);
+  try { bdUpdateMenuBizLine(); } catch(e){}
+  if (kind==='sales') { salesRows=[]; await showRecordSales(); }
+  else { staffExpRows=[]; await showRecordExpenses(); }
+}
+async function showCardBreakdown(metric, scope) {
+  bdSaveRoute('dashboard');
+  staffHideChrome();
+  const list = userBusinesses.filter(b => scope==='owned' ? b._owned!==false : b._owned===false);
+  const titles = { revenue: scope==='owned'?'Portfolio Revenue':'Employer’s Revenue',
+                   expenditure: scope==='owned'?'Portfolio Expenditure':'Employer’s Expenditure' };
+  const el = document.getElementById('bkContent');
+  el.innerHTML = '<div class="bk-loading">Loading…</div>';
+  const rowsHtml = [];
+  let grand = 0;
+  for (const b of list) {
+    let v = 0;
+    try {
+      const {data:T} = await bkDb.from('bk_transactions')
+        .select('record_type,debit,credit')
+        .eq('business_id', b.id)
+        .eq('record_type', metric==='revenue'?'income':'expenditure')
+        .gte('txn_date', dashDate.from).lte('txn_date', dashDate.to);
+      (T||[]).forEach(r=>{
+        const dr=parseFloat(r.debit)||0, cr=parseFloat(r.credit)||0;
+        v += metric==='revenue' ? cr-dr : dr-cr;
+      });
+    } catch(e){}
+    grand += v;
+    rowsHtml.push(`
+      <div onclick="dashOpenSheetFor(userBusinesses.find(b=>b.id==='${b.id}'), '${metric==='revenue'?'sales':'expenses'}')"
+        style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;">
+        <div style="width:36px;height:36px;border-radius:9px;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;overflow:hidden;">${b.logo_url?`<img src="${b.logo_url}" style="width:100%;height:100%;object-fit:cover;"/>`:(b.icon||'🏢')}</div>
+        <div style="flex:1;"><div style="font-weight:800;font-size:0.88rem;color:var(--white);">${escH(b.name)}</div>
+        <div style="font-size:0.66rem;color:var(--muted);">Tap to open the ${metric==='revenue'?'sales':'expenses'} records</div></div>
+        <div style="font-weight:900;color:${metric==='revenue'?'#4ade80':'#f87171'};">${fmt(v)}</div>
+      </div>`);
+  }
+  el.innerHTML = `
+    <div style="padding:16px;max-width:640px;margin:0 auto;">
+      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;margin-bottom:12px;" onclick="showAllBusinessesDashboard()">← Back</button>
+      <div style="font-size:1.15rem;font-weight:900;color:var(--white);">${titles[metric]}</div>
+      <div style="font-size:0.7rem;color:var(--gold);font-weight:700;margin:2px 0 16px;">${dashDateLabel()} · Total: ${fmt(grand)}</div>
+      ${rowsHtml.join('')||'<div style="color:var(--muted);font-size:0.8rem;">No businesses in this group.</div>'}
+    </div>`;
+}
+async function showNetProfitPage(scope) {
+  bdSaveRoute('dashboard');
+  staffHideChrome();
+  const list = userBusinesses.filter(b => scope==='owned' ? b._owned!==false : b._owned===false);
+  const el = document.getElementById('bkContent');
+  el.innerHTML = '<div class="bk-loading">Loading…</div>';
+  const per = [];
+  for (const b of list) {
+    let rev=0, cosV=0, opex=0;
+    try {
+      const {data:T} = await bkDb.from('bk_transactions')
+        .select('record_type,debit,credit,account_name')
+        .eq('business_id', b.id)
+        .gte('txn_date', dashDate.from).lte('txn_date', dashDate.to);
+      (T||[]).forEach(r=>{
+        const dr=parseFloat(r.debit)||0, cr=parseFloat(r.credit)||0;
+        if (r.record_type==='income') rev += cr-dr;
+        if (r.record_type==='expenditure') { if(isCOSAccount(r.account_name)) cosV+=dr-cr; else opex+=dr-cr; }
+      });
+    } catch(e){}
+    per.push({b, rev, cos:cosV, opex, profit: rev-cosV-opex});
+  }
+  const sum = k => per.reduce((s,p)=>s+p[k],0);
+  const line = (label,val,strong,color) => `<tr class="${strong?'total-row':''}"><td ${strong?'':'style="padding-left:22px;"'}>${label}</td><td class="num" ${color?'style="color:'+color+';"':''}>${fmt(val)}</td></tr>`;
+  if (scope==='owned') {
+    el.innerHTML = `
+    <div style="padding:16px;max-width:680px;margin:0 auto;">
+      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;margin-bottom:12px;" onclick="showAllBusinessesDashboard()">← Back</button>
+      <div style="font-size:1.15rem;font-weight:900;color:var(--white);">CONSOLIDATED INCOME STATEMENT</div>
+      <div style="font-size:0.7rem;color:var(--gold);font-weight:700;margin:2px 0 14px;">${dashDateLabel()} · All owned businesses</div>
+      <div class="report-wrap"><table class="report-table">
+        <thead><tr><th>Item</th><th class="num">Amount (${CURRENCIES[activeCurrency].symbol})</th></tr></thead>
+        <tbody>
+          <tr class="section-hdr"><td colspan="2">Revenue by business</td></tr>
+          ${per.map(p=>line(escH(p.b.name), p.rev)).join('')}
+          ${line('Total Revenue', sum('rev'), 1)}
+          ${line('Total Cost of Sales', sum('cos'), 1)}
+          ${line('GROSS PROFIT', sum('rev')-sum('cos'), 1)}
+          ${line('Total Operating Expenses', sum('opex'), 1)}
+          ${line((sum('profit')>=0?'CONSOLIDATED PROFIT':'CONSOLIDATED LOSS'), Math.abs(sum('profit')), 1, sum('profit')>=0?'#4ade80':'#f87171')}
+          <tr class="section-hdr"><td colspan="2">Net profit by business — tap for its income statement</td></tr>
+          ${per.map(p=>`<tr onclick="showReportFor('${p.b.id}','pl')" style="cursor:pointer;"><td style="padding-left:22px;color:var(--gold);">${escH(p.b.name)} ›</td><td class="num" style="color:${p.profit>=0?'#4ade80':'#f87171'};">${fmt(p.profit)}</td></tr>`).join('')}
+        </tbody></table></div>
+    </div>`;
+  } else {
+    el.innerHTML = `
+    <div style="padding:16px;max-width:680px;margin:0 auto;">
+      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;margin-bottom:12px;" onclick="showAllBusinessesDashboard()">← Back</button>
+      <div style="font-size:1.15rem;font-weight:900;color:var(--white);">EMPLOYER INCOME STATEMENTS</div>
+      <div style="font-size:0.7rem;color:var(--gold);font-weight:700;margin:2px 0 14px;">${dashDateLabel()} · Each employer, individually</div>
+      ${per.map(p=>`
+        <div onclick="showReportFor('${p.b.id}','pl')" style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;">
+          <div style="width:36px;height:36px;border-radius:9px;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;overflow:hidden;">${p.b.logo_url?`<img src="${p.b.logo_url}" style="width:100%;height:100%;object-fit:cover;"/>`:(p.b.icon||'🏢')}</div>
+          <div style="flex:1;"><div style="font-weight:800;font-size:0.88rem;color:var(--white);">${escH(p.b.name)}</div>
+          <div style="font-size:0.66rem;color:var(--muted);">Tap to open this employer’s income statement</div></div>
+          <div style="font-weight:900;color:${p.profit>=0?'#4ade80':'#f87171'};">${fmt(p.profit)}</div>
+        </div>`).join('')||'<div style="color:var(--muted);font-size:0.8rem;">You are not linked to any employer yet.</div>'}
+    </div>`;
+  }
+}
+function showReportFor(bizId, type) {
+  window._reportBiz = userBusinesses.find(b=>b.id===bizId) || null;
+  showReport(type);
+}
+
 function renderAllBusinessesDashboard(metrics) {
   bdSaveRoute('dashboard');
   const hour = new Date().getHours();
@@ -11353,6 +11749,10 @@ function renderAllBusinessesDashboard(metrics) {
   const criticalCount   = metrics.filter(b=>b.status==='critical').length;
   const attentionCount  = metrics.filter(b=>b.status==='attention').length;
   const alertCount      = criticalCount + attentionCount;
+  const owned    = metrics.filter(b=>b._owned!==false);
+  const employed = metrics.filter(b=>b._owned===false);
+  const oRev = owned.reduce((s,b)=>s+b.revenue,0),  oExp = owned.reduce((s,b)=>s+b.expenses,0),  oProf = owned.reduce((s,b)=>s+b.profit,0);
+  const eRev = employed.reduce((s,b)=>s+b.revenue,0), eExp = employed.reduce((s,b)=>s+b.expenses,0), eProf = employed.reduce((s,b)=>s+b.profit,0);
 
   const bizCards = metrics.map(b => {
     const iconBg = b.status==='critical'?'rgba(248,113,113,0.15)':b.status==='attention'?'rgba(251,191,36,0.15)':'rgba(74,222,128,0.15)';
@@ -11384,7 +11784,8 @@ function renderAllBusinessesDashboard(metrics) {
   }).join('');
 
   document.getElementById('bkContent').innerHTML = `
-    <div class="ab-header">
+    <div class="ab-header" style="position:relative;">
+      <button onclick="dashOpenDate(event)" style="position:absolute;top:14px;right:16px;background:var(--surface);border:1px solid var(--gold);color:var(--gold);font-size:0.7rem;font-weight:800;padding:7px 12px;border-radius:9px;cursor:pointer;">📅 ${dashDateLabel()}</button>
       <div class="ab-greeting">${greeting}${firstName?',':''}</div>
       <div class="ab-name">${escH(firstName)}</div>
       <h1 class="bk-think" style="font-size:clamp(1.05rem,4.5vw,1.5rem);text-align:left;margin:8px 0 4px;">How is business doing <span>today?</span></h1>
@@ -11396,26 +11797,47 @@ function renderAllBusinessesDashboard(metrics) {
     <div class="ab-actions" style="border-bottom:none;">
     </div>
     <div class="ab-portfolio">
-      <div class="ab-portfolio-title">Portfolio Overview</div>
-      <div class="ab-kpi-card">
-        <span class="ab-kpi-badge ${totalRevenue>0?'up':'neutral'}" style="float:right;">${metrics.length} business${metrics.length===1?'':'es'}</span>
-        <div class="ab-kpi-icon">💰</div>
-        <div class="ab-kpi-amount">${fmt(totalRevenue)}</div>
-        <div class="ab-kpi-label">Portfolio Revenue</div>
+      <div class="ab-portfolio-title">Portfolio Overview <span style="font-weight:600;color:var(--gold);font-size:0.66rem;">· ${dashDateLabel()}</span></div>
+      <div class="dash-cards">
+        <div class="dash-card2" onclick="showCardBreakdown('revenue','owned')">
+          <div class="dash-card2-icon">💰</div>
+          <div class="dash-card2-amt" style="color:#4ade80;">${fmt(oRev)}</div>
+          <div class="dash-card2-label">Portfolio Revenue</div>
+          <div class="dash-card2-sub">${owned.length} business${owned.length===1?'':'es'} · tap for breakdown</div>
+        </div>
+        <div class="dash-card2" onclick="showCardBreakdown('expenditure','owned')">
+          <div class="dash-card2-icon">💳</div>
+          <div class="dash-card2-amt" style="color:#f87171;">${fmt(oExp)}</div>
+          <div class="dash-card2-label">Portfolio Expenditure</div>
+          <div class="dash-card2-sub">tap for breakdown by business</div>
+        </div>
+        <div class="dash-card2" onclick="showNetProfitPage('owned')">
+          <div class="dash-card2-icon">${oProf>=0?'📈':'📉'}</div>
+          <div class="dash-card2-amt" style="color:${oProf>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(oProf))}</div>
+          <div class="dash-card2-label">Portfolio Net ${oProf>=0?'Profit':'Loss'}</div>
+          <div class="dash-card2-sub">consolidated income statement</div>
+        </div>
+        ${employed.length?`
+        <div class="dash-card2" onclick="showCardBreakdown('revenue','employed')">
+          <div class="dash-card2-icon">🏢</div>
+          <div class="dash-card2-amt" style="color:#4ade80;">${fmt(eRev)}</div>
+          <div class="dash-card2-label">Employer’s Revenue</div>
+          <div class="dash-card2-sub">${employed.length} employer${employed.length===1?'':'s'} · tap for breakdown</div>
+        </div>
+        <div class="dash-card2" onclick="showCardBreakdown('expenditure','employed')">
+          <div class="dash-card2-icon">🧾</div>
+          <div class="dash-card2-amt" style="color:#f87171;">${fmt(eExp)}</div>
+          <div class="dash-card2-label">Employer’s Expenditure</div>
+          <div class="dash-card2-sub">tap for breakdown by employer</div>
+        </div>
+        <div class="dash-card2" onclick="showNetProfitPage('employed')">
+          <div class="dash-card2-icon">${eProf>=0?'📊':'📉'}</div>
+          <div class="dash-card2-amt" style="color:${eProf>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(eProf))}</div>
+          <div class="dash-card2-label">Employer Net ${eProf>=0?'Profit':'Loss'}</div>
+          <div class="dash-card2-sub">individual income statements</div>
+        </div>`:''}
       </div>
-      <div class="ab-kpi-card">
-        <span class="ab-kpi-badge down" style="float:right;">${metrics.length} active</span>
-        <div class="ab-kpi-icon">💳</div>
-        <div class="ab-kpi-amount">${fmt(totalExpenses)}</div>
-        <div class="ab-kpi-label">Total Expenses</div>
-      </div>
-      <div class="ab-kpi-card">
-        <span class="ab-kpi-badge ${totalProfit>=0?'up':'down'}" style="float:right;">${totalRevenue>0?Math.round(totalProfit/totalRevenue*100):0}%</span>
-        <div class="ab-kpi-icon">📈</div>
-        <div class="ab-kpi-amount" style="color:${totalProfit>=0?'#4ade80':'#f87171'};">${fmt(Math.abs(totalProfit))}</div>
-        <div class="ab-kpi-label">${totalProfit>=0?'Net Profit':'Net Loss'}</div>
-      </div>
-      ${totalReceivables>0?`<div class="ab-kpi-card">
+      ${totalReceivables>0?`<div class="ab-kpi-card" style="margin-top:10px;">
         <span class="ab-kpi-badge neutral" style="float:right;">Receivables</span>
         <div class="ab-kpi-icon">⏰</div>
         <div class="ab-kpi-amount" style="color:#60a5fa;">${fmt(totalReceivables)}</div>
