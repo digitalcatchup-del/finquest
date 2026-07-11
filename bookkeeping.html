@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -206,8 +207,6 @@ body[data-theme="midnight"]{
 }
 .fill-hl{outline:1px dashed var(--gold);outline-offset:-1px;}
 #sheetTable_sales td,#sheetTable_expenses td,#ledgerTable td{position:relative;}
-#sheetTable_sales td:focus-within:not(:has(button))::after,#sheetTable_expenses td:focus-within:not(:has(button))::after,#ledgerTable td:focus-within:not(:has(button))::after{
-  content:'';position:absolute;right:1px;bottom:1px;width:9px;height:9px;background:var(--gold);border:1px solid var(--bg);cursor:crosshair;z-index:5;}
 
 .led-hide-date .col-date,.led-hide-payee .col-payee,.led-hide-payer .col-payer,.led-hide-narr .col-narr,.led-hide-dr .col-dr,.led-hide-cr .col-cr,.led-hide-bal .col-bal{display:none;}
 .col-head{-webkit-user-select:none;user-select:none;}
@@ -738,6 +737,9 @@ body{padding-top:0;}
 .coa-section-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border);}
 .coa-section-title{font-size:0.85rem;font-weight:800;color:var(--white);}
 .coa-section-code{font-size:0.75rem;color:var(--gold);font-weight:700;margin-left:8px;}
+
+.col-resize-handle{touch-action:none;}
+.coa-group-hdr{padding:10px 18px 6px;font-size:0.68rem;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border);background:var(--surface2);}
 .coa-account-row{display:flex;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);gap:12px;transition:background 0.1s;}
 .coa-account-row:hover{background:rgba(212,175,55,0.04);}
 .coa-account-num{font-size:0.78rem;font-weight:700;color:var(--gold);width:52px;flex-shrink:0;}
@@ -1690,10 +1692,9 @@ function showAuthScreen(view) {
 
 // ── Appearance: theme + font ─────────────────────────────────
 function applyTheme(t) {
-  if (t==='cyan') t='porcelain';
-  if (t==='flow') t='midnight';
-  document.body.dataset.theme = (t==='porcelain'||t==='midnight') ? t : '';
-  localStorage.setItem('bd_theme', t||'default');
+  // Black & gold only for now
+  document.body.dataset.theme = '';
+  localStorage.setItem('bd_theme', 'default');
 }
 function applyFont(f) {
   const font = f && f!=='default' ? f : 'Segoe UI';
@@ -4828,11 +4829,13 @@ function renderJournal() {
   document.getElementById('bkContent').innerHTML=`
     <div class="bk-content-header">
       <div>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;margin-bottom:8px;" onclick="showDashboard()">← Back</button>
         <div class="bk-content-title">MASTER RECORDS — GENERAL JOURNAL</div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Transactions entered here post automatically to the relevant ledgers.</div>
       </div>
       <div class="bk-header-actions">
         <span class="bk-save-msg" id="journalSaveMsg"></span>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;" onclick="showDashboard()">← Back</button>
         <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;" onclick="jrnToggleToolbox()">⚙ Tools</button>
       </div>
     </div>
@@ -4909,6 +4912,7 @@ function renderJournalRows() {
     const idx = realIdx >= 0 ? realIdx : i;
     const sn=journalHasData(row)?idx+1:'';
     return `<tr id="jrow_${idx}">
+      <td class="jrn-sn" data-jidx="${idx}" onclick="jrnSnMenu(event,${idx})" style="text-align:center;cursor:grab;-webkit-user-select:none;user-select:none;color:var(--muted);font-size:0.74rem;white-space:nowrap;">${sn||idx+1} <span style="font-size:0.5rem;color:var(--gold);">▼</span></td>
       <td style="position:relative;min-width:110px;">
         <input class="bk-cell staff-date-hidden" type="date" value="${row.txn_date}"
           onchange="jCellChange(${idx},'txn_date',this.value);this.nextElementSibling.textContent=this.value?formatDateDisplay(this.value):'Date'"/>
@@ -5049,7 +5053,7 @@ async function deleteJournalRow(i){
 
 // ── Master Records (journal) column controls ─────────────────
 function _jrnLabels(){ try { return JSON.parse(localStorage.getItem('bd_jrn_labels')||'{}'); } catch(e){ return {}; } }
-function _jrnHidden(){ try { return JSON.parse(localStorage.getItem('bd_jrn_hidden')||'{}'); } catch(e){ return {}; } }
+function _jrnHidden(){ try { return JSON.parse(localStorage.getItem('bd_jrn_hidden_v2')||'{}'); } catch(e){ return {}; } }
 function jrnColMenu(ev, n) {
   openColMenuPortal(ev, [
     ['✏️ Rename Header', 'jrnColRename('+n+')'],
@@ -5078,18 +5082,19 @@ function jrnColClear(n) {
 }
 function jrnColHide(n) {
   const h=_jrnHidden(); h[n]=true;
-  localStorage.setItem('bd_jrn_hidden', JSON.stringify(h));
+  localStorage.setItem('bd_jrn_hidden_v2', JSON.stringify(h));
   jrnApplyHidden();
 }
 function jrnColUnhide(n) {
   const h=_jrnHidden(); delete h[n];
-  localStorage.setItem('bd_jrn_hidden', JSON.stringify(h));
+  localStorage.setItem('bd_jrn_hidden_v2', JSON.stringify(h));
   jrnApplyHidden();
 }
 function jrnApplyHidden() {
   const table = document.getElementById('journalTable') || document.querySelector('.bk-sheet-wrap table');
   if (!table) return;
   const h=_jrnHidden();
+  if (!Object.values(h).some(Boolean)) { document.getElementById('jrnHiddenBar')?.remove(); return; }
   for (let n=1;n<=8;n++) {
     table.querySelectorAll('tr > *:nth-child('+(n+1)+')').forEach(cell=>{
       cell.style.display = h[n] ? 'none' : '';
@@ -6091,7 +6096,7 @@ function initColumnResize() {
     th.appendChild(handle);
 
     let startX, startW;
-    handle.addEventListener('mousedown', e => {
+    handle.addEventListener('pointerdown', e => {
       startX = e.pageX;
       startW = th.offsetWidth;
       handle.classList.add('dragging');
@@ -6107,11 +6112,11 @@ function initColumnResize() {
         handle.classList.remove('dragging');
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
       };
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
       e.preventDefault();
     });
   });
@@ -6125,7 +6130,7 @@ function initRowResize() {
     tr.style.position = 'relative';
     const handle = document.createElement('div');
     handle.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:3px;cursor:row-resize;z-index:10;';
-    handle.addEventListener('mousedown', e => {
+    handle.addEventListener('pointerdown', e => {
       const startY = e.pageY;
       const startH = tr.offsetHeight;
       document.body.style.cursor = 'row-resize';
@@ -6136,11 +6141,11 @@ function initRowResize() {
       };
       const onUp = () => {
         document.body.style.cursor = '';
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
       };
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
       e.preventDefault();
     });
     tr.appendChild(handle);
@@ -7646,13 +7651,30 @@ function renderCOA() {
           <div><span class="coa-section-title">${COA_LABELS[active]}</span><span class="coa-section-code">${base}.xx</span></div>
           <span style="font-size:0.72rem;color:var(--muted);">${accts.length} account${accts.length!==1?'s':''}</span>
         </div>
-        ${accts.map((a,i)=>`<div class="coa-account-row" style="cursor:pointer;"
-          onclick="coaOpenRecord('${a.id}','${active}')">
-          <span class="coa-account-num">${base+i+1}</span>
-          <span class="coa-account-name" title="Click to open ${escH(a.account_name)} records">${escH(a.account_name)}</span>
-          <span class="coa-account-type">${active==='asset'||active==='expenditure'?'Dr normal':'Cr normal'}</span>
-          <button class="coa-del-btn" onclick="event.stopPropagation();coaDeleteAccount('${a.id}','${escH(a.account_name)}')" title="Delete">✕</button>
-        </div>`).join('')}
+        ${(()=>{
+          const rowT = (a,i)=>`<div class="coa-account-row" style="cursor:pointer;"
+            onclick="coaOpenRecord('${a.id}','${active}')">
+            <span class="coa-account-num">${base+i+1}</span>
+            <input class="coa-account-name" style="background:none;border:none;outline:none;color:var(--off);font-size:0.83rem;font-family:inherit;flex:1;" value="${escH(a.account_name)}"
+              onclick="event.stopPropagation()" id="coaName_${a.id}"/>
+            <span class="coa-account-type">${active==='asset'||active==='expenditure'?'Dr normal':'Cr normal'}</span>
+            <button class="staff-save-row-btn" onclick="event.stopPropagation();coaSaveName('${a.id}')" title="Save name">&rsaquo;</button>
+            <button class="coa-del-btn" onclick="event.stopPropagation();coaDeleteAccount('${a.id}','${escH(a.account_name)}')" title="Delete">✕</button>
+          </div>`;
+          const groupsFor = {
+            asset: [['Long-term assets (Fixed Assets)', a=>isFixedAsset(a.account_name)], ['Short-term assets (Current assets)', a=>!isFixedAsset(a.account_name)]],
+            liability: [['Long-term liabilities', a=>isLongTermLiab(a.account_name)], ['Short-term liabilities (Current liabilities)', a=>!isLongTermLiab(a.account_name)]],
+            expenditure: [['Cost of Sales / Production', a=>isCOSAccount(a.account_name)], ['Operating Expenses', a=>!isCOSAccount(a.account_name)]],
+            income: [['Operating Income', a=>!/other|interest|dividend|gain/i.test(a.account_name)], ['Other Income', a=>/other|interest|dividend|gain/i.test(a.account_name)]],
+            capital: [['Capital & Equity', ()=>true]],
+          };
+          const groups = groupsFor[active] || [['Accounts', ()=>true]];
+          return groups.map(([title,test])=>{
+            const items = accts.map((a,i)=>({a,i})).filter(o=>test(o.a));
+            if (!items.length) return '';
+            return `<div class="coa-group-hdr">${title}</div>` + items.map(o=>rowT(o.a,o.i)).join('');
+          }).join('');
+        })()}
         ${accts.length===0?'<div style="padding:20px;text-align:center;color:var(--muted);font-size:0.8rem;">No sub-accounts yet. Add one below.</div>':''}
         <div class="coa-add-row">
           <input class="coa-add-input" type="text" id="coaNewName" placeholder="New account name…"
@@ -7664,6 +7686,20 @@ function renderCOA() {
         ℹ The 5 main groups cannot be deleted. Sub-accounts can be freely added or removed.
       </p>
     </div>`;
+}
+
+async function coaSaveName(id) {
+  const inp = document.getElementById('coaName_'+id);
+  if (!inp) return;
+  const name = inp.value.trim();
+  if (!name) { alert('Account name cannot be empty.'); return; }
+  const {error} = await bkDb.from('bk_accounts').update({account_name:name}).eq('id',id).eq('user_id',bkUser.id);
+  if (error) { alert('Could not save: '+error.message); return; }
+  const arr = accounts[coaActiveType]||[];
+  const a = arr.find(x=>x.id===id);
+  if (a) a.account_name = name;
+  buildDropdowns();
+  renderCOA();
 }
 
 async function coaAddAccount() {
@@ -9469,13 +9505,7 @@ function renderRecordSheet(kind) {
     return `<th class="col-head ${st.hlCol===c.k?'col-head-hl':''}" style="width:${colW(c)}px;position:relative;cursor:pointer;"
       onclick="sheetHlCol('${kind}','${c.k}')">
       ${sheetColLabel(kind,c)}
-      <span class="col-tri ${triVisible?'col-tri-show':''}" onclick="event.stopPropagation();openColMenuPortal(event,[
-        ['✏️ Rename Header','sheetColRename(\'${kind}\',\'${c.k}\')'],
-        ['+ Insert column left','sheetColInsert(\'${kind}\',\'${c.k}\',\'left\')'],
-        ['+ Insert column right','sheetColInsert(\'${kind}\',\'${c.k}\',\'right\')'],
-        ['🗑 Delete column','sheetColDelete(\'${kind}\',\'${c.k}\')'],
-        ['✕ Clear column','sheetColClear(\'${kind}\',\'${c.k}\')'],
-        ['🚫👁 Hide column','sheetColHide(\'${kind}\',\'${c.k}\')']])">▼</span>
+      <span class="col-tri ${triVisible?'col-tri-show':''}" onclick="event.stopPropagation();sheetColMenuOpen(event,'${kind}','${c.k}')">▼</span>
     </th>`;
   }).join('');
 
@@ -9746,7 +9776,14 @@ async function sheetRestore(kind) {
     fill = { val: el.value, ci: td.cellIndex, tb, startTr: tr, range: null };
   }, true);
   document.addEventListener('pointermove', e=>{
-    if (!fill) return;
+    if (!fill) {
+      const el = e.target;
+      if (el && el.tagName==='INPUT' && (el.classList.contains('staff-cell')||el.classList.contains('bk-cell')) && !el.readOnly) {
+        const r = el.getBoundingClientRect();
+        el.style.cursor = (e.clientX > r.right-14 && e.clientY > r.bottom-14) ? 'crosshair' : '';
+      }
+      return;
+    }
     e.preventDefault();
     const overTr = document.elementFromPoint(e.clientX, e.clientY)?.closest('tr');
     if (!overTr || overTr.closest('table') !== fill.tb) return;
@@ -9777,8 +9814,26 @@ async function sheetRestore(kind) {
   };
   document.addEventListener('pointerup', finish);
   document.addEventListener('pointercancel', finish);
+  document.addEventListener('pointermove', e=>{
+    if (fill) return;
+    const el = e.target;
+    if (!(el.tagName==='INPUT' && (el.classList.contains('staff-cell')||el.classList.contains('bk-cell')))) { return; }
+    const r = el.getBoundingClientRect();
+    el.style.cursor = (e.clientX >= r.right-14 && e.clientY >= r.bottom-14) ? 'crosshair' : '';
+  });
 })();
 // ── Portal column menu: fixed-position, never clipped ──
+function sheetColMenuOpen(ev, kind, key) {
+  openColMenuPortal(ev, [
+    ['\u270F\uFE0F Rename Header', "sheetColRename('"+kind+"','"+key+"')"],
+    ['+ Insert column left', "sheetColInsert('"+kind+"','"+key+"','left')"],
+    ['+ Insert column right', "sheetColInsert('"+kind+"','"+key+"','right')"],
+    ['\uD83D\uDDD1 Delete column', "sheetColDelete('"+kind+"','"+key+"')"],
+    ['\u2715 Clear column', "sheetColClear('"+kind+"','"+key+"')"],
+    ['\uD83D\uDEAB\uD83D\uDC41 Hide column', "sheetColHide('"+kind+"','"+key+"')"],
+  ]);
+}
+
 function closeColMenu(){ document.getElementById('colMenuPortal')?.remove(); }
 function openColMenuPortal(ev, items) {
   ev.stopPropagation();
@@ -11005,14 +11060,6 @@ function _profileTabBody() {
     return `
     <div class="pf-card">
       <div class="pf-card-head"><span>Appearance</span></div>
-      <label class="su-label">COLOR THEME</label>
-      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-        ${[['default','Black & Gold','#0f1117','#d4af37'],['porcelain','Porcelain Teal','#ffffff','#0e8074'],['midnight','Midnight Blue','#0b1220','#8fb0ff']].map(([v,l,c1,c2])=>`
-          <div onclick="applyTheme('${v}');renderProfileSheet()" style="cursor:pointer;text-align:center;">
-            <div style="width:64px;height:40px;border-radius:9px;border:2px solid ${curTheme===v?'var(--gold)':'var(--border2)'};background:linear-gradient(135deg,${c1} 50%,${c2} 50%);"></div>
-            <div style="font-size:0.62rem;color:${curTheme===v?'var(--gold)':'var(--muted)'};font-weight:700;margin-top:4px;">${l}</div>
-          </div>`).join('')}
-      </div>
       <label class="su-label">FONT</label>
       <select class="bk-login-input" onchange="applyFont(this.value)" style="margin-bottom:4px;">
         <option value="default" ${curFont==='default'?'selected':''}>Segoe UI (Default)</option>
