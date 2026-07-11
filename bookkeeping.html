@@ -217,6 +217,13 @@ body[data-theme="midnight"]{
 .dash-card2-amt{font-size:1.15rem;font-weight:900;line-height:1.1;word-break:break-word;}
 .dash-card2-label{font-size:0.74rem;font-weight:800;color:var(--white);margin-top:4px;}
 .dash-card2-sub{font-size:0.6rem;color:var(--muted);margin-top:3px;}
+
+.jrn-sn-tri{position:absolute;top:1px;right:2px;font-size:0.48rem;color:var(--gold);opacity:0;transition:opacity 0.12s;padding:3px;cursor:pointer;}
+.jrn-sn:hover .jrn-sn-tri{opacity:1;}
+.jrn-sn-hl .jrn-sn-tri{opacity:1;}
+.jrn-sn-hl{background:var(--gold-dim) !important;color:var(--gold) !important;}
+.jrn-row-hl td{background:rgba(212,175,55,0.08);}
+#journalTable.ps-wrap-wrap .jrn-wrap-ta{white-space:normal;overflow:hidden;resize:none;min-height:30px;}
 .col-head{-webkit-user-select:none;user-select:none;}
 .col-head-hl{background:rgba(212,175,55,0.14) !important;}
 .col-tri{position:absolute;top:2px;right:3px;font-size:0.5rem;color:var(--gold);opacity:0;transition:opacity 0.15s;padding:3px;cursor:pointer;}
@@ -1177,8 +1184,8 @@ body{padding-top:0;}
       <span class="bk-menu-arrow" id="arrow-records">›</span>
     </div>
     <div class="bk-submenu" data-role="owner-manager" id="sub-records">
-      <div class="bk-submenu-item" onclick="openChartOfAccounts();closeBkMenu()">📋 All Records</div>
-      <div class="bk-submenu-item" onclick="openJournal();closeBkMenu()">📒 Record a Transaction</div>
+      <div class="bk-submenu-item" onclick="openChartOfAccounts();closeBkMenu()">📋 Chart of Accounts</div>
+      <div class="bk-submenu-item" onclick="openJournal();closeBkMenu()">📒 Master Journal</div>
       <div style="padding:6px 20px;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);">Ledgers</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('capital');closeBkMenu()">Capital</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('liability');closeBkMenu()">Liabilities</div>
@@ -1190,7 +1197,7 @@ body{padding-top:0;}
 
     <!-- Reports (owner/manager only) -->
     <div class="bk-menu-item bk-menu-parent" data-role="owner-manager" onclick="toggleSubMenu('sub-reports')">
-      <span class="bk-menu-icon">📈</span> Reports
+      <span class="bk-menu-icon">📈</span> Financial Statements
       <span class="bk-menu-arrow" id="arrow-reports">›</span>
     </div>
     <div class="bk-submenu" data-role="owner-manager" id="sub-reports">
@@ -4715,6 +4722,104 @@ function emptyJournalRow(order) {
 // ── Journal: date-driven fill + row tools + toolbox ──────────
 let jrnDateFrom = null;
 let jrnTb = { open:false, search:'', font:'Nunito', wrap:'overflow', undoStack:[], redoStack:[] };
+function jrnDatePortal(ev) {
+  closeColMenu();
+  const rect = ev.target.getBoundingClientRect();
+  const fmtPref = localStorage.getItem('bd_jrn_datefmt')||'mdy';
+  const wrap = document.createElement('div');
+  wrap.id = 'colMenuPortal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:12000;';
+  const menu = document.createElement('div');
+  menu.className = 'col-menu';
+  menu.style.cssText = 'position:fixed;z-index:12001;padding:12px;min-width:240px;';
+  menu.innerHTML = `
+    <label class="su-label">START DATE</label>
+    <input type="date" class="bk-login-input" id="jdpDate" style="margin-bottom:10px;"/>
+    <div class="su-label" style="margin-bottom:6px;">FORMAT</div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:0.74rem;color:var(--off);margin-bottom:6px;cursor:pointer;">
+      <input type="radio" name="jdpFmt" value="mdy" ${fmtPref==='mdy'?'checked':''} style="accent-color:var(--gold);"/> MM/DD/Year= E.g: Jan/1st/2026
+    </label>
+    <label style="display:flex;gap:8px;align-items:center;font-size:0.74rem;color:var(--off);margin-bottom:10px;cursor:pointer;">
+      <input type="radio" name="jdpFmt" value="dmy" ${fmtPref==='dmy'?'checked':''} style="accent-color:var(--gold);"/> DD/MM/Year= E.g: 1st/Jan/2026
+    </label>
+    <button id="jdpApply" style="width:100%;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.74rem;padding:9px;border-radius:8px;cursor:pointer;">Apply</button>`;
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) closeColMenu(); });
+  wrap.appendChild(menu);
+  document.body.appendChild(wrap);
+  const mw = menu.offsetWidth||260, mh = menu.offsetHeight||260;
+  menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - mw - 8))+'px';
+  menu.style.top  = (rect.bottom+6+mh > window.innerHeight ? Math.max(8, rect.top-mh-6) : rect.bottom+6)+'px';
+  menu.querySelector('#jdpApply').onclick = ()=>{
+    const fmt = menu.querySelector('input[name=jdpFmt]:checked')?.value||'mdy';
+    localStorage.setItem('bd_jrn_datefmt', fmt);
+    const d = menu.querySelector('#jdpDate').value;
+    closeColMenu();
+    if (d) jrnFillDates(d); else renderJournal();
+  };
+}
+function jrnFillDates(dateStr) {
+  // 1st cell = selected date, 2nd = next day, and so on (unsaved rows only)
+  const base = new Date(dateStr+'T00:00:00');
+  journalRows.forEach((r,k)=>{
+    if (r.saved) return;
+    const d = new Date(base); d.setDate(d.getDate()+k);
+    r.txn_date = d.toISOString().slice(0,10);
+  });
+  renderJournal();
+}
+async function jrnLoadRange(from, to) {
+  try {
+    const { data } = await bkDb.from('bk_journal')
+      .select('*').match(bizMatch())
+      .gte('txn_date', from).lte('txn_date', to)
+      .order('txn_date',{ascending:true}).order('row_order',{ascending:true}).limit(400);
+    journalRows = (data||[]).map(r=>({
+      id:r.id, txn_date:r.txn_date||from,
+      payee:r.payee||'', payer:r.payer||'', narration:r.narration||'',
+      debit_account_name:r.debit_account_name||'', debit_record_type:r.debit_record_type||'',
+      credit_account_name:r.credit_account_name||'', credit_record_type:r.credit_record_type||'',
+      debit_amount:parseFloat(r.debit_amount)||0, credit_amount:parseFloat(r.credit_amount)||0,
+      row_order:r.row_order, saved:true
+    }));
+  } catch(e){ journalRows = []; }
+  journalRows.push({ txn_date:from, payee:'', payer:'', narration:'',
+    debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
+    debit_amount:0, credit_amount:0, saved:false });
+  renderJournal();
+}
+function jrnDateFilterPortal(ev) {
+  closeColMenu();
+  const rect = ev.target.getBoundingClientRect();
+  const wrap = document.createElement('div');
+  wrap.id='colMenuPortal'; wrap.style.cssText='position:fixed;inset:0;z-index:12000;';
+  const menu = document.createElement('div');
+  menu.className='col-menu'; menu.style.cssText='position:fixed;z-index:12001;padding:12px;min-width:250px;';
+  const today = new Date().toISOString().slice(0,10);
+  menu.innerHTML = `
+    <label class="su-label">DATE</label>
+    <input type="date" class="bk-login-input" id="jfSingle" style="margin-bottom:8px;"/>
+    <label class="su-label">OR RANGE</label>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <input type="date" class="bk-login-input" id="jfFrom" value="${today}" style="margin:0;"/>
+      <input type="date" class="bk-login-input" id="jfTo" value="${today}" style="margin:0;"/>
+    </div>
+    <button id="jfApply" style="width:100%;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.74rem;padding:9px;border-radius:8px;cursor:pointer;">Show transactions</button>`;
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) closeColMenu(); });
+  wrap.appendChild(menu);
+  document.body.appendChild(wrap);
+  const mw=menu.offsetWidth||270, mh=menu.offsetHeight||220;
+  menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth-mw-8))+'px';
+  menu.style.top  = (rect.bottom+6+mh>window.innerHeight ? Math.max(8,rect.top-mh-6) : rect.bottom+6)+'px';
+  menu.querySelector('#jfSingle').addEventListener('change', e=>{
+    if(e.target.value){ menu.querySelector('#jfFrom').value=e.target.value; menu.querySelector('#jfTo').value=e.target.value; }
+  });
+  menu.querySelector('#jfApply').onclick = ()=>{
+    const f=menu.querySelector('#jfFrom').value, t=menu.querySelector('#jfTo').value;
+    closeColMenu();
+    if (f&&t) jrnLoadRange(f<=t?f:t, f<=t?t:f);
+  };
+}
+
 function jrnOpenDatePicker() {
   const el = document.getElementById('jrnHeadDate');
   if (!el) return;
@@ -4747,11 +4852,39 @@ async function jrnDateFill(dateStr) {
   }
   renderJournal();
 }
+let jrnSelRows = [];
+function jrnSnHighlight(idx) {
+  const p = jrnSelRows.indexOf(idx);
+  if (p>=0) jrnSelRows.splice(p,1); else jrnSelRows.push(idx);
+  document.querySelectorAll('#journalTable tbody tr').forEach(tr=>{
+    const sn = tr.querySelector('.jrn-sn'); if (!sn) return;
+    const i = parseInt(sn.dataset.jidx);
+    const on = jrnSelRows.includes(i);
+    tr.classList.toggle('jrn-row-hl', on);
+    sn.classList.toggle('jrn-sn-hl', on);
+  });
+}
+function jrnDeleteRowsFrom(idx) {
+  const targets = (jrnSelRows.length>1 && jrnSelRows.includes(idx)) ? jrnSelRows.slice() : [idx];
+  if (!confirm('Delete '+targets.length+' row(s)?')) return;
+  targets.sort((a,b)=>b-a).forEach(i=>{
+    const r = journalRows[i];
+    if (r && r.id) bkDb.from('bk_journal').delete().eq('id', r.id).then(()=>{});
+    journalRows.splice(i,1);
+  });
+  jrnSelRows = [];
+  if (!journalRows.length) journalRows.push({ txn_date:'', payee:'', payer:'', narration:'',
+    debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
+    debit_amount:0, credit_amount:0, saved:false });
+  renderJournal();
+}
+
 function jrnSnMenu(ev, idx) {
   ev.stopPropagation();
   openColMenuPortal(ev, [
     ['+ Add new row above', 'jrnAddRowAt('+idx+',0)'],
     ['+ Add new row below', 'jrnAddRowAt('+idx+',1)'],
+    ['🗑 Delete', 'jrnDeleteRowsFrom('+idx+')'],
   ]);
 }
 function jrnAddRowAt(idx, after) {
@@ -4783,9 +4916,15 @@ function jrnInitRowDrag() {
     if (!sn) return;
     const to = parseInt(sn.dataset.jidx);
     if (!isNaN(to) && to !== drag.from) {
-      const [moved] = journalRows.splice(drag.from,1);
-      journalRows.splice(to,0,moved);
-      drag.from = to;
+      const group = (jrnSelRows.length>1 && jrnSelRows.includes(drag.from))
+        ? jrnSelRows.slice().sort((a,b)=>a-b) : [drag.from];
+      const moving = group.map(g=>journalRows[g]);
+      group.slice().reverse().forEach(g=>journalRows.splice(g,1));
+      let insertAt = to; group.forEach(g=>{ if (g < to) insertAt--; });
+      insertAt = Math.max(0, Math.min(insertAt, journalRows.length));
+      journalRows.splice(insertAt, 0, ...moving);
+      jrnSelRows = moving.map((_,k)=>insertAt+k);
+      drag.from = insertAt;
       renderJournal();
     }
   }, {passive:false});
@@ -4804,7 +4943,7 @@ function jrnApplySearch() {
 function jrnUndo(){ if(!jrnTb.undoStack.length)return; jrnTb.redoStack.push(JSON.stringify(journalRows)); journalRows=JSON.parse(jrnTb.undoStack.pop()); renderJournal(); }
 function jrnRedo(){ if(!jrnTb.redoStack.length)return; jrnTb.undoStack.push(JSON.stringify(journalRows)); journalRows=JSON.parse(jrnTb.redoStack.pop()); renderJournal(); }
 function jrnSetFont(f){ jrnTb.font=f; const t=document.getElementById('journalTable'); if(t) t.closest('.bk-sheet-wrap').style.fontFamily="'"+f+"',sans-serif"; }
-function jrnSetWrap(w){ jrnTb.wrap=w; const t=document.getElementById('journalTable'); if(!t)return; t.classList.remove('ps-wrap-overflow','ps-wrap-wrap','ps-wrap-clip'); t.classList.add('ps-wrap-'+w); }
+function jrnSetWrap(w){ jrnTb.wrap=w; renderJournal(); const t=document.getElementById('journalTable'); if(t){ t.classList.remove('ps-wrap-overflow','ps-wrap-wrap','ps-wrap-clip'); t.classList.add('ps-wrap-'+w); } }
 function jrnPrint(orientation) {
   const table = document.getElementById('journalTable');
   if (!table) return;
@@ -4860,6 +4999,7 @@ function renderJournal() {
       <input id="jrnSearch" class="bk-input" placeholder="Search…" value="${escH(jrnTb.search)}" style="width:130px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:6px 9px;font-size:0.74rem;outline:none;" oninput="jrnSearch()"/>
       <button class="tb-icon" title="Undo" onclick="jrnUndo()">↩</button>
       <button class="tb-icon" title="Redo" onclick="jrnRedo()">↪</button>
+      <button class="tb-icon" title="Date / range" onclick="jrnDateFilterPortal(event)">📅</button>
       <button class="tb-icon" title="Print portrait" onclick="jrnPrint('portrait')">🖨</button>
       <button class="tb-icon" title="Print landscape" onclick="jrnPrint('landscape')">🖨▭</button>
       <select class="tb-select" onchange="jrnSetFont(this.value)">${['Nunito','EB Garamond','Lora','Arial','Oswald'].map(f=>`<option ${jrnTb.font===f?'selected':''}>${f}</option>`).join('')}</select>
@@ -4874,13 +5014,13 @@ function renderJournal() {
           <th class="num" style="width:44px;">S/N</th>
           ${(()=>{ const lbl=Object.assign({1:'Date',2:'Payee',3:'Payer',4:'Narration',5:'Debit Account',6:'Credit Account',7:'Debit',8:'Credit'}, _jrnLabels());
             const sym=CURRENCIES[activeCurrency].symbol;
-            const tri=n=>'<span class="col-tri col-tri-show" style="position:static;font-size:0.5rem;margin-left:3px;" onclick="event.stopPropagation();jrnColMenu(event,'+n+')">▼</span>';
+            const tri=n=>'';
             const w={1:110,2:120,3:120,4:180,5:175,6:175,7:110,8:110};
             let h='';
             for(let n=1;n<=8;n++){
               const money=n>=7?' ('+sym+')':'';
               const label = n===1
-                ? '<span onclick="jrnOpenDatePicker()" style="cursor:pointer;text-decoration:underline;text-underline-offset:3px;">'+escH(lbl[1])+' 📅</span><input type="date" id="jrnHeadDate" style="position:absolute;width:1px;height:1px;opacity:0;left:0;bottom:0;" onchange="jrnDateFill(this.value)"/>'
+                ? '<span onclick="jrnDatePortal(event)" style="cursor:pointer;">'+escH(lbl[1])+' 📅</span>'
                 : escH(lbl[n])+money;
               h+='<th class="col-head'+(n>=7?' num':'')+'" style="width:'+w[n]+'px;position:relative;">'+label+tri(n)+'</th>';
             }
@@ -4929,7 +5069,7 @@ function renderJournalRows() {
     const idx = realIdx >= 0 ? realIdx : i;
     const sn=journalHasData(row)?idx+1:'';
     return `<tr id="jrow_${idx}">
-      <td class="jrn-sn" data-jidx="${idx}" onclick="jrnSnMenu(event,${idx})" style="text-align:center;cursor:grab;-webkit-user-select:none;user-select:none;color:var(--muted);font-size:0.74rem;white-space:nowrap;">${sn||idx+1} <span style="font-size:0.5rem;color:var(--gold);">▼</span></td>
+      <td class="jrn-sn ${jrnSelRows.includes(idx)?'jrn-sn-hl':''}" data-jidx="${idx}" onclick="jrnSnHighlight(${idx})" style="text-align:center;cursor:grab;-webkit-user-select:none;user-select:none;color:var(--muted);font-size:0.74rem;white-space:nowrap;position:relative;">${sn||idx+1}<span class="jrn-sn-tri" onclick="event.stopPropagation();jrnSnMenu(event,${idx})">▼</span></td>
       <td style="position:relative;min-width:110px;">
         <input class="bk-cell staff-date-hidden" type="date" value="${row.txn_date}"
           onchange="jCellChange(${idx},'txn_date',this.value);this.nextElementSibling.textContent=this.value?formatDateDisplay(this.value):'Date'"/>
@@ -4943,12 +5083,10 @@ function renderJournalRows() {
       <td><input class="bk-cell" type="text" value="${escH(row.payer)}" placeholder="—"
         onfocus="jCellFocus(this,${idx},'payer')"
         oninput="jCellChange(${idx},'payer',this.value)"/></td>
-      <td style="position:relative;">
-        <input class="bk-cell" type="text" value="${escH(row.narration)}" placeholder="Describe transaction…"
-          onfocus="jCellFocus(this,${idx},'narration')"
-          oninput="jCellChange(${idx},'narration',this.value)"
-          id="jnarr_${idx}"/>
-      </td>
+      <td>${jrnTb.wrap==='wrap'
+        ? `<textarea class="bk-cell jrn-wrap-ta" rows="1" oninput="jCellChange(${idx},'narration',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'">${escH(row.narration||'')}</textarea>`
+        : `<input class="bk-cell" type="text" value="${escH(row.narration||'')}" placeholder="Narration…"
+          oninput="jCellChange(${idx},'narration',this.value)"/>`}</td>
       <td><select class="bk-cell"
         onchange="jAccountChange(${idx},'debit',this.value)">
         ${buildAccountOptions(row.debit_account_name)}
@@ -6652,16 +6790,17 @@ function setDateFormat(fmt) {
 
 function formatDateDisplay(isoDate) {
   if (!isoDate) return '';
-  const [y,m,d] = isoDate.split('-');
-  if (!y||!m||!d) return isoDate;
-  if (dateFormat === 'dd/mm') return `${d}/${m}`;
-  if (dateFormat === 'month_day_year' || dateFormat === 'day_date_year') {
-    return staffFormatDate(isoDate, dateFormat); // reuse the same Month/Day/Year formatter
-  }
-  if (dateFormat === 'mm/dd/yyyy') return `${m}/${d}/${y}`;
-  if (dateFormat === 'dd/mm/yy')   return `${d}/${m}/${y.slice(-2)}`;
-  return `${d}/${m}/${y}`;
+  const d = new Date(isoDate+'T00:00:00');
+  if (isNaN(d)) return isoDate;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const day = d.getDate();
+  const suf = (day%10===1&&day!==11)?'st':(day%10===2&&day!==12)?'nd':(day%10===3&&day!==13)?'rd':'th';
+  const fmtPref = localStorage.getItem('bd_jrn_datefmt')||'mdy';
+  return fmtPref==='dmy'
+    ? day+suf+'/'+months[d.getMonth()]+'/'+d.getFullYear()
+    : months[d.getMonth()]+'/'+day+suf+'/'+d.getFullYear();
 }
+
 
 // ── SAVE INDIVIDUAL LEDGER ROW ────────────────────────────────
 async function saveRow(idx) {
@@ -9882,7 +10021,7 @@ function openTextPortal(label, initial, cb) {
   closeColMenu();
   const wrap = document.createElement('div');
   wrap.id = 'colMenuPortal';
-  wrap.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:12000;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;';
   wrap.innerHTML = `<div class="col-menu" style="padding:14px;min-width:250px;max-width:340px;" onclick="event.stopPropagation()">
     <label class="su-label">${label}</label>
     <input class="bk-login-input" id="tpInput" value="${escH(initial||'')}" style="margin-bottom:10px;"/>
@@ -9900,7 +10039,7 @@ function openOptionsPortal(label, initialArr, cb) {
   closeColMenu();
   const wrap = document.createElement('div');
   wrap.id = 'colMenuPortal';
-  wrap.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:12000;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;';
   wrap.innerHTML = `<div class="col-menu" style="padding:14px;min-width:260px;max-width:360px;" onclick="event.stopPropagation()">
     <label class="su-label">${label}</label>
     <div style="font-size:0.64rem;color:var(--muted);margin-bottom:6px;">One option per line (e.g. Paid, Not paid). Leave empty to return to free text.</div>
@@ -9922,10 +10061,10 @@ function openColMenuPortal(ev, items) {
   const rect = ev.target.getBoundingClientRect();
   const wrap = document.createElement('div');
   wrap.id = 'colMenuPortal';
-  wrap.style.cssText = 'position:fixed;inset:0;z-index:9000;';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:12000;';
   const menu = document.createElement('div');
   menu.className = 'col-menu';
-  menu.style.cssText = 'position:fixed;z-index:9001;';
+  menu.style.cssText = 'position:fixed;z-index:12001;';
   menu.innerHTML = items.map(([label,call])=>`<div class="col-menu-item" onclick="closeColMenu();${call}">${label}</div>`).join('');
   wrap.addEventListener('click', closeColMenu);
   wrap.appendChild(menu);
@@ -11590,9 +11729,17 @@ function dashDateLabel() {
   return dashDate.from+' → '+dashDate.to;
 }
 function dashOpenDate(ev) {
-  openColMenuPortal(ev, []);
-  const menu = document.querySelector('#colMenuPortal .col-menu');
-  if (!menu) return;
+  closeColMenu();
+  const rect = ev.target.getBoundingClientRect();
+  const wrap = document.createElement('div');
+  wrap.id = 'colMenuPortal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:12000;';
+  const menu = document.createElement('div');
+  menu.className = 'col-menu';
+  menu.style.cssText = 'position:fixed;z-index:12001;';
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) closeColMenu(); });
+  wrap.appendChild(menu);
+  document.body.appendChild(wrap);
   menu.innerHTML = `
     <div style="padding:10px;min-width:230px;">
       <label class="su-label">DATE</label>
@@ -11608,6 +11755,9 @@ function dashOpenDate(ev) {
       </div>
     </div>`;
   menu.querySelector('#ddSingle').addEventListener('change', e=>{ if(e.target.value){ menu.querySelector('#ddFrom').value=e.target.value; menu.querySelector('#ddTo').value=e.target.value; } });
+  const mw = menu.offsetWidth || 260, mh = menu.offsetHeight || 240;
+  menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - mw - 8)) + 'px';
+  menu.style.top  = (rect.bottom + 6 + mh > window.innerHeight ? Math.max(8, rect.top - mh - 6) : rect.bottom + 6) + 'px';
 }
 function dashApplyDate() {
   const f = document.getElementById('ddFrom')?.value, t = document.getElementById('ddTo')?.value;
