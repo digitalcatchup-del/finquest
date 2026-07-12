@@ -224,6 +224,11 @@ body[data-theme="midnight"]{
 .jrn-sn-hl{background:var(--gold-dim) !important;color:var(--gold) !important;}
 .jrn-row-hl td{background:rgba(212,175,55,0.08);}
 #journalTable.ps-wrap-wrap .jrn-wrap-ta{white-space:normal;overflow:hidden;resize:none;min-height:30px;}
+
+.dash-date-btn{position:absolute;top:14px;right:16px;background:var(--surface);border:1px solid var(--gold);color:var(--gold);font-size:0.68rem;font-weight:800;padding:7px 12px;border-radius:9px;cursor:pointer;max-width:52vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media(max-width:700px){.dash-date-btn{font-size:0.56rem;padding:5px 8px;max-width:44vw;top:12px;right:12px;}}
+.jrn-ro input,.jrn-ro select,.jrn-ro textarea{opacity:0.7;pointer-events:none;}
+.coa-child-row{margin-left:26px;border-left:2px solid var(--gold-dim);}
 .col-head{-webkit-user-select:none;user-select:none;}
 .col-head-hl{background:rgba(212,175,55,0.14) !important;}
 .col-tri{position:absolute;top:2px;right:3px;font-size:0.5rem;color:var(--gold);opacity:0;transition:opacity 0.15s;padding:3px;cursor:pointer;}
@@ -3642,11 +3647,14 @@ function renderRows(displayRows) {
 
   // Opening balance row
   const _obHid = _ledHidden();
-  const _obSpan = 4 - ['date','payee','payer','narr'].filter(k=>_obHid[k]).length + _ledCustom().filter(c=>!_obHid[c.key]).length;
+  const _obSpan = 3 - ['payee','payer','narr'].filter(k=>_obHid[k]).length + _ledCustom().filter(c=>!_obHid[c.key]).length;
   const obRow = `
     <tr class="ob-row" id="row_ob">
       ${ledSel.active?'<td></td>':''}
       <td style="text-align:center;padding:4px 2px;font-size:0.72rem;color:var(--muted);">—</td>
+      <td class="col-date"><input class="bk-cell" type="date" id="obDate"
+        value="${activeAccount?.ob_date||''}"
+        onchange="saveOpeningBalance(document.getElementById('obBalInput')?.value||'')"/></td>
       <td colspan="${Math.max(1,_obSpan)}" style="padding:6px 10px;">
         <span style="font-size:0.76rem;font-weight:700;color:var(--gold);">Opening Balance</span>
       </td>
@@ -3770,16 +3778,18 @@ async function saveOpeningBalance(val) {
   recalcBalances();
   ledgerUpdateTotalBanner();
   try {
+    const obDate = document.getElementById('obDate')?.value || null;
+    activeAccount.ob_date = obDate;
     if (!activeAccount.id) {
       const {data:na, error:e0} = await bkDb.from('bk_accounts').insert({
         user_id: bkUser.id, account_name: activeAccount.account_name,
-        record_type: activeType, opening_balance: newOB,
+        record_type: activeType, opening_balance: newOB, ob_date: obDate,
       }).select().single();
       if (e0) throw e0;
       activeAccount.id = na.id;
     } else {
       const {error:e1} = await bkDb.from('bk_accounts').update({
-        opening_balance: newOB,
+        opening_balance: newOB, ob_date: obDate,
       }).eq('id', activeAccount.id).eq('user_id', bkUser.id);
       if (e1) throw e1;
     }
@@ -4769,18 +4779,55 @@ function jrnFillDates(dateStr) {
 }
 async function jrnLoadRange(from, to) {
   try {
-    const { data } = await bkDb.from('bk_journal')
+    // Direct postings (sales, expenses, ledgers) — the journal is the book of prime entry
+  let _txLegs = [];
+  try {
+    let _tq = bkDb.from('bk_transactions')
+      .select('id,txn_date,narration,account_name,debit,credit,record_type,created_at')
+      .is('journal_id', null);
+    _tq = activeBusiness?.id
+      ? _tq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+      : _tq.eq('user_id', bkUser.id);
+    const {data:TX} = await _tq.order('created_at',{ascending:false}).limit(150);
+    _txLegs = (TX||[]).map(t=>({
+      _ro:true, _txnId:t.id, saved:true,
+      txn_date:t.txn_date||'', payee:'', payer:'',
+      narration:(t.narration||'')+'  ['+({income:'Sales',expenditure:'Expense',asset:'Asset',liability:'Liability',capital:'Capital'}[t.record_type]||t.record_type)+']',
+      debit_account_name:(parseFloat(t.debit)||0)>0?(t.account_name||''):'',
+      credit_account_name:(parseFloat(t.credit)||0)>0?(t.account_name||''):'',
+      debit_amount:parseFloat(t.debit)||0, credit_amount:parseFloat(t.credit)||0,
+    }));
+  } catch(e){}
+  const { data } = await bkDb.from('bk_journal')
       .select('*').match(bizMatch())
       .gte('txn_date', from).lte('txn_date', to)
       .order('txn_date',{ascending:true}).order('row_order',{ascending:true}).limit(400);
-    journalRows = (data||[]).map(r=>({
+    let _legs = [];
+    try {
+      let _tq = bkDb.from('bk_transactions')
+        .select('id,txn_date,narration,account_name,debit,credit,record_type')
+        .is('journal_id', null).gte('txn_date', from).lte('txn_date', to);
+      _tq = activeBusiness?.id
+        ? _tq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+        : _tq.eq('user_id', bkUser.id);
+      const {data:TX} = await _tq.limit(300);
+      _legs = (TX||[]).map(t=>({
+        _ro:true, _txnId:t.id, saved:true, txn_date:t.txn_date||from, payee:'', payer:'',
+        narration:(t.narration||'')+'  ['+({income:'Sales',expenditure:'Expense',asset:'Asset',liability:'Liability',capital:'Capital'}[t.record_type]||t.record_type)+']',
+        debit_account_name:(parseFloat(t.debit)||0)>0?(t.account_name||''):'',
+        credit_account_name:(parseFloat(t.credit)||0)>0?(t.account_name||''):'',
+        debit_amount:parseFloat(t.debit)||0, credit_amount:parseFloat(t.credit)||0,
+      }));
+    } catch(e){}
+    journalRows = _legs.concat((data||[]).map(r=>({
       id:r.id, txn_date:r.txn_date||from,
       payee:r.payee||'', payer:r.payer||'', narration:r.narration||'',
       debit_account_name:r.debit_account_name||'', debit_record_type:r.debit_record_type||'',
       credit_account_name:r.credit_account_name||'', credit_record_type:r.credit_record_type||'',
       debit_amount:parseFloat(r.debit_amount)||0, credit_amount:parseFloat(r.credit_amount)||0,
       row_order:r.row_order, saved:true
-    }));
+    })));
+    journalRows.sort((a,b)=> (a.txn_date||'') < (b.txn_date||'') ? -1 : 1);
   } catch(e){ journalRows = []; }
   journalRows.push({ txn_date:from, payee:'', payer:'', narration:'',
     debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
@@ -4870,6 +4917,7 @@ function jrnDeleteRowsFrom(idx) {
   targets.sort((a,b)=>b-a).forEach(i=>{
     const r = journalRows[i];
     if (r && r.id) bkDb.from('bk_journal').delete().eq('id', r.id).then(()=>{});
+    else if (r && r._txnId) bkDb.from('bk_transactions').delete().eq('id', r._txnId).then(()=>{});
     journalRows.splice(i,1);
   });
   jrnSelRows = [];
@@ -4976,7 +5024,9 @@ async function openJournal() {
   }));
 
   // Only keep saved rows — show empty state if none, otherwise just the data
-  const savedJCount = journalRows.filter(r => r.id).length;
+  journalRows = journalRows.concat(_txLegs);
+  journalRows.sort((a,b)=> (a.txn_date||'') < (b.txn_date||'') ? 1 : -1);
+  const savedJCount = journalRows.filter(r => r.id || r._ro).length;
   if (savedJCount === 0) journalRows = [];
   renderJournal();
 }
@@ -5068,7 +5118,7 @@ function renderJournalRows() {
     const realIdx = journalRows.indexOf(row);
     const idx = realIdx >= 0 ? realIdx : i;
     const sn=journalHasData(row)?idx+1:'';
-    return `<tr id="jrow_${idx}">
+    return `<tr id="jrow_${idx}" class="${row._ro?'jrn-ro':''}">
       <td class="jrn-sn ${jrnSelRows.includes(idx)?'jrn-sn-hl':''}" data-jidx="${idx}" onclick="jrnSnHighlight(${idx})" style="text-align:center;cursor:grab;-webkit-user-select:none;user-select:none;color:var(--muted);font-size:0.74rem;white-space:nowrap;position:relative;">${sn||idx+1}<span class="jrn-sn-tri" onclick="event.stopPropagation();jrnSnMenu(event,${idx})">▼</span></td>
       <td style="position:relative;min-width:110px;">
         <input class="bk-cell staff-date-hidden" type="date" value="${row.txn_date}"
@@ -7783,6 +7833,21 @@ async function openChartOfAccounts() {
   renderCOA();
 }
 
+async function coaAddChild(parentId, type) {
+  openTextPortal('NAME OF THE NEW SUB-LEDGER', '', async name=>{
+    try {
+      const {data, error} = await bkDb.from('bk_accounts').insert({
+        user_id: bkUser.id, account_name: name, record_type: type,
+        opening_balance: 0, parent_id: parentId,
+      }).select().single();
+      if (error) throw error;
+      (accounts[type] = accounts[type]||[]).push(data);
+      renderCOA();
+      bdToast('\u2713 Sub-ledger "'+name+'" created');
+    } catch(e) { alert('Could not create: '+(e.message||'')+'\n\nIf this mentions "parent_id", run migration_subledgers.sql in Supabase.'); }
+  });
+}
+
 function renderCOA() {
   const types = ['capital','liability','asset','income','expenditure'];
   const active = coaActiveType;
@@ -7808,15 +7873,16 @@ function renderCOA() {
           <span style="font-size:0.72rem;color:var(--muted);">${accts.length} account${accts.length!==1?'s':''}</span>
         </div>
         ${(()=>{
-          const rowT = (a,i)=>`<div class="coa-account-row" style="cursor:pointer;"
+          const rowT = (a,i,child)=>`<div class="coa-account-row ${child?'coa-child-row':''}" style="cursor:pointer;"
             onclick="coaOpenRecord('${a.id}','${active}')">
-            <span class="coa-account-num">${base+i+1}</span>
+            <span class="coa-account-num">${child?'↳':base+i+1}</span>
             <input class="coa-account-name" style="background:none;border:none;outline:none;color:var(--off);font-size:0.83rem;font-family:inherit;flex:1;" value="${escH(a.account_name)}"
               onclick="event.stopPropagation()" id="coaName_${a.id}"/>
             <span class="coa-account-type">${active==='asset'||active==='expenditure'?'Dr normal':'Cr normal'}</span>
+            <button class="staff-save-row-btn" style="color:var(--green);" onclick="event.stopPropagation();coaAddChild('${a.id}','${active}')" title="Add a sub-ledger under ${escH(a.account_name)}">+</button>
             <button class="staff-save-row-btn" onclick="event.stopPropagation();coaSaveName('${a.id}')" title="Save name">&rsaquo;</button>
             <button class="coa-del-btn" onclick="event.stopPropagation();coaDeleteAccount('${a.id}','${escH(a.account_name)}')" title="Delete">✕</button>
-          </div>`;
+          </div>` + (accts.filter(c=>c.parent_id===a.id).map(c=>rowT(c,0,true)).join(''));
           const groupsFor = {
             asset: [['Long-term assets (Fixed Assets)', a=>isFixedAsset(a.account_name)], ['Short-term assets (Current assets)', a=>!isFixedAsset(a.account_name)]],
             liability: [['Long-term liabilities', a=>isLongTermLiab(a.account_name)], ['Short-term liabilities (Current liabilities)', a=>!isLongTermLiab(a.account_name)]],
@@ -7826,7 +7892,7 @@ function renderCOA() {
           };
           const groups = groupsFor[active] || [['Accounts', ()=>true]];
           return groups.map(([title,test])=>{
-            const items = accts.map((a,i)=>({a,i})).filter(o=>test(o.a));
+            const items = accts.map((a,i)=>({a,i})).filter(o=>!o.a.parent_id && test(o.a));
             if (!items.length) return '';
             return `<div class="coa-group-hdr">${title}</div>` + items.map(o=>rowT(o.a,o.i)).join('');
           }).join('');
@@ -8538,7 +8604,10 @@ async function showReport(type) {
   const _rb = window._reportBiz;
   window._reportBizName = _rb ? _rb.name : null;
   let _rq = bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date');
-  _rq = _rb ? _rq.eq('business_id', _rb.id) : _rq.match(bizMatch());
+  const _rbid = _rb ? _rb.id : activeBusiness?.id;
+  _rq = _rbid
+    ? _rq.or('business_id.eq.'+_rbid+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+    : _rq.eq('user_id', bkUser.id);
   const {data}=await _rq;
   window._reportBiz = null;
   const T=data||[];
@@ -8549,6 +8618,19 @@ async function showReport(type) {
     const nm=r.account_name||'Unspecified';
     byAcct[r.record_type][nm]=(byAcct[r.record_type][nm]||0)+((parseFloat(r.debit)||0)-(parseFloat(r.credit)||0));
   });
+  // Opening balances flow into the statements
+  try {
+    const {data:OBs} = await bkDb.from('bk_accounts')
+      .select('account_name,record_type,opening_balance').eq('user_id', bkUser.id);
+    (OBs||[]).forEach(a=>{
+      const ob = parseFloat(a.opening_balance)||0;
+      if (!ob || !byAcct[a.record_type]) return;
+      const nm = a.account_name||'Unspecified';
+      const drNormal = a.record_type==='asset' || a.record_type==='expenditure';
+      byAcct[a.record_type][nm] = (byAcct[a.record_type][nm]||0) + (drNormal ? ob : -ob);
+      tots[a.record_type][drNormal?'dr':'cr'] += ob;
+    });
+  } catch(e){}
   window._reportByAcct = byAcct;
   if(type==='trial') renderTrialBalance(tots);
   else if(type==='pl')  renderPL(tots);
@@ -9840,10 +9922,9 @@ function renderRecordSheet(kind) {
     ${selBar}
     ${hiddenBar}
 
-    <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 16px 6px;">
-      <div id="sheetDateLabel_${kind}" style="color:var(--gold);font-size:0.72rem;font-weight:700;">${sheetHeaderDate(kind)}</div>
-      <div class="bk-content-title" style="text-align:center;">${title}</div>
-      <div></div>
+    <div style="text-align:center;padding:10px 16px 6px;">
+      <div class="bk-content-title">${title}</div>
+      <div id="sheetDateLabel_${kind}" style="color:var(--gold);font-size:0.72rem;font-weight:700;margin-top:3px;">${sheetHeaderDate(kind)}</div>
     </div>
 
     <div class="bk-sheet-wrap" style="font-family:'${st.font}',sans-serif;">
@@ -11722,11 +11803,19 @@ async function fetchAllBusinessMetrics() {
 
 // ── Dashboard date filter (default: today) ──────────────────
 let dashDate = { from: new Date().toISOString().slice(0,10), to: new Date().toISOString().slice(0,10) };
+function fmtPrettyDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso+'T00:00:00');
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const day=d.getDate();
+  const suf=(day%10===1&&day!==11)?'st':(day%10===2&&day!==12)?'nd':(day%10===3&&day!==13)?'rd':'th';
+  return months[d.getMonth()]+'/'+day+suf+'/'+d.getFullYear();
+}
 function dashDateLabel() {
   const today = new Date().toISOString().slice(0,10);
   if (dashDate.from===today && dashDate.to===today) return 'Today';
-  if (dashDate.from===dashDate.to) return dashDate.from;
-  return dashDate.from+' → '+dashDate.to;
+  if (dashDate.from===dashDate.to) return fmtPrettyDate(dashDate.from);
+  return fmtPrettyDate(dashDate.from)+' → '+fmtPrettyDate(dashDate.to);
 }
 function dashOpenDate(ev) {
   closeColMenu();
@@ -11755,9 +11844,17 @@ function dashOpenDate(ev) {
       </div>
     </div>`;
   menu.querySelector('#ddSingle').addEventListener('change', e=>{ if(e.target.value){ menu.querySelector('#ddFrom').value=e.target.value; menu.querySelector('#ddTo').value=e.target.value; } });
-  const mw = menu.offsetWidth || 260, mh = menu.offsetHeight || 240;
-  menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - mw - 8)) + 'px';
-  menu.style.top  = (rect.bottom + 6 + mh > window.innerHeight ? Math.max(8, rect.top - mh - 6) : rect.bottom + 6) + 'px';
+  menu.style.maxWidth = 'min(320px, calc(100vw - 24px))';
+  const place = ()=>{
+    const r2 = menu.getBoundingClientRect();
+    let x = Math.min(rect.right - r2.width, window.innerWidth - r2.width - 12);
+    x = Math.max(12, x);
+    let y = rect.bottom + 6;
+    if (y + r2.height > window.innerHeight - 8) y = Math.max(8, rect.top - r2.height - 6);
+    menu.style.left = x + 'px'; menu.style.top = y + 'px';
+  };
+  place();
+  requestAnimationFrame(place);
 }
 function dashApplyDate() {
   const f = document.getElementById('ddFrom')?.value, t = document.getElementById('ddTo')?.value;
@@ -11935,7 +12032,7 @@ function renderAllBusinessesDashboard(metrics) {
 
   document.getElementById('bkContent').innerHTML = `
     <div class="ab-header" style="position:relative;">
-      <button onclick="dashOpenDate(event)" style="position:absolute;top:14px;right:16px;background:var(--surface);border:1px solid var(--gold);color:var(--gold);font-size:0.7rem;font-weight:800;padding:7px 12px;border-radius:9px;cursor:pointer;">📅 ${dashDateLabel()}</button>
+      <button onclick="dashOpenDate(event)" class="dash-date-btn">📅 ${dashDateLabel()}</button>
       <div class="ab-greeting">${greeting}${firstName?',':''}</div>
       <div class="ab-name">${escH(firstName)}</div>
       <h1 class="bk-think" style="font-size:clamp(1.05rem,4.5vw,1.5rem);text-align:left;margin:8px 0 4px;">How is business doing <span>today?</span></h1>
