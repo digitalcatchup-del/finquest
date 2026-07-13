@@ -7,6 +7,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -26,7 +28,8 @@
   --accent-on:#14171f;
 }
 html{scroll-behavior:smooth;color-scheme:dark;}
-body{background:linear-gradient(180deg,#10131c 0%,#0b0d12 100%);color:var(--off);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;}
+body{background:linear-gradient(180deg,#10131c 0%,#0b0d12 100%);color:var(--off);font-family:'Lora',Georgia,serif;min-height:100vh;overflow-x:hidden;}
+button,input,select,textarea{font-family:inherit;}
 
 /* PAGES */
 .page{display:none;}
@@ -79,7 +82,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 /* ── HERO ── */
 #heroSection{min-height:calc(100vh - 57px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px 40px;text-align:center;position:relative;overflow:hidden;}
 .hero-bg{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse 70% 50% at 50% 40%,rgba(201,168,76,0.10) 0%,transparent 70%);}
-.hero-eyebrow{font-size:0.65rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;z-index:1;position:relative;}
+.hero-eyebrow{font-size:1.05rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;z-index:1;position:relative;}
 .hero-heading{font-size:clamp(2.2rem,5vw,3.8rem);font-weight:900;letter-spacing:-0.03em;color:var(--white);line-height:1.1;margin-bottom:14px;z-index:1;position:relative;}
 .hero-heading span{color:var(--gold);}
 .hero-sub{font-size:0.95rem;color:var(--muted);max-width:480px;line-height:1.7;margin-bottom:32px;z-index:1;position:relative;}
@@ -904,6 +907,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   </div>
   <div class="nav-center">
     <button class="nav-link" onclick="showPage('homePage')">Home</button>
+    <button class="nav-link" onclick="launchTrack('biz-acc-vol1')">Lessons</button>
     <button class="nav-link" onclick="showPage('servicesPage')">Services</button>
     <button class="nav-link" onclick="openArticlesPage()">Articles</button>
     <button class="nav-link" onclick="showPage('howPage')">How It Works</button>
@@ -914,6 +918,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   </button>
   <div class="mobile-nav-dropdown" id="mobileNavDropdown">
     <button class="mobile-nav-link" onclick="showPage('homePage');closeMobileNav();">Home</button>
+    <button class="mobile-nav-link" onclick="launchTrack('biz-acc-vol1');closeMobileNav();">Lessons</button>
     <button class="mobile-nav-link" onclick="showPage('servicesPage');closeMobileNav();">Services</button>
     <button class="mobile-nav-link" onclick="openArticlesPage();closeMobileNav();">Articles</button>
     <button class="mobile-nav-link" onclick="showPage('howPage');closeMobileNav();">How It Works</button>
@@ -945,7 +950,7 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <div class="hero-bg"></div>
   <p class="hero-eyebrow">Think Finance</p>
   <h1 class="hero-heading">Think <span id="flavorWord" style="color:var(--gold);">Butterfly Dynamix</span></h1>
-  <p class="hero-sub">Research any topic related to finance or select one of our services.</p>
+  <p class="hero-sub">Research any topic related to finance or subscribe for an insightful monthly lesson.</p>
   <p style="font-size:0.85rem;color:var(--muted);margin-top:-8px;margin-bottom:20px;position:relative;z-index:1;">What's Your Flavor?</p>
 
   <!-- AI CHAT BAR -->
@@ -1044,6 +1049,18 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <p style="font-size:0.85rem;color:var(--muted);max-width:420px;margin:0 auto;">Hire us for bookkeeping or tax work.</p>
   <div class="pricing-cards pricing-cards-2col" style="margin-top:32px;">
     <div class="pricing-card">
+      <div class="pc-name">Accounting Lessons</div>
+      <div class="pc-price">$5 <span>/ month</span></div>
+      <div class="pc-desc">An insightful monthly lesson from Business Accounting · Volume 1 — double entry, trading &amp; profit and loss accounts, balance sheets and accounting concepts, beginner to advanced.</div>
+      <div class="pc-features">
+        <div class="pc-feat">55 bite-size lessons — definition, Nigerian-context scenario, knowledge check</div>
+        <div class="pc-feat">Pip score &amp; streaks track your progress</div>
+        <div class="pc-feat">First lessons free — try before you subscribe</div>
+        <div class="pc-feat">Community discussions on every topic</div>
+      </div>
+      <button class="btn btn-gold btn-full" onclick="launchTrack('biz-acc-vol1')">Subscribe &amp; Start Learning →</button>
+    </div>
+    <div class="pricing-card">
       <div class="pc-name">Bookkeeping</div>
       <div class="pc-price">$100 <span>/ month</span></div>
       <div class="pc-desc">Complete bookkeeping for your business — will record every financial transaction, reconcile the records, and deliver the financial statements monthly.</div>
@@ -1113,6 +1130,18 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <div class="pricing-cards pricing-cards-2col">
 
       <!-- BOOKKEEPING -->
+      <div class="pricing-card">
+        <div class="pc-name">Accounting Lessons</div>
+        <div class="pc-price">$5 <span>/ month</span></div>
+        <div class="pc-desc">Subscribe for an insightful monthly lesson — the full Business Accounting · Volume 1 track, taught the Butterfly Dynamix way.</div>
+        <div class="pc-features">
+          <div class="pc-feat">55 lessons: double entry → P&amp;L → balance sheets → concepts</div>
+          <div class="pc-feat">Definition · Scenario · Knowledge check format</div>
+          <div class="pc-feat">Pip score &amp; streak gamification</div>
+          <div class="pc-feat">First lessons free</div>
+        </div>
+        <button class="btn btn-gold btn-full" onclick="launchTrack('biz-acc-vol1')">Subscribe &amp; Start Learning →</button>
+      </div>
       <div class="pricing-card">
         <div class="pc-name">Bookkeeping</div>
         <div class="pc-price">$100 <span>/ month</span></div>
@@ -1597,9 +1626,16 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    checkStripeRedirect();   // handles Flutterwave/payment success redirect
-    restoreSession();        // re-hydrates logged-in user from Supabase session
-    renderPricingDisplay();  // shows founding-member or standard pricing
+    // Guarded: each helper runs only if its script actually defines it,
+    // so one missing function can never break the whole boot sequence.
+    if (typeof checkStripeRedirect === 'function') checkStripeRedirect();
+    if (typeof restoreSession === 'function') restoreSession();
+    if (typeof renderPricingDisplay === 'function') renderPricingDisplay();
+    if (typeof launchTrack !== 'function') {
+      window.launchTrack = function () {
+        alert('The lessons module (track.js) is not loaded on this deployment. Please make sure track.js, data.js and auth.js are present in the repo.');
+      };
+    }
   });
 </script>
 
