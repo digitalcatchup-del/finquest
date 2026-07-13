@@ -209,8 +209,9 @@ body[data-theme="midnight"]{
 
 .led-hide-date .col-date,.led-hide-payee .col-payee,.led-hide-payer .col-payer,.led-hide-narr .col-narr,.led-hide-dr .col-dr,.led-hide-cr .col-cr,.led-hide-bal .col-bal{display:none;}
 
-.dash-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
-@media(min-width:760px){.dash-cards{grid-template-columns:repeat(3,1fr);}}
+.dash-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;}
+@media(min-width:760px){.dash-cards{grid-template-columns:repeat(3,minmax(0,1fr));}}
+.dash-card2{min-width:0;}
 .dash-card2{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;aspect-ratio:1.15/1;display:flex;flex-direction:column;justify-content:center;cursor:pointer;transition:border-color 0.15s;-webkit-tap-highlight-color:transparent;}
 .dash-card2:hover{border-color:var(--gold);}
 .dash-card2-icon{font-size:1.3rem;margin-bottom:8px;}
@@ -223,7 +224,8 @@ body[data-theme="midnight"]{
 .jrn-sn-hl .jrn-sn-tri{opacity:1;}
 .jrn-sn-hl{background:var(--gold-dim) !important;color:var(--gold) !important;}
 .jrn-row-hl td{background:rgba(212,175,55,0.08);}
-#journalTable.ps-wrap-wrap .jrn-wrap-ta{white-space:normal;overflow:hidden;resize:none;min-height:30px;}
+.jrn-wrap-ta{white-space:normal;overflow:hidden !important;resize:none;min-height:30px;pointer-events:auto;scrollbar-width:none;}
+.jrn-wrap-ta::-webkit-scrollbar{display:none;}
 
 .dash-date-btn{position:absolute;top:14px;right:16px;background:var(--surface);border:1px solid var(--gold);color:var(--gold);font-size:0.68rem;font-weight:800;padding:7px 12px;border-radius:9px;cursor:pointer;max-width:52vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 @media(max-width:700px){.dash-date-btn{font-size:0.56rem;padding:5px 8px;max-width:44vw;top:12px;right:12px;}}
@@ -2911,6 +2913,7 @@ async function saveSignupProducts() {
       is_active:    true,
     }));
   if (inserts.length > 0) {
+    inserts.forEach(x=>x.business_id=activeBusiness?.id||null);
     await bkDb.from('bk_products').insert(inserts);
   }
 }
@@ -4779,25 +4782,6 @@ function jrnFillDates(dateStr) {
 }
 async function jrnLoadRange(from, to) {
   try {
-    // Direct postings (sales, expenses, ledgers) — the journal is the book of prime entry
-  let _txLegs = [];
-  try {
-    let _tq = bkDb.from('bk_transactions')
-      .select('id,txn_date,narration,account_name,debit,credit,record_type,created_at')
-      .is('journal_id', null);
-    _tq = activeBusiness?.id
-      ? _tq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
-      : _tq.eq('user_id', bkUser.id);
-    const {data:TX} = await _tq.order('created_at',{ascending:false}).limit(150);
-    _txLegs = (TX||[]).map(t=>({
-      _ro:true, _txnId:t.id, saved:true,
-      txn_date:t.txn_date||'', payee:'', payer:'',
-      narration:(t.narration||'')+'  ['+({income:'Sales',expenditure:'Expense',asset:'Asset',liability:'Liability',capital:'Capital'}[t.record_type]||t.record_type)+']',
-      debit_account_name:(parseFloat(t.debit)||0)>0?(t.account_name||''):'',
-      credit_account_name:(parseFloat(t.credit)||0)>0?(t.account_name||''):'',
-      debit_amount:parseFloat(t.debit)||0, credit_amount:parseFloat(t.credit)||0,
-    }));
-  } catch(e){}
   const { data } = await bkDb.from('bk_journal')
       .select('*').match(bizMatch())
       .gte('txn_date', from).lte('txn_date', to)
@@ -4847,8 +4831,8 @@ function jrnDateFilterPortal(ev) {
     <input type="date" class="bk-login-input" id="jfSingle" style="margin-bottom:8px;"/>
     <label class="su-label">OR RANGE</label>
     <div style="display:flex;gap:6px;margin-bottom:10px;">
-      <input type="date" class="bk-login-input" id="jfFrom" value="${today}" style="margin:0;"/>
-      <input type="date" class="bk-login-input" id="jfTo" value="${today}" style="margin:0;"/>
+      <input type="date" class="bk-login-input" id="jfFrom" value="${today}" style="margin:0;min-width:0;flex:1;width:auto;"/>
+      <input type="date" class="bk-login-input" id="jfTo" value="${today}" style="margin:0;min-width:0;flex:1;width:auto;"/>
     </div>
     <button id="jfApply" style="width:100%;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.74rem;padding:9px;border-radius:8px;cursor:pointer;">Show transactions</button>`;
   wrap.addEventListener('click', e=>{ if(e.target===wrap) closeColMenu(); });
@@ -4927,6 +4911,109 @@ function jrnDeleteRowsFrom(idx) {
   renderJournal();
 }
 
+// ── Split a journal side across several accounts ─────────────
+let _splitCtx = null;
+function jrnSplitOpen(idx, side) {
+  _splitCtx = { idx, side };
+  const row = journalRows[idx];
+  const key = side==='debit' ? '_drSplits' : '_crSplits';
+  row[key] = row[key] || [];
+  closeColMenu();
+  const wrap = document.createElement('div');
+  wrap.id='colMenuPortal';
+  wrap.style.cssText='position:fixed;inset:0;z-index:12000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+  wrap.innerHTML = `<div class="col-menu" style="padding:14px;width:min(440px,94vw);max-height:86vh;overflow-y:auto;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-weight:900;color:var(--gold);font-size:0.8rem;">${side==='debit'?'DEBIT':'CREDIT'} — SPLIT ACROSS ACCOUNTS</span>
+      <button onclick="jrnSplitDone()" style="background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.7rem;padding:6px 14px;border-radius:7px;cursor:pointer;">Done</button>
+    </div>
+    <div style="font-size:0.62rem;color:var(--muted);margin-bottom:10px;">Select an account, add its narration and figure, then › to save it. Repeat for as many accounts as needed.</div>
+    <select class="bk-login-input" id="spAcct" style="margin-bottom:6px;">${buildAccountOptions('')}</select>
+    <input class="bk-login-input" id="spNarr" placeholder="Narration" style="margin-bottom:6px;"/>
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <input class="bk-login-input" id="spAmt" inputmode="decimal" placeholder="Amount" style="margin:0;flex:1;min-width:0;"/>
+      <button onclick="jrnSplitAdd()" style="background:var(--surface2);color:var(--gold);border:1px solid var(--gold);font-weight:900;font-size:0.9rem;padding:6px 16px;border-radius:7px;cursor:pointer;">&rsaquo;</button>
+    </div>
+    <div id="spList"></div>
+  </div>`;
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) jrnSplitDone(); });
+  document.body.appendChild(wrap);
+  jrnSplitRenderList();
+}
+function jrnSplitRenderList() {
+  const el = document.getElementById('spList');
+  if (!el || !_splitCtx) return;
+  const row = journalRows[_splitCtx.idx];
+  const key = _splitCtx.side==='debit' ? '_drSplits' : '_crSplits';
+  const list = row[key]||[];
+  const total = list.reduce((s,x)=>s+x.amount,0);
+  el.innerHTML = list.length ? `
+    <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+      <thead><tr style="color:var(--muted);"><th style="text-align:left;padding:4px;">S/N</th><th style="text-align:left;padding:4px;">Account</th><th style="text-align:left;padding:4px;">Narration</th><th style="text-align:right;padding:4px;">Amount</th><th></th></tr></thead>
+      <tbody>${list.map((x,n)=>`<tr style="border-top:1px solid var(--border);">
+        <td style="padding:5px 4px;color:var(--muted);">${n+1}</td>
+        <td style="padding:5px 4px;color:var(--off);">${escH(x.account_name)}</td>
+        <td style="padding:5px 4px;color:var(--off);">${escH(x.narration||'')}</td>
+        <td style="padding:5px 4px;text-align:right;font-weight:700;color:var(--white);">${fmt(x.amount)}</td>
+        <td style="padding:5px 4px;"><span onclick="jrnSplitRemove(${n})" style="cursor:pointer;color:#f87171;">✕</span></td>
+      </tr>`).join('')}</tbody>
+    </table>
+    <div style="text-align:right;font-weight:900;color:var(--gold);padding:8px 4px 0;">Total: ${fmt(total)}</div>`
+    : '<div style="color:var(--muted);font-size:0.7rem;text-align:center;padding:8px;">No accounts added to this split yet.</div>';
+}
+function jrnSplitAdd() {
+  if (!_splitCtx) return;
+  const sel = document.getElementById('spAcct');
+  const opt = sel?.selectedOptions?.[0];
+  const acct = sel?.value||'';
+  const rt = opt?.dataset?.rt || opt?.getAttribute('data-rt') || '';
+  const narr = document.getElementById('spNarr')?.value?.trim()||'';
+  const amt = parseFloat(String(document.getElementById('spAmt')?.value||'').replace(/,/g,''))||0;
+  if (!acct || amt<=0) { alert('Select an account and enter a figure.'); return; }
+  const row = journalRows[_splitCtx.idx];
+  const key = _splitCtx.side==='debit' ? '_drSplits' : '_crSplits';
+  row[key] = row[key]||[];
+  row[key].push({ account_name: acct, record_type: rt || jrnGuessType(acct), narration: narr, amount: amt });
+  document.getElementById('spNarr').value=''; document.getElementById('spAmt').value='';
+  jrnSplitRenderList();
+}
+function jrnGuessType(name) {
+  for (const t of ['asset','liability','capital','income','expenditure']) {
+    if ((accounts[t]||[]).some(a=>a.account_name===name)) return t;
+  }
+  return 'expenditure';
+}
+function jrnSplitRemove(n) {
+  const row = journalRows[_splitCtx.idx];
+  const key = _splitCtx.side==='debit' ? '_drSplits' : '_crSplits';
+  row[key].splice(n,1);
+  jrnSplitRenderList();
+}
+function jrnSplitDone() {
+  if (!_splitCtx) { closeColMenu(); return; }
+  const row = journalRows[_splitCtx.idx];
+  const key = _splitCtx.side==='debit' ? '_drSplits' : '_crSplits';
+  const list = row[key]||[];
+  if (list.length) {
+    const total = list.reduce((s,x)=>s+x.amount,0);
+    if (_splitCtx.side==='debit') { row.debit_amount = total; row.debit_account_name='(Split)'; row.debit_record_type=list[0].record_type; }
+    else { row.credit_amount = total; row.credit_account_name='(Split)'; row.credit_record_type=list[0].record_type; }
+    const other = _splitCtx.side==='debit' ? 'credit_amount' : 'debit_amount';
+    if (!row[other]) row[other] = total;
+    row.saved = false;
+  }
+  _splitCtx = null;
+  closeColMenu();
+  renderJournal();
+}
+function jrnSplitSubRow(row, idx, colCount) {
+  const parts = [];
+  if (row._drSplits&&row._drSplits.length) parts.push('Dr: '+row._drSplits.map(x=>escH(x.account_name)+' '+fmt(x.amount)+(x.narration?' ('+escH(x.narration)+')':'')).join(' · '));
+  if (row._crSplits&&row._crSplits.length) parts.push('Cr: '+row._crSplits.map(x=>escH(x.account_name)+' '+fmt(x.amount)+(x.narration?' ('+escH(x.narration)+')':'')).join(' · '));
+  if (!parts.length) return '';
+  return `<tr class="jrn-split-sub"><td></td><td colspan="10" style="font-size:0.66rem;color:var(--gold);padding:3px 10px;background:var(--gold-dim);">↳ ${parts.join('  |  ')}</td></tr>`;
+}
+
 function jrnSnMenu(ev, idx) {
   ev.stopPropagation();
   openColMenuPortal(ev, [
@@ -4940,7 +5027,13 @@ function jrnAddRowAt(idx, after) {
     debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
     debit_amount:0, credit_amount:0, saved:false };
   const neighbour = journalRows[idx];
-  if (neighbour && neighbour.txn_date) blank.txn_date = neighbour.txn_date;
+  if (neighbour && neighbour.txn_date) {
+    if (after) {
+      const d = new Date(neighbour.txn_date+'T00:00:00');
+      d.setDate(d.getDate()+1);
+      blank.txn_date = d.toISOString().slice(0,10);
+    } else blank.txn_date = neighbour.txn_date;
+  }
   journalRows.splice(idx + (after?1:0), 0, blank);
   renderJournal();
 }
@@ -5011,6 +5104,25 @@ async function openJournal() {
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading General Journal…</div>';
 
+  // Direct postings (sales, expenses, ledgers) — the journal is the book of prime entry
+  let _txLegs = [];
+  try {
+  let _tq = bkDb.from('bk_transactions')
+  .select('id,txn_date,narration,account_name,debit,credit,record_type,created_at')
+  .is('journal_id', null);
+  _tq = activeBusiness?.id
+  ? _tq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+  : _tq.eq('user_id', bkUser.id);
+  const {data:TX} = await _tq.order('created_at',{ascending:false}).limit(150);
+  _txLegs = (TX||[]).map(t=>({
+  _ro:true, _txnId:t.id, saved:true,
+  txn_date:t.txn_date||'', payee:'', payer:'',
+  narration:(t.narration||'')+'  ['+({income:'Sales',expenditure:'Expense',asset:'Asset',liability:'Liability',capital:'Capital'}[t.record_type]||t.record_type)+']',
+  debit_account_name:(parseFloat(t.debit)||0)>0?(t.account_name||''):'',
+  credit_account_name:(parseFloat(t.credit)||0)>0?(t.account_name||''):'',
+  debit_amount:parseFloat(t.debit)||0, credit_amount:parseFloat(t.credit)||0,
+  }));
+  } catch(e){}
   const { data } = await bkDb.from('bk_journal')
     .select('*').match(bizMatch()).order('row_order',{ascending:true});
 
@@ -5086,7 +5198,9 @@ function renderJournal() {
       <button class="bk-btn bk-btn-gold" style="font-size:0.8rem;padding:9px 24px;align-self:flex-start;" onclick="saveJournal()">Save &amp; Post</button>
     </div>`;
   renderJournalRows();
-  setTimeout(function(){ jrnApplyHidden(); jrnInitRowDrag(); jrnApplySearch(); }, 0);
+  setTimeout(function(){ jrnApplyHidden(); jrnInitRowDrag(); jrnApplySearch();
+    document.querySelectorAll('.jrn-wrap-ta').forEach(ta=>{ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; });
+  }, 0);
 }
 
 function renderJournalRows() {
@@ -5137,14 +5251,22 @@ function renderJournalRows() {
         ? `<textarea class="bk-cell jrn-wrap-ta" rows="1" oninput="jCellChange(${idx},'narration',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'">${escH(row.narration||'')}</textarea>`
         : `<input class="bk-cell" type="text" value="${escH(row.narration||'')}" placeholder="Narration…"
           oninput="jCellChange(${idx},'narration',this.value)"/>`}</td>
-      <td><select class="bk-cell"
-        onchange="jAccountChange(${idx},'debit',this.value)">
-        ${buildAccountOptions(row.debit_account_name)}
-      </select></td>
-      <td><select class="bk-cell"
-        onchange="jAccountChange(${idx},'credit',this.value)">
-        ${buildAccountOptions(row.credit_account_name)}
-      </select></td>
+      <td><div style="display:flex;align-items:center;gap:2px;">
+        <select class="bk-cell" style="flex:1;min-width:0;"
+          onchange="jAccountChange(${idx},'debit',this.value)">
+          ${row._drSplits&&row._drSplits.length?`<option selected>Multiple (${row._drSplits.length} accounts)</option>`:''}
+          ${buildAccountOptions(row.debit_account_name)}
+        </select>
+        <span onclick="jrnSplitOpen(${idx},'debit')" title="Split across accounts" style="cursor:pointer;font-size:0.72rem;color:var(--gold);padding:2px 4px;">✎</span>
+      </div></td>
+      <td><div style="display:flex;align-items:center;gap:2px;">
+        <select class="bk-cell" style="flex:1;min-width:0;"
+          onchange="jAccountChange(${idx},'credit',this.value)">
+          ${row._crSplits&&row._crSplits.length?`<option selected>Multiple (${row._crSplits.length} accounts)</option>`:''}
+          ${buildAccountOptions(row.credit_account_name)}
+        </select>
+        <span onclick="jrnSplitOpen(${idx},'credit')" title="Split across accounts" style="cursor:pointer;font-size:0.72rem;color:var(--gold);padding:2px 4px;">✎</span>
+      </div></td>
       <td><input class="bk-cell num bk-amt-input" type="text" inputmode="decimal"
         value="${row.debit_amount>0?row.debit_amount.toLocaleString('en-NG'):''}" placeholder="0"
         onclick="this.select()"
@@ -5157,7 +5279,7 @@ function renderJournalRows() {
         oninput="jAmtInput(this,${idx},'credit_amount')"/></td>
       <td><button class="del-btn" onclick="deleteJournalRow(${idx})">✕</button></td>
       <td><button class="save-row-btn" onclick="saveJournalRow(${idx})" title="Save & Post this row">›</button></td>
-    </tr>`;
+    </tr>${jrnSplitSubRow(row,idx)}`;
   }).join('');
 
   const msg=document.getElementById('journalSaveMsg');
@@ -5234,7 +5356,14 @@ function updateJournalBalance() {
 }
 
 function addJournalRow(){
-  journalRows.push(emptyJournalRow(journalRows.length));
+  const nr = emptyJournalRow(journalRows.length);
+  const prev = journalRows.length ? journalRows[journalRows.length-1] : null;
+  if (prev && prev.txn_date) {
+    const d = new Date(prev.txn_date+'T00:00:00');
+    d.setDate(d.getDate()+1);
+    nr.txn_date = d.toISOString().slice(0,10);
+  }
+  journalRows.push(nr);
   renderJournalRows();
   // Focus the date input of the newly added row (it will be the last tr)
   setTimeout(function(){
@@ -5350,7 +5479,23 @@ async function saveJournal(){
       }))
     ).select();
     if(error){ err=error; }
-    else if(created){ created.forEach((s,i)=>{ newRows[i].id=s.id; }); for(const[i,r]of newRows.entries()) await postToLedgers(created[i].id,r); }
+    else if(created){
+      created.forEach((s,i)=>{ newRows[i].id=s.id; });
+      const legs=[];
+      newRows.forEach((r,i)=>{
+        const base={ user_id:bkUser.id, business_id:activeBusiness?.id||null, journal_id:created[i].id, txn_date:r.txn_date||null,
+                     payee:r.payee||null, payer:r.payer||null, narration:r.narration||null, row_order:r.row_order||0 };
+        const drS = r._drSplits&&r._drSplits.length ? r._drSplits : null;
+        const crS = r._crSplits&&r._crSplits.length ? r._crSplits : null;
+        if (drS) drS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||base.narration, debit:s.amount, credit:0, balance:0}));
+        else if(r.debit_account_name && r.debit_record_type && r.debit_amount>0)
+          legs.push({...base, record_type:r.debit_record_type, account_name:r.debit_account_name, debit:r.debit_amount, credit:0, balance:0});
+        if (crS) crS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||base.narration, debit:0, credit:s.amount, balance:0}));
+        else if(r.credit_account_name && r.credit_record_type && r.credit_amount>0)
+          legs.push({...base, record_type:r.credit_record_type, account_name:r.credit_account_name, debit:0, credit:r.credit_amount, balance:0});
+      });
+      if(legs.length){ const {error:le}=await bkDb.from('bk_transactions').insert(legs); if(le) err=le; }
+    }
   }
 
   for(const r of existRows){
@@ -6428,8 +6573,11 @@ async function openQuickInput() {
   qiState = { step:'type', txnType:null, product:null, qty:1, amount:0, payment:'cash', customerName:'' };
 
   // Load user products
-  const { data } = await bkDb.from('bk_products').select('*')
-    .eq('user_id', bkUser.id).eq('is_active', true).order('product_name');
+  const { data } = await (activeBusiness?.id
+      ? bkDb.from('bk_products').select('*').or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+      : (activeBusiness?.id
+      ? bkDb.from('bk_products').select('*').or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+      : bkDb.from('bk_products').select('*').eq('user_id', bkUser.id))).eq('is_active', true).order('product_name');
   qiProducts = data || [];
 
   document.getElementById('qiOverlay').classList.remove('hidden');
@@ -6966,7 +7114,9 @@ async function showSettings() {
   const [{ data:qa }, { data:profile }, { data:prods }] = await Promise.all([
     bkDb.from('bk_qa_history').select('*').eq('user_id', bkUser.id).order('created_at', {ascending:false}).limit(100),
     bkDb.from('bk_business_profiles').select('*').eq('user_id', bkUser.id).single(),
-    bkDb.from('bk_products').select('*').eq('user_id', bkUser.id).order('product_name'),
+    (activeBusiness?.id
+      ? bkDb.from('bk_products').select('*').or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+      : bkDb.from('bk_products').select('*').eq('user_id', bkUser.id)).order('product_name'),
   ]);
 
   document.getElementById('bkContent').innerHTML = `
@@ -7833,6 +7983,94 @@ async function openChartOfAccounts() {
   renderCOA();
 }
 
+// ── Main sub-ledgers (account groups) ────────────────────────
+function _coaGroups(){ try { return JSON.parse(localStorage.getItem('bd_coa_groups')||'{}'); } catch(e){ return {}; } }
+function _coaMemb(){ try { return JSON.parse(localStorage.getItem('bd_coa_memb')||'{}'); } catch(e){ return {}; } }
+function coaMakeMainGroup(type) {
+  openTextPortal('NAME OF THE NEW MAIN SUB-LEDGER', '', name=>{
+    const g=_coaGroups(); g[type]=g[type]||[];
+    if (!g[type].includes(name)) g[type].push(name);
+    localStorage.setItem('bd_coa_groups', JSON.stringify(g));
+    renderCOA();
+    bdToast('\u2713 Main sub-ledger "'+name+'" created — use its +Add to put accounts under it');
+  });
+}
+let _coaAddOpenFor = null;
+function coaGroupAddToggle(type, title) {
+  _coaAddOpenFor = (_coaAddOpenFor===title) ? null : title;
+  renderCOA();
+  if (_coaAddOpenFor) setTimeout(()=>document.getElementById('coaGrpInput')?.focus(), 50);
+}
+async function coaGroupAdd(type, title) {
+  const name = document.getElementById('coaGrpInput')?.value?.trim();
+  if (!name) return;
+  try {
+    const {data, error} = await bkDb.from('bk_accounts').insert({
+      user_id: bkUser.id, account_name: name, record_type: type, opening_balance: 0,
+    }).select().single();
+    if (error) throw error;
+    (accounts[type]=accounts[type]||[]).push(data);
+    const m=_coaMemb(); m[name]=title;
+    localStorage.setItem('bd_coa_memb', JSON.stringify(m));
+    _coaAddOpenFor = null;
+    renderCOA();
+    bdToast('\u2713 "'+name+'" added under '+title);
+  } catch(e){ alert('Could not add: '+(e.message||'')); }
+}
+async function openGroupLedger(type, title) {
+  staffHideChrome();
+  const memb = _coaMemb();
+  const groupsFor = {
+    asset: [['Long-term assets (Fixed Assets)', a=>isFixedAsset(a.account_name)], ['Short-term assets (Current assets)', a=>!isFixedAsset(a.account_name)]],
+    liability: [['Long-term liabilities', a=>isLongTermLiab(a.account_name)], ['Short-term liabilities (Current liabilities)', a=>!isLongTermLiab(a.account_name)]],
+    expenditure: [['Cost of Sales / Production', a=>isCOSAccount(a.account_name)], ['Operating Expenses', a=>!isCOSAccount(a.account_name)]],
+    income: [['Operating Income', a=>!/other|interest|dividend|gain/i.test(a.account_name)], ['Other Income', a=>/other|interest|dividend|gain/i.test(a.account_name)]],
+    capital: [['Capital & Equity', ()=>true]],
+  };
+  const baseTest = (groupsFor[type]||[]).find(([t])=>t===title)?.[1];
+  const members = (accounts[type]||[]).filter(a=>
+    memb[a.account_name] ? memb[a.account_name]===title : (baseTest ? baseTest(a) : false));
+  const names = members.map(a=>a.account_name);
+  const el = document.getElementById('bkContent');
+  el.innerHTML = '<div class="bk-loading">Loading…</div>';
+  let T = [];
+  try {
+    if (names.length) {
+      let q = bkDb.from('bk_transactions').select('txn_date,account_name,narration,debit,credit,created_at')
+        .eq('record_type', type).in('account_name', names);
+      q = activeBusiness?.id
+        ? q.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+        : q.eq('user_id', bkUser.id);
+      const {data} = await q.order('txn_date',{ascending:true}).order('created_at',{ascending:true}).limit(500);
+      T = data||[];
+    }
+  } catch(e){}
+  const sym = CURRENCIES[activeCurrency].symbol;
+  let dr=0, cr=0;
+  const obTotal = members.reduce((s,a)=>s+(parseFloat(a.opening_balance)||0),0);
+  const rows = T.map((t,n)=>{
+    dr += parseFloat(t.debit)||0; cr += parseFloat(t.credit)||0;
+    return `<tr><td style="color:var(--muted);">${n+1}</td><td>${t.txn_date?formatDateDisplay(t.txn_date):''}</td>
+      <td style="color:var(--gold);">${escH(t.account_name)}</td><td>${escH(t.narration||'')}</td>
+      <td class="num">${(parseFloat(t.debit)||0)>0?fmtNum(t.debit):''}</td>
+      <td class="num">${(parseFloat(t.credit)||0)>0?fmtNum(t.credit):''}</td></tr>`;
+  }).join('');
+  el.innerHTML = `
+    <div style="padding:16px;max-width:860px;margin:0 auto;">
+      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;margin-bottom:12px;" onclick="renderCOA()">← Back</button>
+      <div style="font-size:1.05rem;font-weight:900;color:var(--white);">${escH(title)} — MAIN SUB-LEDGER</div>
+      <div style="font-size:0.68rem;color:var(--gold);font-weight:700;margin:2px 0 12px;">${members.length} account${members.length===1?'':'s'}: ${names.map(escH).join(', ')||'none yet'}</div>
+      ${obTotal?`<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px;">Combined opening balances: <b style="color:var(--white);">${fmt(obTotal)}</b></div>`:''}
+      <div class="bk-sheet-wrap"><table class="bk-sheet" style="min-width:680px;">
+        <thead><tr><th style="width:40px;">S/N</th><th style="width:120px;">Date</th><th style="width:160px;">Account</th><th>Narration</th>
+        <th class="num" style="width:110px;">Debit (${sym})</th><th class="num" style="width:110px;">Credit (${sym})</th></tr></thead>
+        <tbody>${rows||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px;">No transactions yet in this main sub-ledger.</td></tr>'}</tbody>
+        <tfoot><tr style="font-weight:900;"><td colspan="4" style="text-align:right;color:var(--gold);">Totals</td>
+        <td class="num">${fmtNum(dr)}</td><td class="num">${fmtNum(cr)}</td></tr></tfoot>
+      </table></div>
+    </div>`;
+}
+
 async function coaAddChild(parentId, type) {
   openTextPortal('NAME OF THE NEW SUB-LEDGER', '', async name=>{
     try {
@@ -7890,11 +8128,23 @@ function renderCOA() {
             income: [['Operating Income', a=>!/other|interest|dividend|gain/i.test(a.account_name)], ['Other Income', a=>/other|interest|dividend|gain/i.test(a.account_name)]],
             capital: [['Capital & Equity', ()=>true]],
           };
-          const groups = groupsFor[active] || [['Accounts', ()=>true]];
+          const memb = _coaMemb();
+          const customs = (_coaGroups()[active]||[]).map(name=>[name, a=>memb[a.account_name]===name]);
+          const groups = (groupsFor[active] || [['Accounts', ()=>true]]).concat(customs);
           return groups.map(([title,test])=>{
-            const items = accts.map((a,i)=>({a,i})).filter(o=>!o.a.parent_id && test(o.a));
-            if (!items.length) return '';
-            return `<div class="coa-group-hdr">${title}</div>` + items.map(o=>rowT(o.a,o.i)).join('');
+            const items = accts.map((a,i)=>({a,i})).filter(o=>!o.a.parent_id &&
+              (memb[o.a.account_name] ? memb[o.a.account_name]===title : test(o.a)));
+            const hdr = `<div class="coa-group-hdr" style="display:flex;align-items:center;gap:8px;">
+              <span onclick="openGroupLedger('${active}','${title.replace(/'/g,"\\'")}')" style="cursor:pointer;flex:1;">${title} ›</span>
+              <button class="coa-add-btn" style="padding:4px 10px;font-size:0.66rem;" onclick="coaGroupAddToggle('${active}','${title.replace(/'/g,"\\'")}')">+ Add</button>
+            </div>` + (_coaAddOpenFor===title?`
+            <div class="coa-add-row" style="padding:8px 18px;">
+              <input class="coa-add-input" id="coaGrpInput" placeholder="New account under ${title}…"
+                onkeydown="if(event.key==='Enter')coaGroupAdd('${active}','${title.replace(/'/g,"\\'")}')"/>
+              <button class="coa-add-btn" onclick="coaGroupAdd('${active}','${title.replace(/'/g,"\\'")}')">+ Add</button>
+            </div>`:'');
+            if (!items.length && _coaAddOpenFor!==title && !customs.some(([n])=>n===title)) return '';
+            return hdr + items.map(o=>rowT(o.a,o.i)).join('');
           }).join('');
         })()}
         ${accts.length===0?'<div style="padding:20px;text-align:center;color:var(--muted);font-size:0.8rem;">No sub-accounts yet. Add one below.</div>':''}
@@ -7902,6 +8152,9 @@ function renderCOA() {
           <input class="coa-add-input" type="text" id="coaNewName" placeholder="New account name…"
             onkeydown="if(event.key==='Enter')coaAddAccount()"/>
           <button class="coa-add-btn" onclick="coaAddAccount()">+ Add</button>
+        </div>
+        <div style="padding:0 18px 12px;background:var(--surface2);">
+          <button class="coa-add-btn" style="background:var(--surface);color:var(--gold);border:1px dashed var(--gold);" onclick="coaMakeMainGroup(coaActiveType)">▦ Make Main sub-ledger</button>
         </div>
       </div>
       <p style="font-size:0.72rem;color:var(--muted);margin-top:10px;">
@@ -11251,7 +11504,7 @@ function pfSaveActiveBiz() {
   const biz = userBusinesses.find(b => b.id === sel.value);
   if (!biz) return;
   activeBusiness = biz;
-  localStorage.setItem('bd_active_biz', biz.id);
+  localStorage.setItem('bd_active_biz', biz.id); bdSyncActiveBizToCloud(biz.id);
   bdUpdateMenuBizLine();
   const btn = event?.target;
   if (btn) { const t=btn.textContent; btn.textContent='✓'; setTimeout(()=>btn.textContent=t, 1200); }
@@ -11696,6 +11949,16 @@ let activeBusiness = null; // null = "All Businesses" view
 
 // Business-scoped query filter: books belong to the selected business.
 // Falls back to user-scoped when no business is selected.
+async function bdSyncActiveBizToCloud(bizId) {
+  try { await bkDb.from('profiles').update({ active_business_id: bizId }).eq('id', bkUser.id); } catch(e){}
+}
+async function bdLoadActiveBizFromCloud() {
+  try {
+    const { data } = await bkDb.from('profiles').select('active_business_id').eq('id', bkUser.id).single();
+    return data?.active_business_id || null;
+  } catch(e){ return null; }
+}
+
 function bizMatch(){ return (activeBusiness && activeBusiness.id) ? {business_id: activeBusiness.id} : {user_id: bkUser.id}; }
 async function loadUserBusinesses() {
   if (!bkUser) return;
@@ -11713,7 +11976,9 @@ async function loadUserBusinesses() {
     }
     userBusinesses = owned.concat(employed);
     // Restore the selected working business
-    const savedId = localStorage.getItem('bd_active_biz');
+    let savedId = localStorage.getItem('bd_active_biz');
+  const cloudId = await bdLoadActiveBizFromCloud();
+  if (cloudId) { savedId = cloudId; try { localStorage.setItem('bd_active_biz', cloudId); } catch(e){} }
     if (savedId) {
       const found = userBusinesses.find(b => b.id === savedId);
       if (found) activeBusiness = found;
@@ -11835,8 +12100,8 @@ function dashOpenDate(ev) {
       <input type="date" class="bk-login-input" id="ddSingle" value="${dashDate.from===dashDate.to?dashDate.from:''}" style="margin-bottom:8px;"/>
       <label class="su-label">OR RANGE</label>
       <div style="display:flex;gap:6px;">
-        <input type="date" class="bk-login-input" id="ddFrom" value="${dashDate.from}" style="margin:0;"/>
-        <input type="date" class="bk-login-input" id="ddTo" value="${dashDate.to}" style="margin:0;"/>
+        <input type="date" class="bk-login-input" id="ddFrom" value="${dashDate.from}" style="margin:0;min-width:0;flex:1;width:auto;"/>
+        <input type="date" class="bk-login-input" id="ddTo" value="${dashDate.to}" style="margin:0;min-width:0;flex:1;width:auto;"/>
       </div>
       <div style="display:flex;gap:6px;margin-top:10px;">
         <button onclick="dashApplyDate()" style="flex:1;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.72rem;padding:8px;border-radius:7px;cursor:pointer;">Apply</button>
@@ -11872,7 +12137,7 @@ function dashToday() {
 // ── Breakdown pages for the dashboard cards ─────────────────
 async function dashOpenSheetFor(biz, kind) {
   activeBusiness = biz.id ? (userBusinesses.find(b=>b.id===biz.id)||biz) : biz;
-  localStorage.setItem('bd_active_biz', activeBusiness.id);
+  localStorage.setItem('bd_active_biz', activeBusiness.id); bdSyncActiveBizToCloud(activeBusiness.id);
   try { bdUpdateMenuBizLine(); } catch(e){}
   if (kind==='sales') { salesRows=[]; await showRecordSales(); }
   else { staffExpRows=[]; await showRecordExpenses(); }
