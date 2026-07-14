@@ -1185,15 +1185,28 @@ body{padding-top:0;}
       <span class="bk-menu-icon">📊</span> Homepage
     </div>
 
-    <!-- Records (owner/manager only) -->
+    <!-- Books of Prime Entry (owner/manager only) -->
     <div class="bk-menu-item bk-menu-parent" data-role="owner-manager" onclick="toggleSubMenu('sub-records')">
-      <span class="bk-menu-icon">📒</span> Records
+      <span class="bk-menu-icon">📒</span> Books of Prime Entry
       <span class="bk-menu-arrow" id="arrow-records">›</span>
     </div>
     <div class="bk-submenu" data-role="owner-manager" id="sub-records">
-      <div class="bk-submenu-item" onclick="openChartOfAccounts();closeBkMenu()">📋 Chart of Accounts</div>
       <div class="bk-submenu-item" onclick="openJournal();closeBkMenu()">📒 Master Journal</div>
-      <div style="padding:6px 20px;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);">Ledgers</div>
+      <div class="bk-submenu-item" onclick="showRecordSales();closeBkMenu()">🧾 Sales Day Book</div>
+      <div class="bk-submenu-item" onclick="showRecordExpenses();closeBkMenu()">📦 Purchases Day Book</div>
+      <div class="bk-submenu-item" onclick="showDayBook('salesreturns');closeBkMenu()">↩ Sales Returns Day Book</div>
+      <div class="bk-submenu-item" onclick="showDayBook('purchreturns');closeBkMenu()">↪ Purchases Returns Day Book</div>
+      <div class="bk-submenu-item" onclick="showDayBook('cash');closeBkMenu()">💵 Cash Book</div>
+      <div class="bk-submenu-item" onclick="openGeneralJournal();closeBkMenu()">✒ General Journal</div>
+    </div>
+
+    <!-- Ledgers (owner/manager only) -->
+    <div class="bk-menu-item bk-menu-parent" data-role="owner-manager" onclick="toggleSubMenu('sub-ledgers')">
+      <span class="bk-menu-icon">📚</span> Ledgers
+      <span class="bk-menu-arrow" id="arrow-ledgers">›</span>
+    </div>
+    <div class="bk-submenu" data-role="owner-manager" id="sub-ledgers">
+      <div class="bk-submenu-item" onclick="openChartOfAccounts();closeBkMenu()">📋 Chart of Accounts</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('capital');closeBkMenu()">Capital</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('liability');closeBkMenu()">Liabilities</div>
       <div class="bk-submenu-item" onclick="openFirstAccount('asset');closeBkMenu()">Assets</div>
@@ -5097,6 +5110,58 @@ function jrnPrint(orientation) {
   setTimeout(()=>w.print(), 300);
 }
 
+// ── Books of Prime Entry: day-book views ─────────────────────
+function openGeneralJournal() {
+  window._jrnManualOnly = true;
+  openJournal();
+}
+async function showDayBook(kind) {
+  staffHideChrome();
+  const titles = {
+    salesreturns: ['Sales Returns Day Book', 'Goods returned by customers (Returns Inwards). Record returns in the Master Journal using a Returns Inwards account and they appear here.'],
+    purchreturns: ['Purchases Returns Day Book', 'Goods you returned to suppliers (Returns Outwards). Record them in the Master Journal using a Returns Outwards account and they appear here.'],
+    cash: ['Cash Book', 'Every movement of Cash in Hand and Cash at Bank, in date order.'],
+  };
+  const [title, sub] = titles[kind];
+  const el = document.getElementById('bkContent');
+  el.innerHTML = '<div class="bk-loading">Loading…</div>';
+  let rows = [];
+  try {
+    let q = bkDb.from('bk_transactions')
+      .select('txn_date,narration,account_name,debit,credit,record_type,created_at');
+    q = activeBusiness?.id
+      ? q.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+      : q.eq('user_id', bkUser.id);
+    const {data} = await q.order('txn_date',{ascending:true}).order('created_at',{ascending:true}).limit(500);
+    const T = data||[];
+    if (kind==='salesreturns') rows = T.filter(t=>/return.*inward|sales return/i.test(t.account_name||''));
+    else if (kind==='purchreturns') rows = T.filter(t=>/return.*outward|purchase return/i.test(t.account_name||''));
+    else rows = T.filter(t=>/^cash (in hand|at bank)$/i.test((t.account_name||'').trim()));
+  } catch(e){}
+  const sym = CURRENCIES[activeCurrency].symbol;
+  let dr=0, cr=0;
+  const body = rows.map((t,n)=>{
+    dr += parseFloat(t.debit)||0; cr += parseFloat(t.credit)||0;
+    return `<tr><td style="color:var(--muted);">${n+1}</td><td>${t.txn_date?formatDateDisplay(t.txn_date):''}</td>
+      <td style="color:var(--gold);">${escH(t.account_name||'')}</td><td>${escH(t.narration||'')}</td>
+      <td class="num">${(parseFloat(t.debit)||0)>0?fmtNum(t.debit):''}</td>
+      <td class="num">${(parseFloat(t.credit)||0)>0?fmtNum(t.credit):''}</td></tr>`;
+  }).join('');
+  el.innerHTML = `
+    <div style="padding:16px;max-width:860px;margin:0 auto;">
+      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;margin-bottom:12px;" onclick="showDashboard()">← Back</button>
+      <div style="font-size:1.05rem;font-weight:900;color:var(--white);">${title.toUpperCase()}</div>
+      <div style="font-size:0.68rem;color:var(--muted);margin:4px 0 14px;line-height:1.5;">${sub}</div>
+      <div class="bk-sheet-wrap"><table class="bk-sheet" style="min-width:680px;">
+        <thead><tr><th style="width:40px;">S/N</th><th style="width:130px;">Date</th><th style="width:170px;">Account</th><th>Narration</th>
+        <th class="num" style="width:110px;">Debit (${sym})</th><th class="num" style="width:110px;">Credit (${sym})</th></tr></thead>
+        <tbody>${body||`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:18px;">No entries yet in this book.</td></tr>`}</tbody>
+        <tfoot><tr style="font-weight:900;"><td colspan="4" style="text-align:right;color:var(--gold);">Totals</td>
+        <td class="num">${fmtNum(dr)}</td><td class="num">${fmtNum(cr)}</td></tr></tfoot>
+      </table></div>
+    </div>`;
+}
+
 async function openJournal() {
   recordsPageChrome();
   activeType=null; activeAccount=null;
@@ -5106,7 +5171,10 @@ async function openJournal() {
 
   // Direct postings (sales, expenses, ledgers) — the journal is the book of prime entry
   let _txLegs = [];
+  const _manualOnly = window._jrnManualOnly === true;
+  window._jrnManualOnly = false;
   try {
+    if (_manualOnly) throw 'skip';
   let _tq = bkDb.from('bk_transactions')
   .select('id,txn_date,narration,account_name,debit,credit,record_type,created_at')
   .is('journal_id', null);
