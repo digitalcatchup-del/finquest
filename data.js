@@ -822,112 +822,543 @@ const trackData = {
 </div>`,
       quiz:{q:'Amaka writes off a ₦45,000 bad debt for a customer who has disappeared. Which book of original entry would she use?', opts:['Sales Day Book','Cash Book','Purchases Day Book','The Journal'], ans:3, exp:'Writing off a bad debt is a non-routine adjustment — it doesn\'t fit the cash book (no cash moved), the sales day book (it\'s not a new sale) or the purchases book. It belongs in the journal, with a narrative explaining that the debt has been confirmed as irrecoverable.'}
     },
-    {id:11, term:'Assets', duration:'4 min', pips:1,
+    {id:11, term:'Assets', duration:'5 min', pips:2,
       definition:`Resources owned by a business or owed to it, such as buildings, equipment, stock, money in the bank, and amounts customers owe. Assets represent what a business has.`,
       scenario:`Four weeks in, Amaka arrived early on a Saturday to do her first proper stocktake. She moved through the shop with a notepad: phones on the shelves, cases and chargers in the display cabinet, the laptop on the counter, the cash float in the till. Then she paused. Tunde still owed her the balance on his account, and last week she had paid two months of shop rent in advance. Did those count? She was still standing there when Aunty Florence appeared with her tea. "Everything on your list so far is something you can touch," the older woman said, reading over her shoulder. "But assets are bigger than that. Tunde's debt? That is money owed to you — an asset. The rent you paid ahead? You own two months of shelter you have not used yet — also an asset. Write down what you own AND what you are owed. Both belong to the business." Amaka added two lines to the page, and her business suddenly looked bigger than the room it sat in.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>An asset is any resource the business <strong>owns or is owed</strong> that is expected to bring future benefit. That definition is wider than most new traders assume. It covers the physical things — stock, equipment, cash — but also the invisible ones: money customers owe you (debtors) and payments you have made in advance (prepayments).</p>
+  <p>Aunty Florence's test is the simplest one: <em>"Does the business own it, or is the business owed it? Then it is an asset."</em> What matters is benefit flowing <strong>toward</strong> the business.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's Week 4 Stocktake</h3>
+  <p>Here is the full list Amaka ended up with, including the two items she nearly missed:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Asset</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Phones and accessories in stock</td><td>870,000</td></tr>
+      <tr><td>Display cabinet</td><td>150,000</td></tr>
+      <tr><td>Laptop</td><td>120,000</td></tr>
+      <tr><td>Cash in till</td><td>42,000</td></tr>
+      <tr><td>Owed by Tunde (debtor)</td><td>35,000</td></tr>
+      <tr><td>Rent paid in advance (prepayment)</td><td>100,000</td></tr>
+      <tr class="table-total"><td><strong>Total Assets</strong></td><td><strong>1,317,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>Notice that the last two lines are things Amaka cannot touch. Tunde's debt is a legal claim to cash; the prepaid rent is two months of shelter already paid for but not yet used. Both bring future benefit — both are assets.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Assets = what the business <strong>owns</strong> + what the business <strong>is owed</strong>. Money the business owes others is never an asset — that is a liability, the other side of the equation. When in doubt, ask which direction the benefit flows.</p>
+</div>`,
       quiz:{q:'Which of the following counts as an asset for a business?', opts:['Money the business owes a supplier', 'Money a customer owes the business', 'The owner\'s personal house, unrelated to the business', 'Wages already paid to staff'], ans:1, exp:'Money a customer owes the business is a resource owed TO the business, making it an asset. Money owed BY the business is a liability, not an asset.'}
     },
-    {id:12, term:'Balance Brought Down', duration:'4 min', pips:1,
+    {id:12, term:'Balance Brought Down', duration:'5 min', pips:2,
       definition:`The opening balance of an account at the start of a new period, carried forward from the closing balance of the previous period. Often abbreviated 'balance b/d'.`,
       scenario:`On the first morning of February, Amaka opened her cash book to a fresh page and hesitated, pen hovering. January's page was full — every sale, every payment, ruled off neatly at the bottom the night before. But February stared back at her, blank. Was she supposed to start from zero? She carried the book two doors down. Aunty Florence laughed gently. "Your cash did not disappear at midnight, did it? Look at the last line of January." There it was: the closing balance, ₦164,000. "That figure walks across the page boundary and sits at the top of February," said Aunty Florence, writing it in and labelling it b/d. "Balance brought down. It is the bridge between periods — the ending of one month becomes the beginning of the next. Every account starts its new life exactly where the old one ended." Amaka looked at the ₦164,000 sitting at the head of the new page like a returning friend, and February no longer felt blank.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Balance brought down (b/d)</strong> is the opening balance of an account at the start of a new period. It is not a new transaction — it is last period's closing balance walking across the page boundary to become this period's starting point.</p>
+  <p>Nothing about the business changes at midnight on the last day of a month. The cash is still in the till; the debtors still owe. The b/d entry simply carries that continuing reality into the new page.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's February Opening</h3>
+  <p>Amaka's cash account, first entry of February:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Date</th><th>Details</th><th>Dr (₦)</th><th>Cr (₦)</th></tr></thead>
+    <tbody>
+      <tr><td>1 Feb</td><td>Balance b/d</td><td>164,000</td><td></td></tr>
+    </tbody>
+  </table></div>
+  <p>That ₦164,000 is exactly the balance c/d figure from 31 January. On an asset account like cash, the opening balance sits on the <strong>debit</strong> side — because cash is an asset, and assets live on the left. If it were a liability account, the b/d would open on the credit side instead.</p>
+  <p>Every account that had a balance at month end reopens this way: cash, bank, each debtor, each creditor, capital. The books never truly stop; they only turn pages.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>b/d = the bridge <em>into</em> a period. It always equals the previous period's balance c/d, and it always opens on the side that reflects the account's nature — debit for assets and expenses, credit for liabilities, capital and income.</p>
+</div>`,
       quiz:{q:'What does \'balance b/d\' represent in an account?', opts:['The total of all transactions for the period', 'The opening balance carried forward from the previous period', 'An error that needs correcting', 'The amount of profit made that period'], ans:1, exp:'Balance brought down (b/d) is the opening balance at the start of a new period, carried forward from where the previous period\'s account left off.'}
     },
-    {id:13, term:'Balance Carried Down', duration:'4 min', pips:1,
+    {id:13, term:'Balance Carried Down', duration:'5 min', pips:2,
       definition:`The figure entered into an account at the end of a period to make both sides add up to the same total. It is then carried forward as the opening balance of the next period. Often abbreviated 'balance c/d'.`,
       scenario:`The evening before, on the 31st of January, Amaka had stayed late to close her first full month of books. Aunty Florence sat beside her with the cash account open. "Add up the debit side," she instructed. Amaka totalled it: ₦892,000. "Now the credit side." ₦728,000. "They don't match," Amaka said, worried she had made an error. "They are not supposed to match — yet," said Aunty Florence. "The difference is the cash you still have. ₦164,000. Now watch." She wrote ₦164,000 on the smaller credit side, labelled it c/d — balance carried down — and suddenly both sides totalled ₦892,000 exactly. She ruled two clean lines under each total. "The c/d figure is not a transaction. It is a placeholder that closes the account for the month, and tomorrow it reappears at the top of the new page as your opening balance. Carried down tonight, brought down tomorrow. Two names, one number, one bridge." Amaka ruled the lines herself, slowly, enjoying how final they felt.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Balance carried down (c/d)</strong> is the figure inserted at the end of a period to make both sides of an account total the same amount. It is a balancing device, not a transaction — nothing was bought, sold or paid. It answers one question: <em>what is left in this account?</em></p>
+  <p>The c/d and b/d are one number with two jobs: c/d closes the old page, b/d opens the new one.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Closing January's Cash Account</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Dr side</th><th>₦</th><th>Cr side</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Total receipts</td><td>892,000</td><td>Total payments</td><td>728,000</td></tr>
+      <tr><td></td><td></td><td><strong>Balance c/d</strong></td><td><strong>164,000</strong></td></tr>
+      <tr class="table-total"><td><strong>Total</strong></td><td><strong>892,000</strong></td><td><strong>Total</strong></td><td><strong>892,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>The receipts side was bigger by ₦164,000 — the cash still in hand. Writing that difference on the <strong>smaller</strong> side forces both totals to agree, and the account is ruled off with double lines. The next morning, the same ₦164,000 reappears as balance b/d on the debit side of February's page.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>c/d goes on the smaller side to force agreement; it reappears as b/d on the opposite side of the new period. If your c/d and b/d ever differ, or land on the same side twice, the account has been closed incorrectly.</p>
+</div>`,
       quiz:{q:'What is the purpose of a \'balance c/d\' entry?', opts:['To record a mistake in the accounts', 'To make both sides of an account total the same amount at period end', 'To show how much profit was made', 'To cancel out a transaction'], ans:1, exp:'Balance carried down (c/d) is inserted to make both sides of an account balance at the end of a period — it\'s then carried forward as next period\'s opening balance (balance b/d).'}
     },
-    {id:14, term:'Balance Sheet', duration:'4 min', pips:1,
+    {id:14, term:'Balance Sheet', duration:'5 min', pips:2,
       definition:`A statement showing the assets, liabilities and capital of a business at one specific point in time — a financial snapshot, not a record of activity over a period.`,
       scenario:`When January's books were closed, Aunty Florence set a clean sheet of paper on the counter and said, "Now let us photograph your business." Amaka looked around for a camera. "Not that kind of photograph. A balance sheet — a picture of exactly where Amaka Phones stands on this one date, the 31st of January." Together they listed the assets on top: phones in stock, the cabinet, the laptop, cash, Tunde's debt, the prepaid rent. Below, the liabilities: the remaining balance owed to the cabinet supplier. And underneath it all, her capital. "This page says nothing about how hard you worked in January," Aunty Florence explained. "It does not show your sales or your hustle. It only shows where everything stands at this instant — like a photograph of a race shows where the runners are, not how fast they ran. Tomorrow, one sale changes it. That is why we always write the date on top. A balance sheet without a date is a photograph of nobody knows when." Amaka wrote the date in bold at the head of the page.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>A <strong>balance sheet</strong> shows the assets, liabilities and capital of a business at <strong>one specific date</strong>. It is a snapshot of position, not a record of activity. It does not show sales, expenses or effort — only where everything stands at that instant.</p>
+  <p>That is why the date in the heading is not decoration. "Balance Sheet as at 31 January" is a photograph with a timestamp; without the date, it means nothing.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka Phones as at 31 January</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Balance Sheet as at 31 Jan</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Fixed assets (cabinet, laptop)</td><td>270,000</td></tr>
+      <tr><td>Current assets (stock, debtor, prepaid rent, cash)</td><td>1,047,000</td></tr>
+      <tr class="table-total"><td><strong>Total Assets</strong></td><td><strong>1,317,000</strong></td></tr>
+      <tr><td>Less: Liabilities (cabinet supplier)</td><td>(150,000)</td></tr>
+      <tr class="table-total"><td><strong>Capital</strong></td><td><strong>1,167,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>The accounting equation, standing to attention: Assets (1,317,000) = Capital (1,167,000) + Liabilities (150,000). One sale tomorrow morning changes the snapshot — which is exactly why it carries a date.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Balance sheet = <strong>position</strong> at a point in time. The trading and profit and loss account = <strong>performance</strong> over a period. The photograph and the film. Never confuse what each one can tell you.</p>
+</div>`,
       quiz:{q:'What does a balance sheet show?', opts:['Sales made over the year', 'Assets, liabilities and capital at one specific date', 'Cash received and paid during the year', 'Profit earned over the year'], ans:1, exp:'A balance sheet is a snapshot at a single point in time, not a summary of activity across a period — that distinction is one of the most common beginner mix-ups in accounting.'}
     },
-    {id:15, term:'Bookkeeping', duration:'4 min', pips:1,
+    {id:15, term:'Bookkeeping', duration:'5 min', pips:2,
       definition:`The part of accounting concerned with recording financial transactions in an organised way, traditionally in 'books' of accounts.`,
       scenario:`A customer once asked Amaka whether she was "doing accounting" in her big notebook. Amaka repeated the question to Aunty Florence that evening, unsure of the answer herself. "What you are doing every day — writing down each sale, each purchase, each payment, neatly and in order — that is bookkeeping," said Aunty Florence. "It is the recording layer. The discipline of capturing every transaction so nothing is lost." She tapped the notebook. "Accounting is the bigger house. Bookkeeping is its foundation. Accounting takes what you have recorded and classifies it, summarises it, presents it, interprets it — turns it into statements and decisions. But none of that is possible if the recording underneath is careless." She told Amaka about a trader down the street years ago who made good money but kept no books; when his supplier disputed a payment, he had no record and paid twice. "Bookkeeping looks humble," she said, "but it is the difference between a business that knows itself and one that only guesses."`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Bookkeeping</strong> is the recording layer of accounting: capturing every transaction, in order, in an organised set of records. Accounting is the whole house — identifying, measuring, recording, classifying, summarising, presenting and interpreting. Bookkeeping is the foundation those upper floors stand on.</p>
+  <p>The distinction matters because the qualities each demands are different. Bookkeeping demands <em>completeness and accuracy</em> — nothing missed, nothing wrong. Accounting adds <em>judgement</em> — what the recorded facts mean.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — One Transaction, Two Layers</h3>
+  <p>On Tuesday Amaka sells a phone for ₦110,000 cash.</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Layer</th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td>Bookkeeping</td><td>Debit Cash ₦110,000, Credit Sales ₦110,000 — dated, referenced, legible</td></tr>
+      <tr><td>Accounting</td><td>At month end that entry joins hundreds of others to compute gross profit, feed the statements, and answer: was February a good month?</td></tr>
+    </tbody>
+  </table></div>
+  <p>Remember Aunty Florence's story of the trader who paid a supplier twice because he had no record. His problem was not weak accounting judgement — it was that the bookkeeping layer simply did not exist, so there was nothing for judgement to stand on.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>No business can account better than it bookkeeps. Statements built on incomplete records are confident-looking fiction. Record first, faithfully — interpret second.</p>
+</div>`,
       quiz:{q:'Which best describes bookkeeping?', opts:['Deciding whether to expand the business', 'Recording financial transactions in an organised way', 'Calculating how much tax is owed', 'Advising on whether to take out a loan'], ans:1, exp:'Bookkeeping is specifically about recording transactions in an organised way — interpreting those records to guide decisions is a broader accounting task built on top of bookkeeping.'}
     },
-    {id:16, term:'Business Entity Concept', duration:'4 min', pips:1,
+    {id:16, term:'Business Entity Concept', duration:'5 min', pips:2,
       definition:`The assumption that a business is treated as completely separate from its owner for accounting purposes. Only transactions affecting the business are recorded — the owner's personal affairs are not, except where they introduce capital or take drawings.`,
       scenario:`In the second month, Amaka's landlady at home came asking for her personal rent, and without thinking Amaka opened the shop till and counted out the money. She recorded it in her cash book as an expense of the business. When Aunty Florence reviewed the book that Friday, she stopped at the entry and shook her head. "Who paid rent — Amaka the woman, or Amaka Phones the business?" Amaka blinked. "Is there a difference? The business is me." "In law, perhaps. In accounting, never," said Aunty Florence firmly. "The business entity concept: the business is a separate person in the books. It has its own money, its own debts, its own records. Your home rent is not its expense. When you take its cash for yourself, that is drawings — a withdrawal by the owner, not a cost of trading. Mix the two and you will never know if this shop truly makes money, or if it is just your handbag with a signboard." Amaka corrected the entry, and from that day the till and her purse became two different countries.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>The <strong>business entity concept</strong>: for accounting purposes, the business is a separate person from its owner. Its books record only <em>its</em> transactions. The owner appears in them at exactly two doors: putting resources in (capital) and taking resources out (drawings).</p>
+  <p>Legally, a sole trader and her business may be one person. In the books, never.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — The Home Rent Correction</h3>
+  <p>Amaka paid her personal home rent of ₦55,000 from the shop till and recorded it as a business expense. The correction:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Account</th><th>Dr (₦)</th><th>Cr (₦)</th></tr></thead>
+    <tbody>
+      <tr><td>Drawings</td><td>55,000</td><td></td></tr>
+      <tr><td>Rent expense (reversal)</td><td></td><td>55,000</td></tr>
+      <tr><td colspan="3" style="font-size:0.8rem;color:var(--muted);font-style:italic;">Being: owner's personal rent wrongly recorded as business expense, now reclassified as drawings.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Why fight over ₦55,000? Because with it inside expenses, February's profit is understated by ₦55,000 — and every decision made from that profit figure (pricing, restocking, borrowing) inherits the lie. Entity discipline is what keeps profit meaning <em>the business's performance</em>, not the owner's lifestyle.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>The till and the purse are two different countries. Owner money in = capital. Owner money out = drawings. Everything else in the books must belong to the business alone.</p>
+</div>`,
       quiz:{q:'Under the business entity concept, which of these would be recorded in the business\'s accounts?', opts:['The owner\'s personal school fees for her children', 'The owner investing ₦200,000 of her own money into the business', 'The owner\'s personal grocery shopping', 'The owner\'s personal car loan, unrelated to the business'], ans:1, exp:'The business entity concept keeps the owner\'s personal affairs separate from the business — except where money specifically moves between the two, such as capital introduced or drawings taken.'}
     },
-    {id:17, term:'Capital', duration:'4 min', pips:1,
+    {id:17, term:'Capital', duration:'5 min', pips:2,
       definition:`The total value of resources that the owner has invested in and left in the business. It represents the owner's stake and increases with profit and new investment, and decreases with losses and drawings.`,
       scenario:`Three months in, Amaka's mother visited the shop for the first time. She looked at the full shelves and asked, half joking, "So how much of this is my money?" — she had lent Amaka ₦200,000 at the start. That night Amaka asked Aunty Florence how to even answer that. "Your mother's loan is a liability — the business owes it back. Capital is different. Capital is what YOU put in and left in: your savings that opened this shop, plus every naira of profit you have made and not withdrawn." She sketched it: opening capital ₦950,000, add the profits of three months, subtract the drawings Amaka had taken. "Capital is a living number. It grows when the business earns and you leave the earnings inside; it shrinks when you make losses or take money out. It is the truest measure of your stake — not what is on the shelves, but what would be yours if everything were settled today." Amaka worked out the new figure and smiled. Her stake had grown since that first Monday morning.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Capital</strong> is the owner's stake — the total resources the owner has invested in and left inside the business. It is a living figure: it grows with new investment and with profits retained, and shrinks with losses and drawings.</p>
+  <div class="lesson-equation">Closing capital = Opening capital + Profit − Drawings (+ any new capital introduced)</div>
+  <p>A loan — even from your mother — is never capital. It is a liability, because the business must pay it back regardless of how trading goes. Capital carries the risk; liabilities carry a repayment date.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's Capital After Three Months</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Movement</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Opening capital (Day 1)</td><td>950,000</td></tr>
+      <tr><td>Add: profits for Jan–Mar</td><td>287,000</td></tr>
+      <tr><td>Less: drawings taken</td><td>(60,000)</td></tr>
+      <tr class="table-total"><td><strong>Capital at end of March</strong></td><td><strong>1,177,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>Her mother's ₦200,000 loan appears nowhere in this table — it sits among the liabilities, patiently waiting to be repaid. The ₦1,177,000 is what genuinely belongs to Amaka: the answer to "how much of this is yours?"</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Capital is not a pile of cash — it is a claim, the owner's residual claim on everything after liabilities. It changes only four ways: profit up, loss down, drawings down, new investment up.</p>
+</div>`,
       quiz:{q:'An owner starts a business with ₦400,000 capital. The business makes ₦120,000 profit and the owner withdraws ₦30,000. What is the capital now?', opts:['₦400,000', '₦490,000', '₦550,000', '₦120,000'], ans:1, exp:'₦400,000 + ₦120,000 profit − ₦30,000 drawings = ₦490,000. Capital grows with profit and new investment, and shrinks with losses and drawings.'}
     },
-    {id:18, term:'Capital Expenditure', duration:'4 min', pips:1,
+    {id:18, term:'Capital Expenditure', duration:'5 min', pips:2,
       definition:`Money spent on acquiring or improving long-life assets that will be used in the business over multiple periods, such as buildings, machinery or vehicles.`,
       scenario:`Business was steady enough that Amaka decided to invest: a POS machine for card payments and proper wall shelving to display more stock. The same week she also bought airtime for the shop phone and fuel for the generator. When she sat to record it all, she nearly wrote everything in one place — money out is money out, she reasoned. Aunty Florence caught it in time. "Two very different kinds of spending are hiding in that list," she said. "The POS machine and the shelving will serve you for years — that is capital expenditure. You are not consuming that money; you are converting it into long-term assets. But the airtime and fuel? Used up within days. That is revenue expenditure — the running costs of the period." She drew a line down the page. "Confuse them and your accounts lie twice: expense the shelving and this month looks terribly poor; treat fuel as an asset and the business looks richer than it is. Ask of every payment: will its benefit outlive this period? That question sorts them every time."`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Capital expenditure</strong> buys long-life assets that will serve the business across multiple periods — machinery, vehicles, shelving, buildings. <strong>Revenue expenditure</strong> pays the running costs consumed within the period — fuel, airtime, rent, wages.</p>
+  <p>The sorting question: <em>will the benefit of this payment outlive the current period?</em> Yes → capital expenditure → asset on the balance sheet. No → revenue expenditure → expense in the profit and loss account.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Sorting One Week's Payments</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Payment</th><th>₦</th><th>Treatment</th></tr></thead>
+    <tbody>
+      <tr><td>POS machine</td><td>85,000</td><td>Capital — fixed asset</td></tr>
+      <tr><td>Wall shelving</td><td>120,000</td><td>Capital — fixed asset</td></tr>
+      <tr><td>Shop airtime</td><td>5,000</td><td>Revenue — expense</td></tr>
+      <tr><td>Generator fuel</td><td>18,000</td><td>Revenue — expense</td></tr>
+    </tbody>
+  </table></div>
+  <p>Get it wrong in either direction and the accounts lie twice. Expense the ₦120,000 shelving and this month's profit collapses unfairly while the balance sheet forgets an asset it owns. Capitalise the fuel and profit is flattered while the balance sheet carries an "asset" that burned away weeks ago.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>One question sorts every payment: <strong>does the benefit outlive the period?</strong> Long life → balance sheet. Used up → profit and loss. Repairs that merely maintain an asset are revenue; improvements that extend its life or capacity are capital.</p>
+</div>`,
       quiz:{q:'Which of the following is an example of capital expenditure?', opts:['Buying petrol for a delivery motorcycle', 'Buying the delivery motorcycle itself', 'Paying for monthly electricity', 'Paying staff wages for the week'], ans:1, exp:'Buying the motorcycle is capital expenditure — it\'s a long-life asset that will be used over many future periods, unlike petrol, electricity or wages, which are used up immediately.'}
     },
-    {id:19, term:'Carriage Inwards', duration:'4 min', pips:1,
+    {id:19, term:'Carriage Inwards', duration:'5 min', pips:2,
       definition:`The cost of transporting goods purchased into the business. Because it forms part of the real cost of obtaining stock for resale, it is added to purchases when calculating the cost of goods sold.`,
       scenario:`Amaka's restock trips to Computer Village were becoming routine: choose the phones, pay the supplier, then pay a driver ₦8,000 to bring the cartons safely across Lagos to Ikeja. One evening, totalling her purchases for the month, she left the transport out — it felt like a side cost, not part of the goods. Aunty Florence disagreed the moment she saw it. "Could you sell those phones if they were still sitting in Computer Village?" she asked. "Of course not." "Then the ₦8,000 that brought them to your shelf is part of what those phones truly cost you. We call it carriage inwards — the transport cost of goods coming IN to the business — and it is added to your purchases when you calculate the cost of what you sold. A phone that cost ₦90,000 plus its share of delivery did not cost ₦90,000. Price your goods off the naked invoice and you will quietly eat the transport out of your own profit." Amaka added the ₦8,000 to purchases, and her margins told the truth again.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Carriage inwards</strong> is the cost of transporting purchased goods <em>into</em> the business. Because the goods cannot be sold from the supplier's warehouse, the cost of bringing them to your shelf is part of their true cost — so carriage inwards is <strong>added to purchases</strong> when computing the cost of goods sold.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — The True Cost of a Consignment</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Item</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>10 phones from Computer Village (invoice)</td><td>900,000</td></tr>
+      <tr><td>Carriage inwards (van across Lagos)</td><td>8,000</td></tr>
+      <tr class="table-total"><td><strong>True cost of consignment</strong></td><td><strong>908,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>Per phone, the real cost is ₦90,800 — not ₦90,000. On one consignment ₦800 per phone feels trivial; across a year of consignments it is a silent hole in the margin. If Amaka prices from the naked invoice, the transport is paid out of her own profit without her ever seeing it happen.</p>
+  <p>In the trading account, carriage inwards sits with purchases inside the cost of goods sold — never among the general expenses below.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p><strong>Inwards = in with the cost of goods.</strong> The freight that brings stock to you is part of what the stock cost. Price and value your goods on the landed cost, not the ticket price.</p>
+</div>`,
       quiz:{q:'Why is carriage inwards added to purchases rather than treated as a general expense?', opts:['Because it\'s a one-off cost', 'Because it forms part of the real cost of obtaining stock for resale', 'Because suppliers require it to be recorded that way', 'Because it relates to selling goods, not buying them'], ans:1, exp:'Carriage inwards is part of the genuine cost of getting stock into the business ready for resale, so it\'s added to purchases — distinct from carriage outwards, which relates to delivering goods to customers.'}
     },
-    {id:20, term:'Carriage Outwards', duration:'4 min', pips:1,
+    {id:20, term:'Carriage Outwards', duration:'5 min', pips:2,
       definition:`The cost of delivering goods sold out to customers. It is treated as a general expense in the profit and loss section of the financial statements, not as part of the cost of goods sold.`,
       scenario:`A customer in Surulere ordered two phones and asked for delivery. Amaka paid a dispatch rider ₦3,500 to take the package across the bridge. Remembering the carriage inwards lesson, she confidently added the ₦3,500 to her cost of goods — transport is transport, she thought. Aunty Florence smiled when she saw it. "Close — but look at the direction of travel. Carriage inwards brings goods TO you; it is part of getting stock ready for sale, so it joins the cost of goods. But this rider carried goods AWAY from you, to a customer, AFTER the sale was already made. That is carriage outwards — a selling and distribution expense. It belongs with your other operating expenses, down in the profit and loss section, not inside the cost of the goods." She tapped the page. "Same okada, opposite meaning. Inwards fattens the cost of your stock; outwards is simply a cost of serving your customer. The direction decides the treatment." Amaka moved the ₦3,500 down the page to where it belonged.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Carriage outwards</strong> is the cost of delivering sold goods <em>out</em> to customers. The sale has already happened; this cost is part of serving the customer, not part of obtaining the goods. It is therefore a <strong>selling and distribution expense</strong> in the profit and loss section — never part of the cost of goods sold.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Two Riders, Two Treatments</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Transport cost</th><th>Direction</th><th>Treatment</th></tr></thead>
+    <tbody>
+      <tr><td>₦8,000 van from Computer Village</td><td>Goods coming IN</td><td>Carriage inwards → added to purchases</td></tr>
+      <tr><td>₦3,500 dispatch to Surulere customer</td><td>Goods going OUT</td><td>Carriage outwards → expense in P&amp;L</td></tr>
+    </tbody>
+  </table></div>
+  <p>Why does the split matter? Gross profit is meant to measure the pure trading margin — sales against what the goods cost to obtain and make ready. Delivery to a customer happens <em>after</em> that margin is earned. Push carriage outwards into cost of goods sold and your gross margin looks weaker than your trading really is; the diagnosis of any problem then starts in the wrong place.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Same okada, opposite meaning: <strong>inwards fattens the cost of goods; outwards is an operating expense.</strong> Follow the direction of the goods, and the treatment follows automatically.</p>
+</div>`,
       quiz:{q:'How is carriage outwards treated in the financial statements?', opts:['Added to purchases, like carriage inwards', 'Treated as a general expense in the profit and loss section', 'Deducted from sales revenue directly', 'Ignored, since it\'s the customer\'s responsibility'], ans:1, exp:'Unlike carriage inwards, carriage outwards relates to delivering goods already sold — it\'s a selling expense in the profit and loss section, not part of the cost of goods sold.'}
     },
-    {id:21, term:'Cost of Goods Sold', duration:'4 min', pips:1,
+    {id:21, term:'Cost of Goods Sold', duration:'5 min', pips:2,
       definition:`The cost of the stock that was actually sold during a period, calculated as opening stock plus purchases (adjusted for carriage inwards and returns) minus closing stock.`,
       scenario:`At the end of February, Amaka wanted to know what the goods she had actually sold that month had cost her. Her first instinct was simple: just use the month's purchases. Aunty Florence pulled up a stool. "Purchases alone will deceive you. Think — you started February with goods already on the shelf, and you ended it with goods still unsold. The formula respects both." She wrote it out: Opening stock, plus purchases, minus closing stock. They filled in the numbers together: ₦640,000 of stock at the start, ₦900,000 bought during the month (carriage inwards included), ₦710,000 still on the shelves at the count. "So the goods that actually left this shop in February cost you ₦830,000. Not what you bought — what you SOLD. Stock you still hold is not a cost yet; it is an asset waiting its turn." Amaka checked the arithmetic twice. Matched against her sales, the figure told her — for the first time precisely — what February's trading had really earned.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Cost of goods sold (COGS)</strong> is the cost of the stock that actually left the business through sales during the period — not what was bought, and not what remains.</p>
+  <div class="lesson-equation">COGS = Opening stock + Purchases (incl. carriage inwards, less returns outwards) − Closing stock</div>
+  <p>The logic: everything available for sale either sold or is still on the shelf. Subtract what remains from what was available, and what sold is revealed.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's February COGS</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Component</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Opening stock (1 Feb)</td><td>640,000</td></tr>
+      <tr><td>Add: Purchases (carriage inwards included)</td><td>900,000</td></tr>
+      <tr><td>Goods available for sale</td><td>1,540,000</td></tr>
+      <tr><td>Less: Closing stock (28 Feb count)</td><td>(710,000)</td></tr>
+      <tr class="table-total"><td><strong>Cost of goods sold</strong></td><td><strong>830,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>Set against February's sales, this ₦830,000 is the figure that reveals the month's true gross profit. Notice how the stock counts guard both ends: a wrong opening or closing count flows straight into a wrong profit.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Purchases measures what you <em>bought</em>; COGS measures what you <em>sold</em>. Stock still on the shelf is not a cost yet — it is an asset waiting its turn. The formula, once memorised, never leaves you.</p>
+</div>`,
       quiz:{q:'Opening stock is ₦60,000, purchases during the period are ₦250,000, and closing stock is ₦40,000. What is the cost of goods sold?', opts:['₦310,000', '₦270,000', '₦230,000', '₦350,000'], ans:1, exp:'Cost of goods sold = Opening stock + Purchases − Closing stock = ₦60,000 + ₦250,000 − ₦40,000 = ₦270,000.'}
     },
-    {id:22, term:'Credit', duration:'4 min', pips:1,
+    {id:22, term:'Credit', duration:'5 min', pips:2,
       definition:`The right-hand side of an account in the double entry system. Credits increase liabilities, capital and revenue, and decrease assets and expenses.`,
       scenario:`Chidi, Amaka's young cousin, had started helping in the shop on weekends, and the debits and credits confused him endlessly. "Why is money coming in a debit? Credit sounds like the good one," he complained, after recording a sale backwards for the second time. Aunty Florence overheard and came to his rescue. "Forget good and bad. Credit simply means the right-hand side of an account. That is all it is — an address, not a judgement." She listed what lives comfortably on that side: "Credits increase liabilities, capital and income — and they decrease assets and expenses. When Amaka makes a sale, the Sales account is credited because income is growing. When she pays cash out, Cash is credited because that asset is shrinking." She had Chidi say it back until it stuck. "Every entry in this book has an address: left or right, debit or credit. Learn the addresses and the whole system opens up. Guess at them and every page becomes a fight." Chidi corrected his entry — right side, this time on purpose.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Credit</strong> is the right-hand side of an account. Nothing more mystical than an address. Credits <strong>increase</strong> liabilities, capital and income — and <strong>decrease</strong> assets and expenses.</p>
+  <p>The confusion Chidi felt is universal: in everyday speech "credit" sounds like a gift. In the books it is simply a direction. The bank's habit of saying your account is "credited" when money arrives comes from <em>their</em> books, where your deposit is <em>their</em> liability — credited, correctly, on their right-hand side.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Where Credits Land</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Transaction</th><th>What is credited</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Cash sale ₦30,000</td><td>Sales</td><td>Income increasing</td></tr>
+      <tr><td>Pay rent ₦45,000 cash</td><td>Cash</td><td>Asset decreasing</td></tr>
+      <tr><td>Buy stock on credit from Big Sam</td><td>Big Sam (creditor)</td><td>Liability increasing</td></tr>
+      <tr><td>Owner introduces ₦100,000</td><td>Capital</td><td>Capital increasing</td></tr>
+    </tbody>
+  </table></div>
+  <p>Read the pattern: whenever value flows <em>out of</em> an account, or an obligation or earning grows, the credit side records it.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Credit = right side. Up for liabilities, capital and income; down for assets and expenses. Learn it as an address, not a judgement, and half of bookkeeping's fog lifts immediately.</p>
+</div>`,
       quiz:{q:'Which of these does a credit entry typically increase?', opts:['Assets', 'Expenses', 'Revenue', 'Drawings'], ans:2, exp:'Credits increase liabilities, capital and revenue. Assets, expenses and drawings are increased by debits, not credits.'}
     },
-    {id:23, term:'Creditor', duration:'4 min', pips:1,
+    {id:23, term:'Creditor', duration:'5 min', pips:2,
       definition:`A person or business to whom money is owed, usually because goods or services have been supplied on credit and not yet paid for.`,
       scenario:`Sixty days had passed quickly, and one morning Mrs. Adeyemi, the furniture supplier, appeared at the shop door with her invoice book: the display cabinet's ₦150,000 was due. Amaka paid — she had planned for it — but afterwards asked Aunty Florence what exactly Mrs. Adeyemi had been to the business all this time. "A creditor," said Aunty Florence. "Someone the business owes. From the day she delivered that cabinet on credit until the moment you paid, she held a claim against Amaka Phones. Her name sat in your books as a liability." She sipped her tea. "Understand this relationship well, because credit is the bloodstream of trade on this street. Your suppliers become your creditors when they trust you with goods before money; you become a creditor to anyone you supply on trust. The books must always know exactly who is owed what, and when it falls due — because a forgotten creditor arriving on a bad cash day can wound a healthy business." Amaka ruled off Mrs. Adeyemi's account with a small feeling of ceremony: paid in full, on time.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>A <strong>creditor</strong> is a person or business the business owes — usually a supplier who delivered goods or services on credit. From delivery until payment, the creditor holds a claim against the business, recorded as a liability.</p>
+  <p>Each creditor gets their own account, tracking what was supplied, what has been paid, and the balance outstanding — with the due date never far from view.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Mrs. Adeyemi's Account, Full Life Cycle</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Date</th><th>Details</th><th>Dr (₦)</th><th>Cr (₦)</th></tr></thead>
+    <tbody>
+      <tr><td>Day 1</td><td>Display cabinet supplied (60-day terms)</td><td></td><td>150,000</td></tr>
+      <tr><td>Day 60</td><td>Cash paid in full</td><td>150,000</td><td></td></tr>
+      <tr class="table-total"><td></td><td><strong>Balance</strong></td><td colspan="2" style="text-align:center;"><strong>nil — account settled</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>For sixty days that ₦150,000 credit balance sat on Amaka's balance sheet as a current liability. The debit on payment day closed it. A business that keeps accounts like this always knows, at a glance, exactly who is owed what and when — and is never ambushed by a supplier at the door on a thin cash day.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Creditor = someone the business owes; the mirror of a debtor. Credit balances in supplier accounts are liabilities with dates attached — track the date as carefully as the amount.</p>
+</div>`,
       quiz:{q:'What is a creditor?', opts:['Someone who owes the business money', 'Someone the business owes money to', 'An asset of the business', 'A type of expense'], ans:1, exp:'A creditor is someone the business owes money to — the opposite of a debtor, who owes money to the business.'}
     },
-    {id:24, term:'Current Assets', duration:'4 min', pips:1,
+    {id:24, term:'Current Assets', duration:'5 min', pips:2,
       definition:`Assets that are cash, or are expected to be turned into cash or used up within twelve months, such as stock, debtors, cash at bank and cash in hand. Listed in order of increasing liquidity.`,
       scenario:`Preparing her February balance sheet, Amaka listed her short-lived possessions in whatever order they came to mind: cash, then stock, then Tunde's debt, then the bank balance. Aunty Florence rearranged them with a pencil. "These are your current assets — things that are cash already, or will become cash within the year: your stock, your debtors, your bank balance, your cash in hand. But we list them in a particular order: least liquid first, most liquid last. Stock, then debtors, then bank, then cash." Amaka asked why the ceremony. "Because the order tells a story of distance from cash. Stock must first be sold to become a debt owed to you; the debtor must then pay before it becomes money. Anyone reading your balance sheet sees at a glance how quickly your short-term wealth can turn into spendable cash. A business can look rich in current assets and still be unable to pay tomorrow's bill if everything is trapped in slow-moving stock." Amaka rewrote the list in marching order, stock at the top, cash bringing up the rear.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Current assets</strong> are cash, or assets expected to become cash or be used up within twelve months: stock, debtors, bank, cash in hand, prepayments. On the balance sheet they are listed in order of <strong>increasing liquidity</strong> — furthest from cash first, cash itself last.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Amaka's List, In Marching Order</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Current asset</th><th>₦</th><th>Distance from cash</th></tr></thead>
+    <tbody>
+      <tr><td>Stock</td><td>710,000</td><td>Must be sold, then collected</td></tr>
+      <tr><td>Debtors (incl. Tunde)</td><td>95,000</td><td>Must be collected</td></tr>
+      <tr><td>Prepaid rent</td><td>50,000</td><td>Consumed, not converted</td></tr>
+      <tr><td>Bank</td><td>210,000</td><td>Withdrawal away</td></tr>
+      <tr><td>Cash in hand</td><td>38,000</td><td>Already cash</td></tr>
+      <tr class="table-total"><td><strong>Total current assets</strong></td><td><strong>1,103,000</strong></td><td></td></tr>
+    </tbody>
+  </table></div>
+  <p>The order is information. A reader sees instantly how much of the short-term wealth is spendable now versus trapped in stock that must first find a buyer. Two businesses with identical totals can have very different survival prospects depending on where in this ladder their money sits.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Current = within twelve months. List least liquid first. And remember the pairing rule from the street: current assets are only meaningful when read against the current liabilities marching toward them.</p>
+</div>`,
       quiz:{q:'Which of the following is a current asset?', opts:['A delivery motorcycle expected to last 5 years', 'Stock held for resale', 'The kiosk building itself', 'A 10-year business loan'], ans:1, exp:'Stock held for resale is a current asset — expected to be sold and turned into cash within the next twelve months, unlike long-term assets such as a motorcycle or building.'}
     },
-    {id:25, term:'Current Liabilities', duration:'4 min', pips:1,
+    {id:25, term:'Current Liabilities', duration:'5 min', pips:2,
       definition:`Amounts owed by a business that must be paid within twelve months of the balance sheet date, such as creditors for goods and short-term loans or overdrafts.`,
       scenario:`Alongside the assets, Amaka listed what the business owed: a new balance with Big Sam Distributions for phones taken on 30-day credit, and a small amount outstanding on the POS machine. Aunty Florence looked over the list. "All of these fall due within the year — that makes them current liabilities. The near-term claims on your cash." She set the list beside the current assets from the same balance sheet. "These two lists must always be read together. Your current liabilities are the bills marching toward you; your current assets are the resources you have to meet them. If what you owe soon is larger than what you can turn to cash soon, even a profitable shop can suffocate — profit on paper does not pay a supplier standing at the door." She told Amaka about a thriving boutique that died exactly that way, rich in stock and drowning in due bills. "Watch this pairing every month. It is the pulse of your survival." Amaka circled both totals and, from then on, checked them against each other before anything else.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Current liabilities</strong> are amounts the business must pay within twelve months of the balance sheet date: trade creditors, short-term loans, overdrafts, accrued expenses. They are the near-term claims on the business's cash.</p>
+  <p>Their significance is relational: they must always be read against the current assets available to meet them. That comparison — not profit — is what decides whether the next few months are comfortable or desperate.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — The Pairing That Predicts Survival</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Current liabilities</th><th>₦</th></tr></thead>
+    <tbody>
+      <tr><td>Big Sam Distributions (30-day account)</td><td>320,000</td></tr>
+      <tr><td>POS machine balance due this year</td><td>45,000</td></tr>
+      <tr class="table-total"><td><strong>Total current liabilities</strong></td><td><strong>365,000</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>Against current assets of ₦1,103,000, Amaka's near-term claims are comfortably covered roughly three times over. Aunty Florence's boutique story shows the failure mode: plenty of stock (current asset), bills due now (current liabilities), and no bridge between them — profitable on paper, dead at the door.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Every liability has a date. Within twelve months = current. Check the pairing monthly: what marches toward you soon versus what you can turn to cash soon. Profit is the verdict on the past; this pairing is the forecast of the next ninety days.</p>
+</div>`,
       quiz:{q:'Which of these is a current liability?', opts:['A loan to be repaid over 10 years', 'An amount owed to a supplier, due next month', 'The owner\'s capital', 'A delivery van owned by the business'], ans:1, exp:'An amount owed to a supplier due within the next twelve months is a current liability. A 10-year loan is a long-term liability, not a current one.'}
     },
-    {id:26, term:'Debit', duration:'4 min', pips:1,
+    {id:26, term:'Debit', duration:'5 min', pips:2,
       definition:`The left-hand side of an account in the double entry system. Debits increase assets and expenses, and decrease liabilities, capital and revenue.`,
       scenario:`Chidi had finally made peace with credits when debits ambushed him from the other side. He recorded a purchase of stock as a credit to the Stock account and stared at it, sensing something wrong but unsure what. Aunty Florence took the pen. "Debit is the left-hand side of an account — the mirror twin of credit. Debits increase assets and expenses, and decrease liabilities, capital and income." She pointed at the entry. "Stock is an asset, and it grew today. Growth for an asset means the left side — a debit." She showed him the mnemonic she had used for forty years, drawing the two-column T shape in the air. "Left hand: what the business receives, what grows in its possession, what it spends. Right hand: what it gives, what it owes, what it earns. Every transaction touches both hands at once — one debit, one credit, always equal. Master which hand is which and you can record anything that ever happens on this street." Chidi rewrote the entry on the left, where it had belonged all along.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Debit</strong> is the left-hand side of an account — the mirror twin of credit. Debits <strong>increase</strong> assets and expenses, and <strong>decrease</strong> liabilities, capital and income.</p>
+  <p>Together the two sides form the complete grammar of bookkeeping: every transaction speaks once on the left and once on the right, in equal amounts.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Where Debits Land</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Transaction</th><th>What is debited</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Buy stock ₦50,000 cash</td><td>Stock (Purchases)</td><td>Asset/expense increasing</td></tr>
+      <tr><td>Cash sale ₦30,000</td><td>Cash</td><td>Asset increasing</td></tr>
+      <tr><td>Pay Big Sam ₦100,000</td><td>Big Sam (creditor)</td><td>Liability decreasing</td></tr>
+      <tr><td>Pay electricity ₦12,000</td><td>Electricity expense</td><td>Expense increasing</td></tr>
+    </tbody>
+  </table></div>
+  <p>Chidi's error — crediting Stock when it grew — reads instantly against this table. Stock is an asset; growth for an asset is a left-hand event. Aunty Florence's forty-year mnemonic: the left hand records what the business <em>receives and spends</em>; the right hand records what it <em>gives, owes and earns</em>.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Debit = left. Up for assets and expenses; down for liabilities, capital and income. Every entry has an address — learn the addresses and you can record anything that ever happens on the street.</p>
+</div>`,
       quiz:{q:'What effect does a debit entry have on an expense account?', opts:['Decreases it', 'Increases it', 'Has no effect', 'Converts it into a liability'], ans:1, exp:'Debits increase expense accounts, along with assets, and decrease liabilities, capital and revenue.'}
     },
-    {id:27, term:'Debtor', duration:'4 min', pips:1,
+    {id:27, term:'Debtor', duration:'5 min', pips:2,
       definition:`A person or business that owes money to the business, usually because they have bought goods or services on credit and not yet paid for them.`,
       scenario:`Tunde came back in March — this time for a phone for his sister, and once again short of the full amount. "You know I am good for it," he grinned. Amaka did know; he had cleared his last balance to the naira. She released the phone and opened a fresh page in her ledger with his name at the top. That evening Aunty Florence nodded at the page approvingly. "Tunde is now your debtor again — someone who owes the business money. His ₦60,000 balance is your asset: not cash yet, but a legal claim to cash." Then her voice turned serious. "But hear me: a debtor is only as good as his willingness and ability to pay. Keep every debtor's account ruled and current — what was taken, what was paid, what remains. Chase gently but chase early. A debt left sleeping too long has a way of dying quietly." She tapped Tunde's page. "Trust built his account. Records will keep it honest — for both of you." Amaka dated the entry and set a reminder for thirty days.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p>A <strong>debtor</strong> is a person or business that owes the business money — usually a customer who bought on credit. A debtor's balance is an <strong>asset</strong>: not cash yet, but a claim to cash.</p>
+  <p>Each debtor gets a personal account showing goods taken, payments made, and the balance outstanding. The quality of a debtor book is measured in two things: accuracy and age.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — Tunde's Account in March</h3>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Date</th><th>Details</th><th>Dr (₦)</th><th>Cr (₦)</th></tr></thead>
+    <tbody>
+      <tr><td>3 Mar</td><td>Phone for his sister (on account)</td><td>60,000</td><td></td></tr>
+      <tr><td>18 Mar</td><td>Cash received</td><td></td><td>35,000</td></tr>
+      <tr class="table-total"><td></td><td><strong>Balance owing</strong></td><td colspan="2" style="text-align:center;"><strong>25,000 Dr</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>The debit balance of ₦25,000 sits among Amaka's current assets. Aunty Florence's warning belongs in the concept itself: a debtor is only as good as his willingness and ability to pay. Rule the account current, chase gently but early, and diarise the follow-up — because a debt left sleeping too long has a way of dying quietly. (What happens when one dies is a later lesson: bad debts.)</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Debtor = owes the business = asset. Mirror of a creditor. Trust builds the account; records keep it honest — for both sides.</p>
+</div>`,
       quiz:{q:'What is a debtor?', opts:['Someone the business owes money to', 'Someone who owes the business money', 'A type of liability', 'An item of stock'], ans:1, exp:'A debtor owes money to the business — the opposite of a creditor, to whom the business owes money.'}
     },
-    {id:28, term:'Double Entry Bookkeeping', duration:'4 min', pips:1,
+    {id:28, term:'Double Entry Bookkeeping', duration:'5 min', pips:2,
       definition:`The system of recording every transaction twice — once as a debit in one account and once as an equal credit in another account — so that the accounting equation always remains in balance.`,
       scenario:`One busy Saturday, the books refused to balance by exactly ₦25,000, and Amaka and Chidi hunted the error for an hour. They found it: Chidi had recorded a ₦25,000 accessory sale by increasing Cash — and stopped there, forgetting to credit Sales. Half a transaction. Aunty Florence used the moment for the deepest lesson yet. "This is why double entry exists. Every transaction, without exception, is recorded twice — a debit in one account, an equal credit in another. Not because accountants love work, but because every real event has two faces: something is received, something is given. Cash came in; a sale was made. Record only one face and the books tear at the seam — exactly where yours tore today." She had Chidi complete the missing credit and watched the totals click back into agreement. "The beauty of the system is that it polices itself. Errors like this cannot hide; the imbalance shouts. A single-entry book stays silent while it lies to you." The ₦25,000 gap closed, and Chidi never forgot a second entry again.`,
       votes:{up:0, down:0},
+      content:`<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Concept</h3>
+  <p><strong>Double entry bookkeeping</strong>: every transaction is recorded twice — a debit in one account and an equal credit in another — so total debits always equal total credits, and the accounting equation never breaks.</p>
+  <p>This is not administrative ritual. Every real event has two faces — something received, something given — and the system simply refuses to record one face without the other.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">Worked Example — The ₦25,000 That Would Not Hide</h3>
+  <p>Chidi recorded an accessory sale like this:</p>
+  <div class="lesson-table-wrap"><table class="lesson-table">
+    <thead><tr><th>Account</th><th>Dr (₦)</th><th>Cr (₦)</th></tr></thead>
+    <tbody>
+      <tr><td>Cash</td><td>25,000</td><td></td></tr>
+      <tr><td style="color:var(--muted);font-style:italic;">Sales — forgotten</td><td></td><td style="color:var(--muted);font-style:italic;">missing</td></tr>
+    </tbody>
+  </table></div>
+  <p>Half a transaction. The books tore at exactly that seam: total debits exceeded total credits by ₦25,000, and the imbalance shouted until it was found. The completed entry — Credit Sales ₦25,000 — clicked the totals back into agreement.</p>
+  <p>That is the system's quiet genius: it polices itself. A single-entry notebook stays silent while it lies; double entry makes most errors announce themselves as imbalance.</p>
+</div>
+
+<div class="lesson-content-section">
+  <h3 class="lesson-content-heading">The Rule to Remember</h3>
+  <p>Every transaction, two entries, equal and opposite — no exceptions, ever. If your books do not balance, a face of some transaction is missing or doubled. The imbalance is not the problem; it is the alarm.</p>
+</div>`,
       quiz:{q:'Why does double entry bookkeeping require every transaction to be recorded twice?', opts:['To make bookkeeping take longer', 'So that the accounting equation always remains in balance', 'Because tax authorities require duplicate records', 'To allow two different people to record the same transaction'], ans:1, exp:'Recording both a debit and an equal credit for every transaction is what keeps the accounting equation in balance at all times — this is the core mechanism of double entry.'}
     },
     {id:29, term:'Drawings', duration:'4 min', pips:1,
