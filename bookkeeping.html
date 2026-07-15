@@ -231,6 +231,14 @@ body[data-theme="midnight"]{
 @media(max-width:700px){.dash-date-btn{font-size:0.56rem;padding:5px 8px;max-width:44vw;top:12px;right:12px;}}
 .jrn-ro input,.jrn-ro select,.jrn-ro textarea{opacity:0.7;pointer-events:none;}
 .coa-child-row{margin-left:26px;border-left:2px solid var(--gold-dim);}
+
+.bd-save-dots{display:inline-flex;gap:2px;align-items:center;justify-content:center;}
+.bd-save-dots span{width:3px;height:3px;border-radius:50%;background:currentColor;animation:bdSaveBlink 1s infinite ease-in-out;}
+.bd-save-dots span:nth-child(2){animation-delay:0.15s;}
+.bd-save-dots span:nth-child(3){animation-delay:0.3s;}
+@keyframes bdSaveBlink{0%,80%,100%{opacity:0.25;}40%{opacity:1;}}
+.bd-saving{opacity:0.85;cursor:wait !important;}
+.bd-saved{color:#4ade80 !important;border-color:#4ade80 !important;}
 .col-head{-webkit-user-select:none;user-select:none;}
 .col-head-hl{background:rgba(212,175,55,0.14) !important;}
 .col-tri{position:absolute;top:2px;right:3px;font-size:0.5rem;color:var(--gold);opacity:0;transition:opacity 0.15s;padding:3px;cursor:pointer;}
@@ -1192,8 +1200,8 @@ body{padding-top:0;}
     </div>
     <div class="bk-submenu" data-role="owner-manager" id="sub-records">
       <div class="bk-submenu-item" onclick="openJournal();closeBkMenu()">📒 Master Journal</div>
-      <div class="bk-submenu-item" onclick="showRecordSales();closeBkMenu()">🧾 Sales Day Book</div>
-      <div class="bk-submenu-item" onclick="showRecordExpenses();closeBkMenu()">📦 Purchases Day Book</div>
+      <div class="bk-submenu-item" onclick="showDayBook('salesday');closeBkMenu()">🧾 Sales Day Book</div>
+      <div class="bk-submenu-item" onclick="showDayBook('purchday');closeBkMenu()">📦 Purchases Day Book</div>
       <div class="bk-submenu-item" onclick="showDayBook('salesreturns');closeBkMenu()">↩ Sales Returns Day Book</div>
       <div class="bk-submenu-item" onclick="showDayBook('purchreturns');closeBkMenu()">↪ Purchases Returns Day Book</div>
       <div class="bk-submenu-item" onclick="showDayBook('cash');closeBkMenu()">💵 Cash Book</div>
@@ -3663,7 +3671,7 @@ function renderRows(displayRows) {
 
   // Opening balance row
   const _obHid = _ledHidden();
-  const _obSpan = 3 - ['payee','payer','narr'].filter(k=>_obHid[k]).length + _ledCustom().filter(c=>!_obHid[c.key]).length;
+  const _obNarrSpan = 1 + _ledCustom().filter(c=>!_obHid[c.key]).length;
   const obRow = `
     <tr class="ob-row" id="row_ob">
       ${ledSel.active?'<td></td>':''}
@@ -3671,7 +3679,9 @@ function renderRows(displayRows) {
       <td class="col-date"><input class="bk-cell" type="date" id="obDate"
         value="${activeAccount?.ob_date||''}"
         onchange="saveOpeningBalance(document.getElementById('obBalInput')?.value||'')"/></td>
-      <td colspan="${Math.max(1,_obSpan)}" style="padding:6px 10px;">
+      ${_obHid.payee?'':'<td></td>'}
+      ${_obHid.payer?'':'<td></td>'}
+      <td colspan="${Math.max(1,_obNarrSpan)}" style="padding:6px 10px;">
         <span style="font-size:0.76rem;font-weight:700;color:var(--gold);">Opening Balance</span>
       </td>
       <td class="col-dr" style="text-align:right;padding:4px 6px;color:var(--muted);">—</td>
@@ -3685,7 +3695,7 @@ function renderRows(displayRows) {
           onblur="saveOpeningBalance(this.value)"/>
       </td>
       <td><button class="del-btn" onclick="clearOpeningBalance()" title="Clear opening balance">✕</button></td>
-      <td><button class="save-row-btn" onclick="saveOpeningBalance(document.getElementById('obBalInput').value)" title="Save opening balance">›</button></td>
+      <td><button class="save-row-btn" onclick="bdSaveWrap(this,()=>saveOpeningBalance(document.getElementById('obBalInput').value))" title="Save opening balance">›</button></td>
     </tr>`;
 
   // Ensure exactly one trailing blank row, then render ALL rows with true indexes
@@ -3756,7 +3766,7 @@ function buildEditableRow(row, idx, sn) {
         value="${bal!==0?fmtNum(bal):''}" placeholder="0" style="padding-left:18px;"
         oninput="ledgerFmtInput(this,${idx},'balance');ledgerUpdateTotalBanner()"/></td>
     <td><button class="del-btn" onclick="deleteRow(${idx})" title="Delete row">✕</button></td>
-    <td><button class="save-row-btn" onclick="saveRow(${idx})" title="Save row">›</button></td>
+    <td><button class="save-row-btn" onclick="bdSaveWrap(this,()=>saveRow(${idx}))" title="Save row">›</button></td>
   </tr>`;
 }
 
@@ -4897,6 +4907,11 @@ async function jrnDateFill(dateStr) {
   renderJournal();
 }
 let jrnSelRows = [];
+function jrnToggleSelectHint() {
+  if (!jrnSelRows.length) bdToast('Tap any S/N cell to select a row — tap more to add to the selection.');
+  else { jrnSelRows = []; document.querySelectorAll('#journalTable .jrn-sn-hl').forEach(el=>el.classList.remove('jrn-sn-hl')); document.querySelectorAll('#journalTable .jrn-row-hl').forEach(el=>el.classList.remove('jrn-row-hl')); }
+}
+
 function jrnSnHighlight(idx) {
   const p = jrnSelRows.indexOf(idx);
   if (p>=0) jrnSelRows.splice(p,1); else jrnSelRows.push(idx);
@@ -4909,7 +4924,8 @@ function jrnSnHighlight(idx) {
   });
 }
 function jrnDeleteRowsFrom(idx) {
-  const targets = (jrnSelRows.length>1 && jrnSelRows.includes(idx)) ? jrnSelRows.slice() : [idx];
+  if (idx < 0 && !jrnSelRows.length) { bdToast('Select a row first', 'error'); return; }
+  const targets = (jrnSelRows.length>1 && jrnSelRows.includes(idx)) ? jrnSelRows.slice() : (idx<0 ? jrnSelRows.slice() : [idx]);
   if (!confirm('Delete '+targets.length+' row(s)?')) return;
   targets.sort((a,b)=>b-a).forEach(i=>{
     const r = journalRows[i];
@@ -5058,18 +5074,35 @@ function jrnInitRowDrag() {
   tbody.addEventListener('pointerdown', e=>{
     const sn = e.target.closest('.jrn-sn');
     if (!sn) return;
-    drag = { from: parseInt(sn.dataset.jidx), started:false, y:e.clientY };
+    const idx = parseInt(sn.dataset.jidx);
+    drag = { from: idx, started:false, y:e.clientY, mode: jrnSelRows.includes(idx) ? 'move' : 'select' };
   });
   tbody.addEventListener('pointermove', e=>{
     if (!drag) return;
-    if (!drag.started && Math.abs(e.clientY-drag.y)<8) return;
+    if (!drag.started && Math.abs(e.clientY-drag.y)<6) return;
     drag.started = true;
     e.preventDefault();
     const tr = document.elementFromPoint(e.clientX,e.clientY)?.closest('tr');
     const sn = tr?.querySelector('.jrn-sn');
     if (!sn) return;
     const to = parseInt(sn.dataset.jidx);
-    if (!isNaN(to) && to !== drag.from) {
+    if (isNaN(to)) return;
+
+    if (drag.mode === 'select') {
+      // Range-select: highlight every row between the start and current position
+      const lo = Math.min(drag.from, to), hi = Math.max(drag.from, to);
+      jrnSelRows = []; for (let k=lo;k<=hi;k++) jrnSelRows.push(k);
+      document.querySelectorAll('#journalTable tbody tr').forEach(row=>{
+        const s = row.querySelector('.jrn-sn'); if (!s) return;
+        const on = jrnSelRows.includes(parseInt(s.dataset.jidx));
+        row.classList.toggle('jrn-row-hl', on);
+        s.classList.toggle('jrn-sn-hl', on);
+      });
+      return;
+    }
+
+    // Move mode: drag the highlighted group any distance, up or down
+    if (to !== drag.from) {
       const group = (jrnSelRows.length>1 && jrnSelRows.includes(drag.from))
         ? jrnSelRows.slice().sort((a,b)=>a-b) : [drag.from];
       const moving = group.map(g=>journalRows[g]);
@@ -5080,6 +5113,7 @@ function jrnInitRowDrag() {
       jrnSelRows = moving.map((_,k)=>insertAt+k);
       drag.from = insertAt;
       renderJournal();
+      jrnInitRowDrag();
     }
   }, {passive:false});
   const end = ()=>{ drag=null; };
@@ -5118,6 +5152,8 @@ function openGeneralJournal() {
 async function showDayBook(kind) {
   staffHideChrome();
   const titles = {
+    salesday: ['Sales Day Book', 'All credit sales made by the business — each one also posted to the relevant debtor\'s ledger.'],
+    purchday: ['Purchases Day Book', 'All credit purchases of stock made by the business — each one also posted to the relevant trade creditor\'s ledger.'],
     salesreturns: ['Sales Returns Day Book', 'Goods returned by customers (Returns Inwards). Record returns in the Master Journal using a Returns Inwards account and they appear here.'],
     purchreturns: ['Purchases Returns Day Book', 'Goods you returned to suppliers (Returns Outwards). Record them in the Master Journal using a Returns Outwards account and they appear here.'],
     cash: ['Cash Book', 'Every movement of Cash in Hand and Cash at Bank, in date order.'],
@@ -5128,13 +5164,15 @@ async function showDayBook(kind) {
   let rows = [];
   try {
     let q = bkDb.from('bk_transactions')
-      .select('txn_date,narration,account_name,debit,credit,record_type,created_at');
+      .select('txn_date,narration,account_name,debit,credit,record_type,payment_mode,created_at');
     q = activeBusiness?.id
       ? q.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
       : q.eq('user_id', bkUser.id);
     const {data} = await q.order('txn_date',{ascending:true}).order('created_at',{ascending:true}).limit(500);
     const T = data||[];
-    if (kind==='salesreturns') rows = T.filter(t=>/return.*inward|sales return/i.test(t.account_name||''));
+    if (kind==='salesday') rows = T.filter(t=>t.record_type==='income' && (t.payment_mode||'')==='credit');
+    else if (kind==='purchday') rows = T.filter(t=>t.record_type==='expenditure' && (t.payment_mode||'')==='credit' && /purchase|stock|cost of (goods|sales)/i.test(t.account_name||''));
+    else if (kind==='salesreturns') rows = T.filter(t=>/return.*inward|sales return/i.test(t.account_name||''));
     else if (kind==='purchreturns') rows = T.filter(t=>/return.*outward|purchase return/i.test(t.account_name||''));
     else rows = T.filter(t=>/^cash (in hand|at bank)$/i.test((t.account_name||'').trim()));
   } catch(e){}
@@ -5167,7 +5205,7 @@ async function openJournal() {
   activeType=null; activeAccount=null;
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
-  document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading General Journal…</div>';
+  document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading Master Journal…</div>';
 
   // Direct postings (sales, expenses, ledgers) — the journal is the book of prime entry
   let _txLegs = [];
@@ -5235,7 +5273,9 @@ function renderJournal() {
       <select class="tb-select" onchange="jrnSetFont(this.value)">${['Nunito','EB Garamond','Lora','Arial','Oswald'].map(f=>`<option ${jrnTb.font===f?'selected':''}>${f}</option>`).join('')}</select>
       <button class="tb-icon ${jrnTb.wrap==='overflow'?'tb-active':''}" onclick="jrnSetWrap('overflow')">⇥</button>
       <button class="tb-icon ${jrnTb.wrap==='wrap'?'tb-active':''}" onclick="jrnSetWrap('wrap')">⤶</button>
-      <button class="tb-icon ${jrnTb.wrap==='clip'?'tb-active':''}" onclick="jrnSetWrap('clip')">✂</button>
+      <button class="tb-icon ${jrnTb.wrap==='clip'?'tb-active':''}" title="Clip" onclick="jrnSetWrap('clip')">✂</button>
+      <button class="tb-icon ${jrnSelRows.length?'tb-active':''}" title="Select rows" onclick="jrnToggleSelectHint()">☑ Select</button>
+      <button class="tb-icon" title="Delete selected rows" onclick="jrnDeleteRowsFrom(jrnSelRows[0]??-1)">🗑 Delete</button>
     </div>`:''}
 
     <div class="bk-sheet-wrap">
@@ -5346,7 +5386,7 @@ function renderJournalRows() {
         style="${(!balanced&&row.credit_amount>0)?'color:var(--red);':''}"
         oninput="jAmtInput(this,${idx},'credit_amount')"/></td>
       <td><button class="del-btn" onclick="deleteJournalRow(${idx})">✕</button></td>
-      <td><button class="save-row-btn" onclick="saveJournalRow(${idx})" title="Save & Post this row">›</button></td>
+      <td><button class="save-row-btn" onclick="bdSaveWrap(this,()=>saveJournalRow(${idx}))" title="Save & Post this row">›</button></td>
     </tr>${jrnSplitSubRow(row,idx)}`;
   }).join('');
 
@@ -7120,15 +7160,12 @@ async function saveJournalRow(i) {
   // Validate
   if (row.debit_amount !== row.credit_amount) {
     if (msg) { msg.textContent=`⚠ Row ${i+1}: Dr ≠ Cr`; msg.className='bk-save-msg err'; }
-    return;
+    throw new Error('Debit and credit must be equal on this row');
   }
   if (!row.debit_account_name || !row.credit_account_name) {
     if (msg) { msg.textContent='Select both debit and credit accounts'; msg.className='bk-save-msg err'; }
-    return;
+    throw new Error('Select both a debit and a credit account');
   }
-
-  const btn = document.querySelector(`#jrow_${i} .save-row-btn`);
-  if (btn) { btn.textContent='…'; }
 
   if (!row.id) {
     const { data, error } = await bkDb.from('bk_journal').insert({
@@ -7141,9 +7178,8 @@ async function saveJournalRow(i) {
     }).select().single();
 
     if (error) {
-      if (btn) btn.textContent='›';
       if (msg) { msg.textContent='Error: '+error.message; msg.className='bk-save-msg err'; }
-      return;
+      throw error;
     }
     journalRows[i].id = data.id;
     await postToLedgers(data.id, row);
@@ -7161,11 +7197,6 @@ async function saveJournalRow(i) {
 
   journalRows[i].saved = true;
   await refreshEquation();
-  if (btn) {
-    btn.textContent = '✓';
-    btn.style.color = 'var(--green)';
-    setTimeout(()=>{ btn.textContent='›'; btn.style.color=''; }, 1500);
-  }
   if (msg) { msg.textContent='✓ Posted'; msg.className='bk-save-msg ok'; }
 }
 
@@ -8154,6 +8185,43 @@ async function coaAddChild(parentId, type) {
   });
 }
 
+let coaSelMode = false;
+let coaSelected = [];
+function coaToggleSelectMode() {
+  coaSelMode = !coaSelMode;
+  coaSelected = [];
+  renderCOA();
+}
+function coaToggleSelect(acctId) {
+  const p = coaSelected.indexOf(acctId);
+  if (p>=0) coaSelected.splice(p,1); else coaSelected.push(acctId);
+  renderCOA();
+}
+function coaOpenMovePicker(ev) {
+  if (!coaSelected.length) { bdToast('Select one or more ledgers first', 'error'); return; }
+  const groupsFor = {
+    asset: ['Long-term assets (Fixed Assets)','Short-term assets (Current assets)'],
+    liability: ['Long-term liabilities','Short-term liabilities (Current liabilities)'],
+    expenditure: ['Cost of Sales / Production','Operating Expenses'],
+    income: ['Operating Income','Other Income'],
+    capital: ['Capital & Equity'],
+  };
+  const custom = (_coaGroups()[coaActiveType]||[]);
+  const options = (groupsFor[coaActiveType]||[]).concat(custom);
+  openColMenuPortal(ev, options.map(title=>[title, "coaMoveSelected('"+title.replace(/'/g,"\\'")+"')"]));
+}
+function coaMoveSelected(title) {
+  const m = _coaMemb();
+  coaSelected.forEach(id=>{
+    const a = (accounts[coaActiveType]||[]).find(x=>x.id===id);
+    if (a) m[a.account_name] = title;
+  });
+  localStorage.setItem('bd_coa_memb', JSON.stringify(m));
+  closeColMenu();
+  bdToast('\u2713 Moved to '+title);
+  coaSelMode = false; coaSelected = [];
+  renderCOA();
+}
 function renderCOA() {
   const types = ['capital','liability','asset','income','expenditure'];
   const active = coaActiveType;
@@ -8180,13 +8248,14 @@ function renderCOA() {
         </div>
         ${(()=>{
           const rowT = (a,i,child)=>`<div class="coa-account-row ${child?'coa-child-row':''}" style="cursor:pointer;"
-            onclick="coaOpenRecord('${a.id}','${active}')">
+            onclick="${coaSelMode?`event.stopPropagation();coaToggleSelect('${a.id}')`:`coaOpenRecord('${a.id}','${active}')`}">
+            ${coaSelMode?`<span class="op-circle ${coaSelected.includes(a.id)?'on':''}" style="margin-right:8px;flex-shrink:0;" onclick="event.stopPropagation();coaToggleSelect('${a.id}')"></span>`:''}
             <span class="coa-account-num">${child?'↳':base+i+1}</span>
             <input class="coa-account-name" style="background:none;border:none;outline:none;color:var(--off);font-size:0.83rem;font-family:inherit;flex:1;" value="${escH(a.account_name)}"
               onclick="event.stopPropagation()" id="coaName_${a.id}"/>
             <span class="coa-account-type">${active==='asset'||active==='expenditure'?'Dr normal':'Cr normal'}</span>
             <button class="staff-save-row-btn" style="color:var(--green);" onclick="event.stopPropagation();coaAddChild('${a.id}','${active}')" title="Add a sub-ledger under ${escH(a.account_name)}">+</button>
-            <button class="staff-save-row-btn" onclick="event.stopPropagation();coaSaveName('${a.id}')" title="Save name">&rsaquo;</button>
+            <button class="staff-save-row-btn" onclick="event.stopPropagation();bdSaveWrap(this,()=>coaSaveName('${a.id}'))" title="Save name">&rsaquo;</button>
             <button class="coa-del-btn" onclick="event.stopPropagation();coaDeleteAccount('${a.id}','${escH(a.account_name)}')" title="Delete">✕</button>
           </div>` + (accts.filter(c=>c.parent_id===a.id).map(c=>rowT(c,0,true)).join(''));
           const groupsFor = {
@@ -8197,9 +8266,14 @@ function renderCOA() {
             capital: [['Capital & Equity', ()=>true]],
           };
           const memb = _coaMemb();
+          const selBar = `<div style="display:flex;gap:8px;padding:10px 18px;background:var(--surface2);align-items:center;">
+            <button class="coa-add-btn" style="${coaSelMode?'border-color:var(--gold);color:var(--gold);':''}" onclick="coaToggleSelectMode()">☑ Select</button>
+            ${coaSelMode?`<button class="coa-add-btn" onclick="coaOpenMovePicker(event)">${coaSelected.length?'Move ('+coaSelected.length+') ›':'Move ›'}</button>
+            <span style="font-size:0.64rem;color:var(--muted);">Select ledgers, then Move to place them in a different sub-ledger.</span>`:''}
+          </div>`;
           const customs = (_coaGroups()[active]||[]).map(name=>[name, a=>memb[a.account_name]===name]);
           const groups = (groupsFor[active] || [['Accounts', ()=>true]]).concat(customs);
-          return groups.map(([title,test])=>{
+          return selBar + groups.map(([title,test])=>{
             const items = accts.map((a,i)=>({a,i})).filter(o=>!o.a.parent_id &&
               (memb[o.a.account_name] ? memb[o.a.account_name]===title : test(o.a)));
             const hdr = `<div class="coa-group-hdr" style="display:flex;align-items:center;gap:8px;">
@@ -8255,10 +8329,18 @@ async function coaAddAccount() {
 }
 
 async function coaDeleteAccount(id,name) {
-  if (!confirm(`Delete "${name}"? Transactions will remain.`)) return;
-  await bkDb.from('bk_accounts').delete().eq('id',id).eq('user_id',bkUser.id);
-  accounts[coaActiveType]=accounts[coaActiveType].filter(a=>a.id!==id);
-  buildDropdowns(); renderCOA();
+  if (!confirm(`Delete "${name}"? This also permanently deletes every transaction posted to it — in the ledger, the Master Journal, and every other book of prime entry. This cannot be undone.`)) return;
+  try {
+    await Promise.all([
+      bkDb.from('bk_transactions').delete().eq('user_id',bkUser.id).eq('account_name',name).eq('record_type',coaActiveType),
+      bkDb.from('bk_journal').delete().eq('user_id',bkUser.id).eq('debit_account_name',name),
+      bkDb.from('bk_journal').delete().eq('user_id',bkUser.id).eq('credit_account_name',name),
+      bkDb.from('bk_accounts').delete().eq('id',id).eq('user_id',bkUser.id),
+    ]);
+    accounts[coaActiveType]=accounts[coaActiveType].filter(a=>a.id!==id);
+    buildDropdowns(); renderCOA();
+    bdToast('\u2713 "'+name+'" and its transactions were deleted everywhere');
+  } catch(e) { alert('Could not fully delete: '+(e.message||'')); }
 }
 
 // ── ACCOUNT SETTINGS PAGE ─────────────────────────────────────
@@ -10097,9 +10179,9 @@ function renderRecordSheet(kind) {
       case 'total': return `<td style="white-space:nowrap;${hlCss(c)}"><div class="staff-cell ro" id="${kind==='sales'?'sale_total_':'etotal_'}${i}">${staffFmtAmt(r.total)}</div></td>`;
       case 'pay_mode': return `<td style="${hlCss(c)}"><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
         onchange="sheetRows('${kind}')[${i}].pay_mode=this.value">
-        ${[['cash','Cash'],['transfer','Bank Transfer'],['pos','POS'],['cheque','Cheque'],['credit','On Credit']].map(([v,l])=>`<option value="${v}" ${(r.pay_mode||'cash')===v?'selected':''}>${l}</option>`).join('')}
+        ${[['cash','Cash'],['transfer','Bank Transfer'],['debitcard','Debit Card'],['creditcard','Credit Card'],['pos','POS'],['cheque','Cheque'],['credit','On Credit']].map(([v,l])=>`<option value="${v}" ${(r.pay_mode||'cash')===v?'selected':''}>${l}</option>`).join('')}
       </select></td>`;
-      case 'save': return `<td><button class="staff-save-row-btn" onclick="${saveFn}(${i})" title="Save">&rsaquo;</button></td>`;
+      case 'save': return `<td><button class="staff-save-row-btn" onclick="bdSaveWrap(this,()=>${saveFn}(${i}))" title="Save">&rsaquo;</button></td>`;
       case 'del': return `<td><button class="staff-del-btn" onclick="sheetDeleteRow('${kind}',${i})">&times;</button></td>`;
       case 'receipt': return `<td style="text-align:center;"><span class="receipt-link" onclick="showReceipt('${kind}',${i})">Receipt</span></td>`;
       default: return '<td></td>';
@@ -10126,9 +10208,9 @@ function renderRecordSheet(kind) {
         switch(c.t==='c'?'custom':c.k) {
           case 'total': return `<td style="white-space:nowrap;text-align:right;${hlCss(c)}"><div class="staff-cell ro" id="bundleTotal_${kind}_${i}" style="color:var(--gold);font-weight:900;">${staffFmtAmt(bTotal)}</div></td>`;
           case 'pay_mode': return `<td style="${hlCss(c)}"><select class="staff-cell" style="font-size:0.75rem;min-width:110px;" onchange="sheetRows('${kind}')[${i}].pay_mode=this.value;sheetRows('${kind}')[${i}]._posted=false">
-            ${[['cash','Cash'],['transfer','Bank Transfer'],['pos','POS'],['cheque','Cheque'],['credit','On Credit']].map(([v,l])=>`<option value="${v}" ${(r.pay_mode||'cash')===v?'selected':''}>${l}</option>`).join('')}
+            ${[['cash','Cash'],['transfer','Bank Transfer'],['debitcard','Debit Card'],['creditcard','Credit Card'],['pos','POS'],['cheque','Cheque'],['credit','On Credit']].map(([v,l])=>`<option value="${v}" ${(r.pay_mode||'cash')===v?'selected':''}>${l}</option>`).join('')}
           </select></td>`;
-          case 'save': return `<td><button class="staff-save-row-btn" onclick="sheetSaveBundle('${kind}',${i})" title="Save bundle">&rsaquo;</button></td>`;
+          case 'save': return `<td><button class="staff-save-row-btn" onclick="bdSaveWrap(this,()=>sheetSaveBundle('${kind}',${i}))" title="Save bundle">&rsaquo;</button></td>`;
           case 'del': return `<td><button class="staff-del-btn" onclick="sheetDeleteRow('${kind}',${i})">&times;</button></td>`;
           case 'receipt': return `<td style="text-align:center;"><span class="receipt-link" onclick="showReceipt('${kind}',${i})">Receipt</span></td>`;
           default: return '<td></td>';
@@ -10234,7 +10316,7 @@ function renderRecordSheet(kind) {
       <button class="tb-icon" title="Freeze rows" onclick="sheetTogglePanel('${kind}','freeze')">❄</button>
       <button class="tb-icon" title="Date filter" onclick="sheetTogglePanel('${kind}','date')">📅</button>
       <button class="tb-icon" title="Today" onclick="sheetToday('${kind}')">Today</button>
-      ${isSales ? `<label class="tb-icon" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
+      ${isSales ? `<label class="tb-icon" title="Generate a receipt for each row" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
         <input type="checkbox" ${st.receipt?'checked':''} onchange="sheetToggleReceipt('${kind}',this.checked)" style="accent-color:var(--gold);"/> Receipt
       </label>` : ''}
     </div>
@@ -10456,6 +10538,65 @@ function openOptionsPortal(label, initialArr, cb) {
   };
 }
 
+function bdToast(msg, kind){
+  const m=document.createElement('div');
+  const isErr = kind==='error';
+  m.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);'
+    +'background:'+(isErr?'#2a1414':'#1a2a1a')+';border:1px solid '+(isErr?'#ef4444':'var(--green)')+';'
+    +'color:'+(isErr?'#fca5a5':'#4ade80')+';padding:10px 20px;border-radius:8px;font-size:0.82rem;'
+    +'font-weight:600;z-index:99999;max-width:min(360px,88vw);text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.35);';
+  m.textContent=msg;
+  document.body.appendChild(m);
+  setTimeout(()=>{ m.style.transition='opacity 0.25s'; m.style.opacity='0'; setTimeout(()=>m.remove(),250); }, isErr?3200:2000);
+}
+
+// ── Universal save feedback: … while saving, ✓ when done ─────
+async function bdSaveWrap(btn, fn) {
+  if (!btn || btn.disabled) return;
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.classList.add('bd-saving');
+  btn.innerHTML = '<span class="bd-save-dots"><span></span><span></span><span></span></span>';
+  try {
+    await fn();
+    btn.classList.remove('bd-saving');
+    btn.classList.add('bd-saved');
+    btn.innerHTML = '✓';
+    setTimeout(()=>{ btn.classList.remove('bd-saved'); btn.innerHTML = original; btn.disabled = false; }, 900);
+  } catch(e) {
+    btn.classList.remove('bd-saving');
+    btn.innerHTML = original;
+    btn.disabled = false;
+    bdToast('Save failed: '+(e?.message||e||'unknown error'), 'error');
+  }
+}
+
+// ── Branded alert modal — replaces the native browser "site says" popup ──
+(function(){
+  const nativeAlert = window.alert.bind(window);
+  window.alert = function(msg) {
+    try {
+      closeColMenu();
+      const wrap = document.createElement('div');
+      wrap.id = 'bdAlertModal';
+      wrap.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:20px;';
+      const box = document.createElement('div');
+      box.style.cssText = 'background:var(--surface);border:1px solid var(--gold);border-radius:14px;max-width:380px;width:100%;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,0.4);';
+      box.innerHTML = `
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:14px;">
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--gold-dim);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">!</div>
+          <div style="font-size:0.82rem;color:var(--off);line-height:1.55;white-space:pre-wrap;">${escH(String(msg))}</div>
+        </div>
+        <button id="bdAlertOk" style="width:100%;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.78rem;padding:10px;border-radius:8px;cursor:pointer;">OK</button>`;
+      wrap.appendChild(box);
+      document.body.appendChild(wrap);
+      const close = ()=>wrap.remove();
+      box.querySelector('#bdAlertOk').onclick = close;
+      wrap.addEventListener('click', e=>{ if (e.target===wrap) close(); });
+    } catch(e) { nativeAlert(msg); }
+  };
+})();
+
 function closeColMenu(){ document.getElementById('colMenuPortal')?.remove(); }
 function openColMenuPortal(ev, items) {
   ev.stopPropagation();
@@ -10641,7 +10782,7 @@ function renderReceiptEdit(viewVersion) {
         return `<td><select class="staff-cell" ${dis} onchange="rcptCell(${ri},'pay',this.value)">
           ${['Cash','Bank Transfer','POS','Cheque','On Credit'].map(o=>`<option ${(r.pay||'Cash')===o?'selected':''}>${o}</option>`).join('')}</select></td>`;
       case 'del': return `<td><button class="staff-del-btn" ${dis} onclick="rcptDelRow(${ri})">&times;</button></td>`;
-      case 'save': return `<td><button class="staff-save-row-btn" ${dis} onclick="rcptSaveRow(${ri})">&rsaquo;</button></td>`;
+      case 'save': return `<td><button class="staff-save-row-btn" ${dis} onclick="bdSaveWrap(this,()=>rcptSaveRow(${ri}))">&rsaquo;</button></td>`;
       default: {
         if (opts && opts.length) return `<td><select class="staff-cell" ${dis} onchange="rcptCell(${ri},'${c.k}',this.value)">
           <option value=""></option>${opts.map(o=>`<option ${(r[c.k]||'')===o?'selected':''}>${escH(o)}</option>`).join('')}</select></td>`;
@@ -11263,7 +11404,7 @@ function renderCustomerBlock(cust){
       + ' oninput="staffNumChange('+cid+','+ri+',\'qty\',this.value)"/></td>'
       + '<td style="white-space:nowrap;"><div class="staff-cell ro" id="stotal_'+cid+'_'+ri+'">'+totVal+'</div></td>'
       + '<td><button class="staff-del-btn" onclick="staffDelRow('+cid+','+ri+')"'+lockAttr+'>&#x2715;</button></td>'
-      + '<td><button class="staff-save-row-btn" onclick="staffSaveRow('+cid+','+ri+')"'+lockAttr+'>&#8250;</button></td>'
+      + '<td><button class="staff-save-row-btn" onclick="bdSaveWrap(this,()=>staffSaveRow('+cid+','+ri+'))"'+lockAttr+'>&#8250;</button></td>'
       + '</tr>';
   });
 
@@ -11371,7 +11512,8 @@ async function autoPostExpenseRow(row) {
       const txns = [];
       if (cashR?.data) txns.push({user_id:bkUser.id,journal_id:jnl.id,record_type:'asset',account_name:cashAcct,txn_date:date,narration,debit:0,credit:amount,balance:0,created_at:new Date().toISOString()});
       if (expR?.data)  txns.push({user_id:bkUser.id,journal_id:jnl.id,record_type:'expenditure',account_name:expAcct,txn_date:date,narration,debit:amount,credit:0,balance:amount,created_at:new Date().toISOString()});
-      txns.forEach(t=>{ if(activeBusiness?.id) t.business_id=activeBusiness.id; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; });
+      const payMode2 = row.pay_mode || row.payMode || 'cash';
+      txns.forEach(t=>{ if(activeBusiness?.id) t.business_id=activeBusiness.id; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; t.payment_mode=payMode2; });
       if (txns.length) await bkDb.from('bk_transactions').insert(txns);
     }
   } catch(e) {}
@@ -12442,9 +12584,7 @@ function renderAllBusinessesDashboard(metrics) {
         <div class="ab-section-title">Recent Activity</div>
       </div>
       <div id="abRecentActivity" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px 16px;">
-        <div style="color:var(--m
-function bdToast(msg){ const m=document.createElement('div'); m.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a2a1a;border:1px solid var(--green);color:#4ade80;padding:10px 20px;border-radius:8px;font-size:0.82rem;font-weight:600;z-index:9999;'; m.textContent=msg; document.body.appendChild(m); setTimeout(()=>m.remove(),2000); }
-uted);font-size:0.78rem;padding:12px 0;">Loading…</div>
+        <div style="color:var(--muted);font-size:0.78rem;padding:12px 0;">Loading…</div>
       </div>
     </div>`;
 
@@ -12923,7 +13063,7 @@ function fmtInputCommas(el) {
 // Maps payment method to the cash/bank account name
 function staffCashAccount(payMode) {
   const m = (payMode||'').toLowerCase();
-  if (m === 'transfer' || m === 'pos' || m === 'bank') return 'Cash at Bank';
+  if (m === 'transfer' || m === 'pos' || m === 'bank' || m === 'debitcard' || m === 'creditcard') return 'Cash at Bank';
   return 'Cash in Hand'; // cash, default
 }
 
@@ -12953,7 +13093,7 @@ async function autoPostSaleRow(row, customerName, txnDate) {
   const payMode = row.pay_mode || row.payMode || 'cash';
   let cashAcct;
   if (payMode === 'credit')            cashAcct = 'Debtors';
-  else if (payMode === 'transfer' || payMode === 'pos' || payMode === 'cheque') cashAcct = 'Cash at Bank';
+  else if (payMode === 'transfer' || payMode === 'pos' || payMode === 'cheque' || payMode === 'debitcard' || payMode === 'creditcard') cashAcct = 'Cash at Bank';
   else                                  cashAcct = 'Cash in Hand';
   const incomeAcct = await staffIncomeAccount(row.narration);
   const amount     = parseFloat(row.total) || 0;
@@ -13024,7 +13164,7 @@ async function autoPostSaleRow(row, customerName, txnDate) {
       created_at:   new Date().toISOString(),
     });
   }
-  txns.forEach(t=>{ if(activeBusiness?.id) t.business_id=activeBusiness.id; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; });
+  txns.forEach(t=>{ if(activeBusiness?.id) t.business_id=activeBusiness.id; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; t.payment_mode=payMode; });
   if (txns.length) await bkDb.from('bk_transactions').insert(txns);
 }
 
