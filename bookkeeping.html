@@ -4818,13 +4818,16 @@ async function jrnLoadRange(from, to) {
         ? _tq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
         : _tq.eq('user_id', bkUser.id);
       const {data:TX} = await _tq.limit(300);
-      _legs = (TX||[]).map(t=>({
-        _ro:true, _txnId:t.id, saved:true, txn_date:t.txn_date||from, payee:'', payer:'',
-        narration:(t.narration||'')+'  ['+({income:'Sales',expenditure:'Expense',asset:'Asset',liability:'Liability',capital:'Capital'}[t.record_type]||t.record_type)+']',
-        debit_account_name:(parseFloat(t.debit)||0)>0?(t.account_name||''):'',
-        credit_account_name:(parseFloat(t.credit)||0)>0?(t.account_name||''):'',
-        debit_amount:parseFloat(t.debit)||0, credit_amount:parseFloat(t.credit)||0,
-      }));
+      _legs = (TX||[])
+        .filter(t=> (parseFloat(t.debit)||0)>0 || (parseFloat(t.credit)||0)>0)
+        .filter(t=> (t.account_name||'').trim() !== '')
+        .map(t=>({
+          _ro:true, _txnId:t.id, saved:true, txn_date:t.txn_date||from, payee:'', payer:'',
+          narration:(t.narration||'')+'  ['+({income:'Sales',expenditure:'Expense',asset:'Asset',liability:'Liability',capital:'Capital'}[t.record_type]||t.record_type)+']',
+          debit_account_name:(parseFloat(t.debit)||0)>0?(t.account_name||''):'',
+          credit_account_name:(parseFloat(t.credit)||0)>0?(t.account_name||''):'',
+          debit_amount:parseFloat(t.debit)||0, credit_amount:parseFloat(t.credit)||0,
+        }));
     } catch(e){}
     journalRows = _legs.concat((data||[]).map(r=>({
       id:r.id, txn_date:r.txn_date||from,
@@ -4898,12 +4901,10 @@ async function jrnDateFill(dateStr) {
   } catch(e) { journalRows = []; }
   const base = new Date(dateStr+'T00:00:00');
   const addDays = n => { const d=new Date(base); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
-  for (let k=0; k<5; k++) {
-    journalRows.push({
-      txn_date: addDays(k), payee:'', payer:'', narration:'',
-      debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
-      debit_amount:0, credit_amount:0, saved:false });
-  }
+  journalRows.push({
+    txn_date: dateStr, payee:'', payer:'', narration:'',
+    debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
+    debit_amount:0, credit_amount:0, saved:false });
   renderJournal();
 }
 let jrnSelRows = [];
@@ -5220,14 +5221,17 @@ async function openJournal() {
   ? _tq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
   : _tq.eq('user_id', bkUser.id);
   const {data:TX} = await _tq.order('created_at',{ascending:false}).limit(150);
-  _txLegs = (TX||[]).map(t=>({
-  _ro:true, _txnId:t.id, saved:true,
-  txn_date:t.txn_date||'', payee:'', payer:'',
-  narration:(t.narration||'')+'  ['+({income:'Sales',expenditure:'Expense',asset:'Asset',liability:'Liability',capital:'Capital'}[t.record_type]||t.record_type)+']',
-  debit_account_name:(parseFloat(t.debit)||0)>0?(t.account_name||''):'',
-  credit_account_name:(parseFloat(t.credit)||0)>0?(t.account_name||''):'',
-  debit_amount:parseFloat(t.debit)||0, credit_amount:parseFloat(t.credit)||0,
-  }));
+  _txLegs = (TX||[])
+    .filter(t=> (parseFloat(t.debit)||0)>0 || (parseFloat(t.credit)||0)>0)   // never show valueless/broken legs
+    .filter(t=> (t.account_name||'').trim() !== '')                          // must have a real account
+    .map(t=>({
+      _ro:true, _txnId:t.id, saved:true,
+      txn_date:t.txn_date||'', payee:'', payer:'',
+      narration:(t.narration||'')+'  ['+({income:'Sales',expenditure:'Expense',asset:'Asset',liability:'Liability',capital:'Capital'}[t.record_type]||t.record_type)+']',
+      debit_account_name:(parseFloat(t.debit)||0)>0?(t.account_name||''):'',
+      credit_account_name:(parseFloat(t.credit)||0)>0?(t.account_name||''):'',
+      debit_amount:parseFloat(t.debit)||0, credit_amount:parseFloat(t.credit)||0,
+    }));
   } catch(e){}
   const { data } = await bkDb.from('bk_journal')
     .select('*').match(bizMatch()).order('row_order',{ascending:true});
@@ -5399,7 +5403,9 @@ function renderJournalRows() {
 }
 
 function journalHasData(r){ if(!r) return false;
-  return r.narration||r.debit_account_name||r.credit_account_name||r.debit_amount>0||r.credit_amount>0;
+  // A lone auto-generated "[Capital]"-style tag with nothing else behind it doesn't count as real data
+  const narrLooksReal = r.narration && !/^\s*\[(Sales|Expense|Asset|Liability|Capital)\]\s*$/.test(r.narration);
+  return narrLooksReal||r.debit_account_name||r.credit_account_name||r.debit_amount>0||r.credit_amount>0;
 }
 
 function jCellChange(i,field,val){ journalRows[i][field]=val; journalRows[i].saved=false; }
