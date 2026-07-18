@@ -3698,8 +3698,9 @@ function renderRows(displayRows) {
       <td><button class="save-row-btn" onclick="bdSaveWrap(this,()=>saveOpeningBalance(document.getElementById('obBalInput').value))" title="Save opening balance">›</button></td>
     </tr>`;
 
-  // Ensure exactly one trailing blank row, then render ALL rows with true indexes
-  if (rows.length === 0 || hasData(rows[rows.length-1])) rows.push(emptyRow(rows.length));
+  // Rendering never mutates data — the trailing blank row is guaranteed
+  // by ensureTrailingBlank(), called explicitly wherever rows can change.
+  ensureTrailingBlank();
   let _sn = 0;
   const bodyHtml = rows.map((row, i) => buildEditableRow(row, i, hasData(row) ? (++_sn) : '')).join('');
   tbody.innerHTML = obRow + bodyHtml;
@@ -3937,25 +3938,42 @@ function recalcBalances() {
 }
 
 // ── ROW MANAGEMENT ───────────────────────────────────────────
+function ensureTrailingBlank() {
+  // Idempotent: guarantees exactly one blank row at the end, never more.
+  // This is the ONLY place in the app allowed to push a blank ledger row.
+  if (rows.length === 0 || hasData(rows[rows.length-1])) rows.push(emptyRow(rows.length));
+}
 function addRow() {
-  if (rows.length && !hasData(rows[rows.length-1])) { renderRows(rows); return; }
+  // Always append one fresh blank row through the single guarded appender.
   rows.push(emptyRow(rows.length));
-  renderRows(rows);
+  renderRows();
   setTimeout(()=>{
     const tr=document.getElementById(`row_${rows.length-1}`);
     if(tr) tr.querySelector('input')?.focus();
   },40);
 }
 
-async function deleteRow(i) {
-  if(rows[i].id) {
-    await bkDb.from('bk_transactions').delete().eq('id',rows[i].id);
-  }
+function deleteRow(i) {
+  const removed = rows[i];
+  // Remove from the screen immediately — no waiting on the network
   rows.splice(i,1);
   recalcBalances();
-  renderRows(rows);
-  await refreshEquation();
+  renderRows();
   setSaveMsg('Deleted','ok');
+  refreshEquation();
+  // Delete on the server in the background; only if it actually
+  // fails do we put the row back and tell the user.
+  if (removed && removed.id) {
+    bkDb.from('bk_transactions').delete().eq('id', removed.id).then(({error})=>{
+      if (error) {
+        rows.splice(i, 0, removed);
+        recalcBalances();
+        renderRows();
+        refreshEquation();
+        alert('Could not delete this row: '+(error.message||'unknown error'));
+      }
+    });
+  }
 }
 
 // ── SAVE ─────────────────────────────────────────────────────
