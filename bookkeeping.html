@@ -204,6 +204,18 @@ body[data-theme="midnight"]{
   --white:#e9eeff;--off:#c3cdea;--muted:#7c8db3;--muted2:#5a6a8f;
   --gold:#8fb0ff;--gold-dim:rgba(143,176,255,0.13);
 }
+
+body[data-theme="skyline"]{
+  --bg:#f4f8f7;--surface:#ffffff;--surface2:#eef5f3;
+  --border:#dbe8e4;--border2:#c3d8d2;--border3:#9dbdb5;
+  --white:#0f2a24;--off:#244a41;--muted:#5a7d74;--muted2:#8aa89f;
+  --gold:#1466d6;--gold-dim:rgba(20,102,214,0.10);--accent-ink:#fff;
+  --green:#1a9c5c;--green-l:#e3f8ec;
+}
+body[data-theme="skyline"] .bk-login-btn,
+body[data-theme="skyline"] .op-bundle-btn,
+body[data-theme="skyline"] .pf-save-btn,
+body[data-theme="skyline"] .staff-save-static-btn{color:#ffffff !important;}
 .fill-hl{outline:1px dashed var(--gold);outline-offset:-1px;}
 #sheetTable_sales td,#sheetTable_expenses td,#ledgerTable td{position:relative;}
 
@@ -219,6 +231,8 @@ body[data-theme="midnight"]{
 .dash-card2-label{font-size:0.74rem;font-weight:800;color:var(--white);margin-top:4px;}
 .dash-card2-sub{font-size:0.6rem;color:var(--muted);margin-top:3px;}
 
+
+.jrn-sn-input:focus{background:var(--gold-dim);border-radius:4px;}
 .jrn-sn-tri{position:absolute;top:1px;right:2px;font-size:0.48rem;color:var(--gold);opacity:0;transition:opacity 0.12s;padding:3px;cursor:pointer;}
 .jrn-sn:hover .jrn-sn-tri{opacity:1;}
 .jrn-sn-hl .jrn-sn-tri{opacity:1;}
@@ -309,7 +323,7 @@ body[data-theme="midnight"]{
   --bg:#0f1117;--surface:#161b27;--surface2:#1d2437;
   --border:#252d3d;--border2:#2e3850;--border3:#3d4f6e;
   --white:#f1f5f9;--off:#c8d3e8;--muted:#6b7a99;--muted2:#4a5568;
-  --gold:#d4af37;--gold-dim:rgba(212,175,55,0.12);
+  --gold:#d4af37;--gold-dim:rgba(212,175,55,0.12);--accent-ink:#000;
   --green:#1a7a4a;--green-l:#d1fae5;
   --red:#c0392b;--red-l:#fee2e2;
   --blue:#1d4ed8;--blue-l:#eff6ff;
@@ -1735,9 +1749,11 @@ function showAuthScreen(view) {
 
 // ── Appearance: theme + font ─────────────────────────────────
 function applyTheme(t) {
-  // Black & gold only for now
-  document.body.dataset.theme = '';
-  localStorage.setItem('bd_theme', 'default');
+  document.body.dataset.theme = (t==='skyline') ? t : '';
+  localStorage.setItem('bd_theme', t||'default');
+  const themeColor = t==='skyline' ? '#1466d6' : '#d4af37';
+  document.querySelectorAll('meta[name="theme-color"],meta[name="msapplication-TileColor"]')
+    .forEach(m=>m.setAttribute('content', themeColor));
 }
 function applyFont(f) {
   const font = f && f!=='default' ? f : 'Segoe UI';
@@ -4951,6 +4967,17 @@ function jrnToggleSelectHint() {
   else { jrnSelRows = []; document.querySelectorAll('#journalTable .jrn-sn-hl').forEach(el=>el.classList.remove('jrn-sn-hl')); document.querySelectorAll('#journalTable .jrn-row-hl').forEach(el=>el.classList.remove('jrn-row-hl')); }
 }
 
+function jrnSnNumberChange(idx, val) {
+  const n = journalRows.length;
+  let target = parseInt(val, 10);
+  if (isNaN(target) || n < 1) { renderJournal(); return; }
+  target = Math.max(1, Math.min(target, n)) - 1;   // clamp to valid range, convert to 0-based
+  if (target === idx) { renderJournal(); return; }  // typed the same position — nothing to do
+  const [moved] = journalRows.splice(idx, 1);
+  journalRows.splice(target, 0, moved);
+  renderJournal();
+}
+
 function jrnSnHighlight(idx) {
   const p = jrnSelRows.indexOf(idx);
   if (p>=0) jrnSelRows.splice(p,1); else jrnSelRows.push(idx);
@@ -5111,6 +5138,7 @@ function jrnInitRowDrag() {
   tbody._jrnDrag = true;
   let drag = null;
   tbody.addEventListener('pointerdown', e=>{
+    if (e.target.tagName === 'INPUT') return;   // let the S/N number field be clicked/edited normally
     const sn = e.target.closest('.jrn-sn');
     if (!sn) return;
     const idx = parseInt(sn.dataset.jidx);
@@ -5387,7 +5415,14 @@ function renderJournalRows() {
     const idx = realIdx >= 0 ? realIdx : i;
     const sn=journalHasData(row)?idx+1:'';
     return `<tr id="jrow_${idx}" class="${row._ro?'jrn-ro':''}">
-      <td class="jrn-sn ${jrnSelRows.includes(idx)?'jrn-sn-hl':''}" data-jidx="${idx}" onclick="jrnSnHighlight(${idx})" style="text-align:center;cursor:grab;-webkit-user-select:none;user-select:none;color:var(--muted);font-size:0.74rem;white-space:nowrap;position:relative;">${sn||idx+1}<span class="jrn-sn-tri" onclick="event.stopPropagation();jrnSnMenu(event,${idx})">▼</span></td>
+      <td class="jrn-sn ${jrnSelRows.includes(idx)?'jrn-sn-hl':''}" data-jidx="${idx}" onclick="jrnSnHighlight(${idx})" style="text-align:center;cursor:grab;-webkit-user-select:none;user-select:none;color:var(--muted);font-size:0.74rem;white-space:nowrap;position:relative;">
+        <input type="text" inputmode="numeric" class="jrn-sn-input" value="${sn||idx+1}"
+          onclick="event.stopPropagation()" onfocus="this.select()"
+          onkeydown="if(event.key==='Enter')this.blur()"
+          onchange="jrnSnNumberChange(${idx},this.value)"
+          style="width:24px;background:transparent;border:none;color:inherit;font:inherit;text-align:center;padding:0;outline:none;"/>
+        <span class="jrn-sn-tri" onclick="event.stopPropagation();jrnSnMenu(event,${idx})">▼</span>
+      </td>
       <td style="position:relative;min-width:110px;">
         <input class="bk-cell staff-date-hidden" type="date" value="${row.txn_date}"
           onchange="jCellChange(${idx},'txn_date',this.value);this.nextElementSibling.textContent=this.value?formatDateDisplay(this.value):'Date'"/>
@@ -12031,6 +12066,14 @@ function _profileTabBody() {
     return `
     <div class="pf-card">
       <div class="pf-card-head"><span>Appearance</span></div>
+      <label class="su-label">COLOR THEME</label>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        ${[['default','Black & Gold','#0f1117','#d4af37'],['skyline','Sky &amp; Sage','#ffffff','#1466d6']].map(([v,l,c1,c2])=>`
+          <div onclick="applyTheme('${v}');renderProfileSheet()" style="cursor:pointer;text-align:center;">
+            <div style="width:64px;height:40px;border-radius:9px;border:2px solid ${curTheme===v?'var(--gold)':'var(--border2)'};background:linear-gradient(135deg,${c1} 50%,${c2} 50%);"></div>
+            <div style="font-size:0.62rem;color:${curTheme===v?'var(--gold)':'var(--muted)'};font-weight:700;margin-top:4px;">${l}</div>
+          </div>`).join('')}
+      </div>
       <label class="su-label">FONT</label>
       <select class="bk-login-input" onchange="applyFont(this.value)" style="margin-bottom:4px;">
         <option value="default" ${curFont==='default'?'selected':''}>Segoe UI (Default)</option>
@@ -13079,7 +13122,8 @@ async function bdUpdateSyncBadge() {
   if (!badge) {
     badge = document.createElement('div');
     badge.id = 'bdOfflineBadge';
-    badge.style.cssText = 'position:fixed;top:12px;right:12px;background:#d4af37;color:#000;font-size:0.72rem;font-weight:800;padding:5px 12px;border-radius:20px;z-index:9999;cursor:pointer;';
+    const _bGold=getComputedStyle(document.body).getPropertyValue('--gold'),_bInk=getComputedStyle(document.body).getPropertyValue('--accent-ink');
+    badge.style.cssText = 'position:fixed;top:12px;right:12px;background:'+_bGold+';color:'+_bInk+';font-size:0.72rem;font-weight:800;padding:5px 12px;border-radius:20px;z-index:9999;cursor:pointer;';
     badge.onclick = function() { bdSyncOfflineSales(); };
     document.body.appendChild(badge);
   }
@@ -13501,10 +13545,12 @@ const COLUMN_HELP = {
 
       const bar = document.createElement('div');
       bar.id = 'pwaInstallBar';
-      bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#d4af37;color:#000;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;z-index:9999;font-size:0.85rem;font-weight:600;';
+      const _tGold = getComputedStyle(document.body).getPropertyValue('--gold');
+      const _tInk = getComputedStyle(document.body).getPropertyValue('--accent-ink');
+      bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:'+_tGold+';color:'+_tInk+';padding:12px 16px;display:flex;align-items:center;justify-content:space-between;z-index:9999;font-size:0.85rem;font-weight:600;';
       bar.innerHTML = '<span>📲 Install BD Books as an app</span>'
         + '<div style="display:flex;gap:8px;">'
-        + '<button onclick="installPWA()" style="background:#000;color:#d4af37;border:none;padding:8px 16px;border-radius:6px;font-weight:700;cursor:pointer;">Install</button>'
+        + '<button onclick="installPWA()" style="background:'+_tInk+';color:'+_tGold+';border:none;padding:8px 16px;border-radius:6px;font-weight:700;cursor:pointer;">Install</button>'
         + '<button onclick="dismissPWABar()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;">✕</button>'
         + '</div>';
       document.body.appendChild(bar);
