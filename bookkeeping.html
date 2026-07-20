@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -4823,6 +4822,7 @@ function jrnFillDates(dateStr) {
   renderJournal();
 }
 async function jrnLoadRange(from, to) {
+  jrnSortDir = null;
   try {
   const { data } = await bkDb.from('bk_journal')
       .select('*').match(bizMatch())
@@ -4894,6 +4894,25 @@ function jrnDateFilterPortal(ev) {
     closeColMenu();
     if (f&&t) jrnLoadRange(f<=t?f:t, f<=t?t:f);
   };
+}
+
+// ── Master Journal: date sort (ascending = date + entry order) ──
+let jrnSortDir = null; // null | 'asc' | 'desc'
+function jrnToggleSort() {
+  jrnSortDir = jrnSortDir === 'asc' ? 'desc' : 'asc';
+  const dir = jrnSortDir === 'asc' ? 1 : -1;
+  journalRows = journalRows
+    .map((r, i) => ({ r, i }))                 // remember entry order before sorting
+    .sort((a, b) => {
+      const da = a.r.txn_date || '', db = b.r.txn_date || '';
+      if (!da && !db) return a.i - b.i;         // both blank — keep entry order
+      if (!da) return 1;                         // blank dates always sink to the end
+      if (!db) return -1;
+      if (da !== db) return dir * (da < db ? -1 : 1);
+      return a.i - b.i;                          // same date — keep entry order
+    })
+    .map(x => x.r);
+  renderJournal();
 }
 
 function jrnOpenDatePicker() {
@@ -5221,6 +5240,7 @@ async function showDayBook(kind) {
 }
 
 async function openJournal() {
+  jrnSortDir = null;
   recordsPageChrome();
   activeType=null; activeAccount=null;
   document.getElementById('recordsDD')?.classList.add('hidden');
@@ -5297,6 +5317,9 @@ function renderJournal() {
       <button class="tb-icon ${jrnTb.wrap==='overflow'?'tb-active':''}" onclick="jrnSetWrap('overflow')">⇥</button>
       <button class="tb-icon ${jrnTb.wrap==='wrap'?'tb-active':''}" onclick="jrnSetWrap('wrap')">⤶</button>
       <button class="tb-icon ${jrnTb.wrap==='clip'?'tb-active':''}" title="Clip" onclick="jrnSetWrap('clip')">✂</button>
+      <button class="tb-icon ${jrnSortDir?'tb-active':''}" title="${jrnSortDir==='asc'?'Sorted ascending — click for descending':jrnSortDir==='desc'?'Sorted descending — click for ascending':'Sort by date'}" onclick="jrnToggleSort()">
+        <span style="letter-spacing:-2px;">↓↑</span> Sort${jrnSortDir?(jrnSortDir==='asc'?' ▲':' ▼'):''}
+      </button>
       <button class="tb-icon ${jrnSelRows.length?'tb-active':''}" title="Select rows" onclick="jrnToggleSelectHint()">☑ Select</button>
       <button class="tb-icon" title="Delete selected rows" onclick="jrnDeleteRowsFrom(jrnSelRows[0]??-1)">🗑 Delete</button>
     </div>`:''}
