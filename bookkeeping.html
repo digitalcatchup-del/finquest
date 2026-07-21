@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" style="background:#0f1117;">
 <head>
@@ -3322,10 +3323,21 @@ async function continueInit() {
 
 // ── ACCOUNTS ─────────────────────────────────────────────────
 async function loadAccounts() {
+  accounts = { capital:[], liability:[], asset:[], income:[], expenditure:[] };
+
+  if (!navigator.onLine) {
+    // No network — never attempt to create default accounts offline
+    // (that would just fail, or duplicate once we're back online).
+    const cached = bdCacheRead('accounts');
+    window._bdShowingOfflineData = !!cached;
+    const existing = cached ? cached.data : [];
+    existing.forEach(a => { if(accounts[a.record_type]) accounts[a.record_type].push(a); });
+    return;
+  }
+  window._bdShowingOfflineData = false;
+
   const { data } = await bkDb.from('bk_accounts').select('*').eq('user_id',bkUser.id).order('created_at');
   const existing = data||[];
-
-  accounts = { capital:[], liability:[], asset:[], income:[], expenditure:[] };
   existing.forEach(a => { if(accounts[a.record_type]) accounts[a.record_type].push(a); });
 
   // Create default accounts if none exist for a type
@@ -3342,6 +3354,11 @@ async function loadAccounts() {
       if (created) accounts[type] = created;
     }
   }
+
+  // Cache the flattened list for offline viewing later
+  const flat = [];
+  Object.keys(accounts).forEach(t => accounts[t].forEach(a => flat.push(a)));
+  bdCacheWrite('accounts', flat);
 }
 
 function buildDropdowns() {
@@ -3433,13 +3450,23 @@ async function openAccount(type, acct) {
 
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
 
-  let _lq = bkDb.from('bk_transactions').select('*').eq('record_type', type);
-  _lq = activeBusiness?.id
-    ? _lq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
-    : _lq.eq('user_id', bkUser.id);
-  const { data } = await _lq
-    .or(`account_name.eq."${acct.account_name}",account_name.is.null`)
-    .order('row_order', { ascending:true });
+  let data;
+  if (!navigator.onLine) {
+    const cached = bdCacheRead('ledger', acct.id);
+    window._bdShowingOfflineData = !!cached;
+    data = cached ? cached.data : [];
+  } else {
+    window._bdShowingOfflineData = false;
+    let _lq = bkDb.from('bk_transactions').select('*').eq('record_type', type);
+    _lq = activeBusiness?.id
+      ? _lq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+      : _lq.eq('user_id', bkUser.id);
+    const res = await _lq
+      .or(`account_name.eq."${acct.account_name}",account_name.is.null`)
+      .order('row_order', { ascending:true });
+    data = res.data;
+    bdCacheWrite('ledger', data, acct.id);
+  }
 
   rows = (data||[]).map(r=>({
     id:r.id, txn_date:r.txn_date||'', payee:r.payee||'',
@@ -3621,6 +3648,7 @@ function renderLedger() {
 
   content.innerHTML = `
     <div style="padding:0 0 10px;"><button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="renderCOA()">← Back</button></div>
+    ${bdOfflineBanner()}
     <div class="sched-total-banner" id="ledgerTotalBanner" style="border-left:4px solid ${color};margin-bottom:12px;">
       <div class="sched-total-label">Total ${activeAccount.account_name}</div>
       <div class="sched-total-val" id="ledgerTotalVal" style="color:${color};">${balText}</div>
@@ -3954,6 +3982,23 @@ function recalcBalances() {
 }
 
 // ── ROW MANAGEMENT ───────────────────────────────────────────
+// ── Offline read cache: last-known-good data for key views ──
+window._bdShowingOfflineData = false;
+function bdCacheKey(view, extra) { return 'bd_cache_'+view+'_'+(activeBusiness?.id||'all')+(extra?'_'+extra:''); }
+function bdCacheWrite(view, data, extra) {
+  try { localStorage.setItem(bdCacheKey(view,extra), JSON.stringify({ data, cachedAt: Date.now() })); } catch(e){}
+}
+function bdCacheRead(view, extra) {
+  try { const raw = localStorage.getItem(bdCacheKey(view,extra)); return raw ? JSON.parse(raw) : null; } catch(e){ return null; }
+}
+function bdOfflineBanner() {
+  return window._bdShowingOfflineData
+    ? `<div style="background:var(--gold-dim);border:1px solid var(--gold);color:var(--gold);font-size:0.7rem;font-weight:700;padding:8px 14px;border-radius:8px;margin-bottom:12px;text-align:center;">
+        \u25CB Offline — showing the last data saved to this device. It will refresh automatically once you're back online.
+      </div>`
+    : '';
+}
+
 function ensureTrailingBlank() {
   // Idempotent: guarantees exactly one blank row at the end, never more.
   // This is the ONLY place in the app allowed to push a blank ledger row.
@@ -4837,8 +4882,38 @@ function jrnFillDates(dateStr) {
   });
   renderJournal();
 }
+function _jrnEntryOrder(r, fallbackIdx) {
+  return (typeof r.row_order === 'number' && r.row_order !== null) ? r.row_order : (1e9 + fallbackIdx);
+}
+async function _jrnFetchSplits(journalIds) {
+  // Reconstruct split-across-accounts detail from the saved legs,
+  // so it reappears exactly as the user left it.
+  if (!journalIds.length) return {};
+  try {
+    const { data } = await bkDb.from('bk_transactions')
+      .select('journal_id,account_name,record_type,narration,debit,credit')
+      .in('journal_id', journalIds);
+    const byJournal = {};
+    (data||[]).forEach(leg => {
+      if (!leg.journal_id) return;
+      (byJournal[leg.journal_id] = byJournal[leg.journal_id] || []).push(leg);
+    });
+    return byJournal;
+  } catch(e) { return {}; }
+}
+
 async function jrnLoadRange(from, to) {
   jrnSortDir = null;
+  if (!navigator.onLine) {
+    const cachedFull = bdCacheRead('journal_full', from+'_'+to);
+    window._bdShowingOfflineData = !!cachedFull;
+    journalRows = cachedFull ? cachedFull.data : [{ txn_date:from, payee:'', payer:'', narration:'',
+      debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
+      debit_amount:0, credit_amount:0, saved:false }];
+    renderJournal();
+    return;
+  }
+  window._bdShowingOfflineData = false;
   try {
   const { data } = await bkDb.from('bk_journal')
       .select('*').match(bizMatch())
@@ -4864,19 +4939,36 @@ async function jrnLoadRange(from, to) {
           debit_amount:parseFloat(t.debit)||0, credit_amount:parseFloat(t.credit)||0,
         }));
     } catch(e){}
-    journalRows = _legs.concat((data||[]).map(r=>({
+    const savedRows = (data||[]).map(r=>({
       id:r.id, txn_date:r.txn_date||from,
       payee:r.payee||'', payer:r.payer||'', narration:r.narration||'',
       debit_account_name:r.debit_account_name||'', debit_record_type:r.debit_record_type||'',
       credit_account_name:r.credit_account_name||'', credit_record_type:r.credit_record_type||'',
       debit_amount:parseFloat(r.debit_amount)||0, credit_amount:parseFloat(r.credit_amount)||0,
       row_order:r.row_order, saved:true
-    })));
-    journalRows.sort((a,b)=> (a.txn_date||'') < (b.txn_date||'') ? -1 : 1);
+    }));
+    const splitIds2 = savedRows.filter(r=>r.debit_account_name==='(Split)'||r.credit_account_name==='(Split)').map(r=>r.id);
+    const splitMap2 = await _jrnFetchSplits(splitIds2);
+    savedRows.forEach(r=>{
+      const legs = splitMap2[r.id];
+      if (!legs) return;
+      if (r.debit_account_name==='(Split)') r._drSplits = legs.filter(l=>(parseFloat(l.debit)||0)>0).map(l=>({account_name:l.account_name, record_type:l.record_type, narration:l.narration||'', amount:parseFloat(l.debit)||0}));
+      if (r.credit_account_name==='(Split)') r._crSplits = legs.filter(l=>(parseFloat(l.credit)||0)>0).map(l=>({account_name:l.account_name, record_type:l.record_type, narration:l.narration||'', amount:parseFloat(l.credit)||0}));
+    });
+    journalRows = _legs.concat(savedRows);
+    journalRows = journalRows
+      .map((r,i)=>({r,i}))
+      .sort((a,b)=>{
+        const da=a.r.txn_date||'', db=b.r.txn_date||'';
+        if (da!==db) return da<db?-1:1;
+        return _jrnEntryOrder(a.r,a.i) - _jrnEntryOrder(b.r,b.i);
+      })
+      .map(x=>x.r);
   } catch(e){ journalRows = []; }
   journalRows.push({ txn_date:from, payee:'', payer:'', narration:'',
     debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
     debit_amount:0, credit_amount:0, saved:false });
+  bdCacheWrite('journal_full', journalRows, from+'_'+to);
   renderJournal();
 }
 function jrnDateFilterPortal(ev) {
@@ -4918,14 +5010,14 @@ function jrnToggleSort() {
   jrnSortDir = jrnSortDir === 'asc' ? 'desc' : 'asc';
   const dir = jrnSortDir === 'asc' ? 1 : -1;
   journalRows = journalRows
-    .map((r, i) => ({ r, i }))                 // remember entry order before sorting
+    .map((r, i) => ({ r, i }))                 // fallback position if row_order is missing
     .sort((a, b) => {
       const da = a.r.txn_date || '', db = b.r.txn_date || '';
-      if (!da && !db) return a.i - b.i;         // both blank — keep entry order
+      if (!da && !db) return _jrnEntryOrder(a.r,a.i) - _jrnEntryOrder(b.r,b.i);
       if (!da) return 1;                         // blank dates always sink to the end
       if (!db) return -1;
       if (da !== db) return dir * (da < db ? -1 : 1);
-      return a.i - b.i;                          // same date — keep entry order
+      return _jrnEntryOrder(a.r,a.i) - _jrnEntryOrder(b.r,b.i);   // same date — true entry order, always
     })
     .map(x => x.r);
   renderJournal();
@@ -5300,8 +5392,19 @@ async function openJournal() {
       debit_amount:parseFloat(t.debit)||0, credit_amount:parseFloat(t.credit)||0,
     }));
   } catch(e){}
-  const { data } = await bkDb.from('bk_journal')
-    .select('*').match(bizMatch()).order('row_order',{ascending:true});
+  // Offline: use the complete last-known merged view (legs, splits,
+  // sort — everything) instead of trying to rebuild a partial one
+  // with no network to fetch legs or split detail from.
+  if (!navigator.onLine) {
+    const cachedFull = bdCacheRead('journal_full');
+    window._bdShowingOfflineData = !!cachedFull;
+    journalRows = cachedFull ? cachedFull.data : [];
+    renderJournal();
+    return;
+  }
+  window._bdShowingOfflineData = false;
+
+  const { data } = await bkDb.from('bk_journal').select('*').match(bizMatch()).order('row_order',{ascending:true});
 
   journalRows=(data||[]).map(r=>({
     id:r.id, txn_date:r.txn_date||today(),
@@ -5312,16 +5415,36 @@ async function openJournal() {
     row_order:r.row_order, saved:true
   }));
 
-  // Only keep saved rows — show empty state if none, otherwise just the data
+  // Reconstruct any "split across accounts" detail the user left behind
+  const splitIds = journalRows.filter(r=>r.debit_account_name==='(Split)'||r.credit_account_name==='(Split)').map(r=>r.id);
+  const splitMap = await _jrnFetchSplits(splitIds);
+  journalRows.forEach(r=>{
+    const legs = splitMap[r.id];
+    if (!legs) return;
+    if (r.debit_account_name==='(Split)') r._drSplits = legs.filter(l=>(parseFloat(l.debit)||0)>0).map(l=>({account_name:l.account_name, record_type:l.record_type, narration:l.narration||'', amount:parseFloat(l.debit)||0}));
+    if (r.credit_account_name==='(Split)') r._crSplits = legs.filter(l=>(parseFloat(l.credit)||0)>0).map(l=>({account_name:l.account_name, record_type:l.record_type, narration:l.narration||'', amount:parseFloat(l.credit)||0}));
+  });
+
+  // Merge in direct postings, then a STABLE default order: date ascending,
+  // ties broken by true entry order (row_order) — never re-shuffled by reload.
   journalRows = journalRows.concat(_txLegs);
-  journalRows.sort((a,b)=> (a.txn_date||'') < (b.txn_date||'') ? 1 : -1);
+  journalRows = journalRows
+    .map((r,i)=>({r,i}))
+    .sort((a,b)=>{
+      const da=a.r.txn_date||'', db=b.r.txn_date||'';
+      if (da!==db) return da<db?-1:1;
+      return _jrnEntryOrder(a.r,a.i) - _jrnEntryOrder(b.r,b.i);
+    })
+    .map(x=>x.r);
   const savedJCount = journalRows.filter(r => r.id || r._ro).length;
   if (savedJCount === 0) journalRows = [];
+  bdCacheWrite('journal_full', journalRows);
   renderJournal();
 }
 
 function renderJournal() {
   document.getElementById('bkContent').innerHTML=`
+    ${bdOfflineBanner()}
     <div class="bk-content-header">
       <div>
         <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;margin-bottom:8px;" onclick="showDashboard()">← Back</button>
@@ -7199,6 +7322,23 @@ async function saveRow(idx) {
 
   recalcBalances();
 
+  if (!navigator.onLine && !r.id) {
+    // Offline and this is a brand-new row: queue it, mark it locally as saved
+    // so the UI doesn't keep nagging, and sync automatically on reconnect.
+    await bdQueueOp('ledger_row', { insertPayload: {
+      user_id: bkUser.id, business_id: activeBusiness?.id||null, record_type: activeType,
+      account_name: activeAccount.account_name,
+      serial_number: r.serial_number, txn_date: r.txn_date||null,
+      payee: r.payee||null, payer: r.payer||null, narration: r.narration||null,
+      debit: r.debit||0, credit: r.credit||0, balance: r.balance||0,
+      row_order: idx,
+    }});
+    rows[idx].saved = true;
+    setSaveMsg('✓ Saved offline — will sync when back online','ok');
+    bdUpdateSyncBadge();
+    return;
+  }
+
   if (!r.id) {
     const { data, error } = await bkDb.from('bk_transactions').insert({
       user_id: bkUser.id, business_id: activeBusiness?.id||null, record_type: activeType,
@@ -7250,6 +7390,29 @@ async function saveJournalRow(i) {
     throw new Error('Select both a debit and a credit account');
   }
 
+  if (!navigator.onLine && !row.id) {
+    const legs = [];
+    const base = { user_id: bkUser.id, business_id: activeBusiness?.id||null, txn_date: row.txn_date||null, narration: row.narration||null, balance:0 };
+    if (row.debit_account_name && row.debit_record_type && row.debit_amount>0)
+      legs.push({...base, record_type: row.debit_record_type, account_name: row.debit_account_name, debit: row.debit_amount, credit: 0});
+    if (row.credit_account_name && row.credit_record_type && row.credit_amount>0)
+      legs.push({...base, record_type: row.credit_record_type, account_name: row.credit_account_name, debit: 0, credit: row.credit_amount});
+    await bdQueueOp('journal_row', {
+      journalPayload: {
+        user_id: bkUser.id, business_id: activeBusiness?.id||null, txn_date: row.txn_date||null,
+        payee: row.payee||null, payer: row.payer||null, narration: row.narration||null,
+        debit_account_name: row.debit_account_name, debit_record_type: row.debit_record_type,
+        credit_account_name: row.credit_account_name, credit_record_type: row.credit_record_type,
+        debit_amount: row.debit_amount, credit_amount: row.credit_amount,
+        serial_number: i+1, row_order: i,
+      },
+      legs,
+    });
+    journalRows[i].saved = true;
+    if (msg) { msg.textContent='✓ Saved offline — will sync when back online'; msg.className='bk-save-msg ok'; }
+    bdUpdateSyncBadge();
+    return;
+  }
   if (!row.id) {
     const { data, error } = await bkDb.from('bk_journal').insert({
       user_id: bkUser.id, business_id: activeBusiness?.id||null, txn_date: row.txn_date||null,
@@ -8899,8 +9062,23 @@ async function showProductsPage(type) {
   psType = type || 'products';
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
   await loadPsColPrefs();
-  const { data } = await bkDb.from('bk_products').select('*')
-    .eq('user_id',bkUser.id).eq('is_service',psType==='services').eq('is_active',true).order('product_name');
+
+  let data;
+  if (!navigator.onLine) {
+    const cached = bdCacheRead('products', psType);
+    window._bdShowingOfflineData = !!cached;
+    data = cached ? cached.data : [];
+  } else {
+    window._bdShowingOfflineData = false;
+    let _pq = bkDb.from('bk_products').select('*');
+    _pq = activeBusiness?.id
+      ? _pq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+      : _pq.eq('user_id', bkUser.id);
+    const res = await _pq.eq('is_service',psType==='services').eq('is_active',true).order('product_name');
+    data = res.data;
+    bdCacheWrite('products', data, psType);
+  }
+
   psRows = (data||[]).map(r => ({
     id:             r.id,
     name:           r.product_name || '',
@@ -9068,7 +9246,7 @@ async function psSaveRow(i) {
   };
   if(!r.id) {
     const {data,error}=await bkDb.from('bk_products').insert({
-      ...payload, user_id:bkUser.id, is_service:psType==='services', is_active:true,
+      ...payload, user_id:bkUser.id, business_id:activeBusiness?.id||null, is_service:psType==='services', is_active:true,
     }).select().single();
     if(!error&&data){psRows[i].id=data.id;psRows[i].saved=true;}
   } else {
@@ -11542,7 +11720,12 @@ async function expSaveRow(i){
   if(!r||!r.total) return;
   if(r._posted) return; // already posted
   try{
-    await autoPostExpenseRow(r);
+    if (!navigator.onLine) {
+      await bdQueueOp('expense', { row: r, businessId: activeBusiness?.id||null });
+      bdUpdateSyncBadge();
+    } else {
+      await autoPostExpenseRow(r);
+    }
     staffExpRows[i]._posted = true;
     const btn = document.querySelector('#erow_'+i+' .staff-save-row-btn');
     if(btn){btn.textContent='✓';btn.style.color='var(--green)';btn.disabled=true;}
@@ -11559,11 +11742,16 @@ async function saveAllExpenses() {
     } else if (!r._bundle && r.total>0 && !r._posted) flat.push(r);
   }
   if (!flat.length) { alert('No new expenses to save — all have already been posted.'); return; }
+  const offline = !navigator.onLine;
   for (const r of flat) {
-    await autoPostExpenseRow(r);
+    if (offline) await bdQueueOp('expense', { row: r, businessId: activeBusiness?.id||null });
+    else await autoPostExpenseRow(r);
     r._posted = true;
   }
-  alert('✓ '+flat.length+' expense'+(flat.length>1?'s':'')+' posted to ledger');
+  if (offline) bdUpdateSyncBadge();
+  alert(offline
+    ? '✓ '+flat.length+' expense'+(flat.length>1?'s':'')+' saved offline — will sync when back online'
+    : '✓ '+flat.length+' expense'+(flat.length>1?'s':'')+' posted to ledger');
 }
 
 // Owing: placeholder save (stores in memory; full DB integration when bk_owing table is added)
@@ -11572,16 +11760,17 @@ async function saveAllOwing() {
 }
 
 // Post a single expense row to the journal/ledger
-async function autoPostExpenseRow(row) {
+async function autoPostExpenseRow(row, forcedBusinessId) {
   if (!bkUser || !row.total || row.total <= 0) return;
   const narration = row.narration || 'Expense';
   const amount    = parseFloat(row.total) || 0;
   const cashAcct  = 'Cash in Hand';
   const expAcct   = 'Salaries & Wages'; // default; owners should use master records for precise account
   const date      = new Date().toISOString().slice(0,10);
+  const bizId     = forcedBusinessId !== undefined ? forcedBusinessId : (activeBusiness?.id||null);
   try {
     const { data:jnl } = await bkDb.from('bk_journal').insert({
-      user_id:bkUser.id, business_id:activeBusiness?.id||null, txn_date:date, narration:narration,
+      user_id:bkUser.id, business_id:bizId, txn_date:date, narration:narration,
       debit_account_name:expAcct, debit_record_type:'expenditure',
       credit_account_name:cashAcct, credit_record_type:'asset',
       debit_amount:amount, credit_amount:amount,
@@ -11596,7 +11785,7 @@ async function autoPostExpenseRow(row) {
       if (cashR?.data) txns.push({user_id:bkUser.id,journal_id:jnl.id,record_type:'asset',account_name:cashAcct,txn_date:date,narration,debit:0,credit:amount,balance:0,created_at:new Date().toISOString()});
       if (expR?.data)  txns.push({user_id:bkUser.id,journal_id:jnl.id,record_type:'expenditure',account_name:expAcct,txn_date:date,narration,debit:amount,credit:0,balance:amount,created_at:new Date().toISOString()});
       const payMode2 = row.pay_mode || row.payMode || 'cash';
-      txns.forEach(t=>{ if(activeBusiness?.id) t.business_id=activeBusiness.id; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; t.payment_mode=payMode2; });
+      txns.forEach(t=>{ if(bizId) t.business_id=bizId; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; t.payment_mode=payMode2; });
       if (txns.length) await bkDb.from('bk_transactions').insert(txns);
     }
   } catch(e) {}
@@ -12344,6 +12533,11 @@ async function showAllBusinessesDashboard() {
 }
 
 async function fetchAllBusinessMetrics() {
+  if (!navigator.onLine) {
+    const cached = bdCacheRead('dashboard_metrics');
+    if (cached) { window._bdShowingOfflineData = true; return cached.data; }
+  }
+  window._bdShowingOfflineData = false;
   const results = await Promise.all(userBusinesses.map(async biz => {
     let revenue=0, expenses=0, receivables=0, cos=0;
     try {
@@ -12363,6 +12557,7 @@ async function fetchAllBusinessMetrics() {
     const status = profit < 0 ? 'critical' : margin < 15 ? 'attention' : 'healthy';
     return {...biz, revenue, expenses, cos, opex: expenses-cos, profit, margin, receivables, status};
   }));
+  bdCacheWrite('dashboard_metrics', results);
   return results;
 }
 
@@ -12610,6 +12805,7 @@ function renderAllBusinessesDashboard(metrics) {
     <div class="ab-actions" style="border-bottom:none;">
     </div>
     <div class="ab-portfolio">
+      ${bdOfflineBanner()}
       <div class="ab-portfolio-title">Portfolio Overview <span style="font-weight:600;color:var(--gold);font-size:0.66rem;">· ${dashDateLabel()}</span></div>
       <div class="dash-cards">
         <div class="dash-card2" onclick="showCardBreakdown('revenue','owned')">
@@ -13034,8 +13230,9 @@ async function exportAllBusinesses() {
 
 
 const BD_DB_NAME    = 'bd_offline';
-const BD_DB_VERSION = 1;
+const BD_DB_VERSION = 2;
 const BD_STORE      = 'pending_sales';
+const BD_OPS_STORE  = 'pending_ops';   // generalized: expenses, ledger rows, journal rows
 
 function bdOpenDB() {
   return new Promise(function(resolve, reject) {
@@ -13046,10 +13243,86 @@ function bdOpenDB() {
         const store = db.createObjectStore(BD_STORE, { keyPath:'id', autoIncrement:true });
         store.createIndex('synced', 'synced', { unique:false });
       }
+      if (!db.objectStoreNames.contains(BD_OPS_STORE)) {
+        const opsStore = db.createObjectStore(BD_OPS_STORE, { keyPath:'id', autoIncrement:true });
+        opsStore.createIndex('synced', 'synced', { unique:false });
+      }
     };
     req.onsuccess = function(e) { resolve(e.target.result); };
     req.onerror   = function(e) { reject(e.target.error); };
   });
+}
+
+// ── Generalized offline queue: expenses, ledger rows, journal rows ──
+async function bdQueueOp(opType, payload) {
+  try {
+    const db    = await bdOpenDB();
+    const tx    = db.transaction(BD_OPS_STORE, 'readwrite');
+    const store = tx.objectStore(BD_OPS_STORE);
+    store.add({ opType, payload, savedAt:new Date().toISOString(), synced:false, userId:bkUser?.id||null });
+    return new Promise(function(resolve, reject) {
+      tx.oncomplete = resolve;
+      tx.onerror    = function(e) { reject(e.target.error); };
+    });
+  } catch(e) {}
+}
+async function bdGetPendingOps() {
+  try {
+    const db    = await bdOpenDB();
+    const tx    = db.transaction(BD_OPS_STORE, 'readonly');
+    const index = tx.objectStore(BD_OPS_STORE).index('synced');
+    const req   = index.getAll(false);
+    return new Promise(function(resolve) {
+      req.onsuccess = function(e) { resolve(e.target.result||[]); };
+      req.onerror   = function() { resolve([]); };
+    });
+  } catch(e) { return []; }
+}
+async function bdMarkOpSynced(id) {
+  try {
+    const db    = await bdOpenDB();
+    const tx    = db.transaction(BD_OPS_STORE, 'readwrite');
+    const store = tx.objectStore(BD_OPS_STORE);
+    const req   = store.get(id);
+    req.onsuccess = function() {
+      const rec = req.result;
+      if (rec) { rec.synced = true; store.put(rec); }
+    };
+    return new Promise(function(resolve) { tx.oncomplete = resolve; });
+  } catch(e) {}
+}
+async function bdSyncOfflineOps() {
+  if (!bkUser) return;
+  const pending = await bdGetPendingOps();
+  if (!pending.length) return;
+  let synced = 0;
+  for (const record of pending) {
+    try {
+      const p = record.payload;
+      if (record.opType === 'expense') {
+        await autoPostExpenseRow(p.row, p.businessId);
+      } else if (record.opType === 'ledger_row') {
+        await bkDb.from('bk_transactions').insert(p.insertPayload);
+      } else if (record.opType === 'journal_row') {
+        const { data: jnl } = await bkDb.from('bk_journal').insert(p.journalPayload).select().single();
+        if (jnl && p.legs && p.legs.length) {
+          p.legs.forEach(l => { l.journal_id = jnl.id; });
+          await bkDb.from('bk_transactions').insert(p.legs);
+        }
+      }
+      await bdMarkOpSynced(record.id);
+      synced++;
+    } catch(e) {}
+  }
+  if (synced > 0) {
+    bdUpdateSyncBadge();
+    bdToast('\u2713 ' + synced + ' offline entr' + (synced>1?'ies':'y') + ' synced');
+    try { await refreshEquation(); } catch(e) {}
+  }
+}
+async function bdGetTotalPendingCount() {
+  const [sales, ops] = await Promise.all([bdGetPendingSales(), bdGetPendingOps()]);
+  return sales.length + ops.length;
 }
 
 async function bdSaveOffline(row, customerName, txnDate) {
@@ -13057,7 +13330,7 @@ async function bdSaveOffline(row, customerName, txnDate) {
     const db    = await bdOpenDB();
     const tx    = db.transaction(BD_STORE, 'readwrite');
     const store = tx.objectStore(BD_STORE);
-    store.add({ row, customerName, txnDate, savedAt:new Date().toISOString(), synced:false, userId:bkUser?.id||null });
+    store.add({ row, customerName, txnDate, businessId: activeBusiness?.id||null, savedAt:new Date().toISOString(), synced:false, userId:bkUser?.id||null });
     return new Promise(function(resolve, reject) {
       tx.oncomplete = resolve;
       tx.onerror    = function(e) { reject(e.target.error); };
@@ -13098,7 +13371,7 @@ async function bdSyncOfflineSales() {
   let synced = 0;
   for (const record of pending) {
     try {
-      await autoPostSaleRow(record.row, record.customerName, record.txnDate);
+      await autoPostSaleRow(record.row, record.customerName, record.txnDate, record.businessId);
       await bdMarkSynced(record.id);
       synced++;
     } catch(e) {}
@@ -13115,25 +13388,25 @@ async function bdSyncOfflineSales() {
 }
 
 async function bdUpdateSyncBadge() {
-  const pending = await bdGetPendingSales();
-  const count   = pending.length;
-  let badge     = document.getElementById('bdOfflineBadge');
+  const [pendingSales, pendingOps] = await Promise.all([bdGetPendingSales(), bdGetPendingOps()]);
+  const count = pendingSales.length + pendingOps.length;
+  let badge   = document.getElementById('bdOfflineBadge');
   if (count === 0) { if (badge) badge.remove(); return; }
   if (!badge) {
     badge = document.createElement('div');
     badge.id = 'bdOfflineBadge';
     const _bGold=getComputedStyle(document.body).getPropertyValue('--gold'),_bInk=getComputedStyle(document.body).getPropertyValue('--accent-ink');
     badge.style.cssText = 'position:fixed;top:12px;right:12px;background:'+_bGold+';color:'+_bInk+';font-size:0.72rem;font-weight:800;padding:5px 12px;border-radius:20px;z-index:9999;cursor:pointer;';
-    badge.onclick = function() { bdSyncOfflineSales(); };
+    badge.onclick = function() { bdSyncOfflineSales(); bdSyncOfflineOps(); };
     document.body.appendChild(badge);
   }
-  badge.textContent = count + ' offline sale' + (count>1?'s':'') + ' \u2014 tap to sync';
+  badge.textContent = count + ' offline entr' + (count>1?'ies':'y') + ' \u2014 tap to sync';
 }
 
-window.addEventListener('online',  function() { bdSyncOfflineSales(); });
+window.addEventListener('online',  function() { bdSyncOfflineSales(); bdSyncOfflineOps(); });
 window.addEventListener('load',     function() {
   setTimeout(bdUpdateSyncBadge, 2000);
-  if (navigator.onLine) setTimeout(bdSyncOfflineSales, 3000);
+  if (navigator.onLine) setTimeout(function(){ bdSyncOfflineSales(); bdSyncOfflineOps(); }, 3000);
 });
 
 // Global comma formatter for any number input — call oninput
@@ -13180,8 +13453,9 @@ async function staffIncomeAccount(narration) {
 }
 
 // Auto-post a single sale row to the journal + ledger
-async function autoPostSaleRow(row, customerName, txnDate) {
+async function autoPostSaleRow(row, customerName, txnDate, forcedBusinessId) {
   if (!bkUser || !row.total || row.total <= 0) return;
+  const bizId = forcedBusinessId !== undefined ? forcedBusinessId : (activeBusiness?.id||null);
   const payMode = row.pay_mode || row.payMode || 'cash';
   let cashAcct;
   if (payMode === 'credit')            cashAcct = 'Debtors';
@@ -13195,7 +13469,7 @@ async function autoPostSaleRow(row, customerName, txnDate) {
   // 1. Write to bk_journal
   const { data: jnl, error: jErr } = await bkDb.from('bk_journal').insert({
     user_id:              bkUser.id,
-    business_id:          activeBusiness?.id||null,
+    business_id:          bizId,
     txn_date:             date,
     narration:            narration,
     debit_account_name:   cashAcct,
@@ -13256,7 +13530,7 @@ async function autoPostSaleRow(row, customerName, txnDate) {
       created_at:   new Date().toISOString(),
     });
   }
-  txns.forEach(t=>{ if(activeBusiness?.id) t.business_id=activeBusiness.id; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; t.payment_mode=payMode; });
+  txns.forEach(t=>{ if(bizId) t.business_id=bizId; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; t.payment_mode=payMode; });
   if (txns.length) await bkDb.from('bk_transactions').insert(txns);
 }
 
