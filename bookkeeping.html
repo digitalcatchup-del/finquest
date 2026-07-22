@@ -3507,6 +3507,7 @@ async function openAccount(type, acct) {
       : _lq.eq('user_id', bkUser.id);
     const res = await _lq
       .or(`account_name.eq."${acct.account_name}",account_name.is.null`)
+      .order('txn_date', { ascending:true })
       .order('row_order', { ascending:true });
     data = res.data;
     bdCacheWrite('ledger', data, acct.id);
@@ -5159,6 +5160,7 @@ function jrnSplitOpen(idx, side) {
       <button onclick="jrnSplitDone()" style="background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.7rem;padding:6px 14px;border-radius:7px;cursor:pointer;">Done</button>
     </div>
     <div style="font-size:0.62rem;color:var(--muted);margin-bottom:10px;">Select an account, add its narration and figure, then › to save it. Repeat for as many accounts as needed.</div>
+    ${side==='debit'?'<input class="bk-login-input" id="spPayee" placeholder="Payee (optional)" style="margin-bottom:6px;"/>':''}
     <select class="bk-login-input" id="spAcct" style="margin-bottom:6px;">${buildAccountOptions('')}</select>
     <input class="bk-login-input" id="spNarr" placeholder="Narration" style="margin-bottom:6px;"/>
     <div style="display:flex;gap:6px;margin-bottom:12px;">
@@ -5178,11 +5180,13 @@ function jrnSplitRenderList() {
   const key = _splitCtx.side==='debit' ? '_drSplits' : '_crSplits';
   const list = row[key]||[];
   const total = list.reduce((s,x)=>s+x.amount,0);
+  const showPayeeCol = _splitCtx.side==='debit';
   el.innerHTML = list.length ? `
     <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
-      <thead><tr style="color:var(--muted);"><th style="text-align:left;padding:4px;">S/N</th><th style="text-align:left;padding:4px;">Account</th><th style="text-align:left;padding:4px;">Narration</th><th style="text-align:right;padding:4px;">Amount</th><th></th></tr></thead>
+      <thead><tr style="color:var(--muted);"><th style="text-align:left;padding:4px;">S/N</th>${showPayeeCol?'<th style="text-align:left;padding:4px;">Payee</th>':''}<th style="text-align:left;padding:4px;">Account</th><th style="text-align:left;padding:4px;">Narration</th><th style="text-align:right;padding:4px;">Amount</th><th></th></tr></thead>
       <tbody>${list.map((x,n)=>`<tr style="border-top:1px solid var(--border);">
         <td style="padding:5px 4px;color:var(--muted);">${n+1}</td>
+        ${showPayeeCol?`<td style="padding:5px 4px;color:var(--off);">${escH(x.payee||'')}</td>`:''}
         <td style="padding:5px 4px;color:var(--off);">${escH(x.account_name)}</td>
         <td style="padding:5px 4px;color:var(--off);">${escH(x.narration||'')}</td>
         <td style="padding:5px 4px;text-align:right;font-weight:700;color:var(--white);">${fmt(x.amount)}</td>
@@ -5200,12 +5204,14 @@ function jrnSplitAdd() {
   const rt = opt?.dataset?.rt || opt?.getAttribute('data-rt') || '';
   const narr = document.getElementById('spNarr')?.value?.trim()||'';
   const amt = parseFloat(String(document.getElementById('spAmt')?.value||'').replace(/,/g,''))||0;
+  const payeeVal = _splitCtx.side==='debit' ? (document.getElementById('spPayee')?.value?.trim()||'') : '';
   if (!acct || amt<=0) { alert('Select an account and enter a figure.'); return; }
   const row = journalRows[_splitCtx.idx];
   const key = _splitCtx.side==='debit' ? '_drSplits' : '_crSplits';
   row[key] = row[key]||[];
-  row[key].push({ account_name: acct, record_type: rt || jrnGuessType(acct), narration: narr, amount: amt });
+  row[key].push({ account_name: acct, record_type: rt || jrnGuessType(acct), narration: narr, amount: amt, payee: payeeVal });
   document.getElementById('spNarr').value=''; document.getElementById('spAmt').value='';
+  const payeeEl = document.getElementById('spPayee'); if (payeeEl) payeeEl.value='';
   jrnSplitRenderList();
 }
 function jrnGuessType(name) {
@@ -5239,7 +5245,7 @@ function jrnSplitDone() {
 }
 function jrnSplitSubRow(row, idx, colCount) {
   const parts = [];
-  if (row._drSplits&&row._drSplits.length) parts.push('Dr: '+row._drSplits.map(x=>escH(x.account_name)+' '+fmt(x.amount)+(x.narration?' ('+escH(x.narration)+')':'')).join(' · '));
+  if (row._drSplits&&row._drSplits.length) parts.push('Dr: '+row._drSplits.map(x=>(x.payee?escH(x.payee)+' — ':'')+escH(x.account_name)+' '+fmt(x.amount)+(x.narration?' ('+escH(x.narration)+')':'')).join(' · '));
   if (row._crSplits&&row._crSplits.length) parts.push('Cr: '+row._crSplits.map(x=>escH(x.account_name)+' '+fmt(x.amount)+(x.narration?' ('+escH(x.narration)+')':'')).join(' · '));
   if (!parts.length) return '';
   return `<tr class="jrn-split-sub"><td></td><td colspan="10" style="font-size:0.66rem;color:var(--gold);padding:3px 10px;background:var(--gold-dim);">↳ ${parts.join('  |  ')}</td></tr>`;
@@ -5324,11 +5330,21 @@ function jrnInitRowDrag() {
   tbody.addEventListener('pointercancel', end);
 }
 function jrnToggleToolbox(){ jrnTb.open=!jrnTb.open; renderJournal(); }
-function jrnSearch(){ jrnTb.search=document.getElementById('jrnSearch')?.value||''; jrnApplySearch(); }
+function jrnExecuteSearch(){ jrnTb.search=document.getElementById('jrnSearch')?.value||''; jrnApplySearch(); }
 function jrnApplySearch() {
-  const q = jrnTb.search.toLowerCase();
-  document.querySelectorAll('#journalTable tbody tr').forEach(tr=>{
-    tr.style.display = (!q || tr.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  const q = jrnTb.search.trim().toLowerCase();
+  document.querySelectorAll('#journalTable tbody tr[id^="jrow_"]').forEach(tr=>{
+    const idx = parseInt(tr.id.replace('jrow_',''));
+    const r = journalRows[idx];
+    let show = true;
+    if (q && r) {
+      const haystack = [r.payee, r.payer, r.debit_account_name, r.credit_account_name, r.narration]
+        .filter(Boolean).join(' ').toLowerCase();
+      show = haystack.includes(q);
+    }
+    tr.style.display = show ? '' : 'none';
+    const sib = tr.nextElementSibling;
+    if (sib && sib.classList.contains('jrn-split-sub')) sib.style.display = show ? '' : 'none';
   });
 }
 function jrnUndo(){ if(!jrnTb.undoStack.length)return; jrnTb.redoStack.push(JSON.stringify(journalRows)); journalRows=JSON.parse(jrnTb.undoStack.pop()); renderJournal(); }
@@ -5339,10 +5355,26 @@ function jrnPrint(orientation) {
   const table = document.getElementById('journalTable');
   if (!table) return;
   const clone = table.cloneNode(true);
+
+  // Remove interactive-only decorations that mean nothing on paper:
+  // the S/N ▼ menu triangle, the header's 📅 calendar icon, and the
+  // ✎ split-across-accounts pencil.
+  clone.querySelectorAll('.jrn-sn-tri, .col-tri').forEach(el => el.remove());
+  clone.querySelectorAll('span[onclick*="jrnDatePortal"]').forEach(el => {
+    el.textContent = el.textContent.replace('📅','').trim();
+  });
+  clone.querySelectorAll('span[onclick*="jrnSplitOpen"]').forEach(el => el.remove());
+
+  // Date cells hold BOTH a hidden raw-date input (yyyy-mm-dd) and a
+  // separate overlay showing the real display format — drop the raw
+  // input so only the one correct format (matching the spreadsheet)
+  // survives onto paper.
+  clone.querySelectorAll('input[type="date"]').forEach(el => el.remove());
+
   clone.querySelectorAll('input,select').forEach(el=>{ const s=document.createElement('span'); s.textContent=el.value||''; el.replaceWith(s); });
   clone.querySelectorAll('button').forEach(b=>b.remove());
   const w = window.open('','_blank');
-  w.document.write('<html><head><title>Master Records</title><style>@page{size:'+(orientation||'landscape')+';margin:12mm;}body{font-family:Arial;color:#000;}h2{margin:0 0 8px;}table{width:100%;border-collapse:collapse;font-size:10px;}th,td{border:1px solid #999;padding:3px 5px;text-align:left;}th{background:#eee;}</style></head><body><h2>'+(activeBusiness?.name||'')+' — Master Records (General Journal)</h2>'+clone.outerHTML+'</body></html>');
+  w.document.write('<html><head><title>Master Records</title><style>@page{size:'+(orientation||'landscape')+';margin:12mm;}body{font-family:Arial;color:#000;}h2{margin:0 0 8px;}table{width:100%;border-collapse:collapse;font-size:10px;}th,td{border:1px solid #999;padding:3px 5px;text-align:left;}th{background:#eee;}</style></head><body><h2>'+(activeBusiness?.name||'')+' — Master Records (Master Journal)</h2>'+clone.outerHTML+'</body></html>');
   w.document.close();
   setTimeout(()=>w.print(), 300);
 }
@@ -5492,7 +5524,7 @@ function renderJournal() {
     <div class="bk-content-header">
       <div>
         <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;margin-bottom:8px;" onclick="showDashboard()">← Back</button>
-        <div class="bk-content-title">MASTER RECORDS — GENERAL JOURNAL</div>
+        <div class="bk-content-title">MASTER RECORDS— MASTER JOURNAL</div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Transactions entered here post automatically to the relevant ledgers.</div>
       </div>
       <div class="bk-header-actions">
@@ -5502,7 +5534,10 @@ function renderJournal() {
       </div>
     </div>
     ${jrnTb.open?`<div class="sheet-toolbox" style="margin:0 0 8px;">
-      <input id="jrnSearch" class="bk-input" placeholder="Search…" value="${escH(jrnTb.search)}" style="width:130px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:6px 9px;font-size:0.74rem;outline:none;" oninput="jrnSearch()"/>
+      <span style="display:inline-flex;align-items:center;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;overflow:hidden;">
+        <input id="jrnSearch" class="bk-input" placeholder="Search…" value="${escH(jrnTb.search)}" style="width:120px;background:transparent;border:none;color:var(--white);padding:6px 9px;font-size:0.74rem;outline:none;" onkeydown="if(event.key==='Enter')jrnExecuteSearch()"/>
+        <button title="Search" onclick="jrnExecuteSearch()" style="background:none;border:none;border-left:1px solid var(--border2);color:var(--gold);padding:6px 8px;cursor:pointer;font-size:0.8rem;">🔍</button>
+      </span>
       <button class="tb-icon" title="Undo" onclick="jrnUndo()">↩</button>
       <button class="tb-icon" title="Redo" onclick="jrnRedo()">↪</button>
       <button class="tb-icon" title="Date / range" onclick="jrnDateFilterPortal(event)">📅</button>
@@ -5926,7 +5961,7 @@ function exportJournalPDF(){
   doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(212,175,55);
   doc.text('Butterfly Dynamix Accounting',14,18);
   doc.setFontSize(11); doc.setTextColor(30,30,50);
-  doc.text('GENERAL JOURNAL — MASTER RECORDS',14,28);
+  doc.text('MASTER RECORDS— MASTER JOURNAL',14,28);
   doc.setFontSize(8); doc.setTextColor(100,100,120);
   doc.text(`Generated: ${new Date().toLocaleDateString()} · Currency: ${activeCurrency}`,14,35);
 
