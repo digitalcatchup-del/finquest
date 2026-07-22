@@ -5800,10 +5800,10 @@ async function saveJournal(){
                      payee:r.payee||null, payer:r.payer||null, narration:r.narration||null, row_order:r.row_order||0 };
         const drS = r._drSplits&&r._drSplits.length ? r._drSplits : null;
         const crS = r._crSplits&&r._crSplits.length ? r._crSplits : null;
-        if (drS) drS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||base.narration, debit:s.amount, credit:0, balance:0}));
+        if (drS) drS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||'', debit:s.amount, credit:0, balance:0}));
         else if(r.debit_account_name && r.debit_record_type && r.debit_amount>0)
           legs.push({...base, record_type:r.debit_record_type, account_name:r.debit_account_name, debit:r.debit_amount, credit:0, balance:0});
-        if (crS) crS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||base.narration, debit:0, credit:s.amount, balance:0}));
+        if (crS) crS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||'', debit:0, credit:s.amount, balance:0}));
         else if(r.credit_account_name && r.credit_record_type && r.credit_amount>0)
           legs.push({...base, record_type:r.credit_record_type, account_name:r.credit_account_name, debit:0, credit:r.credit_amount, balance:0});
       });
@@ -5838,13 +5838,13 @@ async function postToLedgers(journalId,row){
   const crS = row._crSplits && row._crSplits.length ? row._crSplits : null;
 
   if (drS) {
-    drS.forEach(s=>postings.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||base.narration, debit:s.amount, credit:0, balance:0}));
+    drS.forEach(s=>postings.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||'', debit:s.amount, credit:0, balance:0}));
   } else if(row.debit_account_name && row.debit_record_type && row.debit_amount>0){
     postings.push({...base, record_type:row.debit_record_type, account_name:row.debit_account_name, debit:row.debit_amount, credit:0, balance:0 });
   }
 
   if (crS) {
-    crS.forEach(s=>postings.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||base.narration, debit:0, credit:s.amount, balance:0}));
+    crS.forEach(s=>postings.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||'', debit:0, credit:s.amount, balance:0}));
   } else if(row.credit_account_name && row.credit_record_type && row.credit_amount>0){
     postings.push({...base, record_type:row.credit_record_type, account_name:row.credit_account_name, debit:0, credit:row.credit_amount, balance:0 });
   }
@@ -7403,10 +7403,10 @@ async function saveJournalRow(i) {
     const base = { user_id: bkUser.id, business_id: activeBusiness?.id||null, txn_date: row.txn_date||null, narration: row.narration||null, balance:0 };
     const drS = row._drSplits && row._drSplits.length ? row._drSplits : null;
     const crS = row._crSplits && row._crSplits.length ? row._crSplits : null;
-    if (drS) drS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||base.narration, debit:s.amount, credit:0}));
+    if (drS) drS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||'', debit:s.amount, credit:0}));
     else if (row.debit_account_name && row.debit_record_type && row.debit_amount>0)
       legs.push({...base, record_type: row.debit_record_type, account_name: row.debit_account_name, debit: row.debit_amount, credit: 0});
-    if (crS) crS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||base.narration, debit:0, credit:s.amount}));
+    if (crS) crS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||'', debit:0, credit:s.amount}));
     else if (row.credit_account_name && row.credit_record_type && row.credit_amount>0)
       legs.push({...base, record_type: row.credit_record_type, account_name: row.credit_account_name, debit: 0, credit: row.credit_amount});
     await bdQueueOp('journal_row', {
