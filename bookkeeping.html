@@ -1487,6 +1487,7 @@ body{padding-top:0;}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script>
 // ── INDUSTRY → BUSINESS TYPES ────────────────────────────────
 const INDUSTRY_BUSINESS_TYPES = {
@@ -4042,6 +4043,123 @@ function bdOfflineBanner() {
         \u25CB Offline — showing the last data saved to this device. It will refresh automatically once you're back online.
       </div>`
     : '';
+}
+
+// ── Shared barcode scanner: camera-based, with hardware-scanner
+//    compatibility (a USB/Bluetooth scanner gun just types into
+//    focused inputs, so it needs no special code at all).
+// ─────────────────────────────────────────────────────────────
+function bdOpenScanner(onResult) {
+  closeColMenu();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert('Camera scanning needs a secure (https) connection and camera permission on this device. You can also type the barcode in by hand, or use a USB/Bluetooth barcode scanner — those work automatically in any barcode field.');
+    return;
+  }
+  const wrap = document.createElement('div');
+  wrap.id = 'bdScannerModal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+  wrap.innerHTML = `
+    <video id="bdScanVideo" style="width:100%;max-width:480px;border-radius:12px;background:#111;" playsinline muted></video>
+    <div style="color:#fff;font-size:0.8rem;margin-top:16px;text-align:center;">Point the camera steadily at the barcode</div>
+    <button id="bdScanCancel" style="margin-top:18px;background:var(--gold);color:var(--accent-ink);border:none;font-weight:800;font-size:0.8rem;padding:10px 26px;border-radius:20px;cursor:pointer;">Cancel</button>
+  `;
+  document.body.appendChild(wrap);
+
+  let reader = null;
+  const cleanup = () => { try { reader && reader.reset(); } catch(e){} wrap.remove(); };
+  document.getElementById('bdScanCancel').onclick = cleanup;
+
+  if (typeof ZXing === 'undefined') {
+    alert('The scanner library did not load — check your connection and try again.');
+    cleanup();
+    return;
+  }
+  reader = new ZXing.BrowserMultiFormatReader();
+  reader.decodeFromVideoDevice(null, 'bdScanVideo', (result) => {
+    if (result) { cleanup(); onResult(result.getText()); }
+  }).catch(err => {
+    alert('Could not access the camera: ' + (err.message||err));
+    cleanup();
+  });
+}
+
+// Look up a product by barcode, scoped to the active business
+async function bdFindProductByBarcode(code) {
+  let q = bkDb.from('bk_products').select('*').eq('barcode', code).eq('is_active', true);
+  q = activeBusiness?.id
+    ? q.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+    : q.eq('user_id', bkUser.id);
+  const { data } = await q.limit(1);
+  return (data && data[0]) || null;
+}
+
+// Unknown barcode scanned during a sale — quick-register without
+// leaving the sale, then drop it straight into the current row.
+function bdQuickAddProductForBarcode(code, kind) {
+  closeColMenu();
+  const wrap = document.createElement('div');
+  wrap.id='colMenuPortal'; wrap.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:20px;';
+  const box = document.createElement('div');
+  box.style.cssText='background:var(--surface);border:1px solid var(--gold);border-radius:14px;max-width:340px;width:100%;padding:20px;';
+  box.innerHTML = `
+    <div style="font-weight:900;color:var(--gold);margin-bottom:4px;">New barcode scanned</div>
+    <div style="font-size:0.68rem;color:var(--muted);margin-bottom:12px;">${escH(code)} isn't registered yet. Add it now — it'll be saved for next time and added to this sale.</div>
+    <label class="su-label">PRODUCT NAME</label>
+    <input class="bk-login-input" id="qaName" style="margin-bottom:8px;"/>
+    <label class="su-label">SELLING PRICE</label>
+    <input class="bk-login-input" id="qaPrice" inputmode="decimal" style="margin-bottom:14px;"/>
+    <button id="qaSave" style="width:100%;background:var(--gold);color:var(--accent-ink);border:none;font-weight:800;font-size:0.78rem;padding:10px;border-radius:8px;cursor:pointer;">Add &amp; Use in Sale</button>
+    <button onclick="document.getElementById('colMenuPortal').remove()" style="width:100%;background:none;color:var(--muted);border:1px solid var(--border2);font-size:0.74rem;padding:8px;border-radius:8px;cursor:pointer;margin-top:8px;">Cancel</button>
+  `;
+  wrap.appendChild(box);
+  document.body.appendChild(wrap);
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) wrap.remove(); });
+  setTimeout(()=>document.getElementById('qaName')?.focus(), 50);
+  document.getElementById('qaSave').onclick = async () => {
+    const name = document.getElementById('qaName').value.trim();
+    const price = parseFloat(document.getElementById('qaPrice').value)||0;
+    if (!name) { alert('Enter a product name.'); return; }
+    try {
+      const { error } = await bkDb.from('bk_products').insert({
+        user_id: bkUser.id, business_id: activeBusiness?.id||null, product_name: name, price, cost_price:0,
+        qty_in_stock:0, unit:'unit', barcode: code, is_service:false, is_active:true,
+      });
+      if (error) throw error;
+      wrap.remove();
+      bdAddScannedItemToSale({ product_name:name, price }, kind);
+      bdToast('\u2713 '+name+' added and registered for next time');
+    } catch(e) { alert('Could not add product: '+(e.message||'')); }
+  };
+}
+
+// Drop a found/created product into the sale sheet — bump quantity
+// if it's already the current row, otherwise add a fresh row.
+function bdAddScannedItemToSale(product, kind) {
+  const rows = sheetRows(kind);
+  let target = rows.find(r => !r._posted && r.narration === product.product_name);
+  if (!target) {
+    const last = rows[rows.length-1];
+    if (last && !last.narration && !(last.total>0)) target = last;
+    else { target = staffEmptySaleRow(rows.length+1); rows.push(target); }
+  }
+  target.narration = product.product_name;
+  target.unit_price = parseFloat(product.price)||0;
+  target.qty = (target.qty||0) + 1;
+  target.total = target.unit_price * target.qty;
+  renderRecordSheet(kind);
+}
+
+// Toolbox entry point for the Sales page
+function sheetScanToSell(kind) {
+  bdOpenScanner(async code => {
+    const product = await bdFindProductByBarcode(code);
+    if (product) {
+      bdAddScannedItemToSale(product, kind);
+      bdToast('\u2713 '+product.product_name+' added \u2014 scan again to add another');
+    } else {
+      bdQuickAddProductForBarcode(code, kind);
+    }
+  });
 }
 
 function ensureTrailingBlank() {
@@ -9043,6 +9161,7 @@ let psRows=[], psType='products';
 // ── Column definitions ────────────────────────────────────────
 const PS_COL_DEFS = {
   products: [
+    { id:'barcode',      label:'Barcode',                         def:true  },
     { id:'product_type', label:'Product Type',                    def:true  },
     { id:'cost_price',   label:'Cost Price',                      def:false },
     { id:'sell_price',   label:'Selling Price',                   def:true  },
@@ -9197,6 +9316,7 @@ async function showProductsPage(type) {
   psRows = (data||[]).map(r => ({
     id:             r.id,
     name:           r.product_name || '',
+    barcode:        r.barcode || '',
     product_type:   r.product_type || '',
     cost_price:     parseFloat(r.cost_price) || 0,
     sell_price:     parseFloat(r.price) || 0,
@@ -9269,6 +9389,7 @@ function psRenderTable() {
   }).join('');
 
   let thHtml = '<th style="width:36px;">S/N</th><th>'+(isSvc?'Service':'Product')+'</th>';
+  if (!isSvc && show('barcode'))      thHtml += '<th style="width:150px;">Barcode</th>';
   if (!isSvc && show('product_type')) thHtml += '<th style="min-width:110px;">Product Type</th>';
   if (isSvc  && show('service_type')) thHtml += '<th style="min-width:110px;">Service Type</th>';
   if (!isSvc && show('cost_price'))   thHtml += '<th class="num" style="width:110px;">Cost Price</th>';
@@ -9291,6 +9412,12 @@ function psRenderTable() {
       + '<td><input class="ps-cell" type="text" value="'+escH(r.name)+'"'
       + ' placeholder="'+(isSvc?'Service':'Product')+' name…"'
       + ' oninput="psRows['+i+'].name=this.value;psRows['+i+'].saved=false"/></td>';
+    if (!isSvc && show('barcode')) td += '<td><div style="display:flex;align-items:center;gap:3px;">'
+      + '<input class="ps-cell" type="text" value="'+escH(r.barcode||'')+'" style="flex:1;min-width:0;"'
+      + ' placeholder="Scan or type…" oninput="psRows['+i+'].barcode=this.value;psRows['+i+'].saved=false"/>'
+      + '<button type="button" title="Scan barcode" onclick="bdOpenScanner(code=>{psRows['+i+'].barcode=code;psRows['+i+'].saved=false;renderProductsPage();})"'
+      + ' style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.9rem;padding:2px 4px;flex-shrink:0;">\uD83D\uDCF7</button>'
+      + '</div></td>';
     if (!isSvc && show('product_type')) td += '<td><input class="ps-cell" type="text" value="'+escH(r.product_type||'')+'"'
       + ' placeholder="e.g. Hair care…" oninput="psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false"/></td>';
     if (isSvc  && show('service_type')) td += '<td><input class="ps-cell" type="text" value="'+escH(r.product_type||'')+'"'
@@ -9339,7 +9466,7 @@ function psUpdateTotals(i) {
 
 function psAddRow() {
   psSnapshot();
-  psRows.push({id:null,name:'',product_type:'',cost_price:0,sell_price:0,qty:0,qty_date:'',unit:'unit',income_account:'',saved:false});
+  psRows.push({id:null,name:'',barcode:'',product_type:'',cost_price:0,sell_price:0,qty:0,qty_date:'',unit:'unit',income_account:'',saved:false});
   renderProductsPage();
   setTimeout(()=>{ document.querySelectorAll('#psBody tr').item(psRows.length-1)?.querySelector('input')?.focus(); },40);
 }
@@ -9357,6 +9484,7 @@ async function psSaveRow(i) {
     product_name:r.name.trim(), price:r.sell_price, cost_price:r.cost_price,
     qty_in_stock:r.qty, unit:r.unit, product_type:r.product_type||null,
     qty_as_at:r.qty_date||null, income_account:r.income_account||null,
+    barcode:r.barcode||null,
     updated_at:new Date().toISOString(),
   };
   if(!r.id) {
@@ -10692,6 +10820,7 @@ function renderRecordSheet(kind) {
       <button class="tb-icon" title="Freeze rows" onclick="sheetTogglePanel('${kind}','freeze')">❄</button>
       <button class="tb-icon" title="Date filter" onclick="sheetTogglePanel('${kind}','date')">📅</button>
       <button class="tb-icon" title="Today" onclick="sheetToday('${kind}')">Today</button>
+      ${isSales ? `<button class="tb-icon" title="Scan a product barcode to add it to this sale" onclick="sheetScanToSell('${kind}')">\uD83D\uDCF7 Scan</button>` : ''}
       ${isSales ? `<label class="tb-icon" title="Generate a receipt for each row" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
         <input type="checkbox" ${st.receipt?'checked':''} onchange="sheetToggleReceipt('${kind}',this.checked)" style="accent-color:var(--gold);"/> Receipt
       </label>` : ''}
