@@ -1268,7 +1268,6 @@ body{padding-top:0;}
       <div class="bk-submenu-item" onclick="showDayBook('salesreturns');closeBkMenu()">↩ Sales Returns Day Book</div>
       <div class="bk-submenu-item" onclick="showDayBook('purchreturns');closeBkMenu()">↪ Purchases Returns Day Book</div>
       <div class="bk-submenu-item" onclick="showDayBook('cash');closeBkMenu()">💵 Cash Book</div>
-      <div class="bk-submenu-item" onclick="openGeneralJournal();closeBkMenu()">✒ General Journal</div>
     </div>
 
     <!-- Ledgers (owner/manager only) -->
@@ -5549,10 +5548,6 @@ function jrnPrint(orientation) {
 }
 
 // ── Books of Prime Entry: day-book views ─────────────────────
-function openGeneralJournal() {
-  window._jrnManualOnly = true;
-  openJournal();
-}
 async function showDayBook(kind) {
   staffHideChrome();
   const titles = {
@@ -5614,10 +5609,7 @@ async function openJournal() {
 
   // Direct postings (sales, expenses, ledgers) — the journal is the book of prime entry
   let _txLegs = [];
-  const _manualOnly = window._jrnManualOnly === true;
-  window._jrnManualOnly = false;
   try {
-    if (_manualOnly) throw 'skip';
   let _tq = bkDb.from('bk_transactions')
   .select('id,txn_date,narration,account_name,debit,credit,record_type,created_at')
   .is('journal_id', null);
@@ -8569,7 +8561,7 @@ async function completeSetup() {
       <p style="font-size:0.85rem;color:var(--muted);line-height:1.65;margin-bottom:8px;">
         ${setupProfile.is_new_business===false
           ? 'Your accounts are ready. Start by setting opening balances for each account — go to Records and enter your opening balance when creating each account.'
-          : 'Your bookkeeping is ready to go. Start recording transactions in the Master Records (General Journal) or open individual ledger accounts from the Records menu.'}
+          : 'Your bookkeeping is ready to go. Start recording transactions in the Master Journal or open individual ledger accounts from the Records menu.'}
       </p>
       <p style="font-size:0.78rem;color:var(--gold);margin-bottom:28px;">
         ✨ Tip: Always use the AI tutor — click any column header for instant help.
