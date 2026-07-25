@@ -832,7 +832,7 @@ body{padding-top:0;}
 .coa-section-code{font-size:0.75rem;color:var(--gold);font-weight:700;margin-left:8px;}
 
 .col-resize-handle{touch-action:none;}
-.coa-group-hdr{padding:10px 18px 6px;font-size:0.68rem;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border);background:var(--surface2);}
+.coa-group-hdr{font-size:0.68rem;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border);background:var(--surface2);}
 .coa-account-row{display:flex;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);gap:12px;transition:background 0.1s;}
 .coa-account-row:hover{background:var(--gold-t004);}
 .coa-account-num{font-size:0.78rem;font-weight:700;color:var(--gold);width:52px;flex-shrink:0;}
@@ -3700,7 +3700,7 @@ function renderLedger() {
     <div style="padding:0 0 10px;"><button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="renderCOA()">← Back</button></div>
     ${bdOfflineBanner()}
     <div class="sched-total-banner" id="ledgerTotalBanner" style="border-left:4px solid ${color};margin-bottom:12px;">
-      <div class="sched-total-label">Total ${activeAccount.account_name}</div>
+      <div class="sched-total-label">${escH(activeAccount.account_name)}</div>
       <div class="sched-total-val" id="ledgerTotalVal" style="color:${color};">${balText}</div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:6px;padding:0 0 8px;flex-wrap:wrap;">
@@ -8605,6 +8605,52 @@ async function openChartOfAccounts() {
 }
 
 // ── Main sub-ledgers (account groups) ────────────────────────
+// ── Chart-of-account numbers — editable, for accounts and for
+//    main sub-ledger groups alike. ─────────────────────────────
+function _coaCodes(){ try { return JSON.parse(localStorage.getItem('bd_coa_codes')||'{}'); } catch(e){ return {}; } }
+function _coaGroupCodes(){ try { return JSON.parse(localStorage.getItem('bd_coa_group_codes')||'{}'); } catch(e){ return {}; } }
+function coaSetAccountCode(acctId, val) {
+  const c = _coaCodes(); c[acctId] = val;
+  localStorage.setItem('bd_coa_codes', JSON.stringify(c));
+}
+function coaSetGroupCode(title, val) {
+  const c = _coaGroupCodes(); c[title] = val;
+  localStorage.setItem('bd_coa_group_codes', JSON.stringify(c));
+}
+
+// ── Delete a main sub-ledger — dissolves the grouping only; the
+//    accounts under it are kept, just reverted to their default
+//    classification. Never deletes any account or transaction. ──
+function coaDeleteMainGroup(type, title) {
+  if (!confirm('Delete the main sub-ledger "'+title+'"? The accounts under it are kept — they will simply return to their normal classification.')) return;
+  const g = _coaGroups(); g[type] = (g[type]||[]).filter(t=>t!==title);
+  localStorage.setItem('bd_coa_groups', JSON.stringify(g));
+  const m = _coaMemb();
+  Object.keys(m).forEach(name=>{ if (m[name]===title) delete m[name]; });
+  localStorage.setItem('bd_coa_memb', JSON.stringify(m));
+  const gc = _coaGroupCodes(); delete gc[title];
+  localStorage.setItem('bd_coa_group_codes', JSON.stringify(gc));
+  renderCOA();
+  bdToast('\u2713 "'+title+'" deleted \u2014 its accounts were kept');
+}
+
+// ── Rename a main sub-ledger — updates the group's own name and
+//    every account's membership pointer, so nothing is orphaned. ──
+function coaRenameGroup(type, oldTitle, newVal) {
+  const newTitle = (newVal||'').trim();
+  if (!newTitle || newTitle===oldTitle) { renderCOA(); return; }
+  const g = _coaGroups(); g[type] = (g[type]||[]).map(t=>t===oldTitle?newTitle:t);
+  localStorage.setItem('bd_coa_groups', JSON.stringify(g));
+  const m = _coaMemb();
+  Object.keys(m).forEach(name=>{ if (m[name]===oldTitle) m[name]=newTitle; });
+  localStorage.setItem('bd_coa_memb', JSON.stringify(m));
+  const gc = _coaGroupCodes();
+  if (gc[oldTitle]!==undefined) { gc[newTitle]=gc[oldTitle]; delete gc[oldTitle]; localStorage.setItem('bd_coa_group_codes', JSON.stringify(gc)); }
+  if (_coaAddOpenFor===oldTitle) _coaAddOpenFor = newTitle;
+  renderCOA();
+  bdToast('\u2713 Renamed to "'+newTitle+'"');
+}
+
 function _coaGroups(){ try { return JSON.parse(localStorage.getItem('bd_coa_groups')||'{}'); } catch(e){ return {}; } }
 function _coaMemb(){ try { return JSON.parse(localStorage.getItem('bd_coa_memb')||'{}'); } catch(e){ return {}; } }
 function coaMakeMainGroup(type) {
@@ -8667,27 +8713,37 @@ async function openGroupLedger(type, title) {
     }
   } catch(e){}
   const sym = CURRENCIES[activeCurrency].symbol;
-  let dr=0, cr=0;
+  const drNormal = (type==='asset' || type==='expenditure');
   const obTotal = members.reduce((s,a)=>s+(parseFloat(a.opening_balance)||0),0);
+  let running = obTotal;
+  let dr=0, cr=0;
   const rows = T.map((t,n)=>{
-    dr += parseFloat(t.debit)||0; cr += parseFloat(t.credit)||0;
+    const d = parseFloat(t.debit)||0, c = parseFloat(t.credit)||0;
+    dr += d; cr += c;
+    running += drNormal ? (d - c) : (c - d);
     return `<tr><td style="color:var(--muted);">${n+1}</td><td>${t.txn_date?formatDateDisplay(t.txn_date):''}</td>
-      <td style="color:var(--gold);">${escH(t.account_name)}</td><td>${escH(t.narration||'')}</td>
-      <td class="num">${(parseFloat(t.debit)||0)>0?fmtNum(t.debit):''}</td>
-      <td class="num">${(parseFloat(t.credit)||0)>0?fmtNum(t.credit):''}</td></tr>`;
+      <td style="color:var(--gold);">${escH(t.account_name)}</td>
+      <td class="num">${d>0?fmtNum(d):''}</td>
+      <td class="num">${c>0?fmtNum(c):''}</td>
+      <td class="num">${fmtNum(running)}</td></tr>`;
   }).join('');
+  const color = 'var(--gold)';
+  const closingText = fmt(Math.abs(running));
   el.innerHTML = `
-    <div style="padding:16px;max-width:860px;margin:0 auto;">
-      <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;margin-bottom:12px;" onclick="renderCOA()">← Back</button>
-      <div style="font-size:1.05rem;font-weight:900;color:var(--white);">${escH(title)} — MAIN SUB-LEDGER</div>
-      <div style="font-size:0.68rem;color:var(--gold);font-weight:700;margin:2px 0 12px;">${members.length} account${members.length===1?'':'s'}: ${names.map(escH).join(', ')||'none yet'}</div>
-      ${obTotal?`<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px;">Combined opening balances: <b style="color:var(--white);">${fmt(obTotal)}</b></div>`:''}
+    <div style="padding:0 0 10px;"><button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="renderCOA()">← Back</button></div>
+    <div class="sched-total-banner" style="border-left:4px solid ${color};margin-bottom:12px;">
+      <div class="sched-total-label">${escH(title)}</div>
+      <div class="sched-total-val" style="color:${color};">${closingText}</div>
+    </div>
+    <div style="padding:16px;max-width:860px;margin:0 auto 0 0;">
+      <div style="font-size:0.68rem;color:var(--gold);font-weight:700;margin:-4px 0 12px;">${members.length} account${members.length===1?'':'s'}: ${names.map(escH).join(', ')||'none yet'}</div>
       <div class="bk-sheet-wrap"><table class="bk-sheet" style="min-width:680px;">
-        <thead><tr><th style="width:40px;">S/N</th><th style="width:120px;">Date</th><th style="width:160px;">Account</th><th>Narration</th>
-        <th class="num" style="width:110px;">Debit (${sym})</th><th class="num" style="width:110px;">Credit (${sym})</th></tr></thead>
+        <thead><tr><th style="width:40px;">S/N</th><th style="width:120px;">Date</th><th style="width:160px;">Sub ledger</th>
+        <th class="num" style="width:110px;">Debit (${sym})</th><th class="num" style="width:110px;">Credit (${sym})</th>
+        <th class="num" style="width:120px;">Balance (${sym})</th></tr></thead>
         <tbody>${rows||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px;">No transactions yet in this main sub-ledger.</td></tr>'}</tbody>
-        <tfoot><tr style="font-weight:900;"><td colspan="4" style="text-align:right;color:var(--gold);">Totals</td>
-        <td class="num">${fmtNum(dr)}</td><td class="num">${fmtNum(cr)}</td></tr></tfoot>
+        <tfoot><tr style="font-weight:900;"><td colspan="3" style="text-align:right;color:var(--gold);">Totals</td>
+        <td class="num">${fmtNum(dr)}</td><td class="num">${fmtNum(cr)}</td><td class="num">${fmtNum(running)}</td></tr></tfoot>
       </table></div>
     </div>`;
 }
@@ -8773,6 +8829,9 @@ function renderCOA() {
             onclick="${coaSelMode?`event.stopPropagation();coaToggleSelect('${a.id}')`:`coaOpenRecord('${a.id}','${active}')`}">
             ${coaSelMode?`<span class="op-circle ${coaSelected.includes(a.id)?'on':''}" style="margin-right:8px;flex-shrink:0;" onclick="event.stopPropagation();coaToggleSelect('${a.id}')"></span>`:''}
             <span class="coa-account-num">${child?'↳':base+i+1}</span>
+            <input class="coa-account-code" value="${escH((_coaCodes()[a.id])||'')}" placeholder="Code" title="Chart of account number"
+              style="width:48px;flex-shrink:0;background:none;border:none;outline:none;color:var(--gold);font-size:0.72rem;font-weight:700;font-family:inherit;"
+              onclick="event.stopPropagation()" onchange="coaSetAccountCode('${a.id}',this.value)"/>
             <input class="coa-account-name" style="background:none;border:none;outline:none;color:var(--off);font-size:0.83rem;font-family:inherit;flex:1;" value="${escH(a.account_name)}"
               onclick="event.stopPropagation()" id="coaName_${a.id}"/>
             <span class="coa-account-type">${active==='asset'||active==='expenditure'?'Dr normal':'Cr normal'}</span>
@@ -8798,9 +8857,20 @@ function renderCOA() {
           return selBar + groups.map(([title,test])=>{
             const items = accts.map((a,i)=>({a,i})).filter(o=>!o.a.parent_id &&
               (memb[o.a.account_name] ? memb[o.a.account_name]===title : test(o.a)));
-            const hdr = `<div class="coa-group-hdr" style="display:flex;align-items:center;gap:8px;">
-              <span onclick="openGroupLedger('${active}','${title.replace(/'/g,"\\'")}')" style="cursor:pointer;flex:1;">${title} ›</span>
-              <button class="coa-add-btn" style="padding:4px 10px;font-size:0.66rem;" onclick="coaGroupAddToggle('${active}','${title.replace(/'/g,"\\'")}')">+ Add</button>
+            const isMainGroup = customs.some(([n])=>n===title);
+            const titleEsc = title.replace(/'/g,"\\'");
+            const hdr = `<div class="coa-group-hdr" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px 6px;"
+              onclick="openGroupLedger('${active}','${titleEsc}')">
+              ${isMainGroup?`<input value="${escH((_coaGroupCodes()[title])||'')}" placeholder="Code" title="Chart of account number"
+                onclick="event.stopPropagation()" onchange="coaSetGroupCode('${titleEsc}',this.value)"
+                style="width:44px;flex-shrink:0;background:none;border:none;outline:none;color:var(--gold);font-size:0.66rem;font-weight:800;font-family:inherit;"/>`:''}
+              ${isMainGroup?`<input value="${escH(title)}" onclick="event.stopPropagation()"
+                onchange="coaRenameGroup('${active}','${titleEsc}',this.value)"
+                style="flex:1;background:none;border:none;outline:none;color:var(--gold);font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;font-family:inherit;padding:0;"/>`
+                :`<span style="flex:1;">${escH(title)}</span>`}
+              <span style="color:var(--gold);">›</span>
+              <button class="coa-add-btn" style="padding:4px 10px;font-size:0.66rem;" onclick="event.stopPropagation();coaGroupAddToggle('${active}','${titleEsc}')">+ Add</button>
+              ${isMainGroup?`<button class="coa-del-btn" title="Delete main sub-ledger" onclick="event.stopPropagation();coaDeleteMainGroup('${active}','${titleEsc}')">✕</button>`:''}
             </div>` + (_coaAddOpenFor===title?`
             <div class="coa-add-row" style="padding:8px 18px;">
               <input class="coa-add-input" id="coaGrpInput" placeholder="New account under ${title}…"
