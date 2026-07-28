@@ -265,7 +265,7 @@ body[data-theme="skyline"] .staff-save-static-btn{color:#ffffff !important;}
 .jrn-sn-hl .jrn-sn-tri{opacity:1;}
 .jrn-sn-hl{background:var(--gold-dim) !important;color:var(--gold) !important;}
 .jrn-row-hl td{background:var(--gold-t008);}
-.jrn-wrap-ta{white-space:normal;overflow:hidden !important;resize:none;min-height:30px;pointer-events:auto;scrollbar-width:none;}
+.jrn-wrap-ta{white-space:normal;overflow-y:auto !important;resize:none;min-height:30px;max-height:320px;pointer-events:auto;scrollbar-width:none;}
 .jrn-wrap-ta::-webkit-scrollbar{display:none;}
 
 .dash-date-btn{position:absolute;top:14px;right:16px;background:var(--surface);border:1px solid var(--gold);color:var(--gold);font-size:0.68rem;font-weight:800;padding:7px 12px;border-radius:9px;cursor:pointer;max-width:52vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -4114,19 +4114,37 @@ function bdOpenScanner(onResult) {
   document.body.appendChild(wrap);
 
   let reader = null;
-  const cleanup = () => { try { reader && reader.reset(); } catch(e){} wrap.remove(); };
+  let stopped = false;
+  const cleanup = () => {
+    stopped = true;
+    try { reader && reader.reset(); } catch(e){}
+    wrap.remove();
+  };
   document.getElementById('bdScanCancel').onclick = cleanup;
 
-  if (typeof ZXing === 'undefined') {
-    alert('The scanner library did not load — check your connection and try again.');
+  if (typeof ZXing === 'undefined' || !ZXing.BrowserMultiFormatReader) {
+    alert('The scanner library did not load correctly — check your connection and try again.');
     cleanup();
     return;
   }
+
+  // Deliberately the simplest possible setup: no format restrictions,
+  // no hints map. Those are optimizations, and a misconfigured hints
+  // object is exactly the kind of thing that silently stops decoding
+  // while the camera preview keeps running — better to decode every
+  // supported format than to risk decoding nothing at all.
   reader = new ZXing.BrowserMultiFormatReader();
-  reader.decodeFromVideoDevice(null, 'bdScanVideo', (result) => {
-    if (result) { cleanup(); onResult(result.getText()); }
+  reader.decodeFromVideoDevice(null, 'bdScanVideo', (result, err) => {
+    if (stopped) return;
+    if (result) {
+      const text = result.getText ? result.getText() : String(result);
+      cleanup();
+      onResult(text);
+    }
+    // NotFoundException fires continuously while no barcode is in view —
+    // that is normal scanning behaviour, not an error to react to.
   }).catch(err => {
-    alert('Could not access the camera: ' + (err.message||err));
+    alert('Could not access the camera: ' + (err && err.message ? err.message : err));
     cleanup();
   });
 }
@@ -5049,7 +5067,7 @@ function emptyJournalRow(order) {
 
 // ── Journal: date-driven fill + row tools + toolbox ──────────
 let jrnDateFrom = null;
-let jrnTb = { open:false, search:'', font:'Nunito', wrap:'overflow', undoStack:[], redoStack:[] };
+let jrnTb = { open:false, search:'', font:'Nunito', wrap:'overflow', freeze:false, undoStack:[], redoStack:[] };
 function jrnDatePortal(ev) {
   closeColMenu();
   const rect = ev.target.getBoundingClientRect();
@@ -5498,6 +5516,25 @@ function jrnInitRowDrag() {
   tbody.addEventListener('pointercancel', end);
 }
 function jrnToggleToolbox(){ jrnTb.open=!jrnTb.open; renderJournal(); }
+function jrnToggleFreeze(){ jrnTb.freeze=!jrnTb.freeze; renderJournal(); }
+function jrnApplyFreeze() {
+  const header = document.querySelector('#bkContent .bk-content-header');
+  const toolbox = document.querySelector('#bkContent .sheet-toolbox');
+  const theadCells = document.querySelectorAll('#journalTable thead th');
+  if (jrnTb.freeze) {
+    document.body.classList.add('jrn-frozen');
+    if (header) { header.style.position='sticky'; header.style.top='0px'; header.style.zIndex='50'; header.style.background='var(--bg)'; }
+    const headerH = header ? header.offsetHeight : 0;
+    if (toolbox) { toolbox.style.position='sticky'; toolbox.style.top=headerH+'px'; toolbox.style.zIndex='49'; toolbox.style.background='var(--bg)'; }
+    const totalOffset = headerH + (toolbox ? toolbox.offsetHeight : 0);
+    theadCells.forEach(th => { th.style.position='sticky'; th.style.top=totalOffset+'px'; th.style.zIndex='40'; th.style.background='var(--surface2)'; });
+  } else {
+    document.body.classList.remove('jrn-frozen');
+    if (header) { header.style.position=''; header.style.top=''; header.style.zIndex=''; header.style.background=''; }
+    if (toolbox) { toolbox.style.position=''; toolbox.style.top=''; toolbox.style.zIndex=''; toolbox.style.background=''; }
+    theadCells.forEach(th => { th.style.position=''; th.style.top=''; th.style.zIndex=''; th.style.background=''; });
+  }
+}
 function jrnExecuteSearch(){ jrnTb.search=document.getElementById('jrnSearch')?.value||''; jrnApplySearch(); }
 function jrnApplySearch() {
   const q = jrnTb.search.trim().toLowerCase();
@@ -5713,6 +5750,9 @@ function renderJournal() {
       </button>
       <button class="tb-icon ${jrnSelRows.length?'tb-active':''}" title="Select rows" onclick="jrnToggleSelectHint()">☑ Select</button>
       <button class="tb-icon" title="Delete selected rows" onclick="jrnDeleteRowsFrom(jrnSelRows[0]??-1)">🗑 Delete</button>
+      <label class="tb-icon" title="Keep the headers visible while scrolling" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
+        <input type="checkbox" ${jrnTb.freeze?'checked':''} onchange="jrnToggleFreeze()" style="accent-color:var(--gold);"/> Freeze
+      </label>
     </div>`:''}
 
     <div class="bk-sheet-wrap">
@@ -5743,8 +5783,8 @@ function renderJournal() {
       <button class="bk-btn bk-btn-gold" style="font-size:0.8rem;padding:9px 24px;align-self:flex-start;" onclick="saveJournal()">Save &amp; Post</button>
     </div>`;
   renderJournalRows();
-  setTimeout(function(){ jrnApplyHidden(); jrnInitRowDrag(); jrnApplySearch();
-    document.querySelectorAll('.jrn-wrap-ta').forEach(ta=>{ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; });
+  setTimeout(function(){ jrnApplyHidden(); jrnInitRowDrag(); jrnApplySearch(); jrnApplyFreeze();
+    if (jrnTb.wrap==='wrap') document.querySelectorAll('.jrn-wrap-ta').forEach(ta=>{ ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,320)+'px'; });
   }, 0);
 }
 
@@ -6092,6 +6132,7 @@ async function saveJournal(){
   journalRows.forEach(r=>r.saved=true);
   if(msg){ msg.textContent='✓ Saved & posted to all ledgers'; msg.className='bk-save-msg ok'; }
   await refreshEquation();
+  bdRefreshDashboardIfVisible();
 }
 
 async function postToLedgers(journalId,row){
@@ -7636,6 +7677,7 @@ async function saveRow(idx) {
   rows[idx].saved = true;
   setSaveMsg('✓ Row saved','ok');
   await refreshEquation();
+  bdRefreshDashboardIfVisible();
   // Flash the save button green
   const btn = document.querySelector(`#row_${idx} .save-row-btn`);
   if (btn) {
@@ -7719,6 +7761,7 @@ async function saveJournalRow(i) {
 
   journalRows[i].saved = true;
   await refreshEquation();
+  bdRefreshDashboardIfVisible();
   if (msg) { msg.textContent='✓ Posted'; msg.className='bk-save-msg ok'; }
 }
 
@@ -8684,7 +8727,10 @@ async function coaGroupAdd(type, title) {
     bdToast('\u2713 "'+name+'" added under '+title);
   } catch(e){ alert('Could not add: '+(e.message||'')); }
 }
-async function openGroupLedger(type, title) {
+function coaOpenMainLedger(type) {
+  openGroupLedger(type, COA_LABELS[type], true);
+}
+async function openGroupLedger(type, title, allAccounts) {
   staffHideChrome();
   const memb = _coaMemb();
   const groupsFor = {
@@ -8695,7 +8741,7 @@ async function openGroupLedger(type, title) {
     capital: [['Capital & Equity', ()=>true]],
   };
   const baseTest = (groupsFor[type]||[]).find(([t])=>t===title)?.[1];
-  const members = (accounts[type]||[]).filter(a=>
+  const members = allAccounts ? (accounts[type]||[]) : (accounts[type]||[]).filter(a=>
     memb[a.account_name] ? memb[a.account_name]===title : (baseTest ? baseTest(a) : false));
   const names = members.map(a=>a.account_name);
   const el = document.getElementById('bkContent');
@@ -8820,8 +8866,8 @@ function renderCOA() {
         </div>`).join('')}
       </div>
       <div class="coa-section">
-        <div class="coa-section-header">
-          <div><span class="coa-section-title">${COA_LABELS[active]}</span><span class="coa-section-code">${base}.xx</span></div>
+        <div class="coa-section-header" style="cursor:pointer;" onclick="coaOpenMainLedger('${active}')">
+          <div><span class="coa-section-title">${COA_LABELS[active]}</span><span class="coa-section-code">${base}</span></div>
           <span style="font-size:0.72rem;color:var(--muted);">${accts.length} account${accts.length!==1?'s':''}</span>
         </div>
         ${(()=>{
@@ -8829,9 +8875,6 @@ function renderCOA() {
             onclick="${coaSelMode?`event.stopPropagation();coaToggleSelect('${a.id}')`:`coaOpenRecord('${a.id}','${active}')`}">
             ${coaSelMode?`<span class="op-circle ${coaSelected.includes(a.id)?'on':''}" style="margin-right:8px;flex-shrink:0;" onclick="event.stopPropagation();coaToggleSelect('${a.id}')"></span>`:''}
             <span class="coa-account-num">${child?'↳':base+i+1}</span>
-            <input class="coa-account-code" value="${escH((_coaCodes()[a.id])||'')}" placeholder="Code" title="Chart of account number"
-              style="width:48px;flex-shrink:0;background:none;border:none;outline:none;color:var(--gold);font-size:0.72rem;font-weight:700;font-family:inherit;"
-              onclick="event.stopPropagation()" onchange="coaSetAccountCode('${a.id}',this.value)"/>
             <input class="coa-account-name" style="background:none;border:none;outline:none;color:var(--off);font-size:0.83rem;font-family:inherit;flex:1;" value="${escH(a.account_name)}"
               onclick="event.stopPropagation()" id="coaName_${a.id}"/>
             <span class="coa-account-type">${active==='asset'||active==='expenditure'?'Dr normal':'Cr normal'}</span>
@@ -8868,7 +8911,6 @@ function renderCOA() {
                 onchange="coaRenameGroup('${active}','${titleEsc}',this.value)"
                 style="flex:1;background:none;border:none;outline:none;color:var(--gold);font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;font-family:inherit;padding:0;"/>`
                 :`<span style="flex:1;">${escH(title)}</span>`}
-              <span style="color:var(--gold);">›</span>
               <button class="coa-add-btn" style="padding:4px 10px;font-size:0.66rem;" onclick="event.stopPropagation();coaGroupAddToggle('${active}','${titleEsc}')">+ Add</button>
               ${isMainGroup?`<button class="coa-del-btn" title="Delete main sub-ledger" onclick="event.stopPropagation();coaDeleteMainGroup('${active}','${titleEsc}')">✕</button>`:''}
             </div>` + (_coaAddOpenFor===title?`
@@ -13833,8 +13875,15 @@ async function bdDeductStockForSale(row) {
 }
 // If the dashboard is the page currently on screen, refresh its
 // numbers immediately after something that affects them is posted.
-function bdRefreshDashboardIfVisible() {
-  if (currentPage === 'all-businesses') showAllBusinessesDashboard();
+async function bdRefreshDashboardIfVisible() {
+  if (currentPage !== 'all-businesses') return;
+  // A lightweight refresh: re-fetch and re-render only, without the
+  // full-page loading flash or resetting activeBusiness — those are
+  // appropriate for a real navigation, not a background live-update.
+  try {
+    const bizMetrics = await fetchAllBusinessMetrics();
+    renderAllBusinessesDashboard(bizMetrics);
+  } catch(e) {}
 }
 
 async function autoPostSaleRow(row, customerName, txnDate, forcedBusinessId) {
