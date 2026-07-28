@@ -8821,6 +8821,58 @@ function coaToggleSelect(acctId) {
   if (p>=0) coaSelected.splice(p,1); else coaSelected.push(acctId);
   renderCOA();
 }
+// ── Chart of Accounts: shared name + code edit dialog ─────────
+// Rearranges by chart-of-account code (numeric) when codes exist;
+// entries with no code keep their original relative order at the end.
+function _coaSortByCode(list, getCode) {
+  return list
+    .map((item, i) => ({ item, i, code: parseFloat(getCode(item)) }))
+    .sort((a, b) => {
+      const an = !isNaN(a.code), bn = !isNaN(b.code);
+      if (an && bn) return a.code - b.code;
+      if (an) return -1;
+      if (bn) return 1;
+      return a.i - b.i;
+    })
+    .map(x => x.item);
+}
+
+function coaOpenEditDialog(kind, opts) {
+  closeColMenu();
+  const wrap = document.createElement('div');
+  wrap.id='colMenuPortal'; wrap.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:20px;';
+  const box = document.createElement('div');
+  box.style.cssText='background:var(--surface);border:1px solid var(--gold);border-radius:14px;max-width:340px;width:100%;padding:20px;';
+  box.innerHTML = `
+    <div style="font-weight:900;color:var(--gold);margin-bottom:14px;">${kind==='group'?'Edit main sub-ledger':'Edit account'}</div>
+    <label class="su-label">NAME</label>
+    <input class="bk-login-input" id="coaEditName" value="${escH(opts.name)}" style="margin-bottom:10px;"/>
+    <label class="su-label">CHART OF ACCOUNT NUMBER</label>
+    <input class="bk-login-input" id="coaEditCode" value="${escH(opts.code||'')}" placeholder="e.g. 1010" style="margin-bottom:16px;"/>
+    <button id="coaEditSave" style="width:100%;background:var(--gold);color:var(--accent-ink);border:none;font-weight:800;font-size:0.78rem;padding:10px;border-radius:8px;cursor:pointer;">Save</button>
+    <button onclick="document.getElementById('colMenuPortal').remove()" style="width:100%;background:none;color:var(--muted);border:1px solid var(--border2);font-size:0.74rem;padding:8px;border-radius:8px;cursor:pointer;margin-top:8px;">Cancel</button>
+  `;
+  wrap.appendChild(box);
+  document.body.appendChild(wrap);
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) wrap.remove(); });
+  setTimeout(()=>document.getElementById('coaEditName')?.focus(), 50);
+  document.getElementById('coaEditSave').onclick = () => {
+    const name = document.getElementById('coaEditName').value.trim();
+    const code = document.getElementById('coaEditCode').value.trim();
+    if (!name) { alert('Enter a name.'); return; }
+    wrap.remove();
+    if (kind==='group') {
+      if (name !== opts.name) coaRenameGroup(opts.type, opts.name, name);
+      coaSetGroupCode(name, code);
+      renderCOA();
+    } else {
+      coaSetAccountCode(opts.id, code);
+      if (name !== opts.name) { document.getElementById('coaName_'+opts.id).value = name; coaSaveName(opts.id); }
+      else renderCOA();
+    }
+  };
+}
+
 function coaOpenMovePicker(ev) {
   if (!coaSelected.length) { bdToast('Select one or more ledgers first', 'error'); return; }
   const groupsFor = {
@@ -8881,6 +8933,7 @@ function renderCOA() {
             <button class="staff-save-row-btn" style="color:var(--green);" onclick="event.stopPropagation();coaAddChild('${a.id}','${active}')" title="Add a sub-ledger under ${escH(a.account_name)}">+</button>
             <button class="staff-save-row-btn" onclick="event.stopPropagation();bdSaveWrap(this,()=>coaSaveName('${a.id}'))" title="Save name">&rsaquo;</button>
             <button class="coa-del-btn" onclick="event.stopPropagation();coaDeleteAccount('${a.id}','${escH(a.account_name)}')" title="Delete">✕</button>
+            <button class="staff-save-row-btn" title="Edit name and chart of account number" onclick="event.stopPropagation();coaOpenEditDialog('account',{id:'${a.id}',name:'${escH(a.account_name).replace(/'/g,"\\'")}',code:(_coaCodes()['${a.id}']||'')})">✎</button>
           </div>` + (accts.filter(c=>c.parent_id===a.id).map(c=>rowT(c,0,true)).join(''));
           const groupsFor = {
             asset: [['Long-term assets (Fixed Assets)', a=>isFixedAsset(a.account_name)], ['Short-term assets (Current assets)', a=>!isFixedAsset(a.account_name)]],
@@ -8896,23 +8949,23 @@ function renderCOA() {
             <span style="font-size:0.64rem;color:var(--muted);">Select ledgers, then Move to place them in a different sub-ledger.</span>`:''}
           </div>`;
           const customs = (_coaGroups()[active]||[]).map(name=>[name, a=>memb[a.account_name]===name]);
-          const groups = (groupsFor[active] || [['Accounts', ()=>true]]).concat(customs);
+          let groups = (groupsFor[active] || [['Accounts', ()=>true]]).concat(customs);
+          const _gcodes = _coaGroupCodes();
+          groups = _coaSortByCode(groups, g=>_gcodes[g[0]]);
           return selBar + groups.map(([title,test])=>{
-            const items = accts.map((a,i)=>({a,i})).filter(o=>!o.a.parent_id &&
+            let items = accts.map((a,i)=>({a,i})).filter(o=>!o.a.parent_id &&
               (memb[o.a.account_name] ? memb[o.a.account_name]===title : test(o.a)));
+            const _codes = _coaCodes();
+            items = _coaSortByCode(items, o=>_codes[o.a.id]);
             const isMainGroup = customs.some(([n])=>n===title);
             const titleEsc = title.replace(/'/g,"\\'");
+            const groupCode = _coaGroupCodes()[title]||'';
             const hdr = `<div class="coa-group-hdr" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px 6px;"
               onclick="openGroupLedger('${active}','${titleEsc}')">
-              ${isMainGroup?`<input value="${escH((_coaGroupCodes()[title])||'')}" placeholder="Code" title="Chart of account number"
-                onclick="event.stopPropagation()" onchange="coaSetGroupCode('${titleEsc}',this.value)"
-                style="width:44px;flex-shrink:0;background:none;border:none;outline:none;color:var(--gold);font-size:0.66rem;font-weight:800;font-family:inherit;"/>`:''}
-              ${isMainGroup?`<input value="${escH(title)}" onclick="event.stopPropagation()"
-                onchange="coaRenameGroup('${active}','${titleEsc}',this.value)"
-                style="flex:1;background:none;border:none;outline:none;color:var(--gold);font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;font-family:inherit;padding:0;"/>`
-                :`<span style="flex:1;">${escH(title)}</span>`}
+              <span style="flex:1;">${groupCode?escH(groupCode)+' &middot; ':''}${escH(title)}</span>
               <button class="coa-add-btn" style="padding:4px 10px;font-size:0.66rem;" onclick="event.stopPropagation();coaGroupAddToggle('${active}','${titleEsc}')">+ Add</button>
               ${isMainGroup?`<button class="coa-del-btn" title="Delete main sub-ledger" onclick="event.stopPropagation();coaDeleteMainGroup('${active}','${titleEsc}')">✕</button>`:''}
+              ${isMainGroup?`<button class="staff-save-row-btn" title="Edit name and chart of account number" onclick="event.stopPropagation();coaOpenEditDialog('group',{type:'${active}',name:'${titleEsc}',code:'${escH(groupCode).replace(/'/g,"\\'")}'})">✎</button>`:''}
             </div>` + (_coaAddOpenFor===title?`
             <div class="coa-add-row" style="padding:8px 18px;">
               <input class="coa-add-input" id="coaGrpInput" placeholder="New account under ${title}…"
