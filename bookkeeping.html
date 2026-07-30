@@ -4230,6 +4230,26 @@ function sheetScanToSell(kind) {
   });
 }
 
+// ── Sales/Expenses: auto-save & post, like Google Sheets ──────
+let _sheetAutoT = {};
+function sheetAutosaveTrigger(kind) {
+  clearTimeout(_sheetAutoT[kind]);
+  _sheetAutoT[kind] = setTimeout(()=>sheetAutosave(kind), 1800);
+}
+async function sheetAutosave(kind) {
+  const rows = sheetRows(kind);
+  const pending = rows.filter(r => !r._posted && parseFloat(r.total) > 0);
+  if (!pending.length) return;
+  const msg = document.getElementById('sheetSaveMsg_'+kind);
+  if (msg) { msg.textContent = 'Saving & posting…'; msg.className = 'bk-save-msg pending'; }
+  const saveFn = kind==='sales' ? salesSaveRow : expSaveRow;
+  for (const r of pending) {
+    const i = rows.indexOf(r);
+    if (i >= 0) { try { await saveFn(i); } catch(e) {} }
+  }
+  if (msg) { msg.textContent = '✓ Saved & posted'; msg.className = 'bk-save-msg ok'; }
+}
+
 function ensureTrailingBlank() {
   // Idempotent: guarantees exactly one blank row at the end, never more.
   // This is the ONLY place in the app allowed to push a blank ledger row.
@@ -5044,16 +5064,36 @@ function getAllAccounts() {
 
 function buildAccountOptions(selectedName) {
   const types = ['capital','liability','asset','income','expenditure'];
+  const memb = _coaMemb();
+  const groupsFor = {
+    asset: [['Long-term assets (Fixed Assets)', a=>isFixedAsset(a.account_name)], ['Short-term assets (Current assets)', a=>!isFixedAsset(a.account_name)]],
+    liability: [['Long-term liabilities', a=>isLongTermLiab(a.account_name)], ['Short-term liabilities (Current liabilities)', a=>!isLongTermLiab(a.account_name)]],
+    expenditure: [['Cost of Sales / Production', a=>isCOSAccount(a.account_name)], ['Operating Expenses', a=>!isCOSAccount(a.account_name)]],
+    income: [['Operating Income', a=>!/other|interest|dividend|gain/i.test(a.account_name)], ['Other Income', a=>/other|interest|dividend|gain/i.test(a.account_name)]],
+    capital: [['Capital & Equity', ()=>true]],
+  };
   let html = '<option value="">— Select Account —</option>';
   types.forEach(type => {
     const accts = accounts[type]||[];
     if (!accts.length) return;
-    html += `<optgroup label="${type.charAt(0).toUpperCase()+type.slice(1)}">`;
-    accts.forEach(a => {
-      const sel = a.account_name === selectedName ? 'selected' : '';
-      html += `<option value="${escH(a.account_name)}|${type}" ${sel}>${escH(a.account_name)}</option>`;
+    const buckets = {};
+    accts.forEach(a=>{
+      let label = memb[a.account_name];
+      if (!label) {
+        const base = groupsFor[type]||[];
+        const match = base.find(([,test])=>test(a));
+        label = match ? match[0] : 'Other';
+      }
+      (buckets[label]=buckets[label]||[]).push(a);
     });
-    html += '</optgroup>';
+    Object.keys(buckets).forEach(label=>{
+      html += `<optgroup label="${type.charAt(0).toUpperCase()+type.slice(1)} — ${escH(label)}">`;
+      buckets[label].forEach(a => {
+        const sel = a.account_name === selectedName ? 'selected' : '';
+        html += `<option value="${escH(a.account_name)}|${type}" ${sel}>${escH(a.account_name)}</option>`;
+      });
+      html += '</optgroup>';
+    });
   });
   return html;
 }
@@ -5067,7 +5107,7 @@ function emptyJournalRow(order) {
 
 // ── Journal: date-driven fill + row tools + toolbox ──────────
 let jrnDateFrom = null;
-let jrnTb = { open:false, search:'', font:'Nunito', wrap:'overflow', freeze:false, undoStack:[], redoStack:[] };
+let jrnTb = { open:false, search:'', font:'Nunito', wrap:'overflow', freeze:false, autocomplete:false, undoStack:[], redoStack:[] };
 function jrnDatePortal(ev) {
   closeColMenu();
   const rect = ev.target.getBoundingClientRect();
@@ -5200,6 +5240,7 @@ async function jrnLoadRange(from, to) {
     debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
     debit_amount:0, credit_amount:0, saved:false });
   bdCacheWrite('journal_full', journalRows, from+'_'+to);
+  jrnBuildHistory();
   renderJournal();
 }
 function jrnDateFilterPortal(ev) {
@@ -5251,6 +5292,37 @@ function jrnToggleSort() {
       return _jrnEntryOrder(a.r,a.i) - _jrnEntryOrder(b.r,b.i);   // same date — true entry order, always
     })
     .map(x => x.r);
+  renderJournal();
+}
+
+// ── Master Journal: autocomplete from history, toggleable ────
+let jrnNarrHistory = [];
+function jrnBuildHistory() {
+  const seen = new Set();
+  jrnNarrHistory = [];
+  journalRows.forEach(r=>{
+    const n = (r.narration||'').trim();
+    if (n && !seen.has(n.toLowerCase())) { seen.add(n.toLowerCase()); jrnNarrHistory.push(n); }
+  });
+}
+function jrnToggleAutocomplete(){ jrnTb.autocomplete = !jrnTb.autocomplete; renderJournal(); }
+function jrnShowNarrSuggestions(idx, query) {
+  const box = document.getElementById('jrnNarrSuggest_'+idx);
+  if (!box || !jrnTb.autocomplete) return;
+  const q = (query||'').trim().toLowerCase();
+  if (!q) { box.classList.add('hidden'); box.innerHTML=''; return; }
+  const matches = jrnNarrHistory.filter(n => n.toLowerCase().includes(q) && n.toLowerCase()!==q).slice(0,6);
+  if (!matches.length) { box.classList.add('hidden'); box.innerHTML=''; return; }
+  box.innerHTML = matches.map(n => `<div class="bd-suggest-item" onmousedown="jrnPickNarrSuggestion(${idx},'${n.replace(/'/g,"\\'")}')"><span>${escH(n)}</span></div>`).join('');
+  box.classList.remove('hidden');
+}
+function jrnHideNarrSuggestions(idx) {
+  const box = document.getElementById('jrnNarrSuggest_'+idx);
+  if (box) { box.classList.add('hidden'); box.innerHTML=''; }
+}
+function jrnPickNarrSuggestion(idx, text) {
+  journalRows[idx].narration = text;
+  journalRows[idx].saved = false;
   renderJournal();
 }
 
@@ -5424,17 +5496,32 @@ function jrnSplitDone() {
     const other = _splitCtx.side==='debit' ? 'credit_amount' : 'debit_amount';
     if (!row[other]) row[other] = total;
     row.saved = false;
+    jrnAutosave();
   }
   _splitCtx = null;
   closeColMenu();
   renderJournal();
 }
+function _jrnSplitEntryText(prefix, x) {
+  // Payee - Sub ledger - Main sub-ledger - (Main account type) = Amount
+  const memb = _coaMemb();
+  const mainSub = memb[x.account_name] || '';
+  const typeLabel = COA_LABELS[x.record_type] || x.record_type || '';
+  const segs = [];
+  if (x.payee) segs.push(escH(x.payee));
+  segs.push(escH(x.account_name));
+  if (mainSub) segs.push(escH(mainSub));
+  let text = prefix+': '+segs.join(' - ');
+  if (typeLabel) text += ' - (' + escH(typeLabel) + ')';
+  text += ' = ' + fmt(x.amount);
+  return text;
+}
 function jrnSplitSubRow(row, idx, colCount) {
-  const parts = [];
-  if (row._drSplits&&row._drSplits.length) parts.push('Dr: '+row._drSplits.map(x=>(x.payee?escH(x.payee)+' — ':'')+escH(x.account_name)+' '+fmt(x.amount)+(x.narration?' ('+escH(x.narration)+')':'')).join(' · '));
-  if (row._crSplits&&row._crSplits.length) parts.push('Cr: '+row._crSplits.map(x=>escH(x.account_name)+' '+fmt(x.amount)+(x.narration?' ('+escH(x.narration)+')':'')).join(' · '));
-  if (!parts.length) return '';
-  return `<tr class="jrn-split-sub"><td></td><td colspan="10" style="font-size:0.66rem;color:var(--gold);padding:3px 10px;background:var(--gold-dim);">↳ ${parts.join('  |  ')}</td></tr>`;
+  const entries = [];
+  if (row._drSplits&&row._drSplits.length) row._drSplits.forEach(x=>entries.push(_jrnSplitEntryText('Dr', x)));
+  if (row._crSplits&&row._crSplits.length) row._crSplits.forEach(x=>entries.push(_jrnSplitEntryText('Cr', x)));
+  if (!entries.length) return '';
+  return `<tr class="jrn-split-sub"><td></td><td colspan="10" style="font-size:0.66rem;color:var(--gold);padding:3px 10px;background:var(--gold-dim);">↳ ${entries.join(' || ')}</td></tr>`;
 }
 
 function jrnSnMenu(ev, idx) {
@@ -5713,6 +5800,7 @@ async function openJournal() {
   const savedJCount = journalRows.filter(r => r.id || r._ro).length;
   if (savedJCount === 0) journalRows = [];
   bdCacheWrite('journal_full', journalRows);
+  jrnBuildHistory();
   renderJournal();
 }
 
@@ -5748,6 +5836,7 @@ function renderJournal() {
       <button class="tb-icon ${jrnSortDir?'tb-active':''}" title="${jrnSortDir==='asc'?'Sorted ascending — click for descending':jrnSortDir==='desc'?'Sorted descending — click for ascending':'Sort by date'}" onclick="jrnToggleSort()">
         <span style="letter-spacing:-2px;">↓↑</span> Sort${jrnSortDir?(jrnSortDir==='asc'?' ▲':' ▼'):''}
       </button>
+      <button class="tb-icon ${jrnTb.autocomplete?'tb-active':''}" title="Autocomplete suggestions while typing" onclick="jrnToggleAutocomplete()">\uD83D\uDD24 Autocomplete</button>
       <button class="tb-icon ${jrnSelRows.length?'tb-active':''}" title="Select rows" onclick="jrnToggleSelectHint()">☑ Select</button>
       <button class="tb-icon" title="Delete selected rows" onclick="jrnDeleteRowsFrom(jrnSelRows[0]??-1)">🗑 Delete</button>
       <label class="tb-icon" title="Keep the headers visible while scrolling" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
@@ -5839,25 +5928,32 @@ function renderJournalRows() {
       <td><input class="bk-cell" type="text" value="${escH(row.payer)}" placeholder="—"
         onfocus="jCellFocus(this,${idx},'payer')"
         oninput="jCellChange(${idx},'payer',this.value)"/></td>
-      <td>${jrnTb.wrap==='wrap'
-        ? `<textarea class="bk-cell jrn-wrap-ta" rows="1" oninput="jCellChange(${idx},'narration',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'">${escH(row.narration||'')}</textarea>`
-        : `<input class="bk-cell" type="text" value="${escH(row.narration||'')}" placeholder="Narration…"
-          oninput="jCellChange(${idx},'narration',this.value)"/>`}</td>
-      <td><div style="display:flex;align-items:center;gap:2px;">
-        <select class="bk-cell" style="flex:1;min-width:0;"
-          onchange="jAccountChange(${idx},'debit',this.value)">
-          ${row._drSplits&&row._drSplits.length?`<option selected>Multiple (${row._drSplits.length} accounts)</option>`:''}
-          ${buildAccountOptions(row.debit_account_name)}
-        </select>
-        <span onclick="jrnSplitOpen(${idx},'debit')" title="Split across accounts" style="cursor:pointer;font-size:0.72rem;color:var(--gold);padding:2px 4px;">✎</span>
+      <td style="position:relative;">${jrnTb.wrap==='wrap'
+        ? `<textarea class="bk-cell jrn-wrap-ta" rows="1" id="jrnNarrInput_${idx}" oninput="jCellChange(${idx},'narration',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px';jrnShowNarrSuggestions(${idx},this.value)" onblur="setTimeout(()=>jrnHideNarrSuggestions(${idx}),150)">${escH(row.narration||'')}</textarea>`
+        : `<input class="bk-cell" type="text" id="jrnNarrInput_${idx}" value="${escH(row.narration||'')}" placeholder="Narration…"
+          oninput="jCellChange(${idx},'narration',this.value);jrnShowNarrSuggestions(${idx},this.value)"
+          onblur="setTimeout(()=>jrnHideNarrSuggestions(${idx}),150)"/>`}<div id="jrnNarrSuggest_${idx}" class="bd-suggest-box hidden"></div></td>
+      <td><div style="display:flex;flex-direction:column;gap:1px;">
+        <div style="display:flex;align-items:center;gap:2px;">
+          <select class="bk-cell" style="flex:1;min-width:0;"
+            onchange="jAccountChange(${idx},'debit',this.value)">
+            ${row._drSplits&&row._drSplits.length?`<option selected>Multiple (${row._drSplits.length} accounts)</option>`:''}
+            ${buildAccountOptions(row.debit_account_name)}
+          </select>
+          <span onclick="jrnSplitOpen(${idx},'debit')" title="Split across accounts" style="cursor:pointer;font-size:0.72rem;color:var(--gold);padding:2px 4px;">✎</span>
+        </div>
+        <span onclick="openChartOfAccounts()" style="cursor:pointer;font-size:0.58rem;color:var(--muted);text-decoration:underline;padding-left:2px;">📋 Chart of Accounts</span>
       </div></td>
-      <td><div style="display:flex;align-items:center;gap:2px;">
-        <select class="bk-cell" style="flex:1;min-width:0;"
-          onchange="jAccountChange(${idx},'credit',this.value)">
-          ${row._crSplits&&row._crSplits.length?`<option selected>Multiple (${row._crSplits.length} accounts)</option>`:''}
-          ${buildAccountOptions(row.credit_account_name)}
-        </select>
-        <span onclick="jrnSplitOpen(${idx},'credit')" title="Split across accounts" style="cursor:pointer;font-size:0.72rem;color:var(--gold);padding:2px 4px;">✎</span>
+      <td><div style="display:flex;flex-direction:column;gap:1px;">
+        <div style="display:flex;align-items:center;gap:2px;">
+          <select class="bk-cell" style="flex:1;min-width:0;"
+            onchange="jAccountChange(${idx},'credit',this.value)">
+            ${row._crSplits&&row._crSplits.length?`<option selected>Multiple (${row._crSplits.length} accounts)</option>`:''}
+            ${buildAccountOptions(row.credit_account_name)}
+          </select>
+          <span onclick="jrnSplitOpen(${idx},'credit')" title="Split across accounts" style="cursor:pointer;font-size:0.72rem;color:var(--gold);padding:2px 4px;">✎</span>
+        </div>
+        <span onclick="openChartOfAccounts()" style="cursor:pointer;font-size:0.58rem;color:var(--muted);text-decoration:underline;padding-left:2px;">📋 Chart of Accounts</span>
       </div></td>
       <td><input class="bk-cell num bk-amt-input" type="text" inputmode="decimal"
         value="${row.debit_amount>0?row.debit_amount.toLocaleString('en-NG'):''}" placeholder="0"
@@ -5888,13 +5984,17 @@ function journalHasData(r){ if(!r) return false;
   return narrLooksReal||r.debit_account_name||r.credit_account_name||r.debit_amount>0||r.credit_amount>0;
 }
 
-function jCellChange(i,field,val){ journalRows[i][field]=val; journalRows[i].saved=false; }
+let _jrnAutoT = null;
+function jrnAutosave(){ clearTimeout(_jrnAutoT); _jrnAutoT = setTimeout(()=>{ saveJournal(); }, 1500); }
+
+function jCellChange(i,field,val){ journalRows[i][field]=val; journalRows[i].saved=false; jrnAutosave(); }
 
 function jAccountChange(i,side,val){
   const [name,type]=(val||'').split('|');
   if(side==='debit'){ journalRows[i].debit_account_name=name||''; journalRows[i].debit_record_type=type||''; }
   else{ journalRows[i].credit_account_name=name||''; journalRows[i].credit_record_type=type||''; }
   journalRows[i].saved=false;
+  jrnAutosave();
 }
 
 function jNumChange(i, field, val) {
@@ -5902,6 +6002,7 @@ function jNumChange(i, field, val) {
   journalRows[i].saved  = false;
   pushUndoState();
   updateJournalBalance();
+  jrnAutosave();
 }
 
 // ── Amount input: commas + auto-fill opposite column ──────────
@@ -5935,6 +6036,7 @@ function jAmtInput(el, i, field) {
 
   pushUndoState();
   updateJournalBalance();
+  jrnAutosave();
 }
 
 function updateJournalBalance() {
@@ -8898,22 +9000,97 @@ function coaMoveSelected(title) {
   coaSelMode = false; coaSelected = [];
   renderCOA();
 }
+// ── Main account (Capital/Liability/Asset/Income/Expenditure)
+//    codes — overridable, and changing one cascades the shift down
+//    to every main sub-ledger and account currently numbered under it.
+function _coaMainCodes() { try { return JSON.parse(localStorage.getItem('bd_coa_main_codes')||'{}'); } catch(e){ return {}; } }
+function coaMainCode(type) {
+  const o = _coaMainCodes();
+  return (o[type]!==undefined && o[type]!==null && o[type]!=='') ? parseInt(o[type]) : COA_BASES[type];
+}
+function coaSetMainCode(type, newCodeStr) {
+  const newCode = parseInt(newCodeStr);
+  if (isNaN(newCode)) return;
+  const oldCode = coaMainCode(type);
+  if (newCode === oldCode) return;
+  const delta = newCode - oldCode;
+  const lo = oldCode, hi = oldCode + 999;
+
+  // Shift every account code and every group code currently numbered
+  // within this main account's old range, by the same delta.
+  const codes = _coaCodes();
+  Object.keys(codes).forEach(id=>{
+    const n = parseFloat(codes[id]);
+    if (!isNaN(n) && n>=lo && n<=hi) codes[id] = String(n+delta);
+  });
+  localStorage.setItem('bd_coa_codes', JSON.stringify(codes));
+
+  const gcodes = _coaGroupCodes();
+  Object.keys(gcodes).forEach(title=>{
+    const n = parseFloat(gcodes[title]);
+    if (!isNaN(n) && n>=lo && n<=hi) gcodes[title] = String(n+delta);
+  });
+  localStorage.setItem('bd_coa_group_codes', JSON.stringify(gcodes));
+
+  const o = _coaMainCodes();
+  o[type] = newCode;
+  localStorage.setItem('bd_coa_main_codes', JSON.stringify(o));
+}
+
+function coaOpenToolsMenu(ev) {
+  openColMenuPortal(ev, [
+    ['✎ Edit main account numbers', 'coaOpenMainCodesDialog()'],
+  ]);
+}
+function coaOpenMainCodesDialog() {
+  closeColMenu();
+  const wrap = document.createElement('div');
+  wrap.id='colMenuPortal'; wrap.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:20px;';
+  const box = document.createElement('div');
+  box.style.cssText='background:var(--surface);border:1px solid var(--gold);border-radius:14px;max-width:360px;width:100%;padding:20px;';
+  const types = ['capital','liability','asset','income','expenditure'];
+  box.innerHTML = `
+    <div style="font-weight:900;color:var(--gold);margin-bottom:4px;">Edit main account numbers</div>
+    <div style="font-size:0.66rem;color:var(--muted);margin-bottom:14px;">Changing a number here shifts every main sub-ledger and account currently numbered under it by the same amount.</div>
+    ${types.map(t=>`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="flex:1;font-size:0.78rem;color:var(--off);">${COA_LABELS[t]}</span>
+        <input class="bk-login-input" id="mcode_${t}" value="${coaMainCode(t)}" style="width:90px;margin:0;"/>
+      </div>`).join('')}
+    <button id="mcodeSave" style="width:100%;background:var(--gold);color:var(--accent-ink);border:none;font-weight:800;font-size:0.78rem;padding:10px;border-radius:8px;cursor:pointer;margin-top:10px;">Save</button>
+    <button onclick="document.getElementById('colMenuPortal').remove()" style="width:100%;background:none;color:var(--muted);border:1px solid var(--border2);font-size:0.74rem;padding:8px;border-radius:8px;cursor:pointer;margin-top:8px;">Cancel</button>
+  `;
+  wrap.appendChild(box);
+  document.body.appendChild(wrap);
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) wrap.remove(); });
+  document.getElementById('mcodeSave').onclick = () => {
+    types.forEach(t=>{
+      const val = document.getElementById('mcode_'+t)?.value;
+      if (val) coaSetMainCode(t, val);
+    });
+    wrap.remove();
+    renderCOA();
+    bdToast('\u2713 Main account numbers updated');
+  };
+}
+
 function renderCOA() {
   const types = ['capital','liability','asset','income','expenditure'];
   const active = coaActiveType;
   const accts  = accounts[active]||[];
-  const base   = COA_BASES[active];
+  const base   = coaMainCode(active);
   document.getElementById('bkContent').innerHTML = `
     <div class="bk-content-header">
       <div class="bk-content-title">CHART OF ACCOUNTS</div>
       <div class="bk-header-actions">
         <button class="bk-btn bk-btn-print" onclick="printLedger()">🖨 Print</button>
+        <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;" title="Tools" onclick="coaOpenToolsMenu(event)">🛠 Tools</button>
       </div>
     </div>
     <div class="coa-wrap">
       <div class="coa-main-row">
         ${types.map(t=>`<div class="coa-main-btn ${t===active?'active':''}" onclick="coaActiveType='${t}';renderCOA()">
-          <span class="coa-main-code">${COA_BASES[t]}</span>
+          <span class="coa-main-code">${coaMainCode(t)}</span>
           <span class="coa-main-label">${COA_LABELS[t]}</span>
         </div>`).join('')}
       </div>
@@ -11014,6 +11191,7 @@ function renderRecordSheet(kind) {
     <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:8px 16px 0;">
       <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;${sel.active?'border-color:var(--gold);color:var(--gold);':''}" onclick="sheetSelButton('${kind}')">☑ Select</button>
       <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="sheetToggleToolbox('${kind}')">⚙ Tools</button>
+      <span class="bk-save-msg" id="sheetSaveMsg_${kind}"></span>
       <button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showRecordChoice()">← Back</button>
     </div>
 
@@ -11078,7 +11256,10 @@ function renderRecordSheet(kind) {
   if (newWrap && !newWrap._draftHook) {
     newWrap._draftHook = true;
     let _t = null;
-    newWrap.addEventListener('input', ()=>{ clearTimeout(_t); _t = setTimeout(()=>sheetSaveDraft(kind), 400); });
+    newWrap.addEventListener('input', ()=>{
+      clearTimeout(_t); _t = setTimeout(()=>sheetSaveDraft(kind), 400);
+      sheetAutosaveTrigger(kind);
+    });
   }
   sheetSaveDraft(kind);
 }
