@@ -383,9 +383,9 @@ const trackData = {
   </table></div>
   <p>Now the equation:</p>
   <div class="lesson-equation">Capital = Assets − Liabilities<br>Capital = ₦1,100,000 − ₦150,000 = <strong>₦950,000</strong></div>
-  <p>"That ₦950,000," said Aunty Florence, "is your equity in this business. What you actually own, after accounting for what you the business owes." Amaka stared at the number. She had invested her savings, a small loan from her mother, and everything she had pulled together over the past year. Seeing it as a single figure made it suddenly real.</p>
+  <p>"That ₦950,000," said Aunty Florence, "is your equity in this business. What you actually own, after accounting for what you the business owes." Amaka stared at the number. She had invested her savings, and a small loan from her mother. Seeing it as a single figure made it suddenly real.</p>
   <p>Aunty Florence pointed at the two totals. "Check it the other way too:"</p>
-  <div class="lesson-equation">Assets = Capital + Liabilities<br>₦1,100,000 = ₦950,000 + ₦150,000 ✓</div>
+  <div class="lesson-equation"> Capital + Liabilities = Assets <br>₦950,000 + ₦150,000= ₦1,100,000 ✓</div>
   <p>"Always check both ways," said Aunty Florence. "If they don't match, you've missed something."</p>
 </div>
 
