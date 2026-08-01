@@ -382,7 +382,7 @@ const trackData = {
     </tbody>
   </table></div>
   <p>Now the equation:</p>
-  <div class="lesson-equation">Assets − Liabilities = Capital <br> ₦1,100,000 − ₦150,000 = <strong>₦950,000</strong></div>
+  <div class="lesson-equation">Assets − Liabilities = Equity <br> ₦1,100,000 − ₦150,000 = <strong>₦950,000</strong></div>
   <p>"That ₦950,000," said Aunty Florence, "is your equity in this business. What you actually own, after accounting for what the business owes." Amaka stared at the number. She had invested her savings (₦950,000). Seeing it as a single figure made it suddenly real.</p>
   <p>Aunty Florence pointed at the two totals. "Check it the other way too:"</p>
   <div class="lesson-equation"> Assets = Liabilities + Equity <br>₦1,100,000 = ₦950,000 + ₦150,000 ✓</div>
