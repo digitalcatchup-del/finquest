@@ -398,7 +398,10 @@ const trackData = {
 
     {id:2, term:'Assets', duration:'5 min', pips:2,
       definition:`An asset is a resource owned or controlled by a business that is expected to provide future economic benefit. Assets appear on the left side of the accounting equation and on the top section of a balance sheet.`,
-      scenario:`By the end of her first week, Amaka had sold three phones and was feeling more confident. A friend (Nkechi) came to visit and asked how the business was doing. "Good, I think," said Amaka. "I have a solid customer base and a shop full of good stock. Her friend looked around. "That’s great, but I know you let a couple of people take phones on credit. Is the business actually doing well if the cash isn't all here yet?" Amaka wasn't sure how to answer. She called Aunty Florence. "Not exactly," Aunty Florence said, from the doorway. "Come. Let me show you the difference between what you own and what you're owed — and why both of those are your assets."`,
+      scenario:`By the end of her first week, Amaka had sold five phones and was feeling more confident. Her close friend- Nkechi came to visit and asked how the business was doing. "Good, I think," said Amaka. "I have made some sales. Her friend looked around. "That’s great, but I know you let a couple of people take phones on credit. Is the business actually doing well if the cash isn't all here yet?" Amaka wasn't sure how to answer. "It is doing well, but you have to look at the whole picture," Aunty Florence said, stepping in through the doorway. "Amaka making sales is a good start, but it doesn't tell the whole story. To know if you business is doing well, there are three major questions you must ask.
+      <p> <strong> 1. Is the business making profit ?</strong> </p>
+      <p> <strong> 2. Do you have cash to take care of your expenditure ? </strong> </p>
+      <p> <strong> 3. Is your stock moving? </strong> You sold 5 phones this week, will you sell 7 next week or 10?, a business that stops growing starts shrinking. </p> `,
       votes:{up:0, down:0},
       content:`<div class="lesson-content-section">
   <h3 class="lesson-content-heading">The Concept</h3>
