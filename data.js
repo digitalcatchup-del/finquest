@@ -344,14 +344,14 @@ const trackData = {
   title: 'Business Accounting · Volume 1',
   lessons: [
     {id:1, term:'The Accounting Equation', duration:'5 min', pips:2,
-      definition:`Assets = Equity + Liabilities. This equation is the foundation of all accounting. Everything a business owns (assets) was funded by either the owner (equity) or by borrowing (liabilities). The two sides always balance — always.`,
-      scenario:`It was 7:45 am on a Monday morning when Amaka Obi unlocked the glass door of her new phone shop for the first time. The shop was small — one room on a busy street in Ikeja, Lagos — but it was hers. She had spent the past three months preparing for this moment. She stood in the middle of the room and looked around at everything she had gathered to start this business. Two shelves of phones along the back wall. A display cabinet she had bought on credit from a furniture supplier. A small cash float in the till. A laptop on the counter. And a knot in her stomach that said: I have no idea how to keep track of any of this. Two doors down, Aunty Florence was already open — the older woman ran a stationery supply business and had been on this street for over twenty years. She appeared in Amaka's doorway with two cups of tea and a calm expression. "You look like you need this," she said. Amaka accepted the cup. "How do I even know how to account for all these?" she asked. Aunty Florence looked around the shop slowly. "List everything the business owns," she said. "Then list everything it owes. The difference is yours. That's accounting."`,
+      definition:`Assets = Liabilities + Equity. This equation is the foundation of all accounting. Everything a business owns (assets) was funded by either by borrowing (liabilities) or by the owner (equity). The two sides always balance — always.`,
+      scenario:`It was 7:45am on a Monday morning when Amaka Obi unlocked the glass door of her new phone shop for the first time. The shop was small — one room on a busy street in Ikeja, Lagos — but it was hers. She had spent the past three months preparing for this moment. She stood in the middle of the room and looked around at everything she had gathered to start this business. Two shelves of phones along the back wall. A display cabinet she had bought on credit from a furniture supplier. A small cash float in the till. A laptop on the counter. And a knot in her stomach that said: I have no idea how to keep track of any of this. Two doors down, Aunty Florence was already open — the older woman ran a stationery supply business and had been on this street for over twenty years. She appeared in Amaka's doorway with two cups of tea and a calm expression. "You look like you need this," she said. Amaka accepted the cup. "How do I even know how to account for all these?" she asked. Aunty Florence looked around the shop slowly. "List everything the business owns," she said. "Then list everything it owes. The difference is yours. That's accounting."`,
       votes:{up:0, down:0},
       content:`<div class="lesson-content-section">
   <h3 class="lesson-content-heading">The Concept</h3>
-  <p>Aunty Florence sat down on the edge of the counter and handed Amaka a notepad. "Let's do this properly," she said. "Everything in this business falls into one of three categories. Assets — what the business owns. Liabilities — what the business owes. Equity — what's yours- this is the amount you personally put into the business."</p>
+  <p>Aunty Florence sat down on the edge of the counter and handed Amaka a notepad. "Let's do this properly," she said. "Everything in this business falls into one of three categories. Assets — what the business owns. Liabilities — what the business owes. Equity — what's yours- this is the amount you personally put into the business, plus profits from sales and retained earnings in the business."</p>
   <p>The relationship between them is expressed as the <strong>accounting equation</strong>:</p>
-  <div class="lesson-equation"> Assets = Capital + Liabilities </div>
+  <div class="lesson-equation"> Assets = Liabilities + Equity</div>
   <p>It can also be written as:</p>
   <div class="lesson-equation"> Assets − Liabilities = Capital </div>
   <p> or </p>
@@ -385,20 +385,20 @@ const trackData = {
   <div class="lesson-equation">Assets − Liabilities = Capital <br> ₦1,100,000 − ₦150,000 = <strong>₦950,000</strong></div>
   <p>"That ₦950,000," said Aunty Florence, "is your equity in this business. What you actually own, after accounting for what the business owes." Amaka stared at the number. She had invested her savings (₦950,000). Seeing it as a single figure made it suddenly real.</p>
   <p>Aunty Florence pointed at the two totals. "Check it the other way too:"</p>
-  <div class="lesson-equation"> Assets = Capital + Liabilities <br>₦1,100,000 = ₦950,000 + ₦150,000 ✓</div>
+  <div class="lesson-equation"> Assets = Liabilities + Equity <br>₦1,100,000 = ₦950,000 + ₦150,000 ✓</div>
   <p>"Always check both ways," said Aunty Florence. "If they don't match, you've missed something."</p>
 </div>
 
 <div class="lesson-content-section">
   <h3 class="lesson-content-heading">The Rule to Remember</h3>
-  <p>Every single transaction that happens in Amaka's Phone Shop will change the numbers inside the equation — but the equation itself will never stop being true. Buy more stock with cash? Assets go up on one side, assets go down on the other — the equation still balances. Buy on credit? Assets up, liabilities up by the same amount — still balances. This is the logic that makes accounting work.</p>
+  <p>Every single transaction that happens in Amaka's Phone Shop will change the numbers inside the equation — but the equation itself will never stop being true. Buy more stock with cash? Assets (stock of goods) go up on one side, assets (cash) go down on the other — the equation still balances. Buy on credit? Assets up, liabilities up by the same amount — still balances. This is the logic that makes accounting work.</p>
 </div>`,
       quiz:{q:'Let\'s assume Amaka\'s Phone Shop has total assets of ₦1,400,000 and owes ₦320,000 to suppliers. Using the accounting equation, what is her capital?', opts:['₦1,720,000','₦1,080,000','₦320,000','₦1,400,000'], ans:1, exp:'Assets − Liabilities = Capital. Therefore, ₦1,400,000 − ₦320,000 = ₦1,080,000. The equation always holds: what the business owns minus what it owes equals what is truly yours.'}
     },
 
     {id:2, term:'Assets', duration:'5 min', pips:2,
       definition:`An asset is a resource owned or controlled by a business that is expected to provide future economic benefit. Assets appear on the left side of the accounting equation and on the top section of a balance sheet.`,
-      scenario:`By the end of her first week, Amaka had sold three phones and was feeling more confident. A friend came to visit and asked how the business was doing. "Good, I think," said Amaka. "I have a shop full of stock and some cash." Her friend looked around. "So the business is basically worth what's in this room?" Amaka wasn't sure. She called Aunty Florence. "Not exactly," Aunty Florence said, from the doorway. "Come. Let me show you the difference between what you own and what you're owed — and why both of those are your assets."`,
+      scenario:`By the end of her first week, Amaka had sold three phones and was feeling more confident. A friend (Nkechi) came to visit and asked how the business was doing. "Good, I think," said Amaka. "I have a solid customer base and a shop full of good stock. Her friend looked around. "That’s great, but I know you let a couple of people take phones on credit. Is the business actually doing well if the cash isn't all here yet?" Amaka wasn't sure how to answer. She called Aunty Florence. "Not exactly," Aunty Florence said, from the doorway. "Come. Let me show you the difference between what you own and what you're owed — and why both of those are your assets."`,
       votes:{up:0, down:0},
       content:`<div class="lesson-content-section">
   <h3 class="lesson-content-heading">The Concept</h3>
