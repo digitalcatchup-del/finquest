@@ -344,7 +344,7 @@ const trackData = {
   title: 'Business Accounting · Volume 1',
   lessons: [
     {id:1, term:'The Accounting Equation', duration:'5 min', pips:2,
-      definition:`Assets = Liabilities + Equity. This equation is the foundation of all accounting. Everything a business owns (assets) was funded by either by borrowing (liabilities) or by the owner (equity). The two sides always balance — always.`,
+      definition:`Assets = Liabilities + Equity. This equation is the foundation of all accounting. Everything a business owns (assets) was funded either by borrowing (liabilities) or by the owner (equity). The two sides always balance — always.`,
       scenario:`It was 7:45am on a Monday morning when Amaka Obi unlocked the glass door of her new phone shop for the first time. The shop was small — one room on a busy street in Ikeja, Lagos — but it was hers. She had spent the past three months preparing for this moment. She stood in the middle of the room and looked around at everything she had gathered to start this business. Two shelves of phones along the back wall. A display cabinet she had bought on credit from a furniture supplier. A small cash float in the till. A laptop on the counter. And a knot in her stomach that said: I have no idea how to keep track of any of this. Two doors down, Aunty Florence was already open — the older woman ran a stationery supply business and had been on this street for over twenty years. She appeared in Amaka's doorway with two cups of tea and a calm expression. "You look like you need this," she said. Amaka accepted the cup. "How do I even know how to account for all these?" she asked. Aunty Florence looked around the shop slowly. "List everything the business owns," she said. "Then list everything it owes. The difference is yours. That's accounting."`,
       votes:{up:0, down:0},
       content:`<div class="lesson-content-section">
@@ -353,9 +353,9 @@ const trackData = {
   <p>The relationship between them is expressed as the <strong>accounting equation</strong>:</p>
   <div class="lesson-equation"> Assets = Liabilities + Equity</div>
   <p>It can also be written as:</p>
-  <div class="lesson-equation"> Assets − Liabilities = Capital </div>
+  <div class="lesson-equation"> Assets − Liabilities = Equity </div>
   <p> or </p>
-  <div class="lesson-equation" > Assets − Capital = Liabilities </div>
+  <div class="lesson-equation" > Assets − Equity = Liabilities </div>
   <p>This is the most important equation in accounting. No matter how many transactions a business makes — hundreds, thousands, millions — both sides of this equation will always be equal. If they are not, something has been recorded incorrectly.</p>
   <p>Think of it this way: everything the business owns (assets) had to come from somewhere. Either Amaka put it in herself (equity), or she borrowed it or bought it on credit (liabilities). There is no third option. That is why the two sides always balance.</p>
 </div>
@@ -391,17 +391,17 @@ const trackData = {
 
 <div class="lesson-content-section">
   <h3 class="lesson-content-heading">The Rule to Remember</h3>
-  <p>Every single transaction that happens in Amaka's Phone Shop will change the numbers inside the equation — but the equation itself will never stop being true. Buy more stock with cash? Assets (stock of goods) go up on one side, assets (cash) go down on the other — the equation still balances. Buy on credit? Assets up, liabilities up by the same amount — still balances. This is the logic that makes accounting work.</p>
+  <p>Every single transaction that happens in Amaka's Phone Shop will change the numbers inside the equation — but the equation itself will never stop being true. If you buy more stock with cash, this means your Assets (stock of goods) will increase, and your assets (cash) will decrease — the equation still balances. You buy on credit? Assets go up, liabilities also go up by the same amount — the equation still balances. This is the logic that makes accounting work.</p>
 </div>`,
       quiz:{q:'Let\'s assume Amaka\'s Phone Shop has total assets of ₦1,400,000 and owes ₦320,000 to suppliers. Using the accounting equation, what is her capital?', opts:['₦1,720,000','₦1,080,000','₦320,000','₦1,400,000'], ans:1, exp:'Assets − Liabilities = Capital. Therefore, ₦1,400,000 − ₦320,000 = ₦1,080,000. The equation always holds: what the business owns minus what it owes equals what is truly yours.'}
     },
 
     {id:2, term:'Assets', duration:'5 min', pips:2,
       definition:`An asset is a resource owned or controlled by a business that is expected to provide future economic benefit. Assets appear on the left side of the accounting equation and on the top section of a balance sheet.`,
-      scenario:`By the end of her first week, Amaka had sold five phones and was feeling more confident. Her close friend- Nkechi came to visit and asked how the business was doing. "Good, I think," said Amaka. "I have made some sales. Her friend looked around. "That’s great, but I know you let a couple of people take phones on credit. Is the business actually doing well if the cash isn't all here yet?" Amaka wasn't sure how to answer. "It is doing well, but you have to look at the whole picture," Aunty Florence said, stepping in through the doorway. "Amaka making sales is a good start, but it doesn't tell the whole story. To know if you business is doing well, there are three major questions you must ask.
-      <p> <strong> 1. Is the business making profit ?</strong> </p>
-      <p> <strong> 2. Do you have cash to take care of your expenditure ? </strong> </p>
-      <p> <strong> 3. Is your stock moving? </strong> You sold 5 phones this week, will you sell 7 next week or 10?, a business that stops growing starts shrinking. </p> `,
+      scenario:`By the end of her first week, Amaka had sold five phones and was feeling more confident. Her close friend- Nkechi, came to visit and asked how the business was doing. "Good, I think," said Amaka. "I have made some sales. Her friend looked around. "That’s great, but I know you let a couple of people take phones on credit. Is the business actually doing well if the cash isn't all here yet?" Amaka wasn't sure how to answer. "It is doing well, but you have to look at the whole picture," Aunty Florence said, stepping in through the doorway. "Amaka making sales is a good start, but it doesn't tell the whole story. To know if you business is doing well, there are three major questions you must ask.
+      <p> 1. Is the business making profit ? </p>
+      <p> 2. Do you have cash to take care of your expenditure ? </p>
+      <p> 3. Is your stock moving? You sold 5 phones this week, will you sell 7 next week or 10?, a business that stops growing starts shrinking. </p> `,
       votes:{up:0, down:0},
       content:`<div class="lesson-content-section">
   <h3 class="lesson-content-heading">The Concept</h3>
