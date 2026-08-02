@@ -907,7 +907,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   </div>
   <div class="nav-center">
     <button class="nav-link" onclick="showPage('homePage')">Home</button>
-    <button class="nav-link" onclick="launchTrack('biz-acc-vol1')">Lessons</button>
     <button class="nav-link" onclick="showPage('servicesPage')">Services</button>
     <button class="nav-link" onclick="openArticlesPage()">Articles</button>
     <button class="nav-link" onclick="showPage('howPage')">How It Works</button>
@@ -918,7 +917,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   </button>
   <div class="mobile-nav-dropdown" id="mobileNavDropdown">
     <button class="mobile-nav-link" onclick="showPage('homePage');closeMobileNav();">Home</button>
-    <button class="mobile-nav-link" onclick="launchTrack('biz-acc-vol1');closeMobileNav();">Lessons</button>
     <button class="mobile-nav-link" onclick="showPage('servicesPage');closeMobileNav();">Services</button>
     <button class="mobile-nav-link" onclick="openArticlesPage();closeMobileNav();">Articles</button>
     <button class="mobile-nav-link" onclick="showPage('howPage');closeMobileNav();">How It Works</button>
@@ -1049,18 +1047,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   <p style="font-size:0.85rem;color:var(--muted);max-width:420px;margin:0 auto;">Hire us for bookkeeping or tax work.</p>
   <div class="pricing-cards pricing-cards-2col" style="margin-top:32px;">
     <div class="pricing-card">
-      <div class="pc-name">Accounting Lessons</div>
-      <div class="pc-price">$5 <span>/ month</span></div>
-      <div class="pc-desc">An insightful monthly lesson from Business Accounting · Volume 1 — double entry, trading &amp; profit and loss accounts, balance sheets and accounting concepts, beginner to advanced.</div>
-      <div class="pc-features">
-        <div class="pc-feat">55 bite-size lessons — definition, Nigerian-context scenario, knowledge check</div>
-        <div class="pc-feat">Pip score &amp; streaks track your progress</div>
-        <div class="pc-feat">First lessons free — try before you subscribe</div>
-        <div class="pc-feat">Community discussions on every topic</div>
-      </div>
-      <button class="btn btn-gold btn-full" onclick="launchTrack('biz-acc-vol1')">Subscribe &amp; Start Learning →</button>
-    </div>
-    <div class="pricing-card">
       <div class="pc-name">Bookkeeping</div>
       <div class="pc-price">$100 <span>/ month</span></div>
       <div class="pc-desc">Complete bookkeeping for your business — will record every financial transaction, reconcile the records, and deliver the financial statements monthly.</div>
@@ -1130,18 +1116,6 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     <div class="pricing-cards pricing-cards-2col">
 
       <!-- BOOKKEEPING -->
-      <div class="pricing-card">
-        <div class="pc-name">Accounting Lessons</div>
-        <div class="pc-price">$5 <span>/ month</span></div>
-        <div class="pc-desc">Subscribe for an insightful monthly lesson — the full Business Accounting · Volume 1 track, taught the Butterfly Dynamix way.</div>
-        <div class="pc-features">
-          <div class="pc-feat">55 lessons: double entry → P&amp;L → balance sheets → concepts</div>
-          <div class="pc-feat">Definition · Scenario · Knowledge check format</div>
-          <div class="pc-feat">Pip score &amp; streak gamification</div>
-          <div class="pc-feat">First lessons free</div>
-        </div>
-        <button class="btn btn-gold btn-full" onclick="launchTrack('biz-acc-vol1')">Subscribe &amp; Start Learning →</button>
-      </div>
       <div class="pricing-card">
         <div class="pc-name">Bookkeeping</div>
         <div class="pc-price">$100 <span>/ month</span></div>
@@ -1617,11 +1591,11 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
 <!-- 3. App files -->
-<script src="supabase-config.js?v=64"></script>
-<script src="data.js?v=64"></script>
-<script src="auth.js?v=64"></script>
-<script src="app.js?v=64"></script>
-<script src="track.js?v=64"></script>
+<script src="supabase-config.js?v=65"></script>
+<script src="data.js?v=65"></script>
+<script src="auth.js?v=65"></script>
+<script src="app.js?v=65"></script>
+<script src="track.js?v=65"></script>
 
 <!-- 4. Boot: restore session + handle payment redirect -->
 <script>
