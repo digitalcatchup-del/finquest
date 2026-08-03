@@ -1,0 +1,11 @@
+/
+  Cache-Control: no-cache, must-revalidate
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/bookkeeping
+  Cache-Control: no-cache, must-revalidate
+
+/bookkeeping.html
+  Cache-Control: no-cache, must-revalidate
