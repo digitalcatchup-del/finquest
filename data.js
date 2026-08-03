@@ -395,7 +395,7 @@ const trackData = {
 </div>`,
       quiz:{q:'Let\'s assume Amaka\'s Phone Shop has total assets of ₦1,400,000 and owes ₦320,000 to suppliers. Using the accounting equation, what is her capital?', opts:['₦1,720,000','₦1,080,000','₦320,000','₦1,400,000'], ans:1, exp:'Assets − Liabilities = Capital. Therefore, ₦1,400,000 − ₦320,000 = ₦1,080,000. The equation always holds: what the business owns minus what it owes equals what is truly yours.'}
     },
-
+    
     {id:2, term:'Business Performance Measures', duration:'5 min', pips:2,
       definition:`An asset is a resource owned or controlled by a business that is expected to provide future economic benefit. Assets appear on the left side of the accounting equation and on the top section of a balance sheet.`,
       scenario:`By the end of her first week, Amaka had sold five phones and was feeling more confident. Her close friend- Nkechi, came to visit and asked how the business was doing. "Good, I think," said Amaka. "I have made some sales. Her friend looked around. "That’s great, but I know you let a couple of people take phones on credit. Is the business actually doing well if the cash isn't all here yet?" Amaka wasn't sure how to answer. "It is doing well, but you have to look at the whole picture," Aunty Florence said, stepping in through the doorway. "Amaka making sales is a good start, but it doesn't tell the whole story. To know if you business is doing well, there are three major terms you must understand.
