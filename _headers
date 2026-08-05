@@ -4,6 +4,30 @@
 /index.html
   Cache-Control: no-cache, must-revalidate
 
+/services
+  Cache-Control: no-cache, must-revalidate
+
+/how-it-works
+  Cache-Control: no-cache, must-revalidate
+
+/privacy
+  Cache-Control: no-cache, must-revalidate
+
+/terms
+  Cache-Control: no-cache, must-revalidate
+
+/lessons
+  Cache-Control: no-cache, must-revalidate
+
+/articles
+  Cache-Control: no-cache, must-revalidate
+
+/articles/*
+  Cache-Control: no-cache, must-revalidate
+
+/profile/*
+  Cache-Control: no-cache, must-revalidate
+
 /bookkeeping
   Cache-Control: no-cache, must-revalidate
 
