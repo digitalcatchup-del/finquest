@@ -76,10 +76,56 @@ function pipStr(units) {
 }
 
 // ── PAGE NAVIGATION ──────────────────────────────────────────
-function showPage(page) {
+// ── URL routing ────────────────────────────────────────────────
+const PAGE_SLUGS = {
+  homePage: '/',
+  servicesPage: '/services',
+  howPage: '/how-it-works',
+  privacyPage: '/privacy',
+  termsPage: '/terms',
+  trackPage: '/lessons',
+  articlesPage: '/articles',
+  articleDetailPage: '/articles',
+  profilePage: '/profile',
+};
+let _routingFromPopstate = false; // guards against re-pushing history during back/forward
+
+function showPage(page, customUrl) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(page).classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (!_routingFromPopstate) {
+    const url = customUrl || PAGE_SLUGS[page] || '/';
+    if (location.pathname !== url) history.pushState({ page, url }, '', url);
+  }
+}
+
+// Handles the browser's own Back/Forward buttons
+window.addEventListener('popstate', (e) => {
+  _routingFromPopstate = true;
+  routeToPath(location.pathname);
+  _routingFromPopstate = false;
+});
+
+// Reads a URL path and shows the matching page — used both for the
+// initial page load and for Back/Forward navigation.
+function routeToPath(path) {
+  const parts = path.replace(/\/+$/, '').split('/').filter(Boolean); // e.g. ['articles','some-slug']
+
+  if (parts[0] === 'articles' && parts[1]) { openArticle(parts[1]); return; }
+  if (parts[0] === 'articles') { openArticlesPage(); return; }
+  if (parts[0] === 'profile' && parts[1]) { openProfileByUsername(parts[1], 'homePage'); return; }
+  if (parts[0] === 'services') { showPage('servicesPage'); return; }
+  if (parts[0] === 'how-it-works') { showPage('howPage'); return; }
+  if (parts[0] === 'privacy') { showPage('privacyPage'); return; }
+  if (parts[0] === 'terms') { showPage('termsPage'); return; }
+  if (parts[0] === 'lessons') {
+    if (typeof launchTrack === 'function') launchTrack('biz-acc-vol1');
+    else showPage('homePage');
+    return;
+  }
+  showPage('homePage');
 }
 
 function scrollToTop() {
@@ -510,7 +556,7 @@ function renderArticlesGrid() {
 }
 
 async function openArticle(slug) {
-  showPage('articleDetailPage');
+  showPage('articleDetailPage', '/articles/' + slug);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   await renderArticleDetail(slug);
 }
@@ -618,7 +664,7 @@ let profileReturnPage   = 'articlesPage';
 
 async function openProfileByUsername(username, returnPage) {
   profileReturnPage = returnPage || 'articlesPage';
-  showPage('profilePage');
+  showPage('profilePage', '/profile/' + username);
   document.getElementById('profileHeader').innerHTML =
     '<p style="color:var(--muted);font-size:0.82rem;text-align:center;padding:40px 0;">Loading profile…</p>';
   document.getElementById('profileFeed').innerHTML = '';
@@ -1363,7 +1409,9 @@ function buildArticlesTicker() {
 
 // ── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
-  document.getElementById('homePage').classList.add('active');
+  _routingFromPopstate = true;   // first paint shouldn't push a duplicate history entry
+  routeToPath(location.pathname);
+  _routingFromPopstate = false;
   buildAvatarGrid();
   buildArticlesTicker();
   initDailyTip();
