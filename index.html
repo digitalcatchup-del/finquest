@@ -1414,6 +1414,62 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   </div>
 </div>
 
+<!-- ARTICLE EDITOR OVERLAY (Admin Only) -->
+<div class="overlay" id="articleEditorOverlay">
+  <div class="modal" style="max-width:800px;">
+    <button class="modal-close-btn" onclick="closeArticleEditor()">✕</button>
+    <div style="padding:28px;">
+      <h2 class="auth-heading" style="margin-bottom:4px;" id="articleEditorTitle">Edit Article</h2>
+      <p class="auth-sub" style="margin-bottom:20px;">Manage article content for the website.</p>
+      
+      <div class="field">
+        <label>Slug (URL identifier)</label>
+        <input type="text" id="editArticleSlug" placeholder="e.g. accruals-concept"/>
+        <div class="field-err" id="eSlug">Required, lowercase letters, numbers, and hyphens only</div>
+      </div>
+      
+      <div class="field">
+        <label>Title</label>
+        <input type="text" id="editArticleTitle" placeholder="Article title"/>
+        <div class="field-err" id="eTitle">Required</div>
+      </div>
+      
+      <div class="field">
+        <label>Excerpt (short summary)</label>
+        <textarea id="editArticleExcerpt" maxlength="200" placeholder="Brief summary shown on the articles grid..."></textarea>
+        <div class="field-err" id="eExcerpt">Required</div>
+      </div>
+      
+      <div class="field-row">
+        <div class="field">
+          <label>Cover Icon (emoji)</label>
+          <input type="text" id="editArticleIcon" maxlength="4" placeholder="📄"/>
+        </div>
+        <div class="field">
+          <label>Cover Background (CSS gradient)</label>
+          <input type="text" id="editArticleCover" placeholder="linear-gradient(...)"/>
+        </div>
+      </div>
+      
+      <div class="field">
+        <label>Body Content (HTML allowed)</label>
+        <textarea id="editArticleBody" style="min-height:300px;font-family:monospace;" placeholder="Full article content..."></textarea>
+        <div class="field-err" id="eBody">Required</div>
+      </div>
+      
+      <div class="field" style="display:flex;align-items:center;gap:10px;">
+        <input type="checkbox" id="editArticlePublished" checked style="width:auto;"/>
+        <label for="editArticlePublished" style="margin:0;">Published (visible to public)</label>
+      </div>
+      
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button class="btn btn-gold btn-full" onclick="saveArticleFromEditor()">Save Article</button>
+        <button class="btn" style="border:1px solid var(--border2);" onclick="deleteCurrentArticle()" id="deleteArticleBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <div class="overlay" id="authOverlay">
   <div class="modal">

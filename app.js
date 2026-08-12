@@ -530,7 +530,7 @@ function goToNewsletter() {
 // ── ARTICLES ─────────────────────────────────────────────────
 function openArticlesPage() {
   showPage('articlesPage');
-  renderArticlesGrid();
+  loadArticlesFromDb().then(() => renderArticlesGrid());
 }
 
 // Generated gradient-and-icon cover treatment — no external images, so
@@ -562,6 +562,9 @@ async function openArticle(slug) {
 }
 
 async function renderArticleDetail(slug) {
+  // Ensure articles are loaded from DB first
+  await loadArticlesFromDb();
+  
   const article = articles.find(a => a.slug === slug);
   const container = document.getElementById('articleDetailContent');
   if (!article) {
@@ -709,7 +712,8 @@ function renderProfileHeader(profile) {
           ${currentUser?.username && ['digitalcatchup'].includes(currentUser.username.toLowerCase()) ?
             `<button class="profile-edit-btn" onclick="window.open('https://butterflydynamixllc.com/bookkeeping','_blank')" style="border-color:var(--gold);color:var(--gold);">📊 Bookkeeping</button>
             <button class="profile-edit-btn" onclick="launchTrack('biz-acc-vol1')" style="border-color:var(--gold);color:var(--gold);">📚 Lessons</button>
-            <button class="profile-edit-btn" onclick="showPage('servicesPage')" style="border-color:var(--gold);color:var(--gold);">🧾 Services</button>` : ''}
+            <button class="profile-edit-btn" onclick="showPage('servicesPage')" style="border-color:var(--gold);color:var(--gold);">🧾 Services</button>
+            <button class="profile-edit-btn" onclick="openArticleEditor()" style="border-color:var(--gold);color:var(--gold);">✏️ Edit Articles</button>` : ''}
         </div>` : ''}
     </div>`;
 }
@@ -800,6 +804,162 @@ async function saveProfileEdits() {
     viewingProfileData.profile.bio    = bio;
     viewingProfileData.profile.avatar = avatar;
     renderProfileHeader(viewingProfileData.profile);
+  }
+}
+
+// ── ARTICLE EDITOR (Admin Only) ───────────────────────────────
+let currentEditingArticle = null;
+
+function openArticleEditor(slug = null) {
+  if (!currentUser || !['digitalcatchup'].includes(currentUser.username.toLowerCase())) {
+    alert('This feature is only available for administrators.');
+    return;
+  }
+  
+  currentEditingArticle = slug ? articles.find(a => a.slug === slug) : null;
+  
+  document.getElementById('editArticleSlug').value = currentEditingArticle?.slug || '';
+  document.getElementById('editArticleTitle').value = currentEditingArticle?.title || '';
+  document.getElementById('editArticleExcerpt').value = currentEditingArticle?.excerpt || '';
+  document.getElementById('editArticleIcon').value = currentEditingArticle?.coverIcon || '📄';
+  document.getElementById('editArticleCover').value = currentEditingArticle?.cover || 'linear-gradient(135deg, #1a1a1a 0%, #2b2416 100%)';
+  document.getElementById('editArticleBody').value = currentEditingArticle?.body || '';
+  document.getElementById('editArticlePublished').checked = currentEditingArticle?.is_published !== false;
+  
+  document.getElementById('articleEditorTitle').textContent = currentEditingArticle ? 'Edit Article' : 'Create New Article';
+  document.getElementById('deleteArticleBtn').style.display = currentEditingArticle ? '' : 'none';
+  
+  // Clear error states
+  document.querySelectorAll('#articleEditorOverlay .field-err').forEach(el => el.style.display = 'none');
+  
+  document.getElementById('articleEditorOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeArticleEditor() {
+  document.getElementById('articleEditorOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  currentEditingArticle = null;
+}
+
+async function saveArticleFromEditor() {
+  const slug = document.getElementById('editArticleSlug').value.trim();
+  const title = document.getElementById('editArticleTitle').value.trim();
+  const excerpt = document.getElementById('editArticleExcerpt').value.trim();
+  const coverIcon = document.getElementById('editArticleIcon').value.trim() || '📄';
+  const coverBg = document.getElementById('editArticleCover').value.trim() || 'linear-gradient(135deg, #1a1a1a 0%, #2b2416 100%)';
+  const body = document.getElementById('editArticleBody').value.trim();
+  const isPublished = document.getElementById('editArticlePublished').checked;
+  
+  // Validation
+  let hasError = false;
+  document.querySelectorAll('#articleEditorOverlay .field-err').forEach(el => el.style.display = 'none');
+  
+  if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
+    document.getElementById('eSlug').style.display = 'block';
+    hasError = true;
+  }
+  if (!title) {
+    document.getElementById('eTitle').style.display = 'block';
+    hasError = true;
+  }
+  if (!excerpt) {
+    document.getElementById('eExcerpt').style.display = 'block';
+    hasError = true;
+  }
+  if (!body) {
+    document.getElementById('eBody').style.display = 'block';
+    hasError = true;
+  }
+  
+  if (hasError) return;
+  
+  const articleData = {
+    slug,
+    title,
+    excerpt,
+    cover_icon: coverIcon,
+    cover_bg: coverBg,
+    body,
+    is_published: isPublished
+  };
+  
+  try {
+    let result;
+    if (currentEditingArticle) {
+      // Update existing article
+      result = await db.from('articles').update(articleData).eq('slug', currentEditingArticle.slug);
+    } else {
+      // Create new article
+      result = await db.from('articles').insert([articleData]);
+    }
+    
+    if (result.error) throw result.error;
+    
+    // Refresh the articles array from database
+    await loadArticlesFromDb();
+    
+    closeArticleEditor();
+    
+    // If we're on the articles page, re-render
+    if (document.getElementById('articlesPage').classList.contains('active')) {
+      renderArticlesGrid();
+    }
+    
+    alert('Article saved successfully!');
+  } catch (err) {
+    alert('Error saving article: ' + err.message);
+  }
+}
+
+async function deleteCurrentArticle() {
+  if (!currentEditingArticle) return;
+  
+  if (!confirm(`Are you sure you want to delete "${currentEditingArticle.title}"? This cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    const result = await db.from('articles').delete().eq('slug', currentEditingArticle.slug);
+    if (result.error) throw result.error;
+    
+    // Refresh the articles array from database
+    await loadArticlesFromDb();
+    
+    closeArticleEditor();
+    
+    // If we're on the articles page, re-render
+    if (document.getElementById('articlesPage').classList.contains('active')) {
+      renderArticlesGrid();
+    }
+    
+    alert('Article deleted successfully!');
+  } catch (err) {
+    alert('Error deleting article: ' + err.message);
+  }
+}
+
+async function loadArticlesFromDb() {
+  try {
+    const { data, error } = await db.from('articles').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    
+    // Convert database format to app format
+    window.articles = data.map(a => ({
+      slug: a.slug,
+      title: a.title,
+      excerpt: a.excerpt,
+      coverIcon: a.cover_icon,
+      cover: a.cover_bg,
+      body: a.body,
+      is_published: a.is_published
+    }));
+    
+    return window.articles;
+  } catch (err) {
+    console.error('Failed to load articles from database:', err);
+    // Fall back to static articles in data.js
+    return window.articles;
   }
 }
 
