@@ -186,7 +186,9 @@ async function checkStripeRedirect() {
     window.history.replaceState({}, '', window.location.pathname);
 
     if (fwStatus === 'successful' || fwStatus === 'completed') {
-      const plan = (fwTxRef.includes('Annual')) ? 'annual' : 'professional';
+      const plan = fwTxRef.includes('Annual') ? 'annual'
+                 : fwTxRef.includes('Expert') ? 'expert'
+                 : 'professional';
       if (currentUser?.id) {
         await db.from('profiles').update({
           is_subscribed: true,
@@ -357,17 +359,15 @@ async function loadTrackProgress(trackKey) {
 }
 
 // ── AWARD PIPS ───────────────────────────────────────────────
-async function awardPips(delta, reason) {
+async function awardPips(delta, reason, correctCount = 1) {
   if (!currentUser) return;
   const newScore = parseFloat((currentUser.pipScore + delta).toFixed(5));
-
   await Promise.all([
     db.from('profiles').update({
       pip_score:     newScore,
-      total_correct: currentUser.totalCorrect + 1,
+      total_correct: currentUser.totalCorrect + correctCount,
       total_lessons: currentUser.totalLessons
     }).eq('id', currentUser.id),
-
     db.from('pip_history').insert({
       user_id:     currentUser.id,
       delta,
@@ -375,11 +375,8 @@ async function awardPips(delta, reason) {
       reason
     })
   ]);
-
-  currentUser.pipScore    = newScore;
-  currentUser.totalCorrect += 1;
-
-  // Update UI
+  currentUser.pipScore     = newScore;
+  currentUser.totalCorrect += correctCount;
   if (document.getElementById('navPip')) {
     document.getElementById('navPip').textContent = newScore.toFixed(5);
   }
