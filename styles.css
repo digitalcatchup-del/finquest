@@ -589,6 +589,32 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .feature-switch-track::before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:var(--surface);border-radius:50%;transition:transform 0.2s;}
 .feature-switch input:checked + .feature-switch-track{background:var(--gold);}
 .feature-switch input:checked + .feature-switch-track::before{transform:translateX(18px);}
+/* ── FEATURE SLIDER (span.feature-slider variant) ── */
+.feature-slider{position:absolute;cursor:pointer;inset:0;background:var(--border2);border-radius:24px;transition:background 0.2s;}
+.feature-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:var(--surface);border-radius:50%;transition:transform 0.2s;}
+.feature-switch input:checked + .feature-slider{background:var(--gold);}
+.feature-switch input:checked + .feature-slider::before{transform:translateX(18px);}
+/* ── EXAM SELECTION STATE + QUIZ FEEDBACK SPANS ── */
+.track-q-opt.selected{border-color:var(--gold);background:var(--gold-dim);font-weight:700;}
+.fb-correct{color:var(--green);font-weight:700;margin-right:6px;}
+.fb-wrong{color:var(--red);font-weight:700;margin-right:6px;}
+.fb-exp{color:var(--off);}
+.track-qr-icon{font-size:2rem;margin-bottom:8px;}
+.track-qr-sub{font-size:0.78rem;color:var(--muted);margin-bottom:16px;}
+/* ── SUGGEST DEFINITION MODAL ── */
+.suggest-def-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:650;display:flex;align-items:center;justify-content:center;padding:20px;}
+.suggest-def-modal{background:var(--surface);border:1px solid var(--border2);border-radius:8px;width:100%;max-width:440px;max-height:92vh;overflow-y:auto;position:relative;padding:24px;}
+/* ── RICH LESSON CONTENT (used inside .track-lesson-content) ── */
+.lesson-content-section{margin-bottom:28px;}
+.lesson-content-heading{font-size:1.05rem;font-weight:800;color:var(--white);margin-bottom:12px;letter-spacing:-0.01em;}
+.lesson-equation{background:var(--surface2);border:1px solid var(--border2);border-left:3px solid var(--gold);border-radius:6px;padding:14px 18px;margin:16px 0;font-weight:700;font-size:0.95rem;color:var(--white);text-align:center;line-height:1.9;font-variant-numeric:tabular-nums;}
+.lesson-table-wrap{overflow-x:auto;margin:16px 0;}
+.lesson-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+.lesson-table th{background:var(--surface2);border:1px solid var(--border);padding:10px 12px;text-align:left;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
+.lesson-table td{border:1px solid var(--border);padding:10px 12px;color:var(--off);}
+.lesson-table tr.table-total td{background:var(--gold-dim);font-weight:800;color:var(--white);}
+.lesson-list{margin:12px 0 12px 20px;display:flex;flex-direction:column;gap:8px;color:var(--off);font-size:0.9rem;line-height:1.65;}
+.lesson-list li::marker{color:var(--gold);}
 
 
 /* ── EXAM UI ── */
@@ -658,3 +684,21 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   .opinion-card{grid-template-columns:auto 1fr;}
   .op-votes{flex-direction:row;grid-column:1/-1;justify-content:flex-end;}
 }
+/* ── NOVEL STAGE ── */
+.novel-wrap{max-width:680px;margin:0 auto;}
+.novel-eyebrow{font-size:0.62rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.novel-title{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:900;letter-spacing:-0.02em;color:var(--white);margin-bottom:12px;line-height:1.15;}
+.novel-intro{font-size:0.92rem;color:var(--muted);line-height:1.7;margin-bottom:24px;}
+.novel-jump-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:36px;}
+.novel-jump-link{font-size:0.75rem;font-weight:700;color:var(--gold);background:var(--gold-dim);border:1px solid var(--border);border-radius:20px;padding:6px 14px;text-decoration:none;transition:all 0.15s;}
+.novel-jump-link:hover{border-color:var(--gold);}
+.novel-chapter{margin-bottom:8px;scroll-margin-top:80px;}
+.novel-chapter-num{font-size:0.62rem;font-weight:800;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+.novel-chapter-title{font-size:1.5rem;font-weight:900;letter-spacing:-0.02em;color:var(--white);margin-bottom:6px;}
+.novel-chapter-dek{font-size:0.85rem;color:var(--muted);font-style:italic;margin-bottom:24px;line-height:1.6;}
+.novel-body{font-size:0.98rem;line-height:1.95;color:var(--off);}
+.novel-body em{color:var(--gold);font-style:normal;font-weight:600;}
+.novel-divider{text-align:center;color:var(--gold);font-size:1.2rem;margin:44px 0;letter-spacing:0.6em;}
+.novel-end{text-align:center;padding:48px 0 24px;border-top:1px solid var(--border);margin-top:48px;}
+.novel-end-mark{font-size:1.6rem;color:var(--gold);margin-bottom:12px;}
+.novel-end p{font-size:0.82rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}

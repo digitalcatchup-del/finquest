@@ -66,6 +66,13 @@ function closeTrack() {
   showPage('homePage');
 }
 
+function goToPricing() {
+  showPage('homePage');
+  setTimeout(() => {
+    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 200);
+}
+
 // ── SIDEBAR COLLAPSE ─────────────────────────────────────────
 let trackSidebarVisible = null;
 
@@ -188,7 +195,7 @@ function renderTrackSidebar() {
           ${done ? '✓' : i + 1}
         </div>
         <div class="track-sb-lesson-info">
-          <div class="track-sb-lesson-name">${l.term}</div>
+          <div class="track-sb-lesson-title">${l.term}</div>
           <div class="track-sb-lesson-meta">
             ${l.duration} · <span class="track-sb-pip-badge">+${l.pips} pips</span>
           </div>
@@ -318,7 +325,7 @@ function renderLessonCapGate(lessonsUsed) {
         Your count resets next month, or upgrade to Professional for full,
         unlimited access right now.
       </p>
-      <button class="btn btn-gold" onclick="showPage('pricingPage')" style="font-size:1rem;padding:14px 40px;">
+      <button class="btn btn-gold" onclick="goToPricing()" style="font-size:1rem;padding:14px 40px;">
         See Professional →
       </button>
     </div>`;
@@ -429,7 +436,11 @@ function renderQuizQuestions(l, idx) {
 }
 
 function escStr(s) {
-  return s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  return String(s)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
 }
 
 // ── ANSWER QUIZ QUESTION ─────────────────────────────────────
@@ -472,8 +483,10 @@ function answerTrackQ(qi, oi, correct, explanation, lessonIdx) {
     // Mark lesson complete
     if (!trackCompletedLessons.includes(lessonIdx)) {
       trackCompletedLessons.push(lessonIdx);
-      if (currentUser?.id && typeof saveTrackProgress === 'function') {
-        saveTrackProgress(activeTrackKey, lessonIdx);
+      if (currentUser?.id) {
+        if (typeof saveTrackProgress === 'function') saveTrackProgress(activeTrackKey, lessonIdx);
+        currentUser.totalLessons += 1;
+        db.from('profiles').update({ total_lessons: currentUser.totalLessons }).eq('id', currentUser.id);
       }
     }
 
@@ -657,7 +670,7 @@ async function loadTrackExam() {
             this month. Your count resets next month, or upgrade to Professional
             for unlimited mock exams right now.
           </p>
-          <button class="btn btn-gold" onclick="showPage('pricingPage')" style="font-size:1rem;padding:14px 40px;">
+          <button class="btn btn-gold" onclick="goToPricing()" style="font-size:1rem;padding:14px 40px;">
             See Professional →
           </button>
         </div>`;
@@ -742,7 +755,7 @@ function submitTrackExam() {
   trackExamLastScore = score;
 
   if (passed && typeof awardPips === 'function') {
-    awardPips(exam.pips * 0.00010 * correct, 'exam_pass');
+    awardPips(exam.pips * 0.00010 * correct, 'exam_pass', correct);
   }
 
   showExamResult(score, correct, total, passed, exam);
