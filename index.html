@@ -1414,57 +1414,145 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   </div>
 </div>
 
-<!-- ARTICLE EDITOR OVERLAY (Admin Only) -->
+<!-- BLOCK-STYLE ARTICLE EDITOR OVERLAY (Admin Only) -->
 <div class="overlay" id="articleEditorOverlay">
-  <div class="modal" style="max-width:800px;">
+  <div class="modal" style="max-width:1200px;width:95%;height:90vh;display:flex;flex-direction:column;">
     <button class="modal-close-btn" onclick="closeArticleEditor()">✕</button>
-    <div style="padding:28px;">
-      <h2 class="auth-heading" style="margin-bottom:4px;" id="articleEditorTitle">Edit Article</h2>
-      <p class="auth-sub" style="margin-bottom:20px;">Manage article content for the website.</p>
-      
-      <div class="field">
-        <label>Slug (URL identifier)</label>
-        <input type="text" id="editArticleSlug" placeholder="e.g. accruals-concept"/>
-        <div class="field-err" id="eSlug">Required, lowercase letters, numbers, and hyphens only</div>
+    
+    <!-- Editor Header -->
+    <div style="padding:20px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+      <div>
+        <h2 class="auth-heading" style="margin-bottom:4px;" id="articleEditorTitle">Edit Article</h2>
+        <p class="auth-sub" style="margin:0;">Block-style editor with affiliate tools</p>
       </div>
-      
-      <div class="field">
-        <label>Title</label>
-        <input type="text" id="editArticleTitle" placeholder="Article title"/>
-        <div class="field-err" id="eTitle">Required</div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn" style="border:1px solid var(--border2);" onclick="previewArticle()">👁 Preview</button>
+        <button class="btn btn-gold" onclick="saveArticleFromEditor()">Save Article</button>
       </div>
+    </div>
+    
+    <!-- Main Editor Area -->
+    <div style="display:flex;flex:1;overflow:hidden;">
       
-      <div class="field">
-        <label>Excerpt (short summary)</label>
-        <textarea id="editArticleExcerpt" maxlength="200" placeholder="Brief summary shown on the articles grid..."></textarea>
-        <div class="field-err" id="eExcerpt">Required</div>
-      </div>
-      
-      <div class="field-row">
-        <div class="field">
-          <label>Cover Icon (emoji)</label>
-          <input type="text" id="editArticleIcon" maxlength="4" placeholder="📄"/>
+      <!-- Left: Canvas/Content Area (70%) -->
+      <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;">
+        
+        <!-- Cover Image Section -->
+        <div style="padding:20px 28px;border-bottom:1px solid var(--border);background:var(--surface);">
+          <label style="display:block;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Cover Image</label>
+          <div id="coverImagePreview" style="width:100%;height:200px;background:var(--surface2);border:2px dashed var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;" onclick="document.getElementById('coverImageInput').click()">
+            <div id="coverImagePlaceholder" style="text-align:center;color:var(--muted);">
+              <div style="font-size:2rem;margin-bottom:8px;">🖼️</div>
+              <div style="font-size:0.75rem;">Click to upload cover image</div>
+              <div style="font-size:0.65rem;color:var(--muted2);margin-top:4px;">or drag & drop here</div>
+            </div>
+            <img id="coverImageActual" src="" alt="Cover" style="display:none;max-width:100%;max-height:100%;object-fit:cover;border-radius:4px;"/>
+          </div>
+          <input type="file" id="coverImageInput" accept="image/*" style="display:none;" onchange="handleCoverImageUpload(this)"/>
+          <button class="btn btn-ghost" id="removeCoverBtn" onclick="removeCoverImage()" style="display:none;margin-top:8px;font-size:0.65rem;padding:4px 8px;">Remove Cover Image</button>
         </div>
-        <div class="field">
-          <label>Cover Background (CSS gradient)</label>
-          <input type="text" id="editArticleCover" placeholder="linear-gradient(...)"/>
+        
+        <!-- Article Meta Fields -->
+        <div style="padding:20px 28px;border-bottom:1px solid var(--border);">
+          <div class="field-row" style="gap:15px;">
+            <div class="field" style="flex:2;">
+              <label style="font-size:0.7rem;color:var(--muted);">Title</label>
+              <input type="text" id="editArticleTitle" placeholder="Enter article title..." style="font-size:1.1rem;font-weight:600;"/>
+            </div>
+            <div class="field" style="flex:1;">
+              <label style="font-size:0.7rem;color:var(--muted);">Slug</label>
+              <input type="text" id="editArticleSlug" placeholder="url-slug" style="font-family:monospace;font-size:0.85rem;"/>
+            </div>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label style="font-size:0.7rem;color:var(--muted);">Excerpt</label>
+            <textarea id="editArticleExcerpt" maxlength="200" placeholder="Brief summary for article cards..." style="min-height:60px;resize:vertical;"></textarea>
+          </div>
+        </div>
+        
+        <!-- Block Editor Toolbar -->
+        <div style="padding:10px 28px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-ghost" onclick="addBlock('heading')" title="Heading" style="padding:6px 10px;font-size:0.9rem;">H1</button>
+          <button class="btn btn-ghost" onclick="addBlock('subheading')" title="Subheading" style="padding:6px 10px;font-size:0.85rem;">H2</button>
+          <button class="btn btn-ghost" onclick="addBlock('paragraph')" title="Paragraph" style="padding:6px 10px;font-size:0.85rem;">¶</button>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px;"></div>
+          <button class="btn btn-ghost" onclick="addBlock('image')" title="Insert Image" style="padding:6px 10px;font-size:0.9rem;">🖼️</button>
+          <button class="btn btn-ghost" onclick="addBlock('affiliateGif')" title="Insert Affiliate GIF" style="padding:6px 10px;font-size:0.9rem;">🎬</button>
+          <button class="btn btn-ghost" onclick="addBlock('affiliateBanner')" title="Insert Affiliate Banner" style="padding:6px 10px;font-size:0.9rem;">📢</button>
+          <button class="btn btn-ghost" onclick="addBlock('ctaBlock')" title="Call-to-Action Block" style="padding:6px 10px;font-size:0.9rem;">⚡</button>
+          <button class="btn btn-ghost" onclick="addBlock('quote')" title="Quote Block" style="padding:6px 10px;font-size:0.9rem;">❝</button>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px;"></div>
+          <button class="btn btn-ghost" onclick="addBlock('divider')" title="Divider" style="padding:6px 10px;font-size:0.9rem;">―</button>
+          <button class="btn btn-ghost" onclick="addBlock('html')" title="Custom HTML" style="padding:6px 10px;font-size:0.85rem;">&lt;/&gt;</button>
+        </div>
+        
+        <!-- Blocks Canvas -->
+        <div id="blocksCanvas" style="flex:1;overflow-y:auto;padding:20px 28px;background:var(--bg);">
+          <div id="blocksContainer"></div>
+          <div id="addBlockPrompt" style="text-align:center;padding:30px;color:var(--muted2);cursor:pointer;border:2px dashed var(--border2);border-radius:6px;margin-top:20px;" onclick="showBlockPicker()">
+            <div style="font-size:1.5rem;margin-bottom:8px;">+</div>
+            <div style="font-size:0.8rem;">Click to add a block</div>
+          </div>
         </div>
       </div>
       
-      <div class="field">
-        <label>Body Content (HTML allowed)</label>
-        <textarea id="editArticleBody" style="min-height:300px;font-family:monospace;" placeholder="Full article content..."></textarea>
-        <div class="field-err" id="eBody">Required</div>
-      </div>
-      
-      <div class="field" style="display:flex;align-items:center;gap:10px;">
-        <input type="checkbox" id="editArticlePublished" checked style="width:auto;"/>
-        <label for="editArticlePublished" style="margin:0;">Published (visible to public)</label>
-      </div>
-      
-      <div style="display:flex;gap:10px;margin-top:20px;">
-        <button class="btn btn-gold btn-full" onclick="saveArticleFromEditor()">Save Article</button>
-        <button class="btn" style="border:1px solid var(--border2);" onclick="deleteCurrentArticle()" id="deleteArticleBtn">Delete</button>
+      <!-- Right: Settings & Assets Panel (30%) -->
+      <div style="width:380px;background:var(--surface);overflow-y:auto;border-left:1px solid var(--border);">
+        
+        <!-- Tab Navigation -->
+        <div style="display:flex;border-bottom:1px solid var(--border);">
+          <button class="btn btn-ghost" id="tabSettings" onclick="switchEditorPanel('settings')" style="flex:1;padding:12px;font-size:0.75rem;border-bottom:2px solid var(--gold);border-radius:0;">Settings</button>
+          <button class="btn btn-ghost" id="tabAssets" onclick="switchEditorPanel('assets')" style="flex:1;padding:12px;font-size:0.75rem;border-bottom:2px solid transparent;border-radius:0;">Affiliate Assets</button>
+        </div>
+        
+        <!-- Settings Panel -->
+        <div id="panelSettings" style="padding:20px;">
+          <div class="field">
+            <label style="font-size:0.7rem;color:var(--muted);">SEO Description</label>
+            <textarea id="editArticleSeoDesc" maxlength="160" placeholder="Meta description for search engines..." style="min-height:80px;resize:vertical;"></textarea>
+          </div>
+          
+          <div class="field" style="margin-top:15px;">
+            <label style="font-size:0.7rem;color:var(--muted);">Author</label>
+            <input type="text" id="editArticleAuthor" placeholder="Author name"/>
+          </div>
+          
+          <div class="field" style="margin-top:15px;display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="editArticlePublished" checked style="width:18px;height:18px;"/>
+            <label for="editArticlePublished" style="margin:0;font-size:0.85rem;color:var(--off);">Published (visible to public)</label>
+          </div>
+          
+          <div style="margin-top:25px;padding-top:20px;border-top:1px solid var(--border);">
+            <label style="display:block;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Danger Zone</label>
+            <button class="btn" style="border:1px solid var(--red);color:var(--red);width:100%;" onclick="deleteCurrentArticle()">Delete Article</button>
+          </div>
+        </div>
+        
+        <!-- Affiliate Assets Panel -->
+        <div id="panelAssets" style="padding:20px;display:none;">
+          <div style="margin-bottom:15px;">
+            <label style="display:block;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Upload New Asset</label>
+            <div style="border:2px dashed var(--border2);border-radius:6px;padding:15px;text-align:center;">
+              <input type="file" id="affiliateAssetInput" accept="image/*" style="display:none;" onchange="handleAffiliateAssetUpload(this)"/>
+              <button class="btn btn-ghost" onclick="document.getElementById('affiliateAssetInput').click()" style="width:100%;">
+                <span style="font-size:1.2rem;">📤</span><br/>
+                <span style="font-size:0.75rem;">Upload GIF/Banner</span>
+              </button>
+            </div>
+            <div class="field" style="margin-top:10px;">
+              <label style="font-size:0.65rem;color:var(--muted2);">Affiliate Link (optional)</label>
+              <input type="text" id="newAssetAffiliateLink" placeholder="https://affiliate-link.com" style="font-size:0.75rem;"/>
+            </div>
+          </div>
+          
+          <div>
+            <label style="display:block;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Global Asset Library</label>
+            <div id="affiliateAssetsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <!-- Assets will be loaded here -->
+            </div>
+          </div>
+        </div>
+        
       </div>
     </div>
   </div>
@@ -1605,6 +1693,9 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
     }
   });
 </script>
+
+<!-- Block-Style Article Editor -->
+<script src="article-editor.js"></script>
 
 </body>
 </html>

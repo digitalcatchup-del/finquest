@@ -808,26 +808,69 @@ async function saveProfileEdits() {
 }
 
 // ── ARTICLE EDITOR (Admin Only) ───────────────────────────────
-let currentEditingArticle = null;
+// Note: Core editor functions (openArticleEditor, closeArticleEditor, saveArticleFromEditor, deleteCurrentArticle)
+// are now in article-editor.js for the new block-style editor.
+// This section provides backward compatibility and integration.
 
+let currentEditingArticleLegacy = null;
+
+// Wrapper to integrate with new block editor
 function openArticleEditor(slug = null) {
   if (!currentUser || !['digitalcatchup'].includes(currentUser.username.toLowerCase())) {
     alert('This feature is only available for administrators.');
     return;
   }
   
-  currentEditingArticle = slug ? articles.find(a => a.slug === slug) : null;
+  // Use the new block editor from article-editor.js
+  if (typeof window.openArticleEditor === 'function' && window.openArticleEditor !== openArticleEditor) {
+    window.openArticleEditor(slug);
+  } else {
+    // Fallback to legacy if new editor not loaded
+    openArticleEditorLegacy(slug);
+  }
+}
+
+function closeArticleEditor() {
+  // Use the new block editor function if available
+  if (typeof window.closeArticleEditor === 'function' && window.closeArticleEditor !== closeArticleEditor) {
+    window.closeArticleEditor();
+  } else {
+    closeArticleEditorLegacy();
+  }
+}
+
+async function saveArticleFromEditor() {
+  // Use the new block editor function if available
+  if (typeof window.saveArticleFromEditor === 'function' && window.saveArticleFromEditor !== saveArticleFromEditor) {
+    await window.saveArticleFromEditor();
+  } else {
+    await saveArticleFromEditorLegacy();
+  }
+}
+
+async function deleteCurrentArticle() {
+  // Use the new block editor function if available
+  if (typeof window.deleteCurrentArticle === 'function' && window.deleteCurrentArticle !== deleteCurrentArticle) {
+    await window.deleteCurrentArticle();
+  } else {
+    await deleteCurrentArticleLegacy();
+  }
+}
+
+// Legacy functions (kept for fallback)
+function openArticleEditorLegacy(slug = null) {
+  currentEditingArticleLegacy = slug ? articles.find(a => a.slug === slug) : null;
   
-  document.getElementById('editArticleSlug').value = currentEditingArticle?.slug || '';
-  document.getElementById('editArticleTitle').value = currentEditingArticle?.title || '';
-  document.getElementById('editArticleExcerpt').value = currentEditingArticle?.excerpt || '';
-  document.getElementById('editArticleIcon').value = currentEditingArticle?.coverIcon || '📄';
-  document.getElementById('editArticleCover').value = currentEditingArticle?.cover || 'linear-gradient(135deg, #1a1a1a 0%, #2b2416 100%)';
-  document.getElementById('editArticleBody').value = currentEditingArticle?.body || '';
-  document.getElementById('editArticlePublished').checked = currentEditingArticle?.is_published !== false;
+  document.getElementById('editArticleSlug').value = currentEditingArticleLegacy?.slug || '';
+  document.getElementById('editArticleTitle').value = currentEditingArticleLegacy?.title || '';
+  document.getElementById('editArticleExcerpt').value = currentEditingArticleLegacy?.excerpt || '';
+  document.getElementById('editArticleIcon').value = currentEditingArticleLegacy?.coverIcon || '📄';
+  document.getElementById('editArticleCover').value = currentEditingArticleLegacy?.cover || 'linear-gradient(135deg, #1a1a1a 0%, #2b2416 100%)';
+  document.getElementById('editArticleBody').value = currentEditingArticleLegacy?.body || '';
+  document.getElementById('editArticlePublished').checked = currentEditingArticleLegacy?.is_published !== false;
   
-  document.getElementById('articleEditorTitle').textContent = currentEditingArticle ? 'Edit Article' : 'Create New Article';
-  document.getElementById('deleteArticleBtn').style.display = currentEditingArticle ? '' : 'none';
+  document.getElementById('articleEditorTitle').textContent = currentEditingArticleLegacy ? 'Edit Article' : 'Create New Article';
+  document.getElementById('deleteArticleBtn').style.display = currentEditingArticleLegacy ? '' : 'none';
   
   // Clear error states
   document.querySelectorAll('#articleEditorOverlay .field-err').forEach(el => el.style.display = 'none');
@@ -836,13 +879,13 @@ function openArticleEditor(slug = null) {
   document.body.style.overflow = 'hidden';
 }
 
-function closeArticleEditor() {
+function closeArticleEditorLegacy() {
   document.getElementById('articleEditorOverlay').classList.remove('open');
   document.body.style.overflow = '';
-  currentEditingArticle = null;
+  currentEditingArticleLegacy = null;
 }
 
-async function saveArticleFromEditor() {
+async function saveArticleFromEditorLegacy() {
   const slug = document.getElementById('editArticleSlug').value.trim();
   const title = document.getElementById('editArticleTitle').value.trim();
   const excerpt = document.getElementById('editArticleExcerpt').value.trim();
@@ -886,22 +929,17 @@ async function saveArticleFromEditor() {
   
   try {
     let result;
-    if (currentEditingArticle) {
-      // Update existing article
-      result = await db.from('articles').update(articleData).eq('slug', currentEditingArticle.slug);
+    if (currentEditingArticleLegacy) {
+      result = await db.from('articles').update(articleData).eq('slug', currentEditingArticleLegacy.slug);
     } else {
-      // Create new article
       result = await db.from('articles').insert([articleData]);
     }
     
     if (result.error) throw result.error;
     
-    // Refresh the articles array from database
     await loadArticlesFromDb();
+    closeArticleEditorLegacy();
     
-    closeArticleEditor();
-    
-    // If we're on the articles page, re-render
     if (document.getElementById('articlesPage').classList.contains('active')) {
       renderArticlesGrid();
     }
@@ -912,23 +950,20 @@ async function saveArticleFromEditor() {
   }
 }
 
-async function deleteCurrentArticle() {
-  if (!currentEditingArticle) return;
+async function deleteCurrentArticleLegacy() {
+  if (!currentEditingArticleLegacy) return;
   
-  if (!confirm(`Are you sure you want to delete "${currentEditingArticle.title}"? This cannot be undone.`)) {
+  if (!confirm(`Are you sure you want to delete "${currentEditingArticleLegacy.title}"? This cannot be undone.`)) {
     return;
   }
   
   try {
-    const result = await db.from('articles').delete().eq('slug', currentEditingArticle.slug);
+    const result = await db.from('articles').delete().eq('slug', currentEditingArticleLegacy.slug);
     if (result.error) throw result.error;
     
-    // Refresh the articles array from database
     await loadArticlesFromDb();
+    closeArticleEditorLegacy();
     
-    closeArticleEditor();
-    
-    // If we're on the articles page, re-render
     if (document.getElementById('articlesPage').classList.contains('active')) {
       renderArticlesGrid();
     }
