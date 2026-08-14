@@ -127,6 +127,7 @@ function closeTrackSidebar() {
     const touchEndY = e.changedTouches[0].clientY;
     const dx = touchEndX - touchStartX;
     const dy = touchEndY - touchStartY;
+
     // Swipe left: horizontal movement dominant, leftward, and far enough
     if (dx < -50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
       closeTrackSidebar();
@@ -139,6 +140,7 @@ function setTrackStage(stage) {
   trackStage = stage;
   renderStageTabs();
   renderTrackSidebar();
+
   if (stage === 'lessons') {
     if (trackCourseStarted || trackCurrentLessonIdx > 0) {
       renderLessonContent(trackCurrentLessonIdx);
@@ -159,11 +161,11 @@ function renderStageTabs() {
   if (!el) return;
   // Film stays hidden until there's actual capacity to produce it — see
   // renderFilmComingSoon() below, still intact and ready when that day comes.
-  el.innerHTML = ['lessons', 'exam', 'novel'].map(s => `
-    <button class="track-stage-tab ${trackStage === s ? 'active' : ''}"
-      onclick="setTrackStage('${s}')">
+  el.innerHTML = ['lessons', 'exam', 'novel'].map(s =>
+    `<button class="track-stage-tab ${trackStage === s ? 'active' : ''}" onclick="setTrackStage('${s}')">
       ${s === 'lessons' ? '📖 Lessons' : s === 'exam' ? '📝 Exam' : '📚 Novel'}
-    </button>`).join('');
+    </button>`
+  ).join('');
 }
 
 // ── SIDEBAR ──────────────────────────────────────────────────
@@ -188,24 +190,18 @@ function renderTrackSidebar() {
   el.innerHTML = track.lessons.map((l, i) => {
     const active = i === trackCurrentLessonIdx && trackStage === 'lessons';
     const done   = trackCompletedLessons.includes(i);
-    return `
-      <div class="track-sb-lesson ${active ? 'active' : ''}"
-           onclick="loadTrackLesson(${i})">
-        <div class="track-sb-num ${done ? 'tsn-done' : active ? 'tsn-active' : ''}">
-          ${done ? '✓' : i + 1}
+    return `<div class="track-sb-lesson ${active ? 'active' : ''}" onclick="loadTrackLesson(${i})">
+      <div class="track-sb-num ${done ? 'tsn-done' : active ? 'tsn-active' : ''}">
+        ${done ? '✓' : i + 1}
+      </div>
+      <div class="track-sb-lesson-info">
+        <div class="track-sb-lesson-title">${l.term}</div>
+        <div class="track-sb-lesson-meta">
+          ${l.duration} · <span class="track-sb-pip-badge">+${l.pips} pips</span>
         </div>
-        <div class="track-sb-lesson-info">
-          <div class="track-sb-lesson-title">${l.term}</div>
-          <div class="track-sb-lesson-meta">
-            ${l.duration} · <span class="track-sb-pip-badge">+${l.pips} pips</span>
-          </div>
-        </div>
-      </div>`;
+      </div>
+    </div>`;
   }).join('');
-  // NOTE: the Short Film sidebar entry is temporarily hidden — see
-  // renderFilmComingSoon() below, still intact and ready to re-enable
-  // once there's capacity to actually produce film content. Novel is
-  // live and reachable via the stage tabs above (see renderStageTabs).
 }
 
 // ── COURSE START GATE ────────────────────────────────────────
@@ -215,11 +211,9 @@ function renderCourseStartGate() {
     <div class="lesson-gate">
       <h1 class="track-lesson-title">Business Accounting Volume 1</h1>
       <p class="lesson-gate-sub">
-        Begin your learning journey through double entry, trading &amp; profit and loss
-        accounts, balance sheets and accounting concepts.
+        Begin your learning journey through double entry, trading &amp; profit and loss accounts, balance sheets and accounting concepts.
       </p>
-      <button class="btn btn-gold" onclick="startCourse()"
-        style="font-size:1rem;padding:14px 40px;">
+      <button class="btn btn-gold" onclick="startCourse()" style="font-size:1rem;padding:14px 40px;">
         Start Lesson →
       </button>
     </div>`;
@@ -239,18 +233,19 @@ function renderNovel() {
       <h2 class="novel-chapter-title">${c.title}</h2>
       <p class="novel-chapter-dek">${c.dek}</p>
       <div class="novel-body">${c.body}</div>
-    </div>`).join('<div class="novel-divider">&#10070;</div>');
+    </div>
+  `).join('<div class="novel-divider">❖</div>');
 
   const jumpLinks = novelChapters.map(c =>
-    `<a href="#novelCh${c.chapter}" class="novel-jump-link">Ch. ${c.chapter}</a>`).join('');
+    `<a href="#novelCh${c.chapter}" class="novel-jump-link">Ch. ${c.chapter}</a>`
+  ).join('');
 
   document.getElementById('trackMainContent').innerHTML = `
     <div class="novel-wrap">
       <div class="novel-eyebrow">Business Accounting · The Novel</div>
       <h1 class="novel-title">A Kiosk on Allen Avenue</h1>
       <p class="novel-intro">
-        The same foundations from the lessons — told as one continuous story,
-        for whenever you'd rather read than tap through cards.
+        The same foundations from the lessons — told as one continuous story, for whenever you'd rather read than tap through cards.
       </p>
       <div class="novel-jump-nav">${jumpLinks}</div>
       ${chaptersHtml}
@@ -273,12 +268,9 @@ function renderFilmComingSoon() {
       <div style="font-size:2rem;">🎬</div>
       <h1 class="track-lesson-title" style="margin-top:12px;">Short Film — Coming Soon</h1>
       <p class="lesson-gate-sub">
-        Soon you'll be able to watch a short film built around ${track.title},
-        then jump straight into a gamified knowledge check tied to what you
-        just watched — earning pips the same way you do with lessons today.
+        Soon you'll be able to watch a short film built around ${track.title}, then jump straight into a gamified knowledge check tied to what you just watched — earning pips the same way you do with lessons today.
       </p>
-      <button class="btn btn-gold" onclick="setTrackStage('exam')"
-        style="font-size:1rem;padding:14px 40px;">
+      <button class="btn btn-gold" onclick="setTrackStage('exam')" style="font-size:1rem;padding:14px 40px;">
         Back to Exam →
       </button>
     </div>`;
@@ -298,6 +290,7 @@ async function loadTrackLesson(idx) {
     const usage = await getMonthlyUsage();
     const lessonKey = `${activeTrackKey}:${idx}`;
     const alreadyViewedThisMonth = usage.viewedLessonKeys.includes(lessonKey);
+
     if (!alreadyViewedThisMonth && usage.lessonsUsed >= FREE_MONTHLY_LESSON_CAP) {
       renderLessonCapGate(usage.lessonsUsed);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -308,6 +301,7 @@ async function loadTrackLesson(idx) {
 
   renderLessonContent(idx);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
   // On mobile, tapping a lesson should close the sidebar so the
   // content is immediately visible, rather than overlapping it.
   if (window.matchMedia('(max-width:700px)').matches) {
@@ -321,9 +315,7 @@ function renderLessonCapGate(lessonsUsed) {
       <div style="font-size:2rem;">🔒</div>
       <h1 class="track-lesson-title" style="margin-top:12px;">Monthly Free Limit Reached</h1>
       <p class="lesson-gate-sub">
-        You've opened ${lessonsUsed} of ${FREE_MONTHLY_LESSON_CAP} free lessons available this month.
-        Your count resets next month, or upgrade to Professional for full,
-        unlimited access right now.
+        You've opened ${lessonsUsed} of ${FREE_MONTHLY_LESSON_CAP} free lessons available this month. Your count resets next month, or upgrade to Professional for full, unlimited access right now.
       </p>
       <button class="btn btn-gold" onclick="goToPricing()" style="font-size:1rem;padding:14px 40px;">
         See Professional →
@@ -388,6 +380,7 @@ function renderLessonContent(idx) {
       ${l.content ? `<div class="track-lesson-content">${l.content}</div>` : ''}
 
       <div class="track-divider"></div>
+
       <div class="track-quiz-section">
         <div class="track-quiz-header">
           <div class="track-quiz-eyebrow">Knowledge Check</div>
@@ -398,7 +391,6 @@ function renderLessonContent(idx) {
         </div>
         ${renderQuizQuestions(l, idx)}
       </div>
-
       <div class="track-quiz-result" id="trackQuizResult"></div>
     </div>
 
@@ -413,7 +405,6 @@ function renderLessonContent(idx) {
         : `<button class="btn btn-gold"
              onclick="setTrackStage('exam')">Take the Exam →</button>`}
     </div>`;
-
   renderTrackSidebar();
 }
 
@@ -421,25 +412,25 @@ function renderQuizQuestions(l, idx) {
   if (!l.quiz) return '';
   const q = l.quiz;
   const opts = q.opts || q.options || [];
-  return `
-    <div class="track-q-block" id="trackQ_${idx}_0">
-      <div class="track-q-text">${q.q || q.question}</div>
-      <div class="track-q-opts">
-        ${opts.map((o, oi) => `
-          <button class="track-q-opt"
-            onclick="answerTrackQ(0, ${oi}, ${q.ans !== undefined ? q.ans : q.correct}, '${escStr(q.exp || q.explanation || '')}', ${idx})">
-            ${o}
-          </button>`).join('')}
-      </div>
-      <div class="track-q-feedback" id="trackFb_${idx}_0"></div>
-    </div>`;
+  return `<div class="track-q-block" id="trackQ_${idx}_0">
+    <div class="track-q-text">${q.q || q.question}</div>
+    <div class="track-q-opts">
+      ${opts.map((o, oi) =>
+        `<button class="track-q-opt"
+          onclick="answerTrackQ(0, ${oi}, ${q.ans !== undefined ? q.ans : q.correct}, '${escStr(q.exp || q.explanation || '')}', ${idx})">
+          ${o}
+        </button>`
+      ).join('')}
+    </div>
+    <div class="track-q-feedback" id="trackFb_${idx}_0"></div>
+  </div>`;
 }
 
 function escStr(s) {
   return String(s)
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "\\'")
-    .replace(/"/g, '&quot;')
+    .replace(/"/g, '\\"')
     .replace(/</g, '&lt;');
 }
 
@@ -450,7 +441,6 @@ function answerTrackQ(qi, oi, correct, explanation, lessonIdx) {
 
   const block = document.getElementById(`trackQ_${lessonIdx}_${qi}`);
   if (!block) return;
-
   const opts = block.querySelectorAll('.track-q-opt');
   opts.forEach((o, i) => {
     o.disabled = true;
@@ -460,13 +450,10 @@ function answerTrackQ(qi, oi, correct, explanation, lessonIdx) {
 
   const fb = document.getElementById(`trackFb_${lessonIdx}_${qi}`);
   const isCorrect = oi === correct;
-
   if (fb) {
     fb.innerHTML = isCorrect
-      ? `<span class="fb-correct">✓ Correct!</span>
-         <span class="fb-exp">${explanation}</span>`
-      : `<span class="fb-wrong">✗ Not quite.</span>
-         <span class="fb-exp">${explanation}</span>`;
+      ? `<span class="fb-correct">✓ Correct!</span> <span class="fb-exp">${explanation}</span>`
+      : `<span class="fb-wrong">✗ Not quite.</span> <span class="fb-exp">${explanation}</span>`;
     fb.classList.add('show', isCorrect ? 'cfb' : 'wfb');
   }
 
@@ -474,12 +461,12 @@ function answerTrackQ(qi, oi, correct, explanation, lessonIdx) {
     const track = trackData[activeTrackKey];
     const l     = track.lessons[lessonIdx];
     const pips  = (l.pips || 1) * 0.00010;
-
+    
     // Save pip to Supabase
     if (typeof awardPips === 'function') {
       awardPips(pips, 'quiz_correct');
     }
-
+    
     // Mark lesson complete
     if (!trackCompletedLessons.includes(lessonIdx)) {
       trackCompletedLessons.push(lessonIdx);
@@ -489,14 +476,14 @@ function answerTrackQ(qi, oi, correct, explanation, lessonIdx) {
         db.from('profiles').update({ total_lessons: currentUser.totalLessons }).eq('id', currentUser.id);
       }
     }
-
+    
     // Flash pip in sidebar
     const pipEl = document.getElementById('trackPip');
     if (pipEl) {
       pipEl.classList.add('pip-flash');
       setTimeout(() => pipEl.classList.remove('pip-flash'), 600);
     }
-
+    
     showTrackQuizResult(lessonIdx);
   }
 }
@@ -509,8 +496,7 @@ function showTrackQuizResult(lessonIdx) {
   result.innerHTML = `
     <div class="track-qr-icon">⚡</div>
     <div class="track-qr-label">Pip Earned</div>
-    <div style="font-size:2.5rem;font-weight:900;color:var(--green);
-      font-variant-numeric:tabular-nums;margin-bottom:4px">
+    <div style="font-size:2.5rem;font-weight:900;color:var(--green); font-variant-numeric:tabular-nums;margin-bottom:4px">
       ${currentUser ? currentUser.pipScore.toFixed(5) : '1.00000'}
     </div>
     <div class="track-qr-sub">Keep answering correctly to move your pip upward.</div>`;
@@ -527,8 +513,8 @@ function renderKeywordLinks(text, currentIdx) {
     if (targetIdx === -1 || targetIdx === currentIdx) return;
     const re = new RegExp(`\\b(${word})\\b`, 'gi');
     out = out.replace(re,
-      `<span class="track-keyword-link"
-         onclick="event.stopPropagation();loadTrackLesson(${targetIdx})">$1</span>`);
+      `<span class="track-keyword-link" onclick="event.stopPropagation();loadTrackLesson(${targetIdx})">$1</span>`
+    );
   });
   return out;
 }
@@ -551,6 +537,7 @@ function voteOnDefinition(idx, direction) {
   if (!l.votes) l.votes = { up: 0, down: 0 };
   if (direction === 1)  l.votes.up++;
   else l.votes.down--;
+
   const upEl   = document.getElementById(`nuggetUp_${idx}`);
   const downEl = document.getElementById(`nuggetDown_${idx}`);
   if (upEl)   upEl.textContent   = l.votes.up;
@@ -562,8 +549,7 @@ function openSuggestDefinition(idx) {
   const l = trackData[activeTrackKey]?.lessons[idx];
   if (!l) return;
   document.getElementById('trackMainContent').insertAdjacentHTML('beforeend', `
-    <div class="suggest-def-overlay" id="suggestDefOverlay"
-      onclick="if(event.target===this)closeSuggestDef()">
+    <div class="suggest-def-overlay" id="suggestDefOverlay" onclick="if(event.target===this)closeSuggestDef()">
       <div class="suggest-def-modal">
         <button class="modal-close-btn" onclick="closeSuggestDef()">✕</button>
         <h3 style="color:var(--white);margin-bottom:8px;">
@@ -572,14 +558,9 @@ function openSuggestDefinition(idx) {
         <p style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">
           Your suggestion will be reviewed by the Butterfly Dynamix team.
         </p>
-        <textarea id="suggestDefText" rows="5"
-          style="width:100%;background:var(--surface2);border:1px solid var(--border2);
-            border-radius:6px;padding:12px;font-size:0.85rem;color:var(--white);
-            font-family:inherit;resize:vertical;box-sizing:border-box;"
-          placeholder="Write your definition here..."></textarea>
+        <textarea id="suggestDefText" rows="5" style="width:100%;background:var(--surface2);border:1px solid var(--border2); border-radius:6px;padding:12px;font-size:0.85rem;color:var(--white); font-family:inherit;resize:vertical;box-sizing:border-box;" placeholder="Write your definition here..."></textarea>
         <div style="display:flex;gap:8px;margin-top:12px;">
-          <button class="btn btn-gold" style="flex:1"
-            onclick="submitSuggestedDefinition(${idx})">
+          <button class="btn btn-gold" style="flex:1" onclick="submitSuggestedDefinition(${idx})">
             Submit →
           </button>
           <button class="btn btn-ghost" onclick="closeSuggestDef()">
@@ -597,30 +578,29 @@ function closeSuggestDef() {
 // ── FEATURE SETTINGS ─────────────────────────────────────────
 function openFeatureSettings() {
   document.getElementById('trackMainContent').insertAdjacentHTML('beforeend', `
-    <div class="suggest-def-overlay" id="featureSettingsOverlay"
-      onclick="if(event.target===this)this.remove()">
+    <div class="suggest-def-overlay" id="featureSettingsOverlay" onclick="if(event.target===this)this.remove()">
       <div class="suggest-def-modal">
         <button class="modal-close-btn" onclick="document.getElementById('featureSettingsOverlay').remove()">✕</button>
         <h3 style="color:var(--white);margin-bottom:16px;">Lesson Display Settings</h3>
+        
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
           <div>
             <div style="font-size:0.82rem;font-weight:700;color:var(--white);">Keyword Links</div>
             <div style="font-size:0.72rem;color:var(--muted);">Highlight related terms in lessons</div>
           </div>
           <label class="feature-switch">
-            <input type="checkbox" ${keywordLinksEnabled ? 'checked' : ''}
-              onchange="setKeywordLinksEnabled(this.checked)">
+            <input type="checkbox" ${keywordLinksEnabled ? 'checked' : ''} onchange="setKeywordLinksEnabled(this.checked)">
             <span class="feature-slider"></span>
           </label>
         </div>
+
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <div>
             <div style="font-size:0.82rem;font-weight:700;color:var(--white);">Community Votes</div>
             <div style="font-size:0.72rem;color:var(--muted);">Show votes on definitions</div>
           </div>
           <label class="feature-switch">
-            <input type="checkbox" ${nuggetVotesFeatureEnabled ? 'checked' : ''}
-              onchange="setVotesFeatureEnabled(this.checked)">
+            <input type="checkbox" ${nuggetVotesFeatureEnabled ? 'checked' : ''} onchange="setVotesFeatureEnabled(this.checked)">
             <span class="feature-slider"></span>
           </label>
         </div>
@@ -666,9 +646,7 @@ async function loadTrackExam() {
           <div style="font-size:2rem;">🔒</div>
           <h1 class="track-lesson-title" style="margin-top:12px;">Monthly Free Limit Reached</h1>
           <p class="lesson-gate-sub">
-            You've used ${usage.examsUsed} of ${FREE_MONTHLY_EXAM_CAP} free mock exams available
-            this month. Your count resets next month, or upgrade to Professional
-            for unlimited mock exams right now.
+            You've used ${usage.examsUsed} of ${FREE_MONTHLY_EXAM_CAP} free mock exams available this month. Your count resets next month, or upgrade to Professional for unlimited mock exams right now.
           </p>
           <button class="btn btn-gold" onclick="goToPricing()" style="font-size:1rem;padding:14px 40px;">
             See Professional →
@@ -688,27 +666,25 @@ async function loadTrackExam() {
     <div class="track-lesson-eyebrow">${track.title} · Exam</div>
     <h1 class="track-lesson-title">${exam.title || 'Beginner Exam'}</h1>
     <p style="font-size:0.82rem;color:var(--muted);margin-bottom:24px;">
-      ${exam.questions.length} questions ·
-      Pass mark: ${exam.passMark || 70}% ·
-      ⚡ Up to ${exam.pips} pips
+      ${exam.questions.length} questions · Pass mark: ${exam.passMark || 70}% · ⚡ Up to ${exam.pips} pips
     </p>
     <div id="examQuestions">
-      ${exam.questions.map((q, qi) => `
-        <div class="track-q-block" id="examQ_${qi}" style="margin-bottom:24px;">
+      ${exam.questions.map((q, qi) =>
+        `<div class="track-q-block" id="examQ_${qi}" style="margin-bottom:24px;">
           <div class="track-q-text">
             <strong>Q${qi + 1}.</strong> ${q.q}
           </div>
           <div class="track-q-opts">
-            ${q.opts.map((o, oi) => `
-              <button class="track-q-opt"
-                onclick="answerExamQ(${qi}, ${oi})">
+            ${q.opts.map((o, oi) =>
+              `<button class="track-q-opt" onclick="answerExamQ(${qi}, ${oi})">
                 ${o}
-              </button>`).join('')}
+              </button>`
+            ).join('')}
           </div>
-        </div>`).join('')}
+        </div>`
+      ).join('')}
     </div>
-    <button class="btn btn-gold" style="margin-top:8px;width:100%"
-      onclick="submitTrackExam()">
+    <button class="btn btn-gold" style="margin-top:8px;width:100%" onclick="submitTrackExam()">
       Submit Exam →
     </button>`;
 }
@@ -743,6 +719,7 @@ function submitTrackExam() {
     const userAns = trackExamAnswers[qi];
     const isRight = userAns === q.ans;
     if (isRight) correct++;
+
     block.querySelectorAll('.track-q-opt').forEach((o, i) => {
       o.disabled = true;
       if (i === q.ans)      o.classList.add('correct');
@@ -776,12 +753,11 @@ function showExamResult(score, correct, total, passed, exam) {
         ${correct} of ${total} correct · Pass mark: ${exam.passMark || 70}%
       </p>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-        <button class="btn btn-gold"
-          onclick="setTrackStage('lessons')">
+        <button class="btn btn-gold" onclick="setTrackStage('lessons')">
           Review Lessons →
         </button>
-        ${!passed ? `
-          <button class="btn btn-outline"
+        ${!passed ?
+          `<button class="btn btn-outline"
             onclick="loadTrackExam()">
             Retry Exam
           </button>` : ''}
