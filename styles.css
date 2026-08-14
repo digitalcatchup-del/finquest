@@ -717,3 +717,85 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .novel-end{text-align:center;padding:48px 0 24px;border-top:1px solid var(--border);margin-top:48px;}
 .novel-end-mark{font-size:1.6rem;color:var(--gold);margin-bottom:12px;}
 .novel-end p{font-size:0.82rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+
+/* ── FULL PAGE EDITOR ── */
+#editorPage { display: none; min-height: 100vh; background: var(--bg); flex-direction: column; }
+#editorPage.active { display: flex; }
+
+.editor-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--border);
+  position: sticky; top: 57px; z-index: 100; gap: 16px;
+}
+.editor-topbar-title { font-size: 1rem; font-weight: 700; color: var(--white); margin: 0; flex: 1; text-align: center; }
+.editor-topbar-actions { display: flex; gap: 8px; }
+
+.editor-workspace {
+  display: grid; grid-template-columns: 1fr 340px; flex: 1; min-height: 0; overflow: hidden;
+}
+
+.editor-canvas {
+  padding: 32px; overflow-y: auto; max-width: 800px; margin: 0 auto; width: 100%;
+}
+
+.editor-cover-section { margin-bottom: 24px; }
+.cover-placeholder {
+  border: 2px dashed var(--border2); border-radius: 8px; padding: 40px; text-align: center;
+  color: var(--muted); position: relative; cursor: pointer; transition: border-color 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;
+}
+.cover-placeholder:hover { border-color: var(--gold); }
+.cover-preview { width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; }
+
+.editor-meta-fields { margin-bottom: 32px; display: flex; flex-direction: column; gap: 12px; }
+.editor-title-input {
+  font-size: 2.2rem; font-weight: 800; color: var(--white); border: none; background: transparent;
+  outline: none; padding: 8px 0; border-bottom: 1px solid transparent; width: 100%;
+}
+.editor-title-input:focus { border-bottom-color: var(--gold); }
+.editor-slug-input, .editor-excerpt-input {
+  font-size: 0.9rem; color: var(--off); background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 4px; padding: 10px 12px; outline: none; width: 100%; font-family: inherit;
+}
+.editor-excerpt-input { min-height: 60px; resize: vertical; }
+
+.editor-blocks-container { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+.editor-add-block { text-align: center; padding: 20px; border: 2px dashed var(--border); border-radius: 8px; display: flex; justify-content: center; }
+
+.editor-sidebar {
+  background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+.editor-tabs {
+  display: flex; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); z-index: 10;
+}
+.editor-tab {
+  flex: 1; padding: 14px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent;
+  cursor: pointer; transition: all 0.15s;
+}
+.editor-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+.editor-panel { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.editor-panel .field label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.editor-panel .field input, .editor-panel .field textarea {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
+  padding: 8px 10px; color: var(--white); font-size: 0.85rem; outline: none; font-family: inherit;
+}
+.editor-panel .field textarea { min-height: 80px; resize: vertical; }
+.field-checkbox { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--off); }
+.field-checkbox input { width: auto; margin: 0; }
+
+.editor-danger-zone { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.editor-danger-zone h4 { font-size: 0.8rem; color: var(--red); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.asset-upload-box, .asset-library-box { margin-bottom: 20px; }
+.asset-upload-box h4, .asset-library-box h4 { font-size: 0.8rem; font-weight: 700; color: var(--white); margin-bottom: 10px; }
+.asset-upload-box input[type="text"] { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; color: var(--white); font-size: 0.85rem; outline: none; }
+.asset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+@media(max-width: 900px) {
+  .editor-workspace { grid-template-columns: 1fr; }
+  .editor-sidebar { border-left: none; border-top: 1px solid var(--border); max-height: 50vh; }
+  .editor-topbar { flex-wrap: wrap; }
+  .editor-topbar-title { order: 3; width: 100%; text-align: left; font-size: 0.9rem; margin-top: 8px; }
+}
