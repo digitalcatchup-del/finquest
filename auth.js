@@ -70,4 +70,507 @@ async function completeSignup() {
     }
 
     // Update profile with bio (trigger creates it, we patch extra fields)
-    if (data.user)
+    if (data.user) {
+      await db.from('profiles').update({ bio, first_name: first, last_name: last }).eq('id', data.user.id);
+    }
+
+    // Set current user
+    await loadCurrentUser(data.user);
+
+    // Show welcome screen
+    document.getElementById('wName').textContent = first;
+    document.getElementById('wAvatar').textContent = avatar;
+    showStep('welcome');
+
+  } catch (err) {
+    console.error('Signup catch error:', err);
+    alert('Signup error: ' + (err.message || err.status || JSON.stringify(err)));
+    btn.textContent = 'Create Account →';
+    btn.disabled = false;
+  }
+}
+
+// ── LOG IN ──────────────────────────────────────────────────
+async function doLogin() {
+  const btn   = document.getElementById('loginSubmitBtn');
+  const email = document.getElementById('lemail').value.trim();
+  const pw    = document.getElementById('lpw').value;
+
+  btn.textContent = 'Logging in…';
+  btn.disabled = true;
+
+  try {
+    const { data, error } = await db.auth.signInWithPassword({ email, password: pw });
+    if (error) {
+      document.getElementById('lEPW').classList.add('show');
+      btn.textContent = 'Log In →';
+      btn.disabled = false;
+      return;
+    }
+    await loadCurrentUser(data.user);
+    closeAuth();
+    enterApp();
+  } catch (err) {
+    alert('Login error: ' + err.message);
+    btn.textContent = 'Log In →';
+    btn.disabled = false;
+  }
+}
+
+// ── LOG OUT ─────────────────────────────────────────────────
+async function logout() {
+  await db.auth.signOut();
+  currentUser = null;
+  showPage('homePage');
+  document.getElementById('guestNav').style.display = 'flex';
+  document.getElementById('userNav').style.display = 'none';
+  if (typeof closeTrack === 'function') closeTrack();
+}
+
+// ── LOAD USER DATA ───────────────────────────────────────────
+async function loadCurrentUser(authUser) {
+  if (!authUser) return;
+  const { data: profile, error } = await db
+    .from('profiles')
+    .select('*')
+    .eq('id', authUser.id)
+    .single();
+
+  if (error || !profile) return;
+
+  currentUser = {
+    id:            profile.id,
+    email:         authUser.email,
+    username:      profile.username,
+    firstName:     profile.first_name,
+    lastName:      profile.last_name,
+    avatar:        profile.avatar,
+    bio:           profile.bio,
+    isSubscribed:  profile.is_subscribed,
+    tier:          profile.subscription_tier,
+    pipScore:      parseFloat(profile.pip_score) || 1.00000,
+    streak:        profile.day_streak || 0,
+    totalLessons:  profile.total_lessons || 0,
+    totalCorrect:  profile.total_correct || 0,
+    createdAt:     profile.created_at,
+  };
+
+  // Update streak (if last active was yesterday, increment; if today, keep; else reset)
+  await checkAndUpdateStreak(profile);
+  updateNavForLoggedInUser();
+}
+
+// ── RESTORE SESSION ON PAGE LOAD ────────────────────────────
+async function restoreSession() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session?.user) {
+    await loadCurrentUser(session.user);
+    // If user was mid-track, stay on home. Let them navigate.
+    updateNavForLoggedInUser();
+  }
+}
+
+// ── STRIPE REDIRECT HANDLER ──────────────────────────────────
+async function checkStripeRedirect() {
+  const params = new URLSearchParams(window.location.search);
+
+  // ── Flutterwave redirect params ──
+  const fwStatus = params.get('status');
+  const fwTxRef  = params.get('tx_ref');
+
+  if (fwStatus && fwTxRef) {
+    window.history.replaceState({}, '', window.location.pathname);
+    if (fwStatus === 'successful' || fwStatus === 'completed') {
+      const plan = fwTxRef.includes('Annual') ? 'annual'
+                 : fwTxRef.includes('Expert') ? 'expert'
+                 : 'professional';
+      
+      if (currentUser?.id) {
+        await db.from('profiles').update({
+          is_subscribed: true,
+          subscription_tier: plan
+        }).eq('id', currentUser.id);
+        currentUser.isSubscribed = true;
+        currentUser.tier = plan;
+      }
+      document.getElementById('paymentContent').style.display = 'none';
+      document.getElementById('paymentSuccess').classList.add('show');
+      document.getElementById('paymentOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    } else {
+      alert('Payment was not completed. Please try again.');
+    }
+    return;
+  }
+
+  // ── Stripe-style redirect params (legacy / fallback) ──
+  const sessionId = params.get('session_id');
+  const success   = params.get('success');
+  if (success === 'true' && sessionId) {
+    // Clean the URL
+    window.history.replaceState({}, '', window.location.pathname);
+    // Mark user as subscribed in Supabase
+    if (currentUser?.id) {
+      await db.from('profiles').update({
+        is_subscribed: true,
+        subscription_tier: 'professional'
+      }).eq('id', currentUser.id);
+      if (currentUser) {
+        currentUser.isSubscribed = true;
+        currentUser.tier = 'professional';
+      }
+    }
+    // Show success modal
+    document.getElementById('paymentContent').style.display = 'none';
+    document.getElementById('paymentSuccess').classList.add('show');
+    document.getElementById('paymentOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+// ── STREAK LOGIC ─────────────────────────────────────────────
+async function checkAndUpdateStreak(profile) {
+  const today = new Date().toISOString().split('T')[0];
+  const last  = profile.last_active_date;
+  let newStreak = profile.day_streak || 0;
+
+  if (!last) {
+    newStreak = 1;
+  } else {
+    const diff = Math.floor((new Date(today) - new Date(last)) / 86400000);
+    if (diff === 0) {
+      // Already active today — keep streak
+    } else if (diff === 1) {
+      newStreak += 1;
+    } else {
+      newStreak = 1; // Reset
+    }
+  }
+
+  await db.from('profiles').update({
+    last_active_date: today,
+    day_streak: newStreak
+  }).eq('id', profile.id);
+
+  if (currentUser) currentUser.streak = newStreak;
+}
+
+// ── UPDATE NAV FOR LOGGED-IN USER ───────────────────────────
+function updateNavForLoggedInUser() {
+  if (!currentUser) return;
+  document.getElementById('guestNav').style.display = 'none';
+  document.getElementById('userNav').style.display = 'flex';
+  document.getElementById('navAvatar').textContent = currentUser.avatar;
+  document.getElementById('navStreak').textContent = `🔥 ${currentUser.streak}`;
+  if (document.getElementById('navPip')) {
+    document.getElementById('navPip').textContent = currentUser.pipScore.toFixed(5);
+  }
+
+  const trialBadge = document.getElementById('navTrialBadge');
+  if (trialBadge && typeof getAccessStatus === 'function') {
+    const access = getAccessStatus();
+    if (access.status === 'trial') {
+      trialBadge.style.display = 'inline-block';
+      trialBadge.textContent = access.daysLeft === 1 ? 'Trial: 1 day left' : `Trial: ${access.daysLeft} days left`;
+    } else if (access.status === 'expired') {
+      trialBadge.style.display = 'inline-block';
+      trialBadge.textContent = 'Trial ended';
+    } else {
+      trialBadge.style.display = 'none';
+    }
+  }
+}
+
+// ── MONTHLY USAGE (Free tier caps) ───────────────────────────
+// Free tier (trial ended, not subscribed) is capped at 15 lessons and 4
+// mock exams per calendar month. Paid subscribers and people still in
+// their 7-day trial bypass this entirely — see hasFullAccess() in app.js.
+const FREE_MONTHLY_LESSON_CAP = 15;
+const FREE_MONTHLY_EXAM_CAP   = 4;
+
+function getMonthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+// Returns { lessonsUsed, viewedLessonKeys, examsUsed } for the current
+// calendar month. viewedLessonKeys lets callers tell "a lesson you've
+// already opened this month" (free, no cap impact) apart from "a new
+// lesson" (counts toward the 15).
+async function getMonthlyUsage() {
+  if (!currentUser) return { lessonsUsed: 0, viewedLessonKeys: [], examsUsed: 0 };
+  const monthKey = getMonthKey();
+  const [lessonsRes, examsRes] = await Promise.all([
+    db.from('monthly_lesson_views').select('lesson_key')
+      .eq('user_id', currentUser.id).eq('month_key', monthKey),
+    db.from('monthly_exam_attempts').select('id', { count: 'exact', head: true })
+      .eq('user_id', currentUser.id).eq('month_key', monthKey),
+  ]);
+  const viewedLessonKeys = (lessonsRes.data || []).map(r => r.lesson_key);
+  return {
+    lessonsUsed: viewedLessonKeys.length,
+    viewedLessonKeys,
+    examsUsed: examsRes.count || 0,
+  };
+}
+
+async function recordLessonView(trackKey, lessonIndex) {
+  if (!currentUser) return;
+  await db.from('monthly_lesson_views').upsert({
+    user_id:    currentUser.id,
+    lesson_key: `${trackKey}:${lessonIndex}`,
+    month_key:  getMonthKey(),
+  }, { onConflict: 'user_id,lesson_key,month_key', ignoreDuplicates: true });
+}
+
+async function recordExamAttempt(trackKey) {
+  if (!currentUser) return;
+  await db.from('monthly_exam_attempts').insert({
+    user_id:   currentUser.id,
+    track_key: trackKey,
+    month_key: getMonthKey(),
+  });
+}
+
+// ── SAVE TRACK PROGRESS ──────────────────────────────────────
+async function saveTrackProgress(trackKey, lessonIndex) {
+  if (!currentUser) return;
+  await db.from('track_progress').upsert({
+    user_id:      currentUser.id,
+    track_key:    trackKey,
+    lesson_index: lessonIndex,
+  }, { onConflict: 'user_id,track_key,lesson_index' });
+}
+
+// ── LOAD TRACK PROGRESS ──────────────────────────────────────
+async function loadTrackProgress(trackKey) {
+  if (!currentUser) return [];
+  const { data } = await db
+    .from('track_progress')
+    .select('lesson_index')
+    .eq('user_id', currentUser.id)
+    .eq('track_key', trackKey);
+  return (data || []).map(r => r.lesson_index);
+}
+
+// ── AWARD PIPS ───────────────────────────────────────────────
+async function awardPips(delta, reason, correctCount = 1) {
+  if (!currentUser) return;
+  const newScore = parseFloat((currentUser.pipScore + delta).toFixed(5));
+  
+  await Promise.all([
+    db.from('profiles').update({
+      pip_score:     newScore,
+      total_correct: currentUser.totalCorrect + correctCount,
+      total_lessons: currentUser.totalLessons
+    }).eq('id', currentUser.id),
+    db.from('pip_history').insert({
+      user_id:     currentUser.id,
+      delta,
+      score_after: newScore,
+      reason
+    })
+  ]);
+
+  currentUser.pipScore     = newScore;
+  currentUser.totalCorrect += correctCount;
+
+  if (document.getElementById('navPip')) {
+    document.getElementById('navPip').textContent = newScore.toFixed(5);
+  }
+}
+
+// ── SUBMIT QUIZ ANSWER ───────────────────────────────────────
+async function recordQuizAnswer(trackKey, lessonIndex, questionIndex, isCorrect, pipsEarned) {
+  if (!currentUser) return;
+  await db.from('quiz_answers').insert({
+    user_id:        currentUser.id,
+    track_key:      trackKey,
+    lesson_index:   lessonIndex,
+    question_index: questionIndex,
+    is_correct:     isCorrect,
+    pips_earned:    pipsEarned
+  });
+  if (isCorrect && pipsEarned > 0) {
+    await awardPips(pipsEarned, 'quiz_correct');
+  }
+}
+
+// ── ARTICLES: LIKE (thumbs up, toggle) ───────────────────────
+async function toggleArticleLike(articleId) {
+  if (!currentUser) { openAuth('signup'); return null; }
+  const { data: existing } = await db
+    .from('article_likes')
+    .select('id')
+    .eq('article_id', articleId)
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+
+  if (existing) {
+    await db.from('article_likes').delete().eq('id', existing.id);
+    return false; // now un-liked
+  } else {
+    await db.from('article_likes').insert({ article_id: articleId, user_id: currentUser.id });
+    return true; // now liked
+  }
+}
+
+async function getArticleLikeState(articleId) {
+  const { count } = await db
+    .from('article_likes')
+    .select('id', { count: 'exact', head: true })
+    .eq('article_id', articleId);
+
+  let likedByMe = false;
+  if (currentUser) {
+    const { data } = await db
+      .from('article_likes')
+      .select('id')
+      .eq('article_id', articleId)
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    likedByMe = !!data;
+  }
+  return { count: count || 0, likedByMe };
+}
+
+// ── ARTICLES: COMMENTS (flat — no replies) ───────────────────
+async function loadArticleComments(articleId) {
+  const { data: comments, error } = await db
+    .from('article_comments')
+    .select('id, user_id, body, created_at')
+    .eq('article_id', articleId)
+    .order('created_at', { ascending: false });
+
+  if (error || !comments) return [];
+
+  const userIds = [...new Set(comments.map(c => c.user_id))];
+  const { data: profilesData } = await db
+    .from('profiles')
+    .select('id, username, avatar')
+    .in('id', userIds);
+
+  const profileMap = {};
+  (profilesData || []).forEach(p => { profileMap[p.id] = p; });
+
+  return comments.map(c => ({ ...c, profiles: profileMap[c.user_id] || { username: 'anonymous', avatar: '😎' } }));
+}
+
+async function submitArticleComment(articleId, body) {
+  if (!currentUser) { openAuth('signup'); return null; }
+  const trimmed = body.trim();
+  if (!trimmed) return null;
+  const { data, error } = await db.from('article_comments').insert({
+    article_id: articleId,
+    user_id:    currentUser.id,
+    body:       trimmed.slice(0, 500)
+  }).select().single();
+  return error ? null : data;
+}
+
+// ── SERVICE ENQUIRIES ─────────────────────────────────────────
+async function submitServiceEnquiry({ name, email, phone, business, service, message, amountUsd }) {
+  if (!currentUser) return { error: 'not_logged_in' };
+  const { data, error } = await db.from('service_enquiries').insert({
+    user_id:     currentUser.id,
+    name,
+    email,
+    phone:       phone || null,
+    business:    business || null,
+    service,
+    message:     message || null,
+    amount_usd:  amountUsd || null,
+    status:      'new',
+  }).select().single();
+  return error ? { error } : { data };
+}
+
+async function loadMyEnquiries() {
+  if (!currentUser) return [];
+  const { data, error } = await db
+    .from('service_enquiries')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+  return error ? [] : (data || []);
+}
+
+async function markEnquiryPaid(enquiryId, txRef) {
+  if (!currentUser) return;
+  await db.from('service_enquiries').update({
+    paid:        true,
+    paid_at:     new Date().toISOString(),
+    payment_ref: txRef,
+    status:      'in_progress',
+    updated_at:  new Date().toISOString(),
+  }).eq('id', enquiryId).eq('user_id', currentUser.id);
+}
+
+// ── LEADERBOARD ──────────────────────────────────────────────
+async function loadLeaderboard(limit = 10) {
+  const { data, error } = await db
+    .from('leaderboard')
+    .select('*')
+    .limit(limit);
+  return error ? [] : data;
+}
+
+// ── USER PROFILE ─────────────────────────────────────────────
+async function loadUserProfile(username) {
+  const { data: profile, error } = await db
+    .from('profiles')
+    .select('*')
+    .eq('username', username)
+    .single();
+  if (error) return null;
+  const { data: comments } = await db
+    .from('article_comments')
+    .select('id, article_id, body, created_at')
+    .eq('user_id', profile.id)
+    .order('created_at', { ascending: false });
+  return { profile, comments: comments || [] };
+}
+
+// ── NEWSLETTER SUBSCRIBE ─────────────────────────────────────
+async function nlSubmit() {
+  const emailEl = document.getElementById('nlEmail');
+  const noteEl  = document.getElementById('nlNote');
+  const email   = emailEl.value.trim();
+
+  if (!email || !email.includes('@')) {
+    noteEl.textContent = 'Please enter a valid email.';
+    noteEl.style.color = 'var(--red, #e05)';
+    return;
+  }
+
+  const { error } = await db.from('newsletter_subscribers').insert({ email });
+
+  if (error && error.code === '23505') {
+    noteEl.textContent = "You're already subscribed!";
+  } else if (error) {
+    noteEl.textContent = 'Something went wrong. Try again.';
+    noteEl.style.color = 'var(--red, #e05)';
+  } else {
+    emailEl.value = '';
+    noteEl.textContent = "You're in! Welcome to the Butterfly Dynamix community.";
+    noteEl.style.color = 'var(--green, #4caf50)';
+  }
+}
+
+// ── DEFINITION SUGGESTION ────────────────────────────────────
+async function submitSuggestedDefinition(idx) {
+  if (!currentUser) { openAuth('signup'); return; }
+  const text = document.getElementById('suggestDefText')?.value?.trim();
+  if (!text) return;
+  await db.from('definition_suggestions').insert({
+    user_id:      currentUser.id,
+    track_key:    activeTrackKey,
+    lesson_index: idx,
+    suggested_text: text
+  });
+  alert('Thank you! Your definition suggestion has been submitted for review.');
+  document.getElementById('suggestDefOverlay')?.classList.remove('open');
+}
+
+// ── STRIPE CHECKOUT ──────────────────────────────────────────
+// initiateStripeCheckout is defined in app.js (uses Flutterwave)
