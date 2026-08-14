@@ -97,7 +97,7 @@ async function openArticleEditor(articleSlug = null) {
       renderBlocks();
     } catch (err) {
       console.error('Error loading article:', err);
-      alert('Failed to load article: ' + (err.message || err));
+      toast('Failed to load article: ' + (err.message || err));
     }
   } else {
     const t = document.getElementById('articleEditorTitle'); if (t) t.textContent = 'Create New Article';
@@ -144,7 +144,7 @@ function installArticlePicker() {
 
 async function importStarterArticles() {
   const src = (typeof articles !== 'undefined') ? articles : [];
-  if (!src.length) { alert('No starter articles found.'); return; }
+  if (!src.length) { toast('No starter articles found.'); return; }
   showSpinner('Importing starter articles…');
   try {
     const rows = src.map(a => ({
@@ -156,11 +156,11 @@ async function importStarterArticles() {
     const { error } = await db.from('articles').insert(rows);
     if (error) throw error;
     hideSpinner();
-    alert('Imported ' + rows.length + ' articles. You can now open and edit them from the “Open” dropdown.');
+    toast('Imported ' + rows.length + ' articles. You can now open and edit them from the “Open” dropdown.');
     installArticlePicker();
   } catch (err) {
     hideSpinner(); console.error(err);
-    alert('Import failed: ' + (err.message || err));
+    toast('Import failed: ' + (err.message || err));
   }
 }
 
@@ -348,7 +348,7 @@ function deleteBlock(i){ if(confirm('Delete this block?')){ currentBlocks.splice
 async function handleCoverImageUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  if (!file.type.startsWith('image/')) { alert('Please select an image file'); return; }
+  if (!file.type.startsWith('image/')) { toast('Please select an image file'); return; }
   const reader = new FileReader();
   reader.onload = e => {
     const ci = document.getElementById('coverImageActual');
@@ -366,7 +366,7 @@ async function handleCoverImageUpload(input) {
     pendingCoverUrl = publicUrl; coverRemoved = false;
   } catch (err) {
     console.error('Cover upload error:', err);
-    alert('Cover preview shown, but upload failed: ' + (err.message || err));
+    toast('Cover preview shown, but upload failed: ' + (err.message || err));
   } finally { hideSpinner(); }
 }
 
@@ -411,7 +411,7 @@ async function handleAffiliateAssetUpload(input) {
   const file = input.files[0];
   if (!file) return;
   const affiliateLink = (document.getElementById('newAssetAffiliateLink')?.value || '').trim();
-  if (!file.type.startsWith('image/')) { alert('Please select an image file'); return; }
+  if (!file.type.startsWith('image/')) { toast('Please select an image file'); return; }
   let type = 'gif';
   if (/\.(png|jpe?g)$/i.test(file.name)) type = 'banner';
   const fileName = 'asset_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.-]/g,'_');
@@ -428,10 +428,10 @@ async function handleAffiliateAssetUpload(input) {
     const al = document.getElementById('newAssetAffiliateLink'); if (al) al.value='';
     await loadAffiliateAssets();
     hideSpinner();
-    alert('Asset uploaded successfully!');
+    toast('Asset uploaded successfully!');
   } catch (err) {
     hideSpinner(); console.error('Error uploading asset:', err);
-    alert('Failed to upload asset: ' + (err.message || err));
+    toast('Failed to upload asset: ' + (err.message || err));
   }
 }
 
@@ -449,7 +449,7 @@ async function deleteAffiliateAsset(assetId) {
     const { error } = await db.from('affiliate_assets').delete().eq('id', assetId);
     if (error) throw error;
     await loadAffiliateAssets();
-  } catch (err) { console.error(err); alert('Failed to delete asset: ' + (err.message||err)); }
+  } catch (err) { console.error(err); toast('Failed to delete asset: ' + (err.message||err)); }
   finally { hideSpinner(); }
 }
 
@@ -501,10 +501,10 @@ async function saveArticleFromEditor() {
   const title = document.getElementById('editArticleTitle').value.trim();
   const slug = document.getElementById('editArticleSlug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'-');
   const excerpt = document.getElementById('editArticleExcerpt').value.trim();
-  if (!title) { alert('Please enter a title'); return; }
-  if (!slug) { alert('Please enter a slug'); return; }
-  if (!excerpt) { alert('Please enter an excerpt'); return; }
-  if (!currentBlocks.length) { alert('Please add at least one content block'); return; }
+  if (!title) { toast('Please enter a title'); return; }
+  if (!slug) { toast('Please enter a slug'); return; }
+  if (!excerpt) { toast('Please enter an excerpt'); return; }
+  if (!currentBlocks.length) { toast('Please add at least one content block'); return; }
 
   const seoDesc = document.getElementById('editArticleSeoDesc').value.trim();
   const author = document.getElementById('editArticleAuthor').value.trim();
@@ -537,29 +537,52 @@ async function saveArticleFromEditor() {
       if (error) throw error;
     }
     hideSpinner();
-    alert('Article saved successfully!');
+    toast('Article saved successfully!');
     closeArticleEditor();
     if (typeof loadArticlesFromDb === 'function') loadArticlesFromDb();
   } catch (err) {
     hideSpinner(); console.error('Error saving article:', err);
-    alert('Failed to save article: ' + (err.message || err));
+    toast('Failed to save article: ' + (err.message || err));
   }
 }
 
 async function deleteCurrentArticle() {
-  if (!currentEditingArticle || !currentEditingArticle.id) { alert('No article selected for deletion'); return; }
+  if (!currentEditingArticle || !currentEditingArticle.id) { toast('No article selected for deletion'); return; }
   if (!confirm('Delete "'+currentEditingArticle.title+'"? This cannot be undone.')) return;
   showSpinner('Deleting article…');
   try {
     const { error } = await db.from('articles').delete().eq('id', currentEditingArticle.id);
     if (error) throw error;
     hideSpinner();
-    alert('Article deleted successfully');
+    toast('Article deleted successfully');
     closeArticleEditor();
     if (typeof loadArticlesFromDb === 'function') loadArticlesFromDb();
   } catch (err) {
-    hideSpinner(); console.error(err); alert('Failed to delete article: ' + (err.message||err));
+    hideSpinner(); console.error(err); toast('Failed to delete article: ' + (err.message||err));
   }
+}
+
+// ── TOAST NOTIFICATION SYSTEM ─────────────────────────
+function toast(message, type = 'info', title = '') {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.innerHTML = '<button class="toast-close" onclick="this.parentElement.remove()">×</button>'
+    + (title ? '<div class="toast-title">' + escapeHtml(title) + '</div>' : '')
+    + '<div class="toast-msg">' + escapeHtml(message) + '</div>';
+  container.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  const duration = type === 'error' ? 6000 : 3500;
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 350);
+  }, duration);
 }
 
 // ── UTIL ────────────────────────────────────────────────────
