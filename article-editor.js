@@ -672,6 +672,8 @@ async function saveArticleFromEditor() {
     excerpt,
     content_blocks: currentBlocks,
     content: generateHtmlFromBlocks(), // Keep HTML for backward compatibility
+        body: generateHtmlFromBlocks(),
+    is_published: published,
     cover_image_url: coverImageUrl,
     seo_description: seoDesc || null,
     author: author || null,
