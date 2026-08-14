@@ -428,10 +428,10 @@ function renderQuizQuestions(l, idx) {
 
 function escStr(s) {
   return String(s)
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "\\'")
-    .replace(/"/g, '\\"')
-    .replace(/</g, '&lt;');
+    .replace(/\\/g, '\\\\') // ✅ Correctly escapes backslashes
+    .replace(/'/g, "\'")
+    .replace(/"/g, '&quot;') // Safer for HTML attributes
+    .replace(/</g, '&lt;');  // Safer for HTML rendering
 }
 
 // ── ANSWER QUIZ QUESTION ─────────────────────────────────────
