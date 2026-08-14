@@ -74,7 +74,20 @@ self.addEventListener('fetch', function(event) {
             caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, copy); });
           }
           return response;
-        }).catch(function() { return cached; });
+        }).catch(function() {
+          // Fallback to prevent rejected promise errors
+          return new Response('Resource not available offline', {
+            status: 404,
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        });
+      }).catch(function(err) {
+        // Ensure we always return a valid Response object
+        console.warn('Fetch failed for:', event.request.url, err);
+        return new Response('Offline - Resource unavailable', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain' }
+        });
       })
     );
   }

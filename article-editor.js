@@ -19,19 +19,37 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function openArticleEditor(articleSlug = null) {
   const overlay = document.getElementById('articleEditorOverlay');
-  if (!overlay) return;
+  if (!overlay) {
+    console.warn('Article editor overlay not found in DOM');
+    return;
+  }
+  
+  // Safe helper to set element values
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  };
+  const setChecked = (id, checked) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = checked;
+  };
+  const setDisplay = (id, display) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = display;
+  };
   
   // Reset form
-  document.getElementById('editArticleTitle').value = '';
-  document.getElementById('editArticleSlug').value = '';
-  document.getElementById('editArticleExcerpt').value = '';
-  document.getElementById('editArticleSeoDesc').value = '';
-  document.getElementById('editArticleAuthor').value = '';
-  document.getElementById('editArticlePublished').checked = true;
-  document.getElementById('coverImageActual').style.display = 'none';
-  document.getElementById('coverImagePlaceholder').style.display = 'block';
-  document.getElementById('removeCoverBtn').style.display = 'none';
-  document.getElementById('coverImageActual').src = '';
+  setVal('editArticleTitle', '');
+  setVal('editArticleSlug', '');
+  setVal('editArticleExcerpt', '');
+  setVal('editArticleSeoDesc', '');
+  setVal('editArticleAuthor', '');
+  setChecked('editArticlePublished', true);
+  setDisplay('coverImageActual', 'none');
+  setDisplay('coverImagePlaceholder', 'block');
+  setDisplay('removeCoverBtn', 'none');
+  const coverImg = document.getElementById('coverImageActual');
+  if (coverImg) coverImg.src = '';
   
   currentBlocks = [];
   currentEditingArticle = null;
