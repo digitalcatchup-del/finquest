@@ -1695,5 +1695,89 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
   });
 </script>
 
+  <!-- EDITOR PAGE (Full Screen) -->
+<div id="editorPage" class="page">
+  <div class="editor-topbar">
+    <button class="btn btn-ghost" onclick="closeArticleEditor()">← Back</button>
+    <h2 id="articleEditorTitle" class="editor-topbar-title">Create New Article</h2>
+    <div class="editor-topbar-actions">
+      <button class="btn btn-outline" onclick="previewArticle()">👁 Preview</button>
+      <button class="btn btn-gold" onclick="saveArticleFromEditor()">Save Article</button>
+    </div>
+  </div>
+  
+  <div class="editor-workspace">
+    <!-- LEFT: Canvas -->
+    <div class="editor-canvas">
+      <div class="editor-cover-section">
+        <div id="coverImagePlaceholder" class="cover-placeholder">
+          <span style="font-size:2rem;">🖼️</span>
+          <p>Click to upload cover image<br><small>or drag & drop here</small></p>
+          <input type="file" id="coverImageInput" accept="image/*" onchange="handleCoverImageUpload(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+        </div>
+        <img id="coverImageActual" class="cover-preview" style="display:none;" />
+        <button id="removeCoverBtn" class="btn btn-ghost" onclick="removeCoverImage()" style="display:none;margin-top:8px;">Remove Cover Image</button>
+      </div>
+
+      <div class="editor-meta-fields">
+        <input type="text" id="editArticleTitle" class="editor-title-input" placeholder="Title" oninput="document.getElementById('editArticleSlug').value = this.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');">
+        <input type="text" id="editArticleSlug" class="editor-slug-input" placeholder="Slug">
+        <textarea id="editArticleExcerpt" class="editor-excerpt-input" placeholder="Excerpt"></textarea>
+      </div>
+
+      <div id="blocksContainer" class="editor-blocks-container"></div>
+      
+      <div id="addBlockPrompt" class="editor-add-block">
+        <button class="btn btn-outline" onclick="showBlockPicker()">+ Click to add a block</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: Sidebar -->
+    <aside class="editor-sidebar">
+      <div class="editor-tabs">
+        <button id="tabSettings" class="editor-tab active" onclick="switchEditorPanel('settings')">Settings</button>
+        <button id="tabAssets" class="editor-tab" onclick="switchEditorPanel('assets')">Affiliate Assets</button>
+      </div>
+
+      <div id="panelSettings" class="editor-panel">
+        <div class="field">
+          <label>SEO Description</label>
+          <textarea id="editArticleSeoDesc" placeholder="For search engines..."></textarea>
+        </div>
+        <div class="field">
+          <label>Author</label>
+          <input type="text" id="editArticleAuthor" placeholder="Butterfly Dynamix">
+        </div>
+        <div class="field-checkbox">
+          <label>
+            <input type="checkbox" id="editArticlePublished" checked>
+            Published (visible to public)
+          </label>
+        </div>
+        <div class="editor-danger-zone">
+          <h4>Danger Zone</h4>
+          <button id="deleteArticleBtn" class="btn btn-outline" style="color:var(--red);border-color:var(--red);" onclick="deleteCurrentArticle()">Delete Article</button>
+        </div>
+      </div>
+
+      <div id="panelAssets" class="editor-panel" style="display:none;">
+        <div class="asset-upload-box">
+          <h4>Upload New Asset</h4>
+          <input type="file" id="affiliateAssetInput" accept="image/*" onchange="handleAffiliateAssetUpload(this)">
+          <input type="text" id="newAssetAffiliateLink" placeholder="Affiliate Link (optional)" style="margin-top:8px;">
+        </div>
+        <div class="asset-library-box">
+          <h4>Global Asset Library</h4>
+          <div id="affiliateAssetsGrid" class="asset-grid"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+  
 </body>
+  <link rel="stylesheet" href="styles.css?v=66">
+<!-- ... other scripts ... -->
+<script src="app.js?v=66"></script>
+<script src="article-editor.js?v=3.0"></script>
 </html>
