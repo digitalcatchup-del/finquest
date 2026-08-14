@@ -77,17 +77,20 @@ function pipStr(units) {
 
 // ── PAGE NAVIGATION ──────────────────────────────────────────
 // ── URL routing ────────────────────────────────────────────────
+
 const PAGE_SLUGS = {
-  homePage: '/',
-  servicesPage: '/services',
-  howPage: '/how-it-works',
-  privacyPage: '/privacy',
-  termsPage: '/terms',
-  trackPage: '/lessons',
-  articlesPage: '/articles',
-  articleDetailPage: '/articles',
-  profilePage: '/profile',
+homePage: '/',
+servicesPage: '/services',
+howPage: '/how-it-works',
+privacyPage: '/privacy',
+termsPage: '/terms',
+trackPage: '/lessons',
+articlesPage: '/articles',
+articleDetailPage: '/articles',
+profilePage: '/profile',
+editorPage: '/editor',
 };
+
 let _routingFromPopstate = false; // guards against re-pushing history during back/forward
 
 function showPage(page, customUrl) {
@@ -110,26 +113,27 @@ window.addEventListener('popstate', (e) => {
 
 // Reads a URL path and shows the matching page — used both for the
 // initial page load and for Back/Forward navigation.
+
 function routeToPath(path) {
-  const parts = path.replace(/\/+$/, '').split('/').filter(Boolean); // e.g. ['articles','some-slug']
-
-  if (parts[0] === 'articles' && parts[1]) { openArticle(parts[1]); return; }
-  if (parts[0] === 'articles') { openArticlesPage(); return; }
-  if (parts[0] === 'profile' && parts[1]) { openProfileByUsername(parts[1], 'homePage'); return; }
-  if (parts[0] === 'services') { showPage('servicesPage'); return; }
-  if (parts[0] === 'how-it-works') { showPage('howPage'); return; }
-  if (parts[0] === 'privacy') { showPage('privacyPage'); return; }
-  if (parts[0] === 'terms') { showPage('termsPage'); return; }
-  if (parts[0] === 'lessons') {
-    if (typeof launchTrack === 'function') launchTrack('biz-acc-vol1');
-    else showPage('homePage');
-    return;
-  }
-  showPage('homePage');
+const parts = path.replace(/\/+$/, '').split('/').filter(Boolean);
+if (parts[0] === 'articles' && parts[1]) { openArticle(parts[1]); return; }
+if (parts[0] === 'articles') { openArticlesPage(); return; }
+if (parts[0] === 'profile' && parts[1]) { openProfileByUsername(parts[1], 'homePage'); return; }
+if (parts[0] === 'services') { showPage('servicesPage'); return; }
+if (parts[0] === 'how-it-works') { showPage('howPage'); return; }
+if (parts[0] === 'privacy') { showPage('privacyPage'); return; }
+if (parts[0] === 'terms') { showPage('termsPage'); return; }
+if (parts[0] === 'lessons') {
+if (typeof launchTrack === 'function') launchTrack('biz-acc-vol1');
+else showPage('homePage');
+return;
 }
-
-function scrollToTop() {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+if (parts[0] === 'editor') {
+if (typeof openArticleEditor === 'function') openArticleEditor(parts[1] || null);
+else showPage('homePage');
+return;
+}
+showPage('homePage');
 }
 
 function smoothScroll(selector) {
