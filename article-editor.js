@@ -1,12 +1,12 @@
 // ============================================================
-// article-editor.js — Block-style article editor (v2)
+// article-editor.js — Full-page block-style article editor (v3)
 // Uses the site's Supabase client `db` (from supabase-config.js)
 // ============================================================
 
 let currentEditingArticle = null;
 let currentBlocks = [];
 let affiliateAssets = [];
-let pendingCoverUrl = null;   // uploaded cover image URL
+let pendingCoverUrl = null;
 let coverRemoved = false;
 
 // ── SELF-CONTAINED STYLES (injected once) ───────────────────
@@ -15,25 +15,13 @@ function injectEditorCss() {
   const s = document.createElement('style');
   s.id = 'aeCss';
   s.textContent = `
-    #aeSpinner{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;
-      display:none;align-items:center;justify-content:center;}
-    .ae-spin-box{background:#fff;color:#1a1a1a;padding:18px 26px;border-radius:8px;
-      display:flex;align-items:center;gap:12px;font-size:.9rem;box-shadow:0 8px 30px rgba(0,0,0,.3);}
-    .ae-spin{width:22px;height:22px;border:3px solid rgba(0,0,0,.15);
-      border-top-color:#c9a84c;border-radius:50%;animation:aespin .8s linear infinite;}
+    #aeSpinner{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:none;align-items:center;justify-content:center;}
+    .ae-spin-box{background:#fff;color:#1a1a1a;padding:18px 26px;border-radius:8px;display:flex;align-items:center;gap:12px;font-size:.9rem;box-shadow:0 8px 30px rgba(0,0,0,.3);}
+    .ae-spin{width:22px;height:22px;border:3px solid rgba(0,0,0,.15);border-top-color:#c9a84c;border-radius:50%;animation:aespin .8s linear infinite;}
     @keyframes aespin{to{transform:rotate(360deg)}}
-    #aePickerBar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-      padding:10px 16px;border-bottom:1px solid #e5e5e5;background:#fafafa;}
-    #aePickerBar label{font-size:.78rem;font-weight:700;color:#555;}
-    #aePickExisting{flex:1;max-width:340px;padding:8px 10px;border:1px solid #ccc;
-      border-radius:4px;background:#fff;color:#222;font-size:.85rem;}
-    #aeImportBtn{padding:8px 12px;border:1px solid #c9a84c;border-radius:4px;
-      background:#fff;color:#8a6d1f;font-size:.78rem;font-weight:700;cursor:pointer;}
-    #aeBlockMenu{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding:12px;
-      background:#f5f5f5;border:1px solid #e0e0e0;border-radius:6px;}
-    #aeBlockMenu button{padding:8px 12px;border:1px solid #ccc;border-radius:4px;
-      background:#fff;color:#222;font-size:.8rem;cursor:pointer;}
-    #aeBlockMenu button:hover{border-color:#c9a84c;}
+    #aeBlockMenu{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;}
+    #aeBlockMenu button{padding:8px 12px;border:1px solid var(--border2);border-radius:4px;background:var(--surface);color:var(--off);font-size:.8rem;cursor:pointer;}
+    #aeBlockMenu button:hover{border-color:var(--gold);color:var(--gold);}
     #addBlockPrompt{cursor:pointer;}
   `;
   document.head.appendChild(s);
@@ -51,14 +39,14 @@ function hideSpinner() { const s = document.getElementById('aeSpinner'); if (s) 
 // ── INIT ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   injectEditorCss();
-  if (document.getElementById('articleEditorOverlay')) loadAffiliateAssets();
+  if (document.getElementById('editorPage')) loadAffiliateAssets();
 });
 
 // ── OPEN EDITOR ─────────────────────────────────────────────
 async function openArticleEditor(articleSlug = null) {
   injectEditorCss();
-  const overlay = document.getElementById('articleEditorOverlay');
-  if (!overlay) { console.warn('Article editor overlay not found'); return; }
+  const page = document.getElementById('editorPage');
+  if (!page) { console.warn('Editor page not found'); return; }
 
   const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
   const setChecked = (id, c) => { const el = document.getElementById(id); if (el) el.checked = c; };
@@ -68,12 +56,13 @@ async function openArticleEditor(articleSlug = null) {
   setVal('editArticleTitle',''); setVal('editArticleSlug',''); setVal('editArticleExcerpt','');
   setVal('editArticleSeoDesc',''); setVal('editArticleAuthor','');
   setChecked('editArticlePublished', true);
-  setDisplay('coverImageActual','none'); setDisplay('coverImagePlaceholder','block'); setDisplay('removeCoverBtn','none');
+  setDisplay('coverImageActual','none'); setDisplay('coverImagePlaceholder','flex'); setDisplay('removeCoverBtn','none');
   const coverImg = document.getElementById('coverImageActual'); if (coverImg) coverImg.src = '';
   pendingCoverUrl = null; coverRemoved = false;
   currentBlocks = []; currentEditingArticle = null;
 
   if (articleSlug) {
+    showSpinner('Loading article...');
     try {
       const { data, error } = await db.from('articles').select('*').eq('slug', articleSlug).single();
       if (error) throw error;
@@ -97,7 +86,9 @@ async function openArticleEditor(articleSlug = null) {
       renderBlocks();
     } catch (err) {
       console.error('Error loading article:', err);
-      toast('Failed to load article: ' + (err.message || err));
+      toast('Failed to load article: ' + (err.message || err), 'error');
+    } finally {
+      hideSpinner();
     }
   } else {
     const t = document.getElementById('articleEditorTitle'); if (t) t.textContent = 'Create New Article';
@@ -105,25 +96,29 @@ async function openArticleEditor(articleSlug = null) {
   }
 
   loadAffiliateAssets();
-  overlay.classList.add('open');
-  document.body.style.overflow = 'hidden';
-
+  
+  // Route to the editor page
+  const url = articleSlug ? '/editor/' + articleSlug : '/editor';
+  showPage('editorPage', url);
+  
   installArticlePicker();
   wireBlockPrompt();
-  ensureEditorLayout();
 }
 
 // ── EXISTING-ARTICLE PICKER ─────────────────────────────────
 function installArticlePicker() {
-  const overlay = document.getElementById('articleEditorOverlay');
-  if (!overlay) return;
-  const modal = overlay.firstElementChild || overlay;
+  const topbar = document.querySelector('.editor-topbar');
+  if (!topbar) return;
   const old = document.getElementById('aePickerBar'); if (old) old.remove();
-
+  
   const bar = document.createElement('div');
   bar.id = 'aePickerBar';
-  bar.innerHTML = '<label>Open:</label><select id="aePickExisting"><option value="">＋ New article</option></select>';
-  modal.insertBefore(bar, modal.firstChild);
+  bar.style.cssText = 'display:flex;align-items:center;gap:8px;';
+  bar.innerHTML = '<label style="font-size:0.75rem;color:var(--muted);margin:0;">Open:</label><select id="aePickExisting" style="padding:6px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--white);font-size:0.8rem;max-width:200px;"><option value="">＋ New article</option></select>';
+  
+  const backBtn = topbar.querySelector('.btn-ghost');
+  if (backBtn) backBtn.after(bar);
+  else topbar.prepend(bar);
 
   const sel = document.getElementById('aePickExisting');
   db.from('articles').select('slug,title').order('updated_at', { ascending:false }).then(({ data, error }) => {
@@ -133,7 +128,8 @@ function installArticlePicker() {
     if (rows.length === 0) {
       const btn = document.createElement('button');
       btn.id = 'aeImportBtn'; btn.type = 'button';
-      btn.textContent = '⬇ Import the 10 starter articles';
+      btn.textContent = '⬇ Import starters';
+      btn.style.cssText = 'padding:6px 10px;font-size:0.75rem;border:1px solid var(--gold);background:transparent;color:var(--gold);border-radius:4px;cursor:pointer;';
       btn.onclick = importStarterArticles;
       bar.appendChild(btn);
     }
@@ -144,7 +140,7 @@ function installArticlePicker() {
 
 async function importStarterArticles() {
   const src = (typeof articles !== 'undefined') ? articles : [];
-  if (!src.length) { toast('No starter articles found.'); return; }
+  if (!src.length) { toast('No starter articles found.', 'error'); return; }
   showSpinner('Importing starter articles…');
   try {
     const rows = src.map(a => ({
@@ -156,19 +152,22 @@ async function importStarterArticles() {
     const { error } = await db.from('articles').insert(rows);
     if (error) throw error;
     hideSpinner();
-    toast('Imported ' + rows.length + ' articles. You can now open and edit them from the “Open” dropdown.');
+    toast('Imported ' + rows.length + ' articles.', 'success');
     installArticlePicker();
   } catch (err) {
     hideSpinner(); console.error(err);
-    toast('Import failed: ' + (err.message || err));
+    toast('Import failed: ' + (err.message || err), 'error');
   }
 }
 
 // ── CLOSE ───────────────────────────────────────────────────
 function closeArticleEditor() {
-  const overlay = document.getElementById('articleEditorOverlay');
-  if (overlay) { overlay.classList.remove('open'); document.body.style.overflow = ''; }
   currentEditingArticle = null; currentBlocks = []; pendingCoverUrl = null; coverRemoved = false;
+  if (currentUser) {
+    showPage('profilePage', '/profile/' + currentUser.username);
+  } else {
+    history.back();
+  }
 }
 
 // ── PANEL TABS ──────────────────────────────────────────────
@@ -176,40 +175,12 @@ function switchEditorPanel(panel) {
   const sp = document.getElementById('panelSettings'), ap = document.getElementById('panelAssets');
   const st = document.getElementById('tabSettings'), at = document.getElementById('tabAssets');
   if (panel === 'settings') {
-    if (sp) sp.style.display='block'; if (ap) ap.style.display='none';
-    if (st) st.style.borderBottomColor='var(--gold)'; if (at) at.style.borderBottomColor='transparent';
+    if (sp) sp.style.display='flex'; if (ap) ap.style.display='none';
+    if (st) st.classList.add('active'); if (at) at.classList.remove('active');
   } else {
-    if (sp) sp.style.display='none'; if (ap) ap.style.display='block';
-    if (st) st.style.borderBottomColor='transparent'; if (at) at.style.borderBottomColor='var(--gold)';
+    if (sp) sp.style.display='none'; if (ap) ap.style.display='flex';
+    if (st) st.classList.remove('active'); if (at) at.classList.add('active');
   }
-}
-
-// ── LAYOUT FIX: real split pane, sticky panel ───────────────
-function ensureEditorLayout() {
-  const overlay = document.getElementById('articleEditorOverlay');
-  if (!overlay || overlay.dataset.aeLayout) return;
-  const blocks = document.getElementById('blocksContainer');
-  const settings = document.getElementById('panelSettings');
-  const modal = overlay.firstElementChild;
-  if (modal) {
-    modal.style.display = 'flex'; modal.style.flexDirection = 'column';
-    modal.style.height = '92vh'; modal.style.maxHeight = '92vh';
-  }
-  if (blocks && settings) {
-    let canvasCol = blocks;
-    while (canvasCol.parentElement && canvasCol.parentElement !== overlay && !canvasCol.parentElement.contains(settings)) canvasCol = canvasCol.parentElement;
-    let panelCol = settings;
-    while (panelCol.parentElement && panelCol.parentElement !== overlay && !panelCol.parentElement.contains(blocks)) panelCol = panelCol.parentElement;
-    const body = canvasCol.parentElement;
-    if (body && body === panelCol.parentElement) {
-      body.style.display = 'flex'; body.style.gap = '16px';
-      body.style.alignItems = 'stretch'; body.style.overflow = 'hidden';
-      body.style.flex = '1 1 auto'; body.style.minHeight = '0';
-      canvasCol.style.flex = '1 1 auto'; canvasCol.style.overflowY = 'auto'; canvasCol.style.minWidth = '0';
-      panelCol.style.flex = '0 0 300px'; panelCol.style.overflowY = 'auto';
-    }
-  }
-  overlay.dataset.aeLayout = '1';
 }
 
 // ── BLOCKS ──────────────────────────────────────────────────
@@ -257,7 +228,7 @@ function renderBlocks() {
   container.innerHTML = '';
   currentBlocks.forEach((b,i) => container.appendChild(createBlockElement(b,i)));
   const p = document.getElementById('addBlockPrompt');
-  if (p) p.style.display = currentBlocks.length === 0 ? 'block' : 'none';
+  if (p) p.style.display = currentBlocks.length === 0 ? 'flex' : 'block';
 }
 
 function createBlockElement(block, index) {
@@ -270,7 +241,6 @@ function createBlockElement(block, index) {
   div.onmouseenter = () => { div.style.borderColor='var(--border2)'; controls.style.opacity='1'; };
   div.onmouseleave = () => { div.style.borderColor='transparent'; controls.style.opacity='0'; };
   div.appendChild(controls);
-
   let contentHtml = '';
   switch (block.type) {
     case 'heading':
@@ -342,13 +312,13 @@ function updateBlockProperty(i,p,v){ if(currentBlocks[i]){currentBlocks[i][p]=v;
 function moveBlockUp(i){ if(i===0)return; [currentBlocks[i-1],currentBlocks[i]]=[currentBlocks[i],currentBlocks[i-1]]; renderBlocks(); }
 function moveBlockDown(i){ if(i===currentBlocks.length-1)return; [currentBlocks[i],currentBlocks[i+1]]=[currentBlocks[i+1],currentBlocks[i]]; renderBlocks(); }
 function duplicateBlock(i){ const d={...currentBlocks[i],id:'block_'+Date.now()}; currentBlocks.splice(i+1,0,d); renderBlocks(); }
-function deleteBlock(i){ if(confirm('Delete this block?')){ currentBlocks.splice(i,1); renderBlocks(); if(!currentBlocks.length){const p=document.getElementById('addBlockPrompt'); if(p)p.style.display='block';} } }
+function deleteBlock(i){ if(confirm('Delete this block?')){ currentBlocks.splice(i,1); renderBlocks(); if(!currentBlocks.length){const p=document.getElementById('addBlockPrompt'); if(p)p.style.display='flex';} } }
 
 // ── COVER IMAGE (upload to storage + save) ──────────────────
 async function handleCoverImageUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  if (!file.type.startsWith('image/')) { toast('Please select an image file'); return; }
+  if (!file.type.startsWith('image/')) { toast('Please select an image file', 'error'); return; }
   const reader = new FileReader();
   reader.onload = e => {
     const ci = document.getElementById('coverImageActual');
@@ -359,21 +329,21 @@ async function handleCoverImageUpload(input) {
   reader.readAsDataURL(file);
   showSpinner('Uploading cover image…');
   try {
-    const fileName = 'cover_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.-]/g,'_');
+    const fileName = 'cover_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const { error: upErr } = await db.storage.from('articles').upload('covers/' + fileName, file, { upsert:true });
     if (upErr) throw upErr;
     const { data: { publicUrl } } = db.storage.from('articles').getPublicUrl('covers/' + fileName);
     pendingCoverUrl = publicUrl; coverRemoved = false;
   } catch (err) {
     console.error('Cover upload error:', err);
-    toast('Cover preview shown, but upload failed: ' + (err.message || err));
+    toast('Cover preview shown, but upload failed: ' + (err.message || err), 'error');
   } finally { hideSpinner(); }
 }
 
 function removeCoverImage() {
   const inp = document.getElementById('coverImageInput'); if (inp) inp.value='';
   const ci = document.getElementById('coverImageActual'); if (ci){ ci.src=''; ci.style.display='none'; }
-  const ph = document.getElementById('coverImagePlaceholder'); if (ph) ph.style.display='block';
+  const ph = document.getElementById('coverImagePlaceholder'); if (ph) ph.style.display='flex';
   const rb = document.getElementById('removeCoverBtn'); if (rb) rb.style.display='none';
   pendingCoverUrl = null; coverRemoved = true;
 }
@@ -411,27 +381,27 @@ async function handleAffiliateAssetUpload(input) {
   const file = input.files[0];
   if (!file) return;
   const affiliateLink = (document.getElementById('newAssetAffiliateLink')?.value || '').trim();
-  if (!file.type.startsWith('image/')) { toast('Please select an image file'); return; }
+  if (!file.type.startsWith('image/')) { toast('Please select an image file', 'error'); return; }
   let type = 'gif';
   if (/\.(png|jpe?g)$/i.test(file.name)) type = 'banner';
-  const fileName = 'asset_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.-]/g,'_');
+  const fileName = 'asset_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
   showSpinner('Uploading asset…');
   try {
     const { error: upErr } = await db.storage.from('articles').upload('affiliate/' + fileName, file, { upsert:true });
     if (upErr) throw upErr;
     const { data: { publicUrl } } = db.storage.from('articles').getPublicUrl('affiliate/' + fileName);
     const { error: insErr } = await db.from('affiliate_assets').insert({
-      name: file.name.replace(/\.[^/.]+$/,''), url: publicUrl, type, affiliate_link: affiliateLink || null
+      name: file.name.replace(/\.[^/.]+$/, ''), url: publicUrl, type, affiliate_link: affiliateLink || null
     });
     if (insErr) throw insErr;
     const ai = document.getElementById('affiliateAssetInput'); if (ai) ai.value='';
     const al = document.getElementById('newAssetAffiliateLink'); if (al) al.value='';
     await loadAffiliateAssets();
     hideSpinner();
-    toast('Asset uploaded successfully!');
+    toast('Asset uploaded successfully!', 'success');
   } catch (err) {
     hideSpinner(); console.error('Error uploading asset:', err);
-    toast('Failed to upload asset: ' + (err.message || err));
+    toast('Failed to upload asset: ' + (err.message || err), 'error');
   }
 }
 
@@ -449,14 +419,14 @@ async function deleteAffiliateAsset(assetId) {
     const { error } = await db.from('affiliate_assets').delete().eq('id', assetId);
     if (error) throw error;
     await loadAffiliateAssets();
-  } catch (err) { console.error(err); toast('Failed to delete asset: ' + (err.message||err)); }
+  } catch (err) { console.error(err); toast('Failed to delete asset: ' + (err.message||err), 'error'); }
   finally { hideSpinner(); }
 }
 
 // ── PREVIEW + HTML GEN ──────────────────────────────────────
 function previewArticle() {
   const title = document.getElementById('editArticleTitle')?.value || '';
-  const excerpt = document.getElementById('editArticleExcerpt')?.value || '';
+  const excerpt =  document.getElementById('editArticleExcerpt')?.value || '';
   const coverImage = pendingCoverUrl || document.getElementById('coverImageActual')?.src || '';
   const htmlContent = generateHtmlFromBlocks();
   const w = window.open('', '_blank');
@@ -501,34 +471,33 @@ async function saveArticleFromEditor() {
   const title = document.getElementById('editArticleTitle').value.trim();
   const slug = document.getElementById('editArticleSlug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'-');
   const excerpt = document.getElementById('editArticleExcerpt').value.trim();
-  if (!title) { toast('Please enter a title'); return; }
-  if (!slug) { toast('Please enter a slug'); return; }
-  if (!excerpt) { toast('Please enter an excerpt'); return; }
-  if (!currentBlocks.length) { toast('Please add at least one content block'); return; }
-
+  if (!title) { toast('Please enter a title', 'error'); return; }
+  if (!slug) { toast('Please enter a slug', 'error'); return; }
+  if (!excerpt) { toast('Please enter an excerpt', 'error'); return; }
+  if (!currentBlocks.length) { toast('Please add at least one content block', 'error'); return; }
   const seoDesc = document.getElementById('editArticleSeoDesc').value.trim();
   const author = document.getElementById('editArticleAuthor').value.trim();
   const published = document.getElementById('editArticlePublished').checked;
-
   let coverUrl = null;
   if (coverRemoved) coverUrl = null;
   else if (pendingCoverUrl) coverUrl = pendingCoverUrl;
   else if (currentEditingArticle) coverUrl = currentEditingArticle.cover_image_url || null;
-
+  
+  const htmlContent = generateHtmlFromBlocks();
   const articleData = {
     title, slug, excerpt,
     content_blocks: currentBlocks,
-    content: generateHtmlFromBlocks(),
+    content: htmlContent,
+    body: htmlContent, // Ensure public page reads the content
     cover_image_url: coverUrl,
     seo_description: seoDesc || null,
     author: author || null,
     published,
     updated_at: new Date().toISOString()
   };
-
   showSpinner('Saving article…');
   try {
-    if (currentEditingArticle && currentEditingArticle.id) {
+    if (currentEditingArticle && currentEditingArticle.id && currentEditingArticle.id !== 'new') {
       const { error } = await db.from('articles').update(articleData).eq('id', currentEditingArticle.id);
       if (error) throw error;
     } else {
@@ -537,28 +506,34 @@ async function saveArticleFromEditor() {
       if (error) throw error;
     }
     hideSpinner();
-    toast('Article saved successfully!');
-    closeArticleEditor();
+    toast('Article saved successfully!', 'success');
     if (typeof loadArticlesFromDb === 'function') loadArticlesFromDb();
+    
+    // Update URL if it was a new article
+    if (!currentEditingArticle || currentEditingArticle.id === 'new') {
+       currentEditingArticle = { slug: slug, id: 'new', title: title }; 
+       history.replaceState(null, '', '/editor/' + slug);
+       document.getElementById('articleEditorTitle').textContent = 'Edit Article';
+    }
   } catch (err) {
     hideSpinner(); console.error('Error saving article:', err);
-    toast('Failed to save article: ' + (err.message || err));
+    toast('Failed to save article: ' + (err.message || err), 'error');
   }
 }
 
 async function deleteCurrentArticle() {
-  if (!currentEditingArticle || !currentEditingArticle.id) { toast('No article selected for deletion'); return; }
+  if (!currentEditingArticle || !currentEditingArticle.id || currentEditingArticle.id === 'new') { toast('No article selected for deletion', 'error'); return; }
   if (!confirm('Delete "'+currentEditingArticle.title+'"? This cannot be undone.')) return;
   showSpinner('Deleting article…');
   try {
     const { error } = await db.from('articles').delete().eq('id', currentEditingArticle.id);
     if (error) throw error;
     hideSpinner();
-    toast('Article deleted successfully');
-    closeArticleEditor();
+    toast('Article deleted successfully', 'success');
     if (typeof loadArticlesFromDb === 'function') loadArticlesFromDb();
+    closeArticleEditor();
   } catch (err) {
-    hideSpinner(); console.error(err); toast('Failed to delete article: ' + (err.message||err));
+    hideSpinner(); console.error(err); toast('Failed to delete article: ' + (err.message||err), 'error');
   }
 }
 
