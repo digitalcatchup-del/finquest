@@ -978,23 +978,25 @@ async function loadArticlesFromDb() {
   try {
     const { data, error } = await db.from('articles').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    
-    // Convert database format to app format
-    window.articles = data.map(a => ({
-      slug: a.slug,
-      title: a.title,
-      excerpt: a.excerpt,
-      coverIcon: a.cover_icon,
-      cover: a.cover_bg,
-      body: a.body,
-      is_published: a.is_published
-    }));
-    
-    return window.articles;
+    if (data && data.length > 0) {
+      articles.length = 0; // clear the list in place, then refill from the database
+      data.forEach(a => articles.push({
+        slug: a.slug,
+        title: a.title,
+        excerpt: a.excerpt,
+        coverIcon: a.cover_icon || '',
+        cover: a.cover_image_url
+          ? ("url('" + a.cover_image_url + "') center/cover no-repeat")
+          : (a.cover_bg || 'linear-gradient(135deg,#1a1a1a 0%,#2b2416 100%)'),
+        coverImageUrl: a.cover_image_url || null,
+        body: a.body || a.content || '',
+        is_published: (a.is_published !== undefined ? a.is_published : (a.published !== false))
+      }));
+    }
+    return articles;
   } catch (err) {
     console.error('Failed to load articles from database:', err);
-    // Fall back to static articles in data.js
-    return window.articles;
+    return articles; // fall back to the static list
   }
 }
 
