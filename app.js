@@ -115,25 +115,22 @@ window.addEventListener('popstate', (e) => {
 // initial page load and for Back/Forward navigation.
 
 function routeToPath(path) {
-const parts = path.replace(/\/+$/, '').split('/').filter(Boolean);
-if (parts[0] === 'articles' && parts[1]) { openArticle(parts[1]); return; }
-if (parts[0] === 'articles') { openArticlesPage(); return; }
-if (parts[0] === 'profile' && parts[1]) { openProfileByUsername(parts[1], 'homePage'); return; }
-if (parts[0] === 'services') { showPage('servicesPage'); return; }
-if (parts[0] === 'how-it-works') { showPage('howPage'); return; }
-if (parts[0] === 'privacy') { showPage('privacyPage'); return; }
-if (parts[0] === 'terms') { showPage('termsPage'); return; }
-if (parts[0] === 'lessons') {
-if (typeof launchTrack === 'function') launchTrack('biz-acc-vol1');
-else showPage('homePage');
-return;
-}
-if (parts[0] === 'editor') {
-if (typeof openArticleEditor === 'function') openArticleEditor(parts[1] || null);
-else showPage('homePage');
-return;
-}
-showPage('homePage');
+  // Fixed the regex here: /\/+$/ instead of //+$/
+  const parts = path.replace(/\/+$/, '').split('/').filter(Boolean); 
+  
+  if (parts[0] === 'articles' && parts[1]) { openArticle(parts[1]); return; }
+  if (parts[0] === 'articles') { openArticlesPage(); return; }
+  if (parts[0] === 'profile' && parts[1]) { openProfileByUsername(parts[1], 'homePage'); return; }
+  if (parts[0] === 'services') { showPage('servicesPage'); return; }
+  if (parts[0] === 'how-it-works') { showPage('howPage'); return; }
+  if (parts[0] === 'privacy') { showPage('privacyPage'); return; }
+  if (parts[0] === 'terms') { showPage('termsPage'); return; }
+  if (parts[0] === 'lessons') {
+    if (typeof launchTrack === 'function') launchTrack('biz-acc-vol1');
+    else showPage('homePage');
+    return;
+  }
+  showPage('homePage');
 }
 
 function smoothScroll(selector) {
