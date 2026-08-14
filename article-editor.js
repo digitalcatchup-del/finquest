@@ -547,14 +547,14 @@ async function handleAffiliateAssetUpload(input) {
   const fileName = `asset_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
   
   try {
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await db.storage
       .from('articles')
       .upload(`affiliate/${fileName}`, file, { upsert: true });
     
     if (uploadError) throw uploadError;
     
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = db.storage
       .from('articles')
       .getPublicUrl(`affiliate/${fileName}`);
     
