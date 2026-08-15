@@ -1297,6 +1297,16 @@ body{padding-top:0;}
       <div class="bk-submenu-item" onclick="showProductsPage('services');closeBkMenu()">🛠 Services</div>
     </div>
 
+    <!-- Procurement (owner/manager only) -->
+    <div class="bk-menu-item bk-menu-parent" data-role="owner-manager" onclick="toggleSubMenu('sub-procurement')">
+      <span class="bk-menu-icon">🛒</span> Procurement
+      <span class="bk-menu-arrow" id="arrow-procurement">›</span>
+    </div>
+    <div class="bk-submenu" data-role="owner-manager" id="sub-procurement">
+      <div class="bk-submenu-item" onclick="showPurchaseOrdersPage();closeBkMenu()">📋 Purchase Orders</div>
+      <div class="bk-submenu-item" onclick="showGRNPage();closeBkMenu()">📦 Goods Receipt</div>
+    </div>
+
     <!-- Suppliers (owner/manager only) -->
     <div class="bk-menu-item" data-role="owner-manager" onclick="showSuppliersPage();closeBkMenu()">
       <span class="bk-menu-icon">🤝</span> Suppliers
