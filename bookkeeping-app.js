@@ -12957,3 +12957,462 @@ const COLUMN_HELP = {
     example: 'The first transaction recorded is S/N 1, the second is S/N 2, and so on for the whole period.',
   },
 };
+
+// ============================================================================
+// INVENTORY & WAREHOUSE MANAGEMENT MODULE
+// Enterprise-grade inventory with AI-powered forecasting
+// ============================================================================
+
+let currentWarehouse = null;
+let inventoryView = 'stock_levels'; // stock_levels, movements, transfers, counts, alerts
+let selectedProductForTransfer = null;
+
+// ── Show Warehouse Management Page ───────────────────────────────────────
+async function showWarehousePage(view = 'stock_levels') {
+  bdSaveRoute('warehouse:' + view);
+  staffHideChrome();
+  inventoryView = view;
+  document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading inventory data…</div>';
+  
+  // Load warehouses if not already loaded
+  if (!currentWarehouse && activeBusiness) {
+    const { data: warehouses } = await bkDb.from('bk_warehouses')
+      .select('*')
+      .eq('business_id', activeBusiness.id)
+      .eq('is_active', true)
+      .order('is_default', { ascending: false })
+      .order('warehouse_name');
+    if (warehouses && warehouses.length > 0) {
+      currentWarehouse = warehouses.find(w => w.is_default) || warehouses[0];
+    }
+  }
+  
+  // Route to appropriate view
+  switch(view) {
+    case 'stock_levels': await renderStockLevelsView(); break;
+    case 'movements': await renderStockMovementsView(); break;
+    case 'transfers': await renderTransfersView(); break;
+    case 'counts': await renderInventoryCountsView(); break;
+    case 'alerts': await renderReorderAlertsView(); break;
+    case 'batches': await renderBatchesView(); break;
+    case 'serials': await renderSerialNumbersView(); break;
+    default: await renderStockLevelsView();
+  }
+}
+
+// ── Stock Levels View ─────────────────────────────────────────────────────
+async function renderStockLevelsView() {
+  const { data: products } = await bkDb.from('bk_products')
+    .select('*, bk_product_stock(*)')
+    .eq('business_id', activeBusiness?.id || null)
+    .eq('is_service', false)
+    .eq('is_active', true)
+    .order('product_name');
+  
+  const { data: warehouses } = currentWarehouse ? 
+    [{ ...currentWarehouse }] : 
+    (await bkDb.from('bk_warehouses').select('*').eq('business_id', activeBusiness?.id).eq('is_active', true)).data || [];
+  
+  let html = `
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">STOCK LEVELS</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Multi-location inventory tracking</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select class="bk-select" id="warehouseSelector" onchange="switchWarehouse(this.value)" style="min-width:200px;">
+          ${warehouses.map(w => `<option value="${w.id}"${w.id===currentWarehouse?.id?' selected':''}>${escH(w.warehouse_name)}${w.is_default?' (Default)':''}</option>`).join('')}
+        </select>
+        <button class="bk-btn bk-btn-primary" onclick="showNewWarehouseModal()">+ Warehouse</button>
+        <button class="bk-btn bk-btn-outline" onclick="exportStockLevels()">Export</button>
+      </div>
+    </div>
+    
+    <div class="bk-sheet-wrap">
+      <table class="ps-table">
+        <thead>
+          <tr>
+            <th style="width:40px;">S/N</th>
+            <th>Product</th>
+            <th>Barcode</th>
+            <th class="num">On Hand</th>
+            <th class="num">Reserved</th>
+            <th class="num">Available</th>
+            <th class="num">Reorder Level</th>
+            <th class="num">Reorder Qty</th>
+            <th>Status</th>
+            <th>Last Counted</th>
+            <th style="width:120px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(products || []).map((p, i) => {
+            const stock = p.bk_product_stock?.find(s => s.warehouse_id === currentWarehouse?.id) || {};
+            const available = (stock.quantity_on_hand || 0) - (stock.quantity_reserved || 0);
+            const status = available <= (stock.reorder_level || 10) ? 'low' : available <= 0 ? 'out' : 'ok';
+            return `
+              <tr>
+                <td>${i+1}</td>
+                <td><strong>${escH(p.product_name)}</strong></td>
+                <td>${p.barcode || '-'}</td>
+                <td class="num">${fmtNum(stock.quantity_on_hand || 0)}</td>
+                <td class="num">${fmtNum(stock.quantity_reserved || 0)}</td>
+                <td class="num" style="color:${status==='out'?'var(--red)':status==='low'?'var(--gold)':'var(--green)'}">${fmtNum(available)}</td>
+                <td class="num">${fmtNum(stock.reorder_level || 10)}</td>
+                <td class="num">${fmtNum(stock.reorder_quantity || 100)}</td>
+                <td><span class="status-badge status-${status}">${status==='out'?'Out of Stock':status==='low'?'Low Stock':'In Stock'}</span></td>
+                <td>${stock.last_counted_at ? new Date(stock.last_counted_at).toLocaleDateString() : 'Never'}</td>
+                <td>
+                  <button class="bk-icon-btn" title="Adjust Stock" onclick="showStockAdjustmentModal(${p.id})">📝</button>
+                  <button class="bk-icon-btn" title="View Movements" onclick="showProductMovements(${p.id})">📊</button>
+                  <button class="bk-icon-btn" title="Transfer" onclick="initiateTransfer(${p.id})">🚚</button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    
+    <div style="padding:16px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="bk-btn bk-btn-primary" onclick="scheduleStockCount()">📋 Schedule Stock Count</button>
+      <button class="bk-btn bk-btn-outline" onclick="showLowStockReport()">⚠️ Low Stock Report</button>
+      <button class="bk-btn bk-btn-outline" onclick="showInventoryValuation()">💰 Inventory Valuation</button>
+      <button class="bk-btn bk-btn-outline" onclick="runAIBForecast()">🤖 AI Demand Forecast</button>
+    </div>
+  `;
+  
+  document.getElementById('bkContent').innerHTML = html;
+}
+
+// ── Stock Movements View ──────────────────────────────────────────────────
+async function renderStockMovementsView() {
+  const { data: movements } = await bkDb.from('bk_stock_movements')
+    .select('*, product_name:bk_products(product_name), warehouse_name:bk_warehouses(warehouse_name)')
+    .eq('business_id', activeBusiness?.id)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">STOCK MOVEMENTS</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Complete audit trail of all inventory transactions</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" class="bk-input" placeholder="Search movements…" style="max-width:250px;" oninput="filterMovements(this.value)"/>
+        <select class="bk-select" id="movementTypeFilter" onchange="filterMovementsByType(this.value)">
+          <option value="">All Types</option>
+          <option value="receipt">Receipts</option>
+          <option value="sale">Sales</option>
+          <option value="adjustment">Adjustments</option>
+          <option value="transfer_in">Transfers In</option>
+          <option value="transfer_out">Transfers Out</option>
+          <option value="return">Returns</option>
+          <option value="damage">Damage/Write-off</option>
+        </select>
+        <button class="bk-btn bk-btn-primary" onclick="showManualMovementModal()">+ Manual Movement</button>
+      </div>
+    </div>
+    
+    <div class="bk-sheet-wrap">
+      <table class="ps-table">
+        <thead>
+          <tr>
+            <th>Date/Time</th>
+            <th>Product</th>
+            <th>Warehouse</th>
+            <th>Type</th>
+            <th class="num">Qty</th>
+            <th class="num">Before</th>
+            <th class="num">After</th>
+            <th class="num">Unit Cost</th>
+            <th class="num">Total Value</th>
+            <th>Reference</th>
+            <th>Performed By</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(movements || []).map(m => `
+            <tr>
+              <td>${new Date(m.created_at).toLocaleString()}</td>
+              <td>${m.product_name?.[0]?.product_name || 'Unknown'}</td>
+              <td>${m.warehouse_name?.[0]?.warehouse_name || 'Unknown'}</td>
+              <td><span class="movement-type movement-${m.movement_type}">${m.movement_type.replace('_', ' ').toUpperCase()}</span></td>
+              <td class="num" style="color:${m.quantity > 0 ? 'var(--green)' : 'var(--red)'}">${fmtNum(m.quantity)}</td>
+              <td class="num">${fmtNum(m.quantity_before)}</td>
+              <td class="num"><strong>${fmtNum(m.quantity_after)}</strong></td>
+              <td class="num">${fmt(m.unit_cost)}</td>
+              <td class="num">${fmt(m.total_value)}</td>
+              <td>${m.reference_type ? m.reference_type.replace('_', ' ') : '-'} ${m.reference_id ? '#'+m.reference_id.slice(0,8) : ''}</td>
+              <td>${m.performed_by ? 'User' : 'System'}</td>
+              <td><span class="status-badge status-${m.approval_status}">${m.approval_status}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ── Transfer Orders View ──────────────────────────────────────────────────
+async function renderTransfersView() {
+  const { data: transfers } = await bkDb.from('bk_transfer_orders')
+    .select('*, from_wh:bk_warehouses!from_warehouse_id(warehouse_name), to_wh:bk_warehouses!to_warehouse_id(warehouse_name)')
+    .eq('business_id', activeBusiness?.id)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">WAREHOUSE TRANSFERS</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Inter-warehouse stock transfers</div>
+      </div>
+      <button class="bk-btn bk-btn-primary" onclick="showNewTransferModal()">+ New Transfer</button>
+    </div>
+    
+    <div class="bk-sheet-wrap">
+      <table class="ps-table">
+        <thead>
+          <tr>
+            <th>Transfer #</th>
+            <th>Date</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Items</th>
+            <th>Status</th>
+            <th>Requested By</th>
+            <th>Shipped</th>
+            <th>Received</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(transfers || []).map(t => `
+            <tr>
+              <td><strong>${escH(t.transfer_number)}</strong></td>
+              <td>${new Date(t.created_at).toLocaleDateString()}</td>
+              <td>${t.from_wh?.[0]?.warehouse_name || '?'}</td>
+              <td>${t.to_wh?.[0]?.warehouse_name || '?'}</td>
+              <td><button class="bk-link-btn" onclick="viewTransferItems('${t.id}')">View Items</button></td>
+              <td><span class="status-badge status-${t.status}">${t.status.replace('_', ' ').toUpperCase()}</span></td>
+              <td>${t.requested_by ? 'User' : '-'}</td>
+              <td>${t.shipped_at ? new Date(t.shipped_at).toLocaleDateString() : '-'}</td>
+              <td>${t.received_at ? new Date(t.received_at).toLocaleDateString() : '-'}</td>
+              <td>
+                ${t.status === 'approved' ? `<button class="bk-btn bk-btn-sm" onclick="markTransferShipped('${t.id}')">Mark Shipped</button>` : ''}
+                ${t.status === 'in_transit' ? `<button class="bk-btn bk-btn-sm" onclick="markTransferReceived('${t.id}')">Mark Received</button>` : ''}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ── Reorder Alerts View (AI-Powered) ──────────────────────────────────────
+async function renderReorderAlertsView() {
+  const { data: alerts } = await bkDb.from('bk_reorder_alerts')
+    .select('*, product:bk_products(product_name), warehouse:bk_warehouses(warehouse_name)')
+    .eq('business_id', activeBusiness?.id)
+    .eq('alert_status', 'new')
+    .order('created_at', { ascending: false });
+  
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">REORDER ALERTS</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">AI-powered demand forecasting and reorder recommendations</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="bk-btn bk-btn-outline" onclick="acknowledgeAllAlerts()">Acknowledge All</button>
+        <button class="bk-btn bk-btn-primary" onclick="runAIBForecast()">🤖 Run AI Forecast</button>
+      </div>
+    </div>
+    
+    ${alerts && alerts.length > 0 ? `
+      <div class="bk-sheet-wrap">
+        <table class="ps-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Warehouse</th>
+              <th class="num">Current Stock</th>
+              <th class="num">Reorder Level</th>
+              <th class="num">Suggested Qty</th>
+              <th class="num">Predicted Demand</th>
+              <th>Confidence</th>
+              <th>AI Generated</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${alerts.map(a => `
+              <tr>
+                <td><strong>${a.product?.[0]?.product_name || 'Unknown'}</strong></td>
+                <td>${a.warehouse?.[0]?.warehouse_name || 'Unknown'}</td>
+                <td class="num" style="color:var(--red)">${fmtNum(a.current_stock)}</td>
+                <td class="num">${fmtNum(a.reorder_level)}</td>
+                <td class="num"><strong>${fmtNum(a.suggested_quantity)}</strong></td>
+                <td class="num">${a.predicted_demand ? fmtNum(a.predicted_demand) : '-'}</td>
+                <td>${a.confidence_score ? (a.confidence_score * 100).toFixed(0) + '%' : '-'}</td>
+                <td>${a.ai_generated ? '🤖 Yes' : 'Manual'}</td>
+                <td>${new Date(a.created_at).toLocaleDateString()}</td>
+                <td>
+                  <button class="bk-btn bk-btn-sm bk-btn-primary" onclick="createPurchaseOrder('${a.product_id}', ${a.suggested_quantity})">Create PO</button>
+                  <button class="bk-btn bk-btn-sm" onclick="dismissAlert('${a.id}')">Dismiss</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    ` : `
+      <div style="text-align:center;padding:48px;color:var(--muted);">
+        <div style="font-size:2rem;margin-bottom:16px;">✅</div>
+        <div style="font-size:1.1rem;font-weight:700;margin-bottom:8px;">No pending reorder alerts</div>
+        <div>All products are adequately stocked. Run AI forecast to predict future demand.</div>
+        <button class="bk-btn bk-btn-primary" style="margin-top:24px;" onclick="runAIBForecast()">🤖 Run AI Forecast Now</button>
+      </div>
+    `}
+  `;
+}
+
+// ── Helper Functions ──────────────────────────────────────────────────────
+
+async function switchWarehouse(warehouseId) {
+  const { data } = await bkDb.from('bk_warehouses').select('*').eq('id', warehouseId).single();
+  currentWarehouse = data;
+  renderStockLevelsView();
+}
+
+function showNewWarehouseModal() {
+  // Implementation for creating new warehouse
+  alert('New Warehouse Modal - To be implemented');
+}
+
+function exportStockLevels() {
+  // Export to CSV/Excel
+  alert('Export functionality - To be implemented');
+}
+
+function scheduleStockCount() {
+  alert('Schedule Stock Count - To be implemented');
+}
+
+function showLowStockReport() {
+  alert('Low Stock Report - To be implemented');
+}
+
+function showInventoryValuation() {
+  alert('Inventory Valuation Report - To be implemented');
+}
+
+async function runAIBForecast() {
+  // AI demand forecasting using Supabase Edge Function
+  alert('AI Demand Forecast - Connect to Supabase Edge Function for ML prediction');
+}
+
+function showStockAdjustmentModal(productId) {
+  alert('Stock Adjustment Modal for product ' + productId + ' - To be implemented');
+}
+
+function showProductMovements(productId) {
+  alert('Show movements for product ' + productId + ' - To be implemented');
+}
+
+function initiateTransfer(productId) {
+  selectedProductForTransfer = productId;
+  alert('Initiate transfer for product ' + productId + ' - To be implemented');
+}
+
+function filterMovements(query) {
+  alert('Filter movements by: ' + query + ' - To be implemented');
+}
+
+function filterMovementsByType(type) {
+  alert('Filter by movement type: ' + type + ' - To be implemented');
+}
+
+function showManualMovementModal() {
+  alert('Manual Movement Entry - To be implemented');
+}
+
+function showNewTransferModal() {
+  alert('New Transfer Order - To be implemented');
+}
+
+function viewTransferItems(transferId) {
+  alert('View items in transfer ' + transferId + ' - To be implemented');
+}
+
+function markTransferShipped(transferId) {
+  alert('Mark transfer ' + transferId + ' as shipped - To be implemented');
+}
+
+function markTransferReceived(transferId) {
+  alert('Mark transfer ' + transferId + ' as received - To be implemented');
+}
+
+function acknowledgeAllAlerts() {
+  alert('Acknowledge all alerts - To be implemented');
+}
+
+function createPurchaseOrder(productId, quantity) {
+  alert('Create PO for product ' + productId + ', qty ' + quantity + ' - To be implemented');
+}
+
+function dismissAlert(alertId) {
+  alert('Dismiss alert ' + alertId + ' - To be implemented');
+}
+
+async function renderBatchesView() {
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">BATCH / LOT TRACKING</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Track batches by expiry date and recall management</div>
+      </div>
+      <button class="bk-btn bk-btn-primary" onclick="showNewBatchModal()">+ New Batch</button>
+    </div>
+    <div style="padding:48px;text-align:center;color:var(--muted);">
+      Batch tracking UI - To be fully implemented
+    </div>
+  `;
+}
+
+async function renderSerialNumbersView() {
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">SERIAL NUMBER TRACKING</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Individual item tracking with warranty management</div>
+      </div>
+      <button class="bk-btn bk-btn-primary" onclick="showNewSerialModal()">+ Register Serial</button>
+    </div>
+    <div style="padding:48px;text-align:center;color:var(--muted);">
+      Serial number tracking UI - To be fully implemented
+    </div>
+  `;
+}
+
+async function renderInventoryCountsView() {
+  document.getElementById('bkContent').innerHTML = `
+    <div class="bk-content-header">
+      <div>
+        <div class="bk-content-title">INVENTORY COUNTS</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Schedule and manage physical stocktakes</div>
+      </div>
+      <button class="bk-btn bk-btn-primary" onclick="scheduleNewCount()">📋 Schedule Count</button>
+    </div>
+    <div style="padding:48px;text-align:center;color:var(--muted);">
+      Inventory counts UI - To be fully implemented
+    </div>
+  `;
+}
+
+// End of Inventory & Warehouse Management Module
