@@ -114,15 +114,21 @@ window.addEventListener('popstate', (e) => {
 // Reads a URL path and shows the matching page — used both for the
 // initial page load and for Back/Forward navigation.
 
+// Articles and How It Works are now admin-only content, reachable only
+// from the owner's own profile page — not part of the public site.
+function isAdminUser() {
+  return !!(currentUser?.username && ['digitalcatchup'].includes(currentUser.username.toLowerCase()));
+}
+
 function routeToPath(path) {
   // Fixed the regex here: /\/+$/ instead of //+$/
   const parts = path.replace(/\/+$/, '').split('/').filter(Boolean); 
   
-  if (parts[0] === 'articles' && parts[1]) { openArticle(parts[1]); return; }
-  if (parts[0] === 'articles') { openArticlesPage(); return; }
+  if (parts[0] === 'articles' && parts[1]) { if (isAdminUser()) openArticle(parts[1]); else showPage('homePage'); return; }
+  if (parts[0] === 'articles') { if (isAdminUser()) openArticlesPage(); else showPage('homePage'); return; }
   if (parts[0] === 'profile' && parts[1]) { openProfileByUsername(parts[1], 'homePage'); return; }
   if (parts[0] === 'services') { showPage('servicesPage'); return; }
-  if (parts[0] === 'how-it-works') { showPage('howPage'); return; }
+  if (parts[0] === 'how-it-works') { if (isAdminUser()) showPage('howPage'); else showPage('homePage'); return; }
   if (parts[0] === 'privacy') { showPage('privacyPage'); return; }
   if (parts[0] === 'terms') { showPage('termsPage'); return; }
   if (parts[0] === 'lessons') {
@@ -714,7 +720,9 @@ function renderProfileHeader(profile) {
             `<button class="profile-edit-btn" onclick="window.open('https://butterflydynamixllc.com/bookkeeping','_blank')" style="border-color:var(--gold);color:var(--gold);">📊 Bookkeeping</button>
             <button class="profile-edit-btn" onclick="launchTrack('biz-acc-vol1')" style="border-color:var(--gold);color:var(--gold);">📚 Lessons</button>
             <button class="profile-edit-btn" onclick="showPage('servicesPage')" style="border-color:var(--gold);color:var(--gold);">🧾 Services</button>
-            <button class="profile-edit-btn" onclick="openArticleEditor()" style="border-color:var(--gold);color:var(--gold);">✏️ Edit Articles</button>` : ''}
+            <button class="profile-edit-btn" onclick="openArticlesPage()" style="border-color:var(--gold);color:var(--gold);">📰 View Articles</button>
+            <button class="profile-edit-btn" onclick="openArticleEditor()" style="border-color:var(--gold);color:var(--gold);">✏️ Edit Articles</button>
+            <button class="profile-edit-btn" onclick="showPage('howPage')" style="border-color:var(--gold);color:var(--gold);">❓ How It Works</button>` : ''}
         </div>` : ''}
     </div>`;
 }
