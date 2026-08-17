@@ -10,12 +10,18 @@
 const FLUTTERWAVE_PUBLIC_KEY = 'FLWPUBK-0d0c350953e7392e1abd13258162c6f4-X';
 
 // ── PRICING CONFIG ───────────────────────────────────────────
+// Professional pricing is a fixed journey for every subscriber, counted
+// from their own signup date (currentUser.createdAt) — not a calendar
+// cutoff tied to launch day. Every new person gets the same path:
+// 7 days free, then the intro rate for 90 days, then the standard rate.
 const PROFESSIONAL_TRIAL_DAYS = 7;
-const PROFESSIONAL_INTRO_DAYS = 90;
+const PROFESSIONAL_INTRO_DAYS = 90;   // length of the $3 window, starting after the trial
 const PROFESSIONAL_INTRO_PRICE = 3;
 const PROFESSIONAL_STANDARD_PRICE = 5;
-const EXPERT_PRICE = 15;
+const EXPERT_PRICE = 15; // flat, no trial
 
+// Returns { stage: 'trial' | 'intro' | 'standard', amount, daysLeft }
+// daysLeft is days remaining in the *current* stage (trial or intro).
 function getProfessionalBillingStage() {
   if (!currentUser || !currentUser.createdAt) {
     return { stage: 'trial', amount: 0, daysLeft: PROFESSIONAL_TRIAL_DAYS };
@@ -31,6 +37,9 @@ function getProfessionalBillingStage() {
   return { stage: 'standard', amount: PROFESSIONAL_STANDARD_PRICE, daysLeft: 0 };
 }
 
+// Returns { status: 'guest' | 'paid' | 'trial' | 'expired', daysLeft }
+// 'expired' means the free trial ended and they haven't paid — they fall
+// back to the Free tier's limits (15 lessons / 4 mock exams monthly etc.)
 function getAccessStatus() {
   if (!currentUser) return { status: 'guest', daysLeft: 0 };
   if (currentUser.isSubscribed) return { status: 'paid', daysLeft: 0 };
@@ -40,11 +49,22 @@ function getAccessStatus() {
     : { status: 'expired', daysLeft: 0 };
 }
 
+// True if the person should see full Professional-level access right now —
+// either an active paid subscription, or still inside their 7-day trial.
+// NOTE: this helper exists and is accurate, but is not yet wired into
+// track.js to actually enforce the Free-tier limits (15 lessons / 4 mock
+// exams monthly, novel chapters 1-3 only, Episode 1 only) for 'expired'
+// users — nothing in the app currently restricts content at this level.
 function hasFullAccess() {
   const s = getAccessStatus().status;
   return s === 'paid' || s === 'trial';
 }
 
+// The pricing cards' copy is now fixed marketing text (same words for
+// every visitor), so there's nothing left to re-render dynamically on
+// page load — kept as a no-op so the existing DOMContentLoaded call
+// doesn't need to change. Real per-user pricing is resolved at the
+// moment of checkout, in openPayment() below.
 function renderPricingDisplay() {}
 
 // ── PIP UTILITIES ────────────────────────────────────────────
@@ -56,20 +76,22 @@ function pipStr(units) {
 }
 
 // ── PAGE NAVIGATION ──────────────────────────────────────────
+// ── URL routing ────────────────────────────────────────────────
+
 const PAGE_SLUGS = {
-  homePage: '/',
-  servicesPage: '/services',
-  howPage: '/how-it-works',
-  privacyPage: '/privacy',
-  termsPage: '/terms',
-  trackPage: '/lessons',
-  articlesPage: '/articles',
-  articleDetailPage: '/articles',
-  profilePage: '/profile',
-  editorPage: '/editor',
+homePage: '/',
+servicesPage: '/services',
+howPage: '/how-it-works',
+privacyPage: '/privacy',
+termsPage: '/terms',
+trackPage: '/lessons',
+articlesPage: '/articles',
+articleDetailPage: '/articles',
+profilePage: '/profile',
+editorPage: '/editor',
 };
 
-let _routingFromPopstate = false;
+let _routingFromPopstate = false; // guards against re-pushing history during back/forward
 
 function showPage(page, customUrl) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -82,21 +104,22 @@ function showPage(page, customUrl) {
   }
 }
 
+// Handles the browser's own Back/Forward buttons
 window.addEventListener('popstate', (e) => {
   _routingFromPopstate = true;
   routeToPath(location.pathname);
   _routingFromPopstate = false;
 });
 
-function routeToPath(path) {
-  const parts = path.replace(/\/+$/, '').split('/').filter(Boolean); 
+// Reads a URL path and shows the matching page — used both for the
+// initial page load and for Back/Forward navigation.
 
-  // Restricted Staging: /articles redirects regular users to home page
-  if (parts[0] === 'articles') { 
-    showPage('homePage'); 
-    return; 
-  }
+function routeToPath(path) {
+  // Fixed the regex here: /\/+$/ instead of //+$/
+  const parts = path.replace(/\/+$/, '').split('/').filter(Boolean); 
   
+  if (parts[0] === 'articles' && parts[1]) { openArticle(parts[1]); return; }
+  if (parts[0] === 'articles') { openArticlesPage(); return; }
   if (parts[0] === 'profile' && parts[1]) { openProfileByUsername(parts[1], 'homePage'); return; }
   if (parts[0] === 'services') { showPage('servicesPage'); return; }
   if (parts[0] === 'how-it-works') { showPage('howPage'); return; }
@@ -124,6 +147,8 @@ function closeMobileNav() {
   document.getElementById('mobileNavDropdown').classList.remove('open');
 }
 
+// Click anywhere outside the open mobile menu (or its hamburger button) to
+// close it, in addition to clicking the hamburger again.
 document.addEventListener('click', (e) => {
   const dropdown  = document.getElementById('mobileNavDropdown');
   const hamburger = document.getElementById('navHamburger');
@@ -210,6 +235,7 @@ function selectAvatar(avatar, el) {
   el.classList.add('selected');
 }
 
+// ── ENTER APP (after login/signup) ───────────────────────────
 function enterApp() {
   closeAuth();
   showPage('homePage');
@@ -230,7 +256,11 @@ function selectService(name) {
 }
 
 async function submitServiceBooking() {
-  if (!currentUser) { openAuth('signup'); return; }
+  // Gate: must be logged in to book
+  if (!currentUser) {
+    openAuth('signup');
+    return;
+  }
 
   const name     = document.getElementById('svcName')?.value.trim();
   const email    = document.getElementById('svcEmail')?.value.trim();
@@ -246,8 +276,10 @@ async function submitServiceBooking() {
     return;
   }
 
+  // Work out price from selected service
   const amountUsd = service.includes('$100') ? 100 : null;
 
+  // Save enquiry to Supabase
   msgEl.style.cssText = 'display:block;background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:12px 16px;border-radius:8px;font-size:0.82rem;margin-bottom:12px;';
   msgEl.textContent = 'Saving your enquiry…';
 
@@ -262,6 +294,7 @@ async function submitServiceBooking() {
   const enquiryId = result.data.id;
   window._currentEnquiryId = enquiryId;
 
+  // Success — show confirmation + payment option
   msgEl.style.cssText = 'display:block;background:#0d2e1a;border:1px solid #1a7a4a;color:#6ee7b7;padding:16px;border-radius:8px;font-size:0.85rem;margin-bottom:12px;';
   msgEl.innerHTML = `
     <div style="font-weight:700;margin-bottom:6px;">✓ Enquiry received — reference #${enquiryId.slice(0,8).toUpperCase()}</div>
@@ -275,18 +308,20 @@ async function submitServiceBooking() {
     <div style="font-size:0.8rem;opacity:0.9;">We will discuss pricing and payment during your free consultation.</div>
     `}`;
 
+  // Clear form fields
   ['svcName','svcEmail','svcPhone','svcBusiness','svcMessage'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('svcService').value = '';
 
+  // Notify via Edge Function (fire and forget)
   notifyNewEnquiry({ name, email, phone, service, message, enquiryId });
 }
 
 function payForService(serviceName, amountUsd, enquiryId) {
   if (!currentUser) { openAuth('signup'); return; }
 
-  const NGN_RATE  = 1600;
+  const NGN_RATE  = 1600; // ~₦1,600 per $1 (Jun 2026 — check quarterly)
   const amountNGN = amountUsd * NGN_RATE;
   const txRef     = 'BD_SVC_' + Date.now();
 
@@ -326,11 +361,15 @@ function payForService(serviceName, amountUsd, enquiryId) {
         }
       }
     },
-    onclose: function () {},
+    onclose: function () {
+      // User closed without paying — enquiry is still saved, they can pay later
+    },
   });
 }
 
 async function notifyNewEnquiry({ name, email, phone, service, message, enquiryId }) {
+  // Calls a Supabase Edge Function that sends you an email notification.
+  // Fires silently — failure does not affect the user experience.
   try {
     const { data: { session } } = await db.auth.getSession();
     await fetch(`${SUPABASE_URL}/functions/v1/notify-enquiry`, {
@@ -491,14 +530,13 @@ function goToNewsletter() {
 
 // ── ARTICLES ─────────────────────────────────────────────────
 function openArticlesPage() {
-  // Restricted access: Articles can only be accessed by admin[cite: 23]
-  if (currentUser?.username && currentUser.username.toLowerCase() === 'digitalcatchup') {
-    openMyProfile();
-  } else {
-    showPage('homePage');
-  }
+  showPage('articlesPage');
+  loadArticlesFromDb().then(() => renderArticlesGrid());
 }
 
+// Generated gradient-and-icon cover treatment — no external images, so
+// nothing to license or hotlink. Swap in real photography later by
+// changing this one function.
 function renderArticleCover(article) {
   return `<div class="article-cover" style="background:${article.cover}">
     <span class="article-cover-icon">${article.coverIcon}</span>
@@ -519,17 +557,13 @@ function renderArticlesGrid() {
 }
 
 async function openArticle(slug) {
-  // Guard article viewing during private staging[cite: 23]
-  if (!currentUser || currentUser.username?.toLowerCase() !== 'digitalcatchup') {
-    showPage('homePage');
-    return;
-  }
   showPage('articleDetailPage', '/articles/' + slug);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   await renderArticleDetail(slug);
 }
 
 async function renderArticleDetail(slug) {
+  // Ensure articles are loaded from DB first
   await loadArticlesFromDb();
   
   const article = articles.find(a => a.slug === slug);
@@ -630,10 +664,10 @@ async function handleSubmitArticleComment(slug) {
 // ── USER PROFILE PAGE ────────────────────────────────────────
 let viewingProfileData  = null;
 let viewingIsOwnProfile = false;
-let profileReturnPage   = 'homePage';
+let profileReturnPage   = 'articlesPage';
 
 async function openProfileByUsername(username, returnPage) {
-  profileReturnPage = returnPage || 'homePage';
+  profileReturnPage = returnPage || 'articlesPage';
   showPage('profilePage', '/profile/' + username);
   document.getElementById('profileHeader').innerHTML =
     '<p style="color:var(--muted);font-size:0.82rem;text-align:center;padding:40px 0;">Loading profile…</p>';
@@ -654,13 +688,13 @@ async function openProfileByUsername(username, returnPage) {
 
 function openMyProfile() {
   if (!currentUser) { openAuth('login'); return; }
+  // Opening from the nav avatar should return to wherever we already were —
+  // simplest reliable default is home, since the nav is visible everywhere.
   openProfileByUsername(currentUser.username, 'homePage');
 }
 
 function renderProfileHeader(profile) {
   const joined = new Date(profile.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-  const isAdmin = currentUser?.username && ['digitalcatchup'].includes(currentUser.username.toLowerCase());[cite: 23]
-
   document.getElementById('profileHeader').innerHTML = `
     <div class="profile-header-card">
       <div class="profile-avatar-large">${profile.avatar}</div>
@@ -676,26 +710,13 @@ function renderProfileHeader(profile) {
       ${viewingIsOwnProfile ? `
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px;">
           <button class="profile-edit-btn" onclick="openEditProfile()">Edit Profile</button>
-          ${isAdmin ?
+          ${currentUser?.username && ['digitalcatchup'].includes(currentUser.username.toLowerCase()) ?
             `<button class="profile-edit-btn" onclick="window.open('https://butterflydynamixllc.com/bookkeeping','_blank')" style="border-color:var(--gold);color:var(--gold);">📊 Bookkeeping</button>
             <button class="profile-edit-btn" onclick="launchTrack('biz-acc-vol1')" style="border-color:var(--gold);color:var(--gold);">📚 Lessons</button>
             <button class="profile-edit-btn" onclick="showPage('servicesPage')" style="border-color:var(--gold);color:var(--gold);">🧾 Services</button>
             <button class="profile-edit-btn" onclick="openArticleEditor()" style="border-color:var(--gold);color:var(--gold);">✏️ Edit Articles</button>` : ''}
         </div>` : ''}
-    </div>
-    
-    ${isAdmin && viewingIsOwnProfile ? `
-      <div class="admin-articles-wrapper" style="margin-top:32px; border-top:1px solid var(--border); padding-top:24px;">
-        <h3 style="color:var(--gold); font-size:1.1rem; margin-bottom:12px;">🔒 Articles Management & Preview</h3>
-        <p style="color:var(--muted); font-size:0.8rem; margin-bottom:20px;">This section is only visible on your admin profile while staging.</p>
-        <div id="articlesGrid" class="articles-grid"></div>
-      </div>
-    ` : ''}`;
-
-  // Automatically fetch & render articles inside admin profile view[cite: 23]
-  if (isAdmin && viewingIsOwnProfile) {
-    loadArticlesFromDb().then(() => renderArticlesGrid());
-  }
+    </div>`;
 }
 
 function renderProfileComments(comments) {
@@ -707,7 +728,7 @@ function renderProfileComments(comments) {
   el.innerHTML = comments.map(c => {
     const article = articles.find(a => a.slug === c.article_id);
     return `
-    <div class="forum-post-card" ${currentUser?.username?.toLowerCase() === 'digitalcatchup' ? `onclick="openArticle('${c.article_id}')"` : ''}>
+    <div class="forum-post-card" onclick="openArticle('${c.article_id}')">
       <div class="forum-post-avatar">${viewingProfileData.profile.avatar}</div>
       <div class="forum-post-body">
         <div class="forum-post-meta">
@@ -779,6 +800,7 @@ async function saveProfileEdits() {
   document.getElementById('navAvatar').textContent = avatar;
   closeEditProfile();
 
+  // Refresh the profile view if we're looking at our own profile right now
   if (viewingIsOwnProfile && viewingProfileData) {
     viewingProfileData.profile.bio    = bio;
     viewingProfileData.profile.avatar = avatar;
@@ -787,22 +809,30 @@ async function saveProfileEdits() {
 }
 
 // ── ARTICLE EDITOR (Admin Only) ───────────────────────────────
+// Note: Core editor functions (openArticleEditor, closeArticleEditor, saveArticleFromEditor, deleteCurrentArticle)
+// are now in article-editor.js for the new block-style editor.
+// This section provides backward compatibility and integration.
+
 let currentEditingArticleLegacy = null;
 
+// Wrapper to integrate with new block editor
 function openArticleEditor(slug = null) {
   if (!currentUser || !['digitalcatchup'].includes(currentUser.username.toLowerCase())) {
     alert('This feature is only available for administrators.');
     return;
   }
   
+  // Use the new block editor from article-editor.js
   if (typeof window.openArticleEditor === 'function' && window.openArticleEditor !== openArticleEditor) {
     window.openArticleEditor(slug);
   } else {
+    // Fallback to legacy if new editor not loaded
     openArticleEditorLegacy(slug);
   }
 }
 
 function closeArticleEditor() {
+  // Use the new block editor function if available
   if (typeof window.closeArticleEditor === 'function' && window.closeArticleEditor !== closeArticleEditor) {
     window.closeArticleEditor();
   } else {
@@ -811,6 +841,7 @@ function closeArticleEditor() {
 }
 
 async function saveArticleFromEditor() {
+  // Use the new block editor function if available
   if (typeof window.saveArticleFromEditor === 'function' && window.saveArticleFromEditor !== saveArticleFromEditor) {
     await window.saveArticleFromEditor();
   } else {
@@ -819,6 +850,7 @@ async function saveArticleFromEditor() {
 }
 
 async function deleteCurrentArticle() {
+  // Use the new block editor function if available
   if (typeof window.deleteCurrentArticle === 'function' && window.deleteCurrentArticle !== deleteCurrentArticle) {
     await window.deleteCurrentArticle();
   } else {
@@ -826,6 +858,7 @@ async function deleteCurrentArticle() {
   }
 }
 
+// Legacy functions (kept for fallback)
 function openArticleEditorLegacy(slug = null) {
   currentEditingArticleLegacy = slug ? articles.find(a => a.slug === slug) : null;
   
@@ -840,6 +873,7 @@ function openArticleEditorLegacy(slug = null) {
   document.getElementById('articleEditorTitle').textContent = currentEditingArticleLegacy ? 'Edit Article' : 'Create New Article';
   document.getElementById('deleteArticleBtn').style.display = currentEditingArticleLegacy ? '' : 'none';
   
+  // Clear error states
   document.querySelectorAll('#articleEditorOverlay .field-err').forEach(el => el.style.display = 'none');
   
   document.getElementById('articleEditorOverlay').classList.add('open');
@@ -861,6 +895,7 @@ async function saveArticleFromEditorLegacy() {
   const body = document.getElementById('editArticleBody').value.trim();
   const isPublished = document.getElementById('editArticlePublished').checked;
   
+  // Validation
   let hasError = false;
   document.querySelectorAll('#articleEditorOverlay .field-err').forEach(el => el.style.display = 'none');
   
@@ -906,7 +941,7 @@ async function saveArticleFromEditorLegacy() {
     await loadArticlesFromDb();
     closeArticleEditorLegacy();
     
-    if (currentUser?.username?.toLowerCase() === 'digitalcatchup') {
+    if (document.getElementById('articlesPage').classList.contains('active')) {
       renderArticlesGrid();
     }
     
@@ -930,7 +965,7 @@ async function deleteCurrentArticleLegacy() {
     await loadArticlesFromDb();
     closeArticleEditorLegacy();
     
-    if (currentUser?.username?.toLowerCase() === 'digitalcatchup') {
+    if (document.getElementById('articlesPage').classList.contains('active')) {
       renderArticlesGrid();
     }
     
@@ -945,7 +980,7 @@ async function loadArticlesFromDb() {
     const { data, error } = await db.from('articles').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     if (data && data.length > 0) {
-      articles.length = 0;
+      articles.length = 0; // clear the list in place, then refill from the database
       data.forEach(a => articles.push({
         slug: a.slug,
         title: a.title,
@@ -962,7 +997,7 @@ async function loadArticlesFromDb() {
     return articles;
   } catch (err) {
     console.error('Failed to load articles from database:', err);
-    return articles;
+    return articles; // fall back to the static list
   }
 }
 
@@ -981,8 +1016,11 @@ async function renderLeaderboard() {
     </div>`).join('');
 }
 
-// ── PAYMENT (Paystack/Flutterwave) ───────────────────────────
+// ── PAYMENT (Paystack) ───────────────────────────────────────
 function openPayment(planKey) {
+  // planKey: 'professional' or 'expert'.
+  // Guests can't check out (there's no account yet to attach the payment
+  // to) — send them to sign up first, which also starts their 7-day trial.
   if (!currentUser) { openAuth('signup'); return; }
 
   let planName, amount;
@@ -992,6 +1030,8 @@ function openPayment(planKey) {
   } else {
     planName = 'Professional';
     const stage = getProfessionalBillingStage();
+    // If someone clicks "Subscribe" while still mid-trial, treat it as
+    // converting early — charge the intro rate rather than $0.
     amount = stage.stage === 'trial' ? PROFESSIONAL_INTRO_PRICE : stage.amount;
   }
   const priceLabel = `$${amount}/month`;
@@ -1012,6 +1052,7 @@ function closePayment() {
 }
 
 function initiateStripeCheckout() {
+  // Using Flutterwave (function name kept for compatibility with HTML onclick)
   const email = currentUser?.email || document.getElementById('payEmail')?.value?.trim();
   const name  = currentUser
     ? `${currentUser.firstName} ${currentUser.lastName}`.trim()
@@ -1020,7 +1061,9 @@ function initiateStripeCheckout() {
   if (!email) { alert('Please enter your email address.'); return; }
 
   const plan     = window._payPlan || { name: 'Professional', amount: PROFESSIONAL_STANDARD_PRICE };
-  const NGN_RATE = 1600;
+  const NGN_RATE = 1600;  // ~₦1,600 per $1 (Jun 2026 — check quarterly) // approximate USD→NGN rate as of June 2026 — naira is volatile,
+                          // recheck this periodically (e.g. quarterly) before live launch
+                          // and afterward, rather than letting it go stale for years.
   const amountNGN = plan.amount * NGN_RATE;
 
   if (typeof FlutterwaveCheckout === "undefined") {
@@ -1049,9 +1092,14 @@ function initiateStripeCheckout() {
       user_id: currentUser?.id || '',
     },
     callback: function (response) {
+      // Kept as a fallback in case the modal closes via callback before the
+      // redirect fires. The redirect_url above is now the primary,
+      // more reliable path for confirming payment.
       if (typeof closePaymentModal === 'function') closePaymentModal();
     },
-    onclose: function () {},
+    onclose: function () {
+      // User closed payment modal — do nothing
+    },
   });
 }
 
@@ -1083,20 +1131,26 @@ function initDailyTip() {
 }
 
 // ── AI CHAT INPUT HANDLING ────────────────────────────────────
-function onSearch() {}
+function onSearch() { /* no-op in AI mode — no live suggestions */ }
 
 function onSearchKey(e) {
   if (e.key === 'Enter') doSearch();
 }
 
-// ── ROTATING PLACEHOLDER ENGINE ─────────────────────────────
+// ── ROTATING PLACEHOLDER ENGINE (type in / type out) ──────────
+// Reusable engine: each instance (home search, composer, etc.)
+// gets its own rotation state so they cycle independently.
+// Text types in character by character. If the fully-typed text
+// is too long for the box (it would underlap the search button,
+// or run past the textarea edge), it scrolls left afterward to
+// reveal the full text, holds, then types back out from the end.
 const allSearchQuestions = searchQuestionBatches.flat();
 const searchPlaceholderInstances = {};
 
-const PLACEHOLDER_TYPE_SPEED   = 38;
-const PLACEHOLDER_DELETE_SPEED = 22;
-const PLACEHOLDER_HOLD_MS      = 5000;
-const PLACEHOLDER_SCROLL_SPEED = 90;
+const PLACEHOLDER_TYPE_SPEED   = 38;  // ms per character, typing in
+const PLACEHOLDER_DELETE_SPEED = 22;  // ms per character, typing out
+const PLACEHOLDER_HOLD_MS      = 5000; // pause once fully visible
+const PLACEHOLDER_SCROLL_SPEED = 90;   // px / second, reveal-scroll
 
 function startSearchPlaceholderRotation(wrapId, textId, inputId, questions) {
   if (searchPlaceholderInstances[wrapId]) {
@@ -1155,6 +1209,8 @@ function afterTypeIn(wrapId, textId, inputId, state, text) {
   const wrap = document.getElementById(wrapId);
   if (!el || !wrap) return;
 
+  // If the fully-typed text underlaps the button / runs past the box,
+  // scroll left afterward so the full text becomes readable.
   const overflow = el.scrollWidth - wrap.clientWidth;
   if (overflow > 0) {
     const scrollDuration = Math.max(0.4, overflow / PLACEHOLDER_SCROLL_SPEED);
@@ -1212,7 +1268,17 @@ function showFakePlaceholder(wrapId, inputId) {
 }
 
 // ── AI CHAT ───────────────────────────────────────────────────
-let aiChatHistory = [];
+// The search bar is now an AI accounting tutor. Each conversation is
+// held in memory for the session (aiChatHistory) so follow-up
+// questions work naturally. Calls go to a Supabase Edge Function
+// (ai-chat) which holds the Anthropic API key server-side so it
+// never appears in the page source.
+//
+// TO WIRE UP: deploy the Edge Function from the /supabase/functions/
+// folder (see README), then set ANTHROPIC_API_KEY in Supabase secrets.
+// Until the function is deployed, the chat shows a friendly setup note.
+
+let aiChatHistory = []; // { role: 'user'|'assistant', content: string }[]
 let aiChatActive  = false;
 
 const AI_SYSTEM_PROMPT = `You are an expert financial education tutor for Butterfly Dynamix, a professional education platform. You help students and professionals understand any topic related to money, finance, and business.
@@ -1328,6 +1394,11 @@ function renderChatPanel(isLoading) {
         ${isLoading ? 'disabled' : ''} />
       <button class="ai-send-btn" onclick="sendFollowUp()" ${isLoading ? 'disabled' : ''}>›</button>
     </div>`;
+
+  requestAnimationFrame(() => {
+    // No automatic scrolling or focus — page stays still.
+    // User scrolls and interacts at their own pace.
+  });
 }
 
 function sendFollowUp() {
@@ -1353,6 +1424,9 @@ function escapeHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// Very light formatting: converts **bold** and newlines to HTML.
+// Deliberately avoids a full markdown parser — keeps the bundle tiny
+// and prevents any accidental XSS from AI output.
 function formatAIText(text) {
   return escapeHtml(text)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -1364,7 +1438,11 @@ function formatAIText(text) {
 
 function clearHomeSearch() { clearAIChat(); }
 
-// ── CLICK-TO-ASK ──────────────────────────────────────────────
+// ── CLICK-TO-ASK (rotating search bar questions) ──────────────
+// Clicking the question currently typed in the search bar shows its
+// full answer, scenario, and a knowledge check — all sourced from
+// searchQuestionAnswers, completely separate from trackData. None
+// of this links or navigates into actual lesson content.
 function onSearchQuestionClick() {
   const state = searchPlaceholderInstances['searchFakePlaceholder'];
   const question = (state && state.currentText)
@@ -1429,6 +1507,7 @@ function askSearchQuestion(question) {
     </div>`;
 }
 
+// Self-contained — no pip score, no lesson progress, just right/wrong feedback.
 function answerSearchQuiz(btn, selectedIdx, correctIdx, explanation) {
   const block = btn.closest('.track-q-block');
   if (block.dataset.answered) return;
@@ -1449,11 +1528,16 @@ function answerSearchQuiz(btn, selectedIdx, correctIdx, explanation) {
   fb.classList.add('show', isCorrect ? 'cfb' : 'wfb');
 }
 
+// ── TOPIC LABEL HELPER ───────────────────────────────────────
+// 'acc' returns empty for now since Accounting is the only topic —
+// showing the badge on every single post is just noise. Once other
+// topics exist, this automatically starts showing labels again.
 function topicLabel(topic) {
   const map = { acc: '', fin: '💰 Finance', econ: '🌍 Economics', trd: '📈 Trading' };
   return map[topic] ?? topic;
 }
 
+// ── TIME AGO HELPER ──────────────────────────────────────────
 function timeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
   if (diff < 60)   return 'just now';
@@ -1462,21 +1546,74 @@ function timeAgo(dateStr) {
   return Math.floor(diff / 86400) + 'd ago';
 }
 
-// ── ARTICLES TICKER (Hidden during admin staging) ─────────────
+// ── FLAVOUR WORD (static) ────────────────────────────────────
+// Kept static per design decision — no cycling
+
+// ── ARTICLES TICKER (homepage) ────────────────────────────────
 function buildArticlesTicker() {
   const ticker = document.getElementById('trendingTicker');
-  if (!ticker) return;
-  ticker.innerHTML = ''; // Kept clear during private staging[cite: 23]
+  if (!ticker || !articles) return;
+  ticker.style.width = '';
+  ticker.innerHTML = articles.map((a, i) =>
+    `<div class="trend-chip" onclick="openArticle('${a.slug}')" style="cursor:pointer;">
+      <span class="trend-num">#${i + 1}</span>
+      <span class="trend-text">${a.title}</span>
+    </div>`
+  ).join('');
+
+  const wrap = document.getElementById('trendingTickerWrap');
+  // Match the same breakpoint the CSS uses to turn on horizontal scrolling
+  // (≤1024px = phones + tablets). The previous check also treated any
+  // touch-capable screen as "scrollable," which caught wide touchscreen
+  // laptops/desktops (>1024px) too — JS would size the row to overflow,
+  // but the CSS at that width still has overflow:hidden with no scroll
+  // enabled, so the last chip just sat there clipped in half with no way
+  // to reach it. Using the same width check as the CSS keeps both in sync.
+  const isScrollable = window.innerWidth <= 1024;
+
+  if (wrap) wrap.scrollLeft = 0;
+
+  if (isScrollable) {
+    // Phones + tablets: every chip has flex-shrink:0 and the row uses
+    // flex-wrap:nowrap, so the browser's own overflow/scrollWidth
+    // calculation already covers the full #1–#10 range — no need to
+    // calculate and set a pixel width by hand. (A previous version did
+    // that by hand and any small error in the measurement capped the
+    // scrollable range short of one end, which is what was cutting off
+    // #1 and #10.) Just make sure we land on #1 at rest, and re-check
+    // once more on the next frame in case layout shifts slightly after
+    // the chips are inserted.
+    requestAnimationFrame(() => { if (wrap) wrap.scrollLeft = 0; });
+    return;
+  }
+
+  // Desktop: show only what fully fits, never cut a chip off mid-text.
+  requestAnimationFrame(() => {
+    const wrapWidth = ticker.parentElement.offsetWidth;
+    const chips = ticker.querySelectorAll('.trend-chip');
+    let used = 0;
+    let stop = false;
+    chips.forEach(chip => {
+      const chipW = chip.offsetWidth + 10; // include the row gap
+      if (stop || used + chipW > wrapWidth) {
+        stop = true;
+        chip.remove();
+      } else {
+        used += chipW;
+      }
+    });
+  });
 }
 
 // ── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
-  _routingFromPopstate = true;
+  _routingFromPopstate = true;   // first paint shouldn't push a duplicate history entry
   routeToPath(location.pathname);
   _routingFromPopstate = false;
   buildAvatarGrid();
   buildArticlesTicker();
   initDailyTip();
+  // Small delay to ensure data.js searchQuestionBatches is available
   setTimeout(() => {
     if (typeof startSearchPlaceholderRotation === 'function') {
       startSearchPlaceholderRotation('searchFakePlaceholder', 'searchFakePlaceholderText', 'searchInput');
@@ -1484,6 +1621,11 @@ document.addEventListener('DOMContentLoaded', function () {
   }, 300);
 });
 
+// Re-fit trending chips on resize/orientation change (debounced).
+// Only rebuild when WIDTH actually changes — on mobile, the address bar
+// showing/hiding as you scroll fires resize events for HEIGHT changes
+// only, and rebuilding on those was wiping the ticker's scroll position
+// mid-scroll, making chip #1 appear to "flash" then vanish.
 let trendingResizeTimer = null;
 let lastTrendingWidth = window.innerWidth;
 window.addEventListener('resize', () => {
@@ -1496,5 +1638,14 @@ window.addEventListener('resize', () => {
   }, 200);
 });
 
+// Safety net: re-measure once everything (images, fonts) has fully
+// loaded, in case anything shifted the layout after the initial
+// DOMContentLoaded measurement.
 window.addEventListener('load', buildArticlesTicker);
+
+// Safety net: if the browser restores this page from back-forward cache
+// (e.g. tapping the phone's back button after visiting a lesson) instead
+// of doing a real reload, neither DOMContentLoaded nor load fire again —
+// so without this, the ticker would stay wherever it was scrolled to
+// before you navigated away.
 window.addEventListener('pageshow', (e) => { if (e.persisted) buildArticlesTicker(); });
