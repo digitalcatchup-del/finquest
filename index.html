@@ -1,3 +1,4 @@
+
  <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -578,14 +579,10 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
   </div>
   <div class="nav-center">
     <button class="nav-link" onclick="showPage('homePage')">Home</button>
-    <button class="nav-link" onclick="openArticlesPage()">Articles</button>
-    <button class="nav-link" onclick="showPage('howPage')">How It Works</button>
   </div>
   <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileNav()" aria-label="Menu"><span></span><span></span><span></span></button>
   <div class="mobile-nav-dropdown" id="mobileNavDropdown">
     <button class="mobile-nav-link" onclick="showPage('homePage');closeMobileNav();">Home</button>
-    <button class="mobile-nav-link" onclick="openArticlesPage();closeMobileNav();">Articles</button>
-    <button class="mobile-nav-link" onclick="showPage('howPage');closeMobileNav();">How It Works</button>
   </div>
   <div class="nav-right">
     <div id="guestNav" style="display:flex;align-items:center;gap:8px;">
@@ -618,12 +615,7 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
     </div>
   </div>
   <div id="homeSearchResults" style="display:none;width:100%;max-width:760px;position:relative;z-index:1;"></div>
-  <div id="homeDefaultContent">
-    <div class="trending-section">
-      <div class="trending-label-row"><span class="trending-label">Articles</span><div class="trending-line"></div></div>
-      <div class="trending-ticker-wrap" id="trendingTickerWrap"><div class="trending-ticker" id="trendingTicker"></div></div>
-    </div>
-  </div>
+  <div id="homeDefaultContent"></div>
 </section>
 <section id="trust">
   <div class="trust-stat"><div class="trust-val">1</div><div class="trust-lbl">New Article Weekly</div></div>
@@ -631,18 +623,12 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
 </section>
 <section id="how">
   <p class="section-eyebrow">How It Works</p>
-  <h2 class="section-heading">Two ways to build your financial knowledge.</h2>
+  <h2 class="section-heading">Build your financial knowledge.</h2>
   <div class="steps">
     <div class="step" onclick="document.getElementById('searchInput').focus();window.scrollTo({top:0,behavior:'smooth'});" style="cursor:pointer;">
       <div class="step-num">Step 01</div><div class="step-icon">✨</div>
       <h3>Ask the AI Tutor</h3>
       <p>Type any finance or accounting question into the search bar and get a clear, expert answer instantly.</p>
-      <div class="step-arrow">→</div>
-    </div>
-    <div class="step" onclick="openArticlesPage();" style="cursor:pointer;">
-      <div class="step-num">Step 02</div><div class="step-icon">📰</div>
-      <h3>Read the Articles</h3>
-      <p>Deep-dive into professionally written articles on real accounting and finance concepts — then comment and discuss.</p>
       <div class="step-arrow">→</div>
     </div>
   </div>
@@ -673,7 +659,6 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
   <div class="footer-links">
     <button class="footer-link" onclick="showPage('privacyPage')">Privacy Policy</button>
     <button class="footer-link" onclick="showPage('termsPage')">Terms of Service</button>
-    <button class="footer-link" onclick="openArticlesPage()">Articles</button>
   </div>
   <span class="footer-copy">© 2025 Butterfly Dynamix LLC. All rights reserved.</span>
 </footer>
