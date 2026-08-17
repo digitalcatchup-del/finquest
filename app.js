@@ -1124,20 +1124,6 @@ async function handleFlutterwaveSuccess(plan, response) {
   document.getElementById('paymentSuccess').classList.add('show');
 }
 
-// ── DAILY TIP ────────────────────────────────────────────────
-function initDailyTip() {
-  const tips = dailyTips || [];
-  if (!tips.length) return;
-  const idx  = new Date().getDate() % tips.length;
-  const tip  = tips[idx];
-  const dateEl   = document.getElementById('tipDate');
-  const textEl   = document.getElementById('tipText');
-  const sourceEl = document.getElementById('tipSource');
-  if (dateEl)   dateEl.textContent   = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long' });
-  if (textEl)   textEl.textContent   = tip.text;
-  if (sourceEl) sourceEl.textContent = tip.source || '';
-}
-
 // ── AI CHAT INPUT HANDLING ────────────────────────────────────
 function onSearch() { /* no-op in AI mode — no live suggestions */ }
 
@@ -1620,7 +1606,6 @@ document.addEventListener('DOMContentLoaded', function () {
   _routingFromPopstate = false;
   buildAvatarGrid();
   buildArticlesTicker();
-  initDailyTip();
   // Small delay to ensure data.js searchQuestionBatches is available
   setTimeout(() => {
     if (typeof startSearchPlaceholderRotation === 'function') {
