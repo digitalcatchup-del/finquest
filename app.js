@@ -100,7 +100,10 @@ function showPage(page, customUrl) {
 
   if (!_routingFromPopstate) {
     const url = customUrl || PAGE_SLUGS[page] || '/';
-    if (location.pathname !== url) history.pushState({ page, url }, '', url);
+    if (location.pathname !== url) {
+      try { history.pushState({ page, url }, '', url); }
+      catch (e) { console.warn('pushState failed, continuing without URL update:', e); }
+    }
   }
 }
 
@@ -1310,7 +1313,8 @@ function enterChatMode() {
   if (typeof setAppVH === 'function') setAppVH();
   document.body.classList.add('chat-active');
   if (!_routingFromPopstate && location.pathname !== '/chat') {
-    history.pushState({ page: 'homePage', url: '/chat' }, '', '/chat');
+    try { history.pushState({ page: 'homePage', url: '/chat' }, '', '/chat'); }
+    catch (e) { console.warn('pushState failed, continuing without URL update:', e); }
   }
 }
 
@@ -1444,7 +1448,10 @@ function clearAIChat() {
   document.getElementById('chatMessages').innerHTML = '';
   document.getElementById('searchInput').value = '';
   showFakePlaceholder('searchFakePlaceholder', 'searchInput');
-  if (location.pathname !== '/') history.pushState({ page: 'homePage', url: '/' }, '', '/');
+  if (location.pathname !== '/') {
+    try { history.pushState({ page: 'homePage', url: '/' }, '', '/'); }
+    catch (e) { console.warn('pushState failed, continuing without URL update:', e); }
+  }
 }
 
 function escapeHtml(str) {
