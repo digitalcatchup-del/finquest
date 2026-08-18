@@ -170,10 +170,7 @@ body.chat-active footer{display:none;}
 .chat-sb-chat-item:hover{background:var(--surface2);}
 .chat-sb-chat-item.active{background:var(--surface2);color:var(--gold);}
 .chat-sb-empty{padding:10px 12px;font-size:0.78rem;color:var(--muted);}
-.chats-list-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;cursor:pointer;transition:border-color 0.15s;}
-.chats-list-row:hover{border-color:var(--gold);}
-.chats-list-title{font-size:0.9rem;font-weight:600;color:var(--off);margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.chats-list-date{font-size:0.72rem;color:var(--muted);margin:0;}
+
 .services-hero{text-align:center;padding:60px 20px 48px;border-bottom:1px solid var(--border);}
 .services-hero-title{font-size:2rem;font-weight:900;color:var(--white);line-height:1.2;margin:12px 0 14px;}
 .services-hero-sub{font-size:0.9rem;color:var(--muted);max-width:500px;margin:0 auto 20px;}
@@ -641,9 +638,6 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
     <button class="chat-sb-item chat-sb-primary" onclick="startNewChat()">
       <span class="chat-sb-icon">＋</span> New chat
     </button>
-    <button class="chat-sb-item" onclick="openChatsPage()">
-      <span class="chat-sb-icon">💬</span> Chats
-    </button>
   </div>
   <div class="chat-sb-divider"></div>
   <div class="chat-sb-top">
@@ -955,17 +949,6 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
     </aside>
     <button class="track-sb-toggle" id="trackSbToggle" onclick="toggleTrackSidebar()" title="Hide sidebar"><span></span><span></span><span></span></button>
     <main class="track-main" id="trackMainContent"></main>
-  </div>
-</div>
-
-<div id="chatsPage" class="page">
-  <div class="community-app">
-    <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="showPage('homePage')">← Back to Home</button>
-    <section class="community-section" style="border-top:none;padding-top:24px;max-width:720px;">
-      <p class="section-eyebrow">AI Tutor</p>
-      <h2 class="section-heading" style="margin-bottom:28px;">Your Chats</h2>
-      <div id="chatsPageList"></div>
-    </section>
   </div>
 </div>
 
