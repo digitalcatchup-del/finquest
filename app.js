@@ -124,6 +124,9 @@ function routeToPath(path) {
   // Fixed the regex here: /\/+$/ instead of //+$/
   const parts = path.replace(/\/+$/, '').split('/').filter(Boolean); 
   
+  if (parts[0] === 'chat') { restoreChatFromStorage(); return; }
+  exitChatMode(); // any other route leaves full-screen chat mode (history/localStorage untouched)
+
   if (parts[0] === 'articles' && parts[1]) { if (isAdminUser()) openArticle(parts[1]); else showPage('homePage'); return; }
   if (parts[0] === 'articles') { if (isAdminUser()) openArticlesPage(); else showPage('homePage'); return; }
   if (parts[0] === 'profile' && parts[1]) { openProfileByUsername(parts[1], 'homePage'); return; }
@@ -1274,6 +1277,7 @@ function showFakePlaceholder(wrapId, inputId) {
 
 let aiChatHistory = []; // { role: 'user'|'assistant', content: string }[]
 let aiChatActive  = false;
+const CHAT_STORAGE_KEY = 'bdxAiChatHistory';
 
 const AI_SYSTEM_PROMPT = `You are an expert financial education tutor for Butterfly Dynamix, a professional education platform. You help students and professionals understand any topic related to money, finance, and business.
 
@@ -1299,20 +1303,55 @@ function doSearch() {
   askAI(val);
 }
 
+// Puts the page into full-screen chat mode (hero copy hidden, chat fills
+// the viewport under the nav). Pushes /chat into the URL so a refresh
+// restores the conversation via routeToPath() → restoreChatFromStorage().
+function enterChatMode() {
+  document.body.classList.add('chat-active');
+  if (!_routingFromPopstate && location.pathname !== '/chat') {
+    history.pushState({ page: 'homePage', url: '/chat' }, '', '/chat');
+  }
+}
+
+function exitChatMode() {
+  document.body.classList.remove('chat-active');
+}
+
+function saveChatToStorage() {
+  try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(aiChatHistory)); }
+  catch (e) { /* storage unavailable — chat still works, just won't persist */ }
+}
+
+// Called from routeToPath() when the URL is /chat (direct load or refresh).
+function restoreChatFromStorage() {
+  showPage('homePage');
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    const hist = raw ? JSON.parse(raw) : null;
+    if (!Array.isArray(hist) || !hist.length) return;
+    aiChatHistory = hist;
+    aiChatActive  = true;
+    enterChatMode();
+    renderChatMessages(false);
+  } catch (e) { /* corrupt or missing storage — just show the landing page */ }
+}
+
 async function askAI(question) {
   if (currentUser) {
     db.from('search_log').insert({ user_id: currentUser.id, query: question }).then(() => {});
   }
 
-  document.getElementById('homeDefaultContent').style.display = 'none';
-  const panel = document.getElementById('homeSearchResults');
-  panel.style.display = 'block';
-  aiChatActive = true;
-
   aiChatHistory.push({ role: 'user', content: question });
+  saveChatToStorage();
+  aiChatActive = true;
+  enterChatMode();
+
   document.getElementById('searchInput').value = '';
   showFakePlaceholder('searchFakePlaceholder', 'searchInput');
-  renderChatPanel(true);
+  const composerInput = document.getElementById('chatComposerInput');
+  if (composerInput) composerInput.value = '';
+
+  renderChatMessages(true);
 
   let reply = '';
   try {
@@ -1344,60 +1383,52 @@ async function askAI(question) {
   }
 
   aiChatHistory.push({ role: 'assistant', content: reply });
-  renderChatPanel(false);
+  saveChatToStorage();
+  renderChatMessages(false);
 }
 
-function renderChatPanel(isLoading) {
-  const panel = document.getElementById('homeSearchResults');
+function renderChatMessages(isLoading) {
+  const panel = document.getElementById('chatMessages');
+  if (!panel) return;
 
   const messagesHtml = aiChatHistory.map((msg, idx) => {
     const isLastAssistant = !isLoading && idx === aiChatHistory.length - 1 && msg.role === 'assistant';
     if (msg.role === 'user') {
-      return `<div class="ai-msg ai-msg-user">
-        <div class="ai-msg-bubble ai-msg-bubble-user">${escapeHtml(msg.content)}</div>
+      return `<div class="chat-msg chat-msg-user">
+        <div class="chat-msg-bubble chat-msg-bubble-user">${escapeHtml(msg.content)}</div>
       </div>`;
     } else {
-      return `<div class="ai-msg ai-msg-assistant"${isLastAssistant ? ' id="aiLatestResponse"' : ''}>
-        <div class="ai-msg-avatar">✨</div>
-        <div class="ai-msg-bubble ai-msg-bubble-assistant">${formatAIText(msg.content)}</div>
+      return `<div class="chat-msg chat-msg-assistant"${isLastAssistant ? ' id="aiLatestResponse"' : ''}>
+        <div class="chat-msg-avatar">✨</div>
+        <div class="chat-msg-bubble chat-msg-bubble-assistant">${formatAIText(msg.content)}</div>
       </div>`;
     }
   }).join('');
 
   const typingHtml = isLoading ? `
-    <div class="ai-msg ai-msg-assistant" id="aiLatestResponse">
-      <div class="ai-msg-avatar">✨</div>
-      <div class="ai-msg-bubble ai-msg-bubble-assistant ai-typing">
+    <div class="chat-msg chat-msg-assistant" id="aiLatestResponse">
+      <div class="chat-msg-avatar">✨</div>
+      <div class="chat-msg-bubble chat-msg-bubble-assistant ai-typing">
         <span></span><span></span><span></span>
       </div>
     </div>` : '';
 
-  panel.innerHTML = `
-    <div class="ai-chat-header">
-      <span style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);">✨ AI Tutor</span>
-      <button onclick="clearAIChat()" style="background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;padding:0;">✕ New chat</button>
-    </div>
-    <div class="ai-chat-messages" id="aiMessages">
-      ${messagesHtml}
-      ${typingHtml}
-    </div>
-    <div class="ai-chat-composer">
-      <input class="ai-composer-input" id="aiFollowUpInput" type="text"
-        placeholder="Ask a follow-up…"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFollowUp();}"
-        ${isLoading ? 'disabled' : ''} />
-      <button class="ai-send-btn" onclick="sendFollowUp()" ${isLoading ? 'disabled' : ''}>›</button>
-    </div>`;
+  panel.innerHTML = messagesHtml + typingHtml;
+
+  const composerInput = document.getElementById('chatComposerInput');
+  const sendBtn       = document.getElementById('chatComposerSendBtn');
+  if (composerInput) composerInput.disabled = isLoading;
+  if (sendBtn)        sendBtn.disabled       = isLoading;
 
   requestAnimationFrame(() => {
-    // No automatic scrolling or focus — page stays still.
-    // User scrolls and interacts at their own pace.
+    panel.scrollTop = panel.scrollHeight;
+    if (!isLoading) composerInput?.focus();
   });
 }
 
 function sendFollowUp() {
-  const inp = document.getElementById('aiFollowUpInput');
-  if (!inp) return;
+  const inp = document.getElementById('chatComposerInput');
+  if (!inp || inp.disabled) return;
   const val = inp.value.trim();
   if (!val) return;
   inp.value = '';
@@ -1407,11 +1438,12 @@ function sendFollowUp() {
 function clearAIChat() {
   aiChatHistory = [];
   aiChatActive  = false;
-  document.getElementById('homeSearchResults').style.display = 'none';
-  document.getElementById('homeSearchResults').innerHTML = '';
-  document.getElementById('homeDefaultContent').style.display = '';
+  try { localStorage.removeItem(CHAT_STORAGE_KEY); } catch (e) {}
+  exitChatMode();
+  document.getElementById('chatMessages').innerHTML = '';
   document.getElementById('searchInput').value = '';
   showFakePlaceholder('searchFakePlaceholder', 'searchInput');
+  if (location.pathname !== '/') history.pushState({ page: 'homePage', url: '/' }, '', '/');
 }
 
 function escapeHtml(str) {
