@@ -3,7 +3,7 @@
 // Butterfly Dynamix Platform
 // Depends on: supabase-config.js, auth.js, data.js
 // ============================================================
- 
+
 // ── FLUTTERWAVE CONFIG ───────────────────────────────────────
 // TEST MODE — switch to live public key once Flutterwave business
 // verification (RC/BN number) is complete.
@@ -89,7 +89,6 @@ articlesPage: '/articles',
 articleDetailPage: '/articles',
 profilePage: '/profile',
 editorPage: '/editor',
-chatsPage: '/chats',
 };
 
 let _routingFromPopstate = false; // guards against re-pushing history during back/forward
@@ -135,7 +134,6 @@ function routeToPath(path) {
   if (parts[0] === 'chat') { restoreChatFromStorage(); return; }
   exitChatMode(); // any other route leaves full-screen chat mode (history/localStorage untouched)
 
-  if (parts[0] === 'chats') { showPage('chatsPage'); loadUserChatsList(); return; }
   if (parts[0] === 'articles' && parts[1]) { if (isAdminUser()) openArticle(parts[1]); else showPage('homePage'); return; }
   if (parts[0] === 'articles') { if (isAdminUser()) openArticlesPage(); else showPage('homePage'); return; }
   if (parts[0] === 'profile' && parts[1]) { openProfileByUsername(parts[1], 'homePage'); return; }
@@ -1313,16 +1311,6 @@ async function loadUserChatsList() {
     .order('updated_at', { ascending: false });
   if (!error && data) userChatsList = data;
   renderChatSidebarList();
-  if (document.getElementById('chatsPage')?.classList.contains('active')) renderChatsPageList();
-}
-
-function relativeChatDate(iso) {
-  const d = new Date(iso), now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
-  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
-  if (sameDay) return d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 function renderChatSidebarList() {
@@ -1334,28 +1322,6 @@ function renderChatSidebarList() {
   }
   list.innerHTML = userChatsList.map(c => `
     <button class="chat-sb-chat-item${c.id === currentChatId ? ' active' : ''}" onclick="openChat('${c.id}')">${escapeHtml(c.title || 'New chat')}</button>
-  `).join('');
-}
-
-function renderChatsPageList() {
-  const list = document.getElementById('chatsPageList');
-  if (!list) return;
-  if (!currentUser) {
-    list.innerHTML = `<p class="chat-sb-empty">Log in to see your saved chats.</p>`;
-    return;
-  }
-  if (!userChatsList.length) {
-    list.innerHTML = `<p class="chat-sb-empty">No chats yet — ask the AI tutor a question to get started.</p>`;
-    return;
-  }
-  list.innerHTML = userChatsList.map(c => `
-    <div class="chats-list-row" onclick="openChat('${c.id}')">
-      <div style="min-width:0;">
-        <p class="chats-list-title">${escapeHtml(c.title || 'New chat')}</p>
-        <p class="chats-list-date">${relativeChatDate(c.updated_at)}</p>
-      </div>
-      <span style="color:var(--muted);flex-shrink:0;">›</span>
-    </div>
   `).join('');
 }
 
@@ -1409,12 +1375,6 @@ async function openChatFromRoute(id) {
 
 function startNewChat() {
   clearAIChat();
-  closeChatSidebar();
-}
-
-function openChatsPage() {
-  showPage('chatsPage');
-  loadUserChatsList();
   closeChatSidebar();
 }
 
