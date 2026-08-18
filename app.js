@@ -1307,6 +1307,7 @@ function doSearch() {
 // the viewport under the nav). Pushes /chat into the URL so a refresh
 // restores the conversation via routeToPath() → restoreChatFromStorage().
 function enterChatMode() {
+  if (typeof setAppVH === 'function') setAppVH();
   document.body.classList.add('chat-active');
   if (!_routingFromPopstate && location.pathname !== '/chat') {
     history.pushState({ page: 'homePage', url: '/chat' }, '', '/chat');
@@ -1629,6 +1630,27 @@ function buildArticlesTicker() {
       }
     });
   });
+}
+
+// ── VIEWPORT HEIGHT FIX (mobile browsers) ──────────────────────
+// 100vh on mobile is measured with the browser chrome (address bar)
+// hidden, which overstates the visible area whenever the chrome is
+// showing. That mismatch, combined with overflow:hidden in chat mode,
+// pushed the composer bar off-screen with no way to scroll to it.
+// This mirrors the real visible height in a CSS var instead.
+function setAppVH() {
+  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  document.documentElement.style.setProperty('--app-vh', (h * 0.01) + 'px');
+  const navEl = document.querySelector('nav');
+  if (navEl) document.documentElement.style.setProperty('--nav-h', navEl.offsetHeight + 'px');
+}
+setAppVH();
+window.addEventListener('resize', setAppVH);
+window.addEventListener('orientationchange', setAppVH);
+// iOS Safari doesn't reliably fire window 'resize' when the on-screen
+// keyboard opens/closes — visualViewport does, so watch that too.
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', setAppVH);
 }
 
 // ── INIT ─────────────────────────────────────────────────────
