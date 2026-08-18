@@ -150,6 +150,30 @@ body.chat-active footer{display:none;}
 .ai-typing span:nth-child(3){animation-delay:0.4s;}
 @keyframes aiTypingBounce{0%,80%,100%{transform:scale(0.7);opacity:0.4;}40%{transform:scale(1);opacity:1;}}
 .services-wrap{max-width:1040px;margin:0 auto;padding:0 32px 80px;}
+/* ── CHAT SIDEBAR ─────────────────────────────────────────── */
+.sidebar-toggle-btn{display:flex;flex-direction:column;justify-content:center;gap:4px;width:38px;height:38px;background:none;border:none;cursor:pointer;padding:0;margin-right:14px;border-radius:6px;transition:background 0.15s;}
+.sidebar-toggle-btn:hover{background:var(--surface2);}
+.sidebar-toggle-btn span{display:block;width:18px;height:2px;background:var(--off);border-radius:1px;margin:0 auto;}
+.chat-sb-backdrop{display:none;position:fixed;inset:0;background:rgba(10,13,20,0.6);z-index:390;opacity:0;transition:opacity 0.2s ease;pointer-events:none;}
+.chat-sb-backdrop.open{display:block;opacity:1;pointer-events:auto;}
+.chat-sidebar{position:fixed;top:0;left:0;height:100vh;height:calc(var(--app-vh, 1vh) * 100);width:280px;max-width:82vw;background:var(--surface);border-right:1px solid var(--border);z-index:400;display:flex;flex-direction:column;padding:16px 12px;transform:translateX(-100%);transition:transform 0.25s ease;overflow-y:auto;}
+.chat-sidebar.open{transform:translateX(0);}
+.chat-sb-top{display:flex;flex-direction:column;gap:2px;}
+.chat-sb-item{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:var(--off);font-family:inherit;font-size:0.85rem;font-weight:600;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.15s;}
+.chat-sb-item:hover{background:var(--surface2);}
+.chat-sb-primary{color:var(--gold);}
+.chat-sb-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+.chat-sb-divider{height:1px;background:var(--border);margin:12px 4px;flex-shrink:0;}
+.chat-sb-recents{flex:1;min-height:0;display:flex;flex-direction:column;}
+.chat-sb-recents-label{font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);padding:6px 12px 8px;margin:0;}
+.chat-sb-chat-item{display:block;width:100%;background:none;border:none;color:var(--off);font-family:inherit;font-size:0.82rem;text-align:left;padding:9px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.15s;}
+.chat-sb-chat-item:hover{background:var(--surface2);}
+.chat-sb-chat-item.active{background:var(--surface2);color:var(--gold);}
+.chat-sb-empty{padding:10px 12px;font-size:0.78rem;color:var(--muted);}
+.chats-list-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;cursor:pointer;transition:border-color 0.15s;}
+.chats-list-row:hover{border-color:var(--gold);}
+.chats-list-title{font-size:0.9rem;font-weight:600;color:var(--off);margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chats-list-date{font-size:0.72rem;color:var(--muted);margin:0;}
 .services-hero{text-align:center;padding:60px 20px 48px;border-bottom:1px solid var(--border);}
 .services-hero-title{font-size:2rem;font-weight:900;color:var(--white);line-height:1.2;margin:12px 0 14px;}
 .services-hero-sub{font-size:0.9rem;color:var(--muted);max-width:500px;margin:0 auto 20px;}
@@ -585,6 +609,7 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
 <body>
 
 <nav>
+  <button class="sidebar-toggle-btn" id="chatSidebarToggle" onclick="toggleChatSidebar()" aria-label="Open sidebar" style="display:none;"><span></span><span></span><span></span></button>
   <div class="logo-wrap" onclick="showPage('homePage')" style="cursor:pointer;">
     <div class="logo-text"><span class="logo-main">Butterfly Dynamix</span></div>
   </div>
@@ -609,6 +634,29 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
     </div>
   </div>
 </nav>
+
+<div class="chat-sb-backdrop" id="chatSbBackdrop" onclick="closeChatSidebar()"></div>
+<aside class="chat-sidebar" id="chatSidebar">
+  <div class="chat-sb-top">
+    <button class="chat-sb-item chat-sb-primary" onclick="startNewChat()">
+      <span class="chat-sb-icon">＋</span> New chat
+    </button>
+    <button class="chat-sb-item" onclick="openChatsPage()">
+      <span class="chat-sb-icon">💬</span> Chats
+    </button>
+  </div>
+  <div class="chat-sb-divider"></div>
+  <div class="chat-sb-top">
+    <button class="chat-sb-item" onclick="closeChatSidebar();window.open('https://butterflydynamixllc.com/bookkeeping','_blank')">
+      <span class="chat-sb-icon">📊</span> ERP
+    </button>
+  </div>
+  <div class="chat-sb-divider"></div>
+  <div class="chat-sb-recents">
+    <p class="chat-sb-recents-label">All Chats</p>
+    <div id="chatSbList"></div>
+  </div>
+</aside>
 
 <div id="homePage" class="page">
 <section id="heroSection">
@@ -910,6 +958,17 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
   </div>
 </div>
 
+<div id="chatsPage" class="page">
+  <div class="community-app">
+    <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="showPage('homePage')">← Back to Home</button>
+    <section class="community-section" style="border-top:none;padding-top:24px;max-width:720px;">
+      <p class="section-eyebrow">AI Tutor</p>
+      <h2 class="section-heading" style="margin-bottom:28px;">Your Chats</h2>
+      <div id="chatsPageList"></div>
+    </section>
+  </div>
+</div>
+
 <div id="articlesPage" class="page">
   <div class="community-app">
     <button class="track-sb-back" style="margin:24px 0 0 40px;" onclick="showPage('homePage')">← Back to Home</button>
@@ -1130,12 +1189,12 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://checkout.flutterwave.com/v3.js"></script>
-<script src="supabase-config.js?v=65"></script>
-<script src="data.js?v=65"></script>
-<script src="auth.js?v=65"></script>
-<script src="app.js?v=66"></script>
-<script src="article-editor.js?v=4.1"></script>
-<script src="track.js?v=65"></script>
+<script src="/supabase-config.js?v=65"></script>
+<script src="/data.js?v=65"></script>
+<script src="/auth.js?v=65"></script>
+<script src="/app.js?v=66"></script>
+<script src="/article-editor.js?v=4.1"></script>
+<script src="/track.js?v=65"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof checkStripeRedirect === 'function') checkStripeRedirect();
