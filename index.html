@@ -84,7 +84,32 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 #searchFakePlaceholderText{pointer-events:auto;cursor:pointer;}
 .search-btn{background:none;color:var(--gold);border:none;width:auto;height:auto;flex-shrink:0;font-size:1.6rem;line-height:1;font-weight:900;cursor:pointer;transition:opacity 0.15s;position:relative;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 10px 0 4px;}
 .search-btn:hover{opacity:0.75;}
-#homeDefaultContent{width:100%;min-width:0;}
+#chatModeHeader{display:none;}
+body.chat-active #chatModeHeader{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);flex-shrink:0;width:100%;position:relative;z-index:1;}
+.chat-mode-label{font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);}
+.chat-new-btn{background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;padding:0;}
+.chat-new-btn:hover{color:var(--off);}
+#chatMessages{display:none;}
+body.chat-active #chatMessages{display:flex;flex-direction:column;gap:16px;width:100%;max-width:760px;margin:0 auto;padding:24px 20px 8px;overflow-y:auto;flex:1;min-height:0;scroll-behavior:smooth;}
+.chat-msg{display:flex;align-items:flex-start;gap:10px;width:100%;}
+.chat-msg-user{flex-direction:row-reverse;}
+.chat-msg-avatar{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:0.95rem;}
+.chat-msg-bubble{max-width:78%;padding:12px 16px;border-radius:12px;font-size:0.9rem;line-height:1.65;}
+.chat-msg-bubble p{margin:0 0 8px;}.chat-msg-bubble p:last-child{margin-bottom:0;}
+.chat-msg-bubble-user{background:var(--gold);color:#000;border-radius:12px 12px 2px 12px;font-weight:600;}
+.chat-msg-bubble-assistant{background:var(--surface);border:1px solid var(--border2);color:var(--off);border-radius:12px 12px 12px 2px;}
+#chatComposerBar{display:none;}
+body.chat-active #chatComposerBar{display:block;flex-shrink:0;padding:12px 20px 20px;width:100%;position:relative;z-index:1;}
+.chat-composer-inner{display:flex;align-items:center;gap:8px;max-width:700px;margin:0 auto;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:6px 6px 6px 16px;transition:border-color 0.2s,box-shadow 0.2s;}
+.chat-composer-inner:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.08);}
+.chat-composer-input{flex:1;background:none;border:none;outline:none;color:var(--white);font-size:0.9rem;padding:10px 0;font-family:inherit;min-width:0;}
+.chat-composer-input:disabled{opacity:0.5;}
+.chat-composer-send{background:var(--gold);border:none;color:#000;font-size:1.3rem;font-weight:900;width:38px;height:38px;border-radius:8px;cursor:pointer;flex-shrink:0;transition:opacity 0.15s;}
+.chat-composer-send:hover{opacity:0.85;}.chat-composer-send:disabled{opacity:0.4;cursor:default;}
+body.chat-active{overflow:hidden;}
+body.chat-active #heroSection{height:calc(100vh - 57px);min-height:calc(100vh - 57px);padding:0;justify-content:flex-start;align-items:stretch;overflow:hidden;}
+body.chat-active .hero-bg,body.chat-active #heroIntro,body.chat-active #heroSearchWrap{display:none;}
+body.chat-active footer{display:none;}
 .trending-section{width:100%;max-width:920px;z-index:1;position:relative;min-width:0;margin:0 auto;}
 .trending-label-row{display:flex;align-items:center;gap:16px;margin-bottom:12px;}
 .trending-label{font-size:0.68rem;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:var(--white);white-space:nowrap;flex-shrink:0;}
@@ -119,26 +144,11 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .step h3{font-size:0.88rem;font-weight:800;color:var(--white);margin-bottom:6px;}
 .step p{font-size:0.77rem;color:var(--muted);line-height:1.65;}
 .step-arrow{position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:1.2rem;z-index:1;}
-.ai-chat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
-.ai-chat-messages{display:flex;flex-direction:column;gap:16px;max-height:480px;overflow-y:auto;padding-bottom:4px;scroll-behavior:smooth;}
-.ai-msg{display:flex;align-items:flex-start;gap:10px;}
-.ai-msg-user{flex-direction:row-reverse;}
-.ai-msg-avatar{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1rem;}
-.ai-msg-bubble{max-width:80%;padding:12px 16px;border-radius:12px;font-size:0.88rem;line-height:1.6;}
-.ai-msg-bubble p{margin:0 0 8px;}.ai-msg-bubble p:last-child{margin-bottom:0;}
-.ai-msg-bubble-user{background:var(--gold);color:#000;border-radius:12px 12px 2px 12px;font-weight:600;}
-.ai-msg-bubble-assistant{background:var(--surface);border:1px solid var(--border2);color:var(--off);border-radius:12px 12px 12px 2px;}
 .ai-typing{display:flex;align-items:center;gap:5px;padding:14px 18px;}
 .ai-typing span{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;animation:aiTypingBounce 1.2s infinite ease-in-out;}
 .ai-typing span:nth-child(2){animation-delay:0.2s;}
 .ai-typing span:nth-child(3){animation-delay:0.4s;}
 @keyframes aiTypingBounce{0%,80%,100%{transform:scale(0.7);opacity:0.4;}40%{transform:scale(1);opacity:1;}}
-.ai-chat-composer{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
-.ai-composer-input{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 14px;font-size:0.88rem;font-family:inherit;}
-.ai-composer-input:focus{outline:none;border-color:var(--gold);}
-.ai-composer-input:disabled{opacity:0.5;}
-.ai-send-btn{background:var(--gold);border:none;color:#000;font-size:1.2rem;font-weight:900;width:42px;height:42px;border-radius:8px;cursor:pointer;flex-shrink:0;transition:opacity 0.15s;}
-.ai-send-btn:hover{opacity:0.85;}.ai-send-btn:disabled{opacity:0.4;cursor:default;}
 .services-wrap{max-width:1040px;margin:0 auto;padding:0 32px 80px;}
 .services-hero{text-align:center;padding:60px 20px 48px;border-bottom:1px solid var(--border);}
 .services-hero-title{font-size:2rem;font-weight:900;color:var(--white);line-height:1.2;margin:12px 0 14px;}
@@ -534,6 +544,8 @@ nav{padding:12px 16px;flex-wrap:wrap;gap:8px;position:relative;}
 .search-btn{font-size:1.4rem;padding:0 8px 0 4px;}
 .nav-auth-btn{padding:12px 14px !important;font-size:0.7rem !important;min-height:44px;}
 #heroSection{padding:48px 20px 32px;min-height:auto;padding-top:80px;}
+body.chat-active #heroSection{padding-top:0;}
+.chat-msg-bubble{max-width:88%;}
 #trust{gap:28px;padding:20px;}
 #how,#pricing,#newsletter{padding:48px 20px;}
 #tip{padding:36px 20px;}
@@ -601,11 +613,17 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
 <div id="homePage" class="page">
 <section id="heroSection">
   <div class="hero-bg"></div>
-  <p class="hero-eyebrow">Think Finance</p>
-  <h1 class="hero-heading">Think <span id="flavorWord" style="color:var(--gold);">Butterfly Dynamix</span></h1>
-  <p class="hero-sub">Research any topic related to finance.</p>
-  <p style="font-size:0.85rem;color:var(--muted);margin-top:-8px;margin-bottom:20px;position:relative;z-index:1;">What's Your Flavor?</p>
-  <div class="search-wrap">
+  <div id="chatModeHeader">
+    <span class="chat-mode-label">✨ AI Tutor</span>
+    <button class="chat-new-btn" onclick="clearAIChat()">✕ New chat</button>
+  </div>
+  <div id="heroIntro">
+    <p class="hero-eyebrow">Think Finance</p>
+    <h1 class="hero-heading">Think <span id="flavorWord" style="color:var(--gold);">Butterfly Dynamix</span></h1>
+    <p class="hero-sub">Research any topic related to finance.</p>
+    <p style="font-size:0.85rem;color:var(--muted);margin-top:-8px;margin-bottom:20px;position:relative;z-index:1;">What's Your Flavor?</p>
+  </div>
+  <div class="search-wrap" id="heroSearchWrap">
     <div class="search-box">
       <span class="search-icon" onclick="document.getElementById('searchInput').focus();" style="cursor:pointer;">✨</span>
       <input class="search-input" type="text" id="searchInput" placeholder=" " autocomplete="off" oninput="updateFakePlaceholder(this.value,'searchFakePlaceholder');" onkeydown="onSearchKey(event)" onfocus="hideFakePlaceholder('searchFakePlaceholder')" onblur="showFakePlaceholder('searchFakePlaceholder','searchInput')"/>
@@ -613,8 +631,14 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
       <button class="search-btn" onclick="doSearch()" aria-label="Ask AI">›</button>
     </div>
   </div>
-  <div id="homeSearchResults" style="display:none;width:100%;max-width:760px;position:relative;z-index:1;"></div>
-  <div id="homeDefaultContent"></div>
+  <div id="chatMessages"></div>
+  <div id="chatComposerBar">
+    <div class="chat-composer-inner">
+      <input class="chat-composer-input" id="chatComposerInput" type="text" placeholder="Ask a follow-up…" autocomplete="off"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFollowUp();}" />
+      <button class="chat-composer-send" id="chatComposerSendBtn" onclick="sendFollowUp()" aria-label="Send">›</button>
+    </div>
+  </div>
 </section>
 <footer>
   <span class="footer-logo">Butterfly Dynamix</span>
