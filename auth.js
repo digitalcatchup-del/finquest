@@ -124,6 +124,11 @@ async function logout() {
   showPage('homePage');
   document.getElementById('guestNav').style.display = 'flex';
   document.getElementById('userNav').style.display = 'none';
+  const sbToggle = document.getElementById('chatSidebarToggle');
+  if (sbToggle) sbToggle.style.display = 'none';
+  if (typeof closeChatSidebar === 'function') closeChatSidebar();
+  if (typeof userChatsList !== 'undefined') userChatsList = [];
+  if (typeof currentChatId !== 'undefined') currentChatId = null;
   if (typeof closeTrack === 'function') closeTrack();
 }
 
@@ -167,6 +172,15 @@ async function restoreSession() {
     await loadCurrentUser(session.user);
     // If user was mid-track, stay on home. Let them navigate.
     updateNavForLoggedInUser();
+  }
+  // routeToPath() runs once early (before this resolves) so pages that
+  // don't need auth render instantly. Auth-dependent routes — a synced
+  // chat link, admin-only pages — read `currentUser` while it's still
+  // null at that point, so re-run routing now that it's settled.
+  if (typeof routeToPath === 'function') {
+    _routingFromPopstate = true;
+    routeToPath(location.pathname);
+    _routingFromPopstate = false;
   }
 }
 
@@ -265,6 +279,8 @@ function updateNavForLoggedInUser() {
   if (document.getElementById('navPip')) {
     document.getElementById('navPip').textContent = currentUser.pipScore.toFixed(5);
   }
+  const sbToggle = document.getElementById('chatSidebarToggle');
+  if (sbToggle) sbToggle.style.display = 'flex';
 
   const trialBadge = document.getElementById('navTrialBadge');
   if (trialBadge && typeof getAccessStatus === 'function') {
