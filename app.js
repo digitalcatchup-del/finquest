@@ -89,9 +89,16 @@ articlesPage: '/articles',
 articleDetailPage: '/articles',
 profilePage: '/profile',
 editorPage: '/editor',
+chatsPage: '/chats',
 };
 
 let _routingFromPopstate = false; // guards against re-pushing history during back/forward
+
+function safePushState(state, url) {
+  if (location.pathname === url) return;
+  try { history.pushState(state, '', url); }
+  catch (e) { console.warn('pushState failed, continuing without URL update:', e); }
+}
 
 function showPage(page, customUrl) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -100,10 +107,7 @@ function showPage(page, customUrl) {
 
   if (!_routingFromPopstate) {
     const url = customUrl || PAGE_SLUGS[page] || '/';
-    if (location.pathname !== url) {
-      try { history.pushState({ page, url }, '', url); }
-      catch (e) { console.warn('pushState failed, continuing without URL update:', e); }
-    }
+    safePushState({ page, url }, url);
   }
 }
 
@@ -127,9 +131,11 @@ function routeToPath(path) {
   // Fixed the regex here: /\/+$/ instead of //+$/
   const parts = path.replace(/\/+$/, '').split('/').filter(Boolean); 
   
+  if (parts[0] === 'chat' && parts[1]) { openChatFromRoute(parts[1]); return; }
   if (parts[0] === 'chat') { restoreChatFromStorage(); return; }
   exitChatMode(); // any other route leaves full-screen chat mode (history/localStorage untouched)
 
+  if (parts[0] === 'chats') { showPage('chatsPage'); loadUserChatsList(); return; }
   if (parts[0] === 'articles' && parts[1]) { if (isAdminUser()) openArticle(parts[1]); else showPage('homePage'); return; }
   if (parts[0] === 'articles') { if (isAdminUser()) openArticlesPage(); else showPage('homePage'); return; }
   if (parts[0] === 'profile' && parts[1]) { openProfileByUsername(parts[1], 'homePage'); return; }
@@ -1278,9 +1284,139 @@ function showFakePlaceholder(wrapId, inputId) {
 // folder (see README), then set ANTHROPIC_API_KEY in Supabase secrets.
 // Until the function is deployed, the chat shows a friendly setup note.
 
-let aiChatHistory = []; // { role: 'user'|'assistant', content: string }[]
-let aiChatActive  = false;
-const CHAT_STORAGE_KEY = 'bdxAiChatHistory';
+let aiChatHistory  = []; // { role: 'user'|'assistant', content: string }[]
+let aiChatActive   = false;
+let currentChatId  = null;  // uuid of the synced chat currently open (null = new/unsaved, or anonymous)
+let userChatsList  = [];    // cached { id, title, updated_at }[] for the sidebar/Chats page, most recent first
+const CHAT_STORAGE_KEY = 'bdxAiChatHistory'; // anonymous-visitor fallback only
+
+// ── CHAT SIDEBAR ─────────────────────────────────────────────
+function toggleChatSidebar() {
+  const sb = document.getElementById('chatSidebar');
+  if (sb.classList.contains('open')) closeChatSidebar(); else openChatSidebar();
+}
+function openChatSidebar() {
+  document.getElementById('chatSidebar').classList.add('open');
+  document.getElementById('chatSbBackdrop').classList.add('open');
+  loadUserChatsList();
+}
+function closeChatSidebar() {
+  document.getElementById('chatSidebar').classList.remove('open');
+  document.getElementById('chatSbBackdrop').classList.remove('open');
+}
+
+async function loadUserChatsList() {
+  if (!currentUser) { userChatsList = []; renderChatSidebarList(); return; }
+  const { data, error } = await db.from('ai_chats')
+    .select('id, title, updated_at')
+    .eq('user_id', currentUser.id)
+    .order('updated_at', { ascending: false });
+  if (!error && data) userChatsList = data;
+  renderChatSidebarList();
+  if (document.getElementById('chatsPage')?.classList.contains('active')) renderChatsPageList();
+}
+
+function relativeChatDate(iso) {
+  const d = new Date(iso), now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  if (sameDay) return d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function renderChatSidebarList() {
+  const list = document.getElementById('chatSbList');
+  if (!list) return;
+  if (!userChatsList.length) {
+    list.innerHTML = `<p class="chat-sb-empty">No chats yet — ask a question to get started.</p>`;
+    return;
+  }
+  list.innerHTML = userChatsList.map(c => `
+    <button class="chat-sb-chat-item${c.id === currentChatId ? ' active' : ''}" onclick="openChat('${c.id}')">${escapeHtml(c.title || 'New chat')}</button>
+  `).join('');
+}
+
+function renderChatsPageList() {
+  const list = document.getElementById('chatsPageList');
+  if (!list) return;
+  if (!currentUser) {
+    list.innerHTML = `<p class="chat-sb-empty">Log in to see your saved chats.</p>`;
+    return;
+  }
+  if (!userChatsList.length) {
+    list.innerHTML = `<p class="chat-sb-empty">No chats yet — ask the AI tutor a question to get started.</p>`;
+    return;
+  }
+  list.innerHTML = userChatsList.map(c => `
+    <div class="chats-list-row" onclick="openChat('${c.id}')">
+      <div style="min-width:0;">
+        <p class="chats-list-title">${escapeHtml(c.title || 'New chat')}</p>
+        <p class="chats-list-date">${relativeChatDate(c.updated_at)}</p>
+      </div>
+      <span style="color:var(--muted);flex-shrink:0;">›</span>
+    </div>
+  `).join('');
+}
+
+// Saves the current conversation. Logged-in users sync to their account
+// (ai_chats table, RLS-scoped to auth.uid()); anonymous visitors fall
+// back to a single session-local chat in localStorage, as before.
+async function persistChat() {
+  if (!currentUser) { saveChatToStorage(); return; }
+  if (!aiChatHistory.length) return;
+
+  const title = (aiChatHistory[0].content || 'New chat').slice(0, 60);
+
+  if (currentChatId) {
+    await db.from('ai_chats')
+      .update({ messages: aiChatHistory, title, updated_at: new Date().toISOString() })
+      .eq('id', currentChatId);
+  } else {
+    const { data, error } = await db.from('ai_chats')
+      .insert({ user_id: currentUser.id, title, messages: aiChatHistory })
+      .select('id')
+      .single();
+    if (!error && data) {
+      currentChatId = data.id;
+      const url = '/chat/' + currentChatId;
+      safePushState({ page: 'homePage', url }, url);
+    }
+  }
+  loadUserChatsList();
+}
+
+async function openChat(id) {
+  if (!currentUser || !id) return;
+  const { data, error } = await db.from('ai_chats').select('id, messages').eq('id', id).single();
+  if (error || !data) return;
+  currentChatId  = id;
+  aiChatHistory  = data.messages || [];
+  aiChatActive   = true;
+  enterChatMode();
+  renderChatMessages(false);
+  closeChatSidebar();
+  renderChatSidebarList();
+}
+
+// Called from routeToPath() for /chat/<id> — see restoreSession() in
+// auth.js for why this also gets re-invoked once login state settles.
+async function openChatFromRoute(id) {
+  showPage('homePage');
+  if (!currentUser) return; // not logged in (yet, or at all) — stay on landing
+  await openChat(id);
+}
+
+function startNewChat() {
+  clearAIChat();
+  closeChatSidebar();
+}
+
+function openChatsPage() {
+  showPage('chatsPage');
+  loadUserChatsList();
+  closeChatSidebar();
+}
 
 const AI_SYSTEM_PROMPT = `You are an expert financial education tutor for Butterfly Dynamix, a professional education platform. You help students and professionals understand any topic related to money, finance, and business.
 
@@ -1307,14 +1443,14 @@ function doSearch() {
 }
 
 // Puts the page into full-screen chat mode (hero copy hidden, chat fills
-// the viewport under the nav). Pushes /chat into the URL so a refresh
-// restores the conversation via routeToPath() → restoreChatFromStorage().
+// the viewport under the nav). Pushes /chat (or /chat/<id> once synced)
+// into the URL so a refresh restores the conversation.
 function enterChatMode() {
   if (typeof setAppVH === 'function') setAppVH();
   document.body.classList.add('chat-active');
-  if (!_routingFromPopstate && location.pathname !== '/chat') {
-    try { history.pushState({ page: 'homePage', url: '/chat' }, '', '/chat'); }
-    catch (e) { console.warn('pushState failed, continuing without URL update:', e); }
+  if (!_routingFromPopstate) {
+    const url = currentChatId ? ('/chat/' + currentChatId) : '/chat';
+    safePushState({ page: 'homePage', url }, url);
   }
 }
 
@@ -1327,7 +1463,9 @@ function saveChatToStorage() {
   catch (e) { /* storage unavailable — chat still works, just won't persist */ }
 }
 
-// Called from routeToPath() when the URL is /chat (direct load or refresh).
+// Called from routeToPath() when the URL is /chat (direct load or refresh)
+// — anonymous-visitor / not-yet-synced fallback only. Logged-in synced
+// chats load via openChatFromRoute() for /chat/<id> instead.
 function restoreChatFromStorage() {
   showPage('homePage');
   try {
@@ -1342,12 +1480,7 @@ function restoreChatFromStorage() {
 }
 
 async function askAI(question) {
-  if (currentUser) {
-    db.from('search_log').insert({ user_id: currentUser.id, query: question }).then(() => {});
-  }
-
   aiChatHistory.push({ role: 'user', content: question });
-  saveChatToStorage();
   aiChatActive = true;
   enterChatMode();
 
@@ -1357,6 +1490,7 @@ async function askAI(question) {
   if (composerInput) composerInput.value = '';
 
   renderChatMessages(true);
+  persistChat(); // fire-and-forget save of the user's message so it's never lost mid-reply
 
   let reply = '';
   try {
@@ -1388,8 +1522,8 @@ async function askAI(question) {
   }
 
   aiChatHistory.push({ role: 'assistant', content: reply });
-  saveChatToStorage();
   renderChatMessages(false);
+  persistChat();
 }
 
 function renderChatMessages(isLoading) {
@@ -1443,15 +1577,14 @@ function sendFollowUp() {
 function clearAIChat() {
   aiChatHistory = [];
   aiChatActive  = false;
+  currentChatId = null;
   try { localStorage.removeItem(CHAT_STORAGE_KEY); } catch (e) {}
   exitChatMode();
   document.getElementById('chatMessages').innerHTML = '';
   document.getElementById('searchInput').value = '';
   showFakePlaceholder('searchFakePlaceholder', 'searchInput');
-  if (location.pathname !== '/') {
-    try { history.pushState({ page: 'homePage', url: '/' }, '', '/'); }
-    catch (e) { console.warn('pushState failed, continuing without URL update:', e); }
-  }
+  renderChatSidebarList();
+  safePushState({ page: 'homePage', url: '/' }, '/');
 }
 
 function escapeHtml(str) {
