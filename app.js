@@ -183,6 +183,7 @@ function openAuth(tab = 'signup') {
 function closeAuth() {
   document.getElementById('authOverlay').classList.remove('open');
   document.body.style.overflow = '';
+  if (typeof _resendCooldownInterval !== 'undefined') clearInterval(_resendCooldownInterval);
 }
 
 function switchAuthTab(tab) {
@@ -217,7 +218,67 @@ function goStep1() {
   if (pw.length < 8) { document.getElementById('ePW').classList.add('show'); valid = false; }
   else document.getElementById('ePW').classList.remove('show');
 
-  if (valid) showStep(3);
+  if (valid && typeof sendSignupVerification === 'function') sendSignupVerification();
+}
+
+// ── EMAIL VERIFICATION (OTP) ─────────────────────────────────
+let _resendCooldownInterval = null;
+
+function clearOtpBoxes() {
+  document.querySelectorAll('.otp-box').forEach(b => { b.value = ''; b.classList.remove('error'); });
+}
+function focusFirstOtpBox() {
+  document.querySelector('.otp-box[data-idx="0"]')?.focus();
+}
+function getOtpValue() {
+  return Array.from(document.querySelectorAll('.otp-box')).map(b => b.value).join('');
+}
+function markOtpBoxesError() {
+  document.querySelectorAll('.otp-box').forEach(b => b.classList.add('error'));
+}
+function onOtpInput(el) {
+  el.value = el.value.replace(/[^0-9]/g, '').slice(0, 1);
+  el.classList.remove('error');
+  document.getElementById('eOtp').classList.remove('show');
+  const idx = parseInt(el.dataset.idx, 10);
+  if (el.value && idx < 5) document.querySelector(`.otp-box[data-idx="${idx + 1}"]`)?.focus();
+  if (getOtpValue().length === 6) verifyEmailCode();
+}
+function onOtpKeydown(e, el) {
+  const idx = parseInt(el.dataset.idx, 10);
+  if (e.key === 'Backspace' && !el.value && idx > 0) {
+    const prev = document.querySelector(`.otp-box[data-idx="${idx - 1}"]`);
+    if (prev) { prev.focus(); prev.value = ''; }
+  }
+}
+function onOtpPaste(e) {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+  const boxes = document.querySelectorAll('.otp-box');
+  text.split('').forEach((ch, i) => { if (boxes[i]) boxes[i].value = ch; });
+  if (text.length === 6) verifyEmailCode();
+  else boxes[text.length]?.focus();
+}
+function startResendCooldown(seconds) {
+  clearInterval(_resendCooldownInterval);
+  let remaining = seconds;
+  const el = document.getElementById('resendText');
+  function tick() {
+    if (remaining <= 0) {
+      clearInterval(_resendCooldownInterval);
+      el.innerHTML = `<button onclick="resendVerificationCode()">Resend code</button>`;
+      return;
+    }
+    const m = Math.floor(remaining / 60), s = String(remaining % 60).padStart(2, '0');
+    el.textContent = `Resend code in ${m}:${s}`;
+    remaining--;
+  }
+  tick();
+  _resendCooldownInterval = setInterval(tick, 1000);
+}
+function backToStep1FromVerify() {
+  clearInterval(_resendCooldownInterval);
+  showStep(1);
 }
 
 function checkPW(input) {
