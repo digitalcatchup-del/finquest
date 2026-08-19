@@ -7,17 +7,108 @@
 let currentUser = null; // { id, email, username, avatar, isSubscribed, pipScore, streak, ... }
 
 // ── SIGN UP ─────────────────────────────────────────────────
-async function completeSignup() {
-  const btn = document.getElementById('signupSubmitBtn');
-  const first   = document.getElementById('sfirst').value.trim();
-  const last    = document.getElementById('slast').value.trim();
-  const email   = document.getElementById('semail').value.trim();
-  const pw      = document.getElementById('spw').value;
-  const uname   = document.getElementById('suname').value.trim().toLowerCase();
-  const bio     = document.getElementById('sbio').value.trim();
-  const avatar  = window._selectedAvatar || '😎';
+// Step 1 → Step 2: creates the (unconfirmed) auth user and triggers
+// Supabase's confirmation email. Requires the "Confirm signup" email
+// template to send {{ .Token }} (a 6-digit code), not just the link —
+// see the note left in the signup flow discussion.
+async function sendSignupVerification() {
+  const first = document.getElementById('sfirst').value.trim();
+  const last  = document.getElementById('slast').value.trim();
+  const email = document.getElementById('semail').value.trim();
+  const pw    = document.getElementById('spw').value;
+  const btn   = document.getElementById('step1ContinueBtn');
+  const originalText = btn.textContent;
 
-  // Basic validation
+  btn.textContent = 'Sending code…';
+  btn.disabled = true;
+
+  try {
+    const { data, error } = await db.auth.signUp({
+      email, password: pw,
+      options: { data: { first_name: first, last_name: last } }
+    });
+
+    btn.textContent = originalText;
+    btn.disabled = false;
+
+    if (error) {
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('already') && (msg.includes('regist') || msg.includes('exist'))) {
+        document.getElementById('eEmail').textContent = 'An account with this email already exists';
+        document.getElementById('eEmail').classList.add('show');
+      } else {
+        alert('Signup error: ' + (error.message || JSON.stringify(error)));
+      }
+      return;
+    }
+
+    // If a session comes back immediately, "Confirm email" is off in
+    // Supabase — nothing to verify, so skip straight to profile setup.
+    if (data.session) { showStep(3); return; }
+
+    document.getElementById('verifyEmailDisplay').textContent = email;
+    clearOtpBoxes();
+    showStep(2);
+    focusFirstOtpBox();
+    startResendCooldown(60);
+
+  } catch (err) {
+    console.error('Signup verification error:', err);
+    alert('Signup error: ' + (err.message || JSON.stringify(err)));
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+// Step 2 → Step 3: confirms the 6-digit code against Supabase.
+async function verifyEmailCode() {
+  const code  = getOtpValue();
+  const email = document.getElementById('semail').value.trim();
+  const errEl = document.getElementById('eOtp');
+  const btn   = document.getElementById('verifyBtn');
+
+  if (code.length !== 6) {
+    errEl.textContent = 'Enter all 6 digits';
+    errEl.classList.add('show');
+    return;
+  }
+
+  btn.textContent = 'Verifying…';
+  btn.disabled = true;
+  errEl.classList.remove('show');
+
+  const { error } = await db.auth.verifyOtp({ email, token: code, type: 'signup' });
+
+  btn.textContent = 'Verify →';
+  btn.disabled = false;
+
+  if (error) {
+    errEl.textContent = "That code's not right. Try again.";
+    errEl.classList.add('show');
+    markOtpBoxesError();
+    return;
+  }
+
+  clearInterval(_resendCooldownInterval);
+  showStep(3);
+}
+
+async function resendVerificationCode() {
+  const email = document.getElementById('semail').value.trim();
+  const { error } = await db.auth.resend({ type: 'signup', email });
+  if (!error) startResendCooldown(60);
+}
+
+// Step 3: account is already created and confirmed by this point (or
+// Confirm Email was off entirely) — this just finishes the profile.
+async function completeSignup() {
+  const btn    = document.getElementById('signupSubmitBtn');
+  const first  = document.getElementById('sfirst').value.trim();
+  const last   = document.getElementById('slast').value.trim();
+  const uname  = document.getElementById('suname').value.trim().toLowerCase();
+  const bio    = document.getElementById('sbio').value.trim();
+  const avatar = window._selectedAvatar || '😎';
+
   let valid = true;
   if (!uname) { document.getElementById('eUname').classList.add('show'); valid = false; }
   else document.getElementById('eUname').classList.remove('show');
@@ -27,7 +118,6 @@ async function completeSignup() {
   btn.disabled = true;
 
   try {
-    // Check username is unique
     const { data: existing } = await db
       .from('profiles')
       .select('id')
@@ -42,42 +132,19 @@ async function completeSignup() {
       return;
     }
 
-    // Create auth user — Supabase trigger will auto-create the profile row
-    const { data, error } = await db.auth.signUp({
-      email,
-      password: pw,
-      options: {
-        data: { first_name: first, last_name: last, username: uname, avatar }
-      }
-    });
-
-    if (error) {
-      console.error('Supabase signup error:', JSON.stringify(error));
-      alert('Signup error: ' + (error.message || error.status || JSON.stringify(error)));
+    const { data: { session } } = await db.auth.getSession();
+    if (!session?.user) {
+      alert('Your session expired — please start signup again.');
+      showStep(1);
       btn.textContent = 'Create Account →';
       btn.disabled = false;
       return;
     }
 
-    // Check if email confirmation is required
-    if (data.user && !data.session) {
-      // Email confirmation required — tell the user
-      btn.textContent = 'Create Account →';
-      btn.disabled = false;
-      alert(`Almost there! We've sent a confirmation email to ${email}. Please check your inbox and click the link to activate your account, then log in.`);
-      switchAuthTab('login');
-      return;
-    }
+    await db.from('profiles').update({ username: uname, bio, first_name: first, last_name: last, avatar }).eq('id', session.user.id);
 
-    // Update profile with bio (trigger creates it, we patch extra fields)
-    if (data.user) {
-      await db.from('profiles').update({ bio, first_name: first, last_name: last }).eq('id', data.user.id);
-    }
+    await loadCurrentUser(session.user);
 
-    // Set current user
-    await loadCurrentUser(data.user);
-
-    // Show welcome screen
     document.getElementById('wName').textContent = first;
     document.getElementById('wAvatar').textContent = avatar;
     showStep('welcome');
