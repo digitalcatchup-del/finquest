@@ -325,6 +325,12 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .wf-chip{background:var(--gold-dim);border:1px solid rgba(201,168,76,0.3);border-radius:3px;padding:5px 12px;font-size:0.72rem;font-weight:700;color:var(--gold);}
 .switch-mode{text-align:center;margin-top:14px;font-size:0.75rem;color:var(--muted);}
 .switch-mode button{background:none;border:none;color:var(--gold);font-size:0.75rem;cursor:pointer;font-weight:700;text-decoration:underline;}
+.otp-row{display:flex;gap:8px;justify-content:center;margin-bottom:6px;}
+.otp-box{width:44px;height:52px;text-align:center;font-size:1.15rem;font-weight:700;color:var(--white);background:var(--surface2);border:1px solid var(--border2);border-radius:6px;font-family:inherit;}
+.otp-box:focus{outline:none;border-color:var(--gold);}
+.otp-box.error{border-color:var(--red);color:var(--red);}
+.resend-text{text-align:center;font-size:0.75rem;color:var(--muted);margin-top:16px;}
+.resend-text button{background:none;border:none;color:var(--gold);font-size:0.75rem;font-weight:700;text-decoration:underline;cursor:pointer;font-family:inherit;}
 .forgot-link{font-size:0.7rem;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;margin-top:4px;display:inline-block;}
 .lesson-modal{max-width:560px;}
 .modal-head{padding:24px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;}
@@ -1003,7 +1009,7 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
     </div>
     <div id="signupFlow">
       <div class="auth-step active" id="sStep1">
-        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot"></div><span class="si-label">Step 1 of 2</span></div>
+        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot"></div><div class="si-dot"></div><span class="si-label">Step 1 of 3</span></div>
         <h2 class="auth-heading">Create your account</h2>
         <p class="auth-sub">Join professionals building their financial edge on Butterfly Dynamix.</p>
         <div class="field-row">
@@ -1016,11 +1022,28 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
           <div class="pw-strength"><div class="pw-strength-fill" id="pwFill"></div></div>
           <div class="field-err" id="ePW">Min. 8 characters required</div>
         </div>
-        <div class="step-nav"><button class="btn btn-gold btn-full" onclick="goStep1()">Continue →</button></div>
+        <div class="step-nav"><button class="btn btn-gold btn-full" id="step1ContinueBtn" onclick="goStep1()">Continue →</button></div>
         <div class="switch-mode">Already have an account? <button onclick="switchAuthTab('login')">Log in</button></div>
       </div>
+      <div class="auth-step" id="sStep2">
+        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot done"></div><div class="si-dot"></div><span class="si-label">Step 2 of 3</span></div>
+        <h2 class="auth-heading">Check your email</h2>
+        <p class="auth-sub">We sent a 6-digit code to <strong id="verifyEmailDisplay" style="color:var(--off);"></strong>. Enter it below to verify your account.</p>
+        <div class="otp-row" id="otpRow">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="0" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="1" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="2" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="3" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="4" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="5" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+        </div>
+        <div class="field-err" style="text-align:center;" id="eOtp">That code's not right. Try again.</div>
+        <div class="step-nav"><button class="btn btn-gold btn-full" id="verifyBtn" onclick="verifyEmailCode()">Verify →</button></div>
+        <p class="resend-text" id="resendText">Resend code in 0:60</p>
+        <div class="switch-mode"><button onclick="backToStep1FromVerify()">← Use a different email</button></div>
+      </div>
       <div class="auth-step" id="sStep3">
-        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot done"></div><span class="si-label">Step 2 of 2</span></div>
+        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot done"></div><div class="si-dot done"></div><span class="si-label">Step 3 of 3</span></div>
         <h2 class="auth-heading">Set up your profile</h2>
         <p class="auth-sub">How other learners will see you in the community.</p>
         <div class="field"><label>Username</label><input type="text" id="suname" placeholder="e.g. finwiz_alex"/><div class="field-err" id="eUname">Required</div></div>
@@ -1032,7 +1055,7 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
           and
           <a href="#" onclick="event.preventDefault();closeAuth();showPage('privacyPage')" style="color:var(--gold);text-decoration:underline;">Privacy Policy</a>.
         </p>
-        <div class="step-nav"><button class="btn btn-ghost" onclick="showStep(1)">← Back</button><button class="btn btn-gold" style="flex:1" id="signupSubmitBtn" onclick="completeSignup()">Create Account →</button></div>
+        <div class="step-nav"><button class="btn btn-gold btn-full" style="flex:1" id="signupSubmitBtn" onclick="completeSignup()">Create Account →</button></div>
       </div>
       <div class="auth-step" id="sWelcome">
         <div class="welcome-screen">
