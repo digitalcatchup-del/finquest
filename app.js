@@ -93,6 +93,24 @@ editorPage: '/editor',
 
 let _routingFromPopstate = false; // guards against re-pushing history during back/forward
 
+// ── LAZY SCRIPT LOADING ──────────────────────────────────────
+// Lessons content (data-lessons.js) and Articles content/editor
+// (data-articles.js, article-editor.js) are the bulk of this app's JS
+// weight but only matter to a fraction of visitors on a given visit —
+// loaded on demand instead of on every homepage hit. See performance
+// notes left where each is wired up (launchTrack, openArticlesPage, etc).
+const _loadedScripts = new Set();
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    if (_loadedScripts.has(src)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => { _loadedScripts.add(src); resolve(); };
+    s.onerror = () => reject(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
+  });
+}
+
 function safePushState(state, url) {
   if (location.pathname === url) return;
   try { history.pushState(state, '', url); }
@@ -606,8 +624,9 @@ function goToNewsletter() {
 }
 
 // ── ARTICLES ─────────────────────────────────────────────────
-function openArticlesPage() {
+async function openArticlesPage() {
   showPage('articlesPage');
+  if (typeof articles === 'undefined') await loadScriptOnce('/data-articles.js?v=1');
   loadArticlesFromDb().then(() => renderArticlesGrid());
 }
 
@@ -636,6 +655,7 @@ function renderArticlesGrid() {
 async function openArticle(slug) {
   showPage('articleDetailPage', '/articles/' + slug);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (typeof articles === 'undefined') await loadScriptOnce('/data-articles.js?v=1');
   await renderArticleDetail(slug);
 }
 
@@ -895,17 +915,27 @@ async function saveProfileEdits() {
 let currentEditingArticleLegacy = null;
 
 // Wrapper to integrate with new block editor
-function openArticleEditor(slug = null) {
+async function openArticleEditor(slug = null) {
   if (!currentUser || !['digitalcatchup'].includes(currentUser.username.toLowerCase())) {
     alert('This feature is only available for administrators.');
     return;
   }
-  
-  // Use the new block editor from article-editor.js
-  if (typeof window.openArticleEditor === 'function' && window.openArticleEditor !== openArticleEditor) {
+
+  const editorSrc = '/article-editor.js?v=4.1';
+  if (!_loadedScripts.has(editorSrc)) {
+    await Promise.all([
+      typeof articles === 'undefined' ? loadScriptOnce('/data-articles.js?v=1') : Promise.resolve(),
+      loadScriptOnce(editorSrc),
+    ]);
+  }
+
+  // article-editor.js overwrites window.openArticleEditor with the real
+  // block editor as soon as it loads — call that version directly rather
+  // than comparing function identity, which breaks once the reassignment
+  // above has happened (both sides would resolve to the same reference).
+  if (typeof window.openArticleEditor === 'function' && _loadedScripts.has(editorSrc)) {
     window.openArticleEditor(slug);
   } else {
-    // Fallback to legacy if new editor not loaded
     openArticleEditorLegacy(slug);
   }
 }
@@ -1347,6 +1377,19 @@ let aiChatHistory  = []; // { role: 'user'|'assistant', content: string }[]
 let aiChatActive   = false;
 let currentChatId  = null;  // uuid of the synced chat currently open (null = new/unsaved, or anonymous)
 let userChatsList  = [];    // cached { id, title, updated_at }[] for the sidebar/Chats page, most recent first
+// Bootstraps the Lessons feature on first use: track.js (the actual
+// implementation, as _launchTrackImpl) and data-lessons.js (~260KB of
+// lesson content) only load when someone actually opens Lessons.
+async function launchTrack(key) {
+  if (typeof _launchTrackImpl !== 'function') {
+    await Promise.all([
+      loadScriptOnce('/data-lessons.js?v=1'),
+      loadScriptOnce('/track.js?v=65'),
+    ]);
+  }
+  return _launchTrackImpl(key);
+}
+
 const CHAT_STORAGE_KEY = 'bdxAiChatHistory'; // anonymous-visitor fallback only
 
 // ── CHAT SIDEBAR ─────────────────────────────────────────────
