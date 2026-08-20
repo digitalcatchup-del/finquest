@@ -141,13 +141,34 @@ async function completeSignup() {
       return;
     }
 
-    await db.from('profiles').update({ username: uname, bio, first_name: first, last_name: last, avatar }).eq('id', session.user.id);
+    // upsert (not update) — if the profile row wasn't created yet by the
+    // time this runs, update() would silently affect zero rows, leaving
+    // currentUser unset and the nav stuck showing Log In/Sign Up even
+    // though the account was created. upsert guarantees the row exists.
+    const { error: profileError } = await db
+      .from('profiles')
+      .upsert({ id: session.user.id, username: uname, bio, first_name: first, last_name: last, avatar });
+
+    if (profileError) {
+      console.error('Profile save error:', profileError);
+      alert('There was a problem saving your profile: ' + profileError.message);
+      btn.textContent = 'Create Account →';
+      btn.disabled = false;
+      return;
+    }
 
     await loadCurrentUser(session.user);
 
-    document.getElementById('wName').textContent = first;
-    document.getElementById('wAvatar').textContent = avatar;
-    showStep('welcome');
+    if (!currentUser) {
+      console.error('loadCurrentUser did not populate currentUser after signup');
+      alert('Your account was created, but something went wrong loading your profile. Try refreshing the page.');
+      btn.textContent = 'Create Account →';
+      btn.disabled = false;
+      return;
+    }
+
+    closeAuth();
+    showPage('homePage');
 
   } catch (err) {
     console.error('Signup catch error:', err);
@@ -176,7 +197,7 @@ async function doLogin() {
     }
     await loadCurrentUser(data.user);
     closeAuth();
-    enterApp();
+    showPage('homePage');
   } catch (err) {
     alert('Login error: ' + err.message);
     btn.textContent = 'Log In →';
@@ -208,7 +229,10 @@ async function loadCurrentUser(authUser) {
     .eq('id', authUser.id)
     .single();
 
-  if (error || !profile) return;
+  if (error || !profile) {
+    console.error('loadCurrentUser: failed to fetch profile for', authUser.id, error);
+    return;
+  }
 
   currentUser = {
     id:            profile.id,
