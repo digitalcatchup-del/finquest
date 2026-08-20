@@ -1375,7 +1375,7 @@ async function launchTrack(key) {
   if (typeof _launchTrackImpl !== 'function') {
     await Promise.all([
       loadScriptOnce('/data-lessons.js?v=1'),
-      loadScriptOnce('/track.js?v=65'),
+      loadScriptOnce('/track.js?v=67'),
     ]);
   }
   return _launchTrackImpl(key);
