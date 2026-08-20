@@ -213,11 +213,7 @@ function switchAuthTab(tab) {
 
 function showStep(step) {
   document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
-  if (step === 'welcome') {
-    document.getElementById('sWelcome').classList.add('active');
-  } else {
-    document.getElementById(`sStep${step}`).classList.add('active');
-  }
+  document.getElementById(`sStep${step}`).classList.add('active');
 }
 
 function goStep1() {
@@ -331,11 +327,6 @@ function selectAvatar(avatar, el) {
 }
 
 // ── ENTER APP (after login/signup) ───────────────────────────
-function enterApp() {
-  closeAuth();
-  showPage('homePage');
-}
-
 // ── SERVICES PAGE ─────────────────────────────────────────────
 function selectService(name) {
   showPage('servicesPage');
