@@ -30,7 +30,7 @@ const trackKeywordTargets = {
 };
 
 // ── LAUNCH TRACK ─────────────────────────────────────────────
-async function launchTrack(key) {
+async function _launchTrackImpl(key) {
   if (!trackData[key]) {
     alert("This track's full content is being added now — check back shortly!");
     return;
