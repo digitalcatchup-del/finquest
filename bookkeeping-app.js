@@ -1777,6 +1777,29 @@ const DEFAULT_ACCOUNTS = {
 
 // ── STATE ────────────────────────────────────────────────────
 let bkUser        = null;
+
+// ── LAZY SCRIPT LOADING ──────────────────────────────────────
+// Sales module (customers, invoices, quotes, AR aging) only loads
+// when someone actually opens it, not on every bookkeeping page load.
+const _bkLoadedScripts = new Set();
+function bkLoadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    if (_bkLoadedScripts.has(src)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => { _bkLoadedScripts.add(src); resolve(); };
+    s.onerror = () => reject(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
+  });
+}
+async function ensureSalesModuleLoaded() {
+  await bkLoadScriptOnce('/sales-module.js?v=1');
+}
+async function openSalesDashboard() { await ensureSalesModuleLoaded(); showSalesDashboard(); }
+async function openSalesCustomers() { await ensureSalesModuleLoaded(); showCustomersPage(); }
+async function openSalesInvoices()  { await ensureSalesModuleLoaded(); showInvoicesPage(); }
+async function openSalesQuotes()    { await ensureSalesModuleLoaded(); showQuotesPage(); }
+async function openSalesARAging()   { await ensureSalesModuleLoaded(); showARAgingPage(); }
 let accounts      = {};   // { capital:[{id,account_name,opening_balance},...], ... }
 let activeType    = null;
 let activeAccount = null; // { id, account_name, opening_balance, opening_date }
