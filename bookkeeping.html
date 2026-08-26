@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1296,6 +1295,19 @@ body{padding-top:0;}
     <div class="bk-submenu" data-role="owner-manager" id="sub-ps">
       <div class="bk-submenu-item" onclick="showProductsPage('products');closeBkMenu()">📦 Products</div>
       <div class="bk-submenu-item" onclick="showProductsPage('services');closeBkMenu()">🛠 Services</div>
+    </div>
+
+    <!-- Sales (owner/manager only) -->
+    <div class="bk-menu-item bk-menu-parent" data-role="owner-manager" onclick="toggleSubMenu('sub-sales')">
+      <span class="bk-menu-icon">💰</span> Sales
+      <span class="bk-menu-arrow" id="arrow-sales">›</span>
+    </div>
+    <div class="bk-submenu" data-role="owner-manager" id="sub-sales">
+      <div class="bk-submenu-item" onclick="openSalesDashboard();closeBkMenu()">📊 Dashboard</div>
+      <div class="bk-submenu-item" onclick="openSalesCustomers();closeBkMenu()">👥 Customers</div>
+      <div class="bk-submenu-item" onclick="openSalesInvoices();closeBkMenu()">🧾 Invoices</div>
+      <div class="bk-submenu-item" onclick="openSalesQuotes();closeBkMenu()">📝 Quotes</div>
+      <div class="bk-submenu-item" onclick="openSalesARAging();closeBkMenu()">⏱ AR Aging</div>
     </div>
 
     <!-- Procurement (owner/manager only) -->
