@@ -3590,7 +3590,7 @@ function getAllAccounts() {
   return all;
 }
 
-function buildAccountOptions(selectedName) {
+function buildAccountOptions(selectedName, includeCoaOption) {
   const types = ['capital','liability','asset','income','expenditure'];
   const memb = _coaMemb();
   const groupsFor = {
@@ -3601,6 +3601,7 @@ function buildAccountOptions(selectedName) {
     capital: [['Capital & Equity', ()=>true]],
   };
   let html = '<option value="">— Select Account —</option>';
+  if (includeCoaOption) html += '<option value="__open_coa__">📋 Chart of Accounts</option>';
   types.forEach(type => {
     const accts = accounts[type]||[];
     if (!accts.length) return;
@@ -4461,27 +4462,21 @@ function renderJournalRows() {
         : `<input class="bk-cell" type="text" id="jrnNarrInput_${idx}" value="${escH(row.narration||'')}" placeholder="Narration…"
           oninput="jCellChange(${idx},'narration',this.value);jrnShowNarrSuggestions(${idx},this.value)"
           onblur="setTimeout(()=>jrnHideNarrSuggestions(${idx}),150)"/>`}<div id="jrnNarrSuggest_${idx}" class="bd-suggest-box hidden"></div></td>
-      <td><div style="display:flex;flex-direction:column;gap:1px;">
-        <div style="display:flex;align-items:center;gap:2px;">
+      <td><div style="display:flex;align-items:center;gap:2px;">
           <select class="bk-cell" style="flex:1;min-width:0;"
             onchange="jAccountChange(${idx},'debit',this.value)">
             ${row._drSplits&&row._drSplits.length?`<option selected>Multiple (${row._drSplits.length} accounts)</option>`:''}
-            ${buildAccountOptions(row.debit_account_name)}
+            ${buildAccountOptions(row.debit_account_name, true)}
           </select>
           <span onclick="jrnSplitOpen(${idx},'debit')" title="Split across accounts" style="cursor:pointer;font-size:0.72rem;color:var(--gold);padding:2px 4px;">✎</span>
-        </div>
-        <span onclick="openChartOfAccounts()" style="cursor:pointer;font-size:0.58rem;color:var(--muted);text-decoration:underline;padding-left:2px;">📋 Chart of Accounts</span>
       </div></td>
-      <td><div style="display:flex;flex-direction:column;gap:1px;">
-        <div style="display:flex;align-items:center;gap:2px;">
+      <td><div style="display:flex;align-items:center;gap:2px;">
           <select class="bk-cell" style="flex:1;min-width:0;"
             onchange="jAccountChange(${idx},'credit',this.value)">
             ${row._crSplits&&row._crSplits.length?`<option selected>Multiple (${row._crSplits.length} accounts)</option>`:''}
-            ${buildAccountOptions(row.credit_account_name)}
+            ${buildAccountOptions(row.credit_account_name, true)}
           </select>
           <span onclick="jrnSplitOpen(${idx},'credit')" title="Split across accounts" style="cursor:pointer;font-size:0.72rem;color:var(--gold);padding:2px 4px;">✎</span>
-        </div>
-        <span onclick="openChartOfAccounts()" style="cursor:pointer;font-size:0.58rem;color:var(--muted);text-decoration:underline;padding-left:2px;">📋 Chart of Accounts</span>
       </div></td>
       <td><input class="bk-cell num bk-amt-input" type="text" inputmode="decimal"
         value="${row.debit_amount>0?row.debit_amount.toLocaleString('en-NG'):''}" placeholder="0"
@@ -4518,6 +4513,7 @@ function jrnAutosave(){ clearTimeout(_jrnAutoT); _jrnAutoT = setTimeout(()=>{ sa
 function jCellChange(i,field,val){ journalRows[i][field]=val; journalRows[i].saved=false; jrnAutosave(); }
 
 function jAccountChange(i,side,val){
+  if (val === '__open_coa__') { openChartOfAccounts(); return; }
   const [name,type]=(val||'').split('|');
   if(side==='debit'){ journalRows[i].debit_account_name=name||''; journalRows[i].debit_record_type=type||''; }
   else{ journalRows[i].credit_account_name=name||''; journalRows[i].credit_record_type=type||''; }
