@@ -1940,7 +1940,7 @@ async function loadAccounts() {
 
 function buildDropdowns() {
   if (!accounts) return;
-  const types = ['capital','liability','asset','income','expenditure'];
+  const types = ['asset','liability','capital','expenditure','income'];
   types.forEach(type => {
     const sub = document.getElementById('sub'+type.charAt(0).toUpperCase()+type.slice(1));
     if (!sub) return;
@@ -3591,7 +3591,7 @@ function getAllAccounts() {
 }
 
 function buildAccountOptions(selectedName, includeCoaOption) {
-  const types = ['capital','liability','asset','income','expenditure'];
+  const types = ['asset','liability','capital','expenditure','income'];
   const memb = _coaMemb();
   const groupsFor = {
     asset: [['Long-term assets (Fixed Assets)', a=>isFixedAsset(a.account_name)], ['Short-term assets (Current assets)', a=>!isFixedAsset(a.account_name)]],
@@ -7260,7 +7260,7 @@ async function deleteProduct(id) {
 }
 
 // ── CHART OF ACCOUNTS ─────────────────────────────────────────
-const COA_BASES = { capital:1000, liability:2000, asset:3000, income:4000, expenditure:5000 };
+const COA_BASES = { asset:1000, liability:2000, capital:3000, expenditure:4000, income:5000 };
 const COA_LABELS = { capital:'Capital', liability:'Liabilities', asset:'Assets', income:'Income', expenditure:'Expenditure' };
 let coaActiveType = 'capital';
 
@@ -7572,7 +7572,7 @@ function coaOpenMainCodesDialog() {
   wrap.id='colMenuPortal'; wrap.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:20px;';
   const box = document.createElement('div');
   box.style.cssText='background:var(--surface);border:1px solid var(--gold);border-radius:14px;max-width:360px;width:100%;padding:20px;';
-  const types = ['capital','liability','asset','income','expenditure'];
+  const types = ['asset','liability','capital','expenditure','income'];
   box.innerHTML = `
     <div style="font-weight:900;color:var(--gold);margin-bottom:4px;">Edit main account numbers</div>
     <div style="font-size:0.66rem;color:var(--muted);margin-bottom:14px;">Changing a number here shifts every main sub-ledger and account currently numbered under it by the same amount.</div>
@@ -7599,7 +7599,7 @@ function coaOpenMainCodesDialog() {
 }
 
 function renderCOA() {
-  const types = ['capital','liability','asset','income','expenditure'];
+  const types = ['asset','liability','capital','expenditure','income'];
   const active = coaActiveType;
   const accts  = accounts[active]||[];
   const base   = coaMainCode(active);
