@@ -3919,8 +3919,17 @@ function jrnDeleteRowsFrom(idx) {
   if (!confirm('Delete '+targets.length+' row(s)?')) return;
   targets.sort((a,b)=>b-a).forEach(i=>{
     const r = journalRows[i];
-    if (r && r.id) bkDb.from('bk_journal').delete().eq('id', r.id).then(()=>{});
-    else if (r && r._txnId) bkDb.from('bk_transactions').delete().eq('id', r._txnId).then(()=>{});
+    if (r && r.id) {
+      // Delete ledger transactions first, then the journal entry — same
+      // order deleteJournalRow() already used correctly. This bulk-delete
+      // path previously only deleted the bk_journal row and left its
+      // bk_transactions legs behind, orphaned in the ledgers and
+      // financial statements even after the entry was "deleted" here.
+      bkDb.from('bk_transactions').delete().eq('journal_id', r.id).eq('user_id', bkUser.id)
+        .then(()=> bkDb.from('bk_journal').delete().eq('id', r.id).eq('user_id', bkUser.id));
+    } else if (r && r._txnId) {
+      bkDb.from('bk_transactions').delete().eq('id', r._txnId).eq('user_id', bkUser.id).then(()=>{});
+    }
     journalRows.splice(i,1);
   });
   jrnSelRows = [];
@@ -3928,6 +3937,7 @@ function jrnDeleteRowsFrom(idx) {
     debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
     debit_amount:0, credit_amount:0, saved:false });
   renderJournal();
+  refreshEquation();
 }
 
 // ── Split a journal side across several accounts ─────────────
