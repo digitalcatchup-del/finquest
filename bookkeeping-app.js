@@ -12028,47 +12028,9 @@ function renderAllBusinessesDashboard(metrics) {
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
         <canvas id="abRevenueChart" height="180"></canvas>
       </div>
-    </div>
-    <div class="ab-section">
-      <div class="ab-section-header">
-        <div class="ab-section-title">Recent Activity</div>
-      </div>
-      <div id="abRecentActivity" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px 16px;">
-        <div style="color:var(--muted);font-size:0.78rem;padding:12px 0;">Loading…</div>
-      </div>
     </div>`;
 
   setTimeout(()=>renderABChart(metrics),100);
-  loadRecentActivity();
-}
-
-const _rtLabel = t => ({income:'Income',expenditure:'Expense',asset:'Asset',liability:'Liability',capital:'Capital'})[t]||t;
-async function loadRecentActivity() {
-  const el = document.getElementById('abRecentActivity');
-  if (!el || !bkUser) return;
-  try {
-    const bizIds = userBusinesses.map(b=>b.id);
-    let q = bkDb.from('bk_transactions').select('narration,record_type,debit,credit,txn_date,created_at,business_id');
-    q = bizIds.length
-      ? q.or('user_id.eq.'+bkUser.id+',business_id.in.('+bizIds.join(',')+')')
-      : q.eq('user_id',bkUser.id);
-    const {data:T} = await q.order('created_at',{ascending:false}).limit(8);
-    if (!T || !T.length) { el.innerHTML='<div style="color:var(--muted);font-size:0.78rem;padding:12px 0;">No activity yet — record your first transaction.</div>'; return; }
-    const bizNameFor = t => (userBusinesses.find(b=>b.id===t.business_id)?.name || userBusinesses[0]?.name || businessDisplayName || 'Business').toUpperCase();
-    el.innerHTML = T.map(t=>{
-      const isInc = t.record_type==='income';
-      const amt = Math.abs((parseFloat(t.debit)||0)-(parseFloat(t.credit)||0));
-      const when = t.txn_date||String(t.created_at||'').slice(0,10);
-      return `<div class="ab-activity-item">
-        <div class="ab-activity-dot" style="background:${isInc?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.12)'};">${isInc?'↗':'↘'}</div>
-        <div style="flex:1;min-width:0;">
-          <div class="ab-activity-biz">${escH(bizNameFor(t))}</div>
-          <div class="ab-activity-desc">${escH(t.narration||(isInc?'Sale recorded':'Expense recorded'))} — ${fmt(amt)}</div>
-          <div class="ab-activity-time">${escH(when)}</div>
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) { el.innerHTML='<div style="color:var(--muted);font-size:0.78rem;padding:12px 0;">Could not load activity.</div>'; }
 }
 
 function renderABChart(metrics) {
