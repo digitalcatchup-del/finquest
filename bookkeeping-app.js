@@ -153,7 +153,7 @@ function showAuthScreen(view) {
       <p style="font-size:0.92rem;color:var(--muted);line-height:1.6;margin:20px 0 0;">Built for micro, small and medium enterprises — manage multiple businesses, track finances, and grow with confidence.</p>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;margin-top:24px;">
-      ${['Multi-business portfolio management','Real-time cash flow tracking','Invoices, expenses & payroll','Personal & business accounting'].map(f=>`
+      ${['Multi-business portfolio management','Real-time cash flow tracking','Invoices, expenses & payroll'].map(f=>`
         <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;color:var(--off);">
           <span style="color:var(--gold);">✓</span> ${f}</div>`).join('')}
     </div>
@@ -204,7 +204,7 @@ function showAuthScreen(view) {
         <button class="bk-auth-btn-primary" style="width:100%;background:var(--gold);color:#000;font-weight:800;border:none;padding:15px;border-radius:12px;font-size:1rem;cursor:pointer;" onclick="showAuthScreen('signup')">Sign Up</button>
         <div style="text-align:center;margin-top:14px;font-size:0.82rem;color:var(--muted);">Already have an account? <span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="showAuthScreen('login')">Sign in</span></div>
         <div style="margin-top:40px;display:flex;flex-direction:column;gap:14px;">
-          ${['Multi-business portfolio management','Real-time cash flow tracking','Invoices, expenses & payroll','Personal & business accounting'].map(f=>`
+          ${['Multi-business portfolio management','Real-time cash flow tracking','Invoices, expenses & payroll'].map(f=>`
             <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;color:var(--off);">
               <span style="color:var(--gold);">✓</span> ${f}</div>`).join('')}
         </div>
