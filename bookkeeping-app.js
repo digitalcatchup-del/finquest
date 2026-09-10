@@ -8146,6 +8146,77 @@ let psSheet = { open:false, search:'', decimals:null, font:'Nunito', wrap:'overf
 function _psCustomCols(){ try { return JSON.parse(localStorage.getItem('bd_ps_custom_'+psType)||'[]'); } catch(e){ return []; } }
 function _psSetCustomCols(c){ localStorage.setItem('bd_ps_custom_'+psType, JSON.stringify(c)); }
 function _psCustomVals(){ try { return JSON.parse(localStorage.getItem('bd_ps_customvals')||'{}'); } catch(e){ return {}; } }
+function _psColMeta(){ try { return JSON.parse(localStorage.getItem('bd_ps_colmeta_'+psType)||'{}'); } catch(e){ return {}; } }
+function _psPersistColMeta(m){ localStorage.setItem('bd_ps_colmeta_'+psType, JSON.stringify(m)); }
+function _psHiddenCustomCols(){ try { return JSON.parse(localStorage.getItem('bd_ps_hiddencustom_'+psType)||'[]'); } catch(e){ return []; } }
+function _psPersistHiddenCustom(arr){ localStorage.setItem('bd_ps_hiddencustom_'+psType, JSON.stringify(arr)); }
+
+// ── Products custom-column triangle menu (mirrors the Sales sheet) ──
+function psColMenuOpen(ev, key) {
+  openColMenuPortal(ev, [
+    ['\u270F\uFE0F Rename Header', "psColRename('"+key+"')"],
+    ['+ Insert column left', "psColInsert('"+key+"','left')"],
+    ['+ Insert column right', "psColInsert('"+key+"','right')"],
+    ['\uD83D\uDDD1 Delete column', "psColDeleteOne('"+key+"')"],
+    ['\u2699 Assign Cells', "psColAssignCells('"+key+"')"],
+    ['\u2715 Clear column', "psColClear('"+key+"')"],
+    ['\uD83D\uDEAB\uD83D\uDC41 Hide column', "psColHide('"+key+"')"],
+  ]);
+}
+function psColRename(key) {
+  const cols = _psCustomCols();
+  const c = cols.find(x=>x.key===key);
+  openTextPortal('RENAME HEADER', c?c.name:'', name=>{
+    if (c) c.name = name;
+    _psSetCustomCols(cols);
+    renderProductsPage();
+  });
+}
+function psColInsert(key, side) {
+  const cols = _psCustomCols();
+  const idx = cols.findIndex(x=>x.key===key);
+  const at = side==='left' ? idx : idx+1;
+  cols.splice(at, 0, {name:'New Column', key:'c'+Date.now()});
+  _psSetCustomCols(cols);
+  renderProductsPage();
+}
+function psColDeleteOne(key) {
+  const cols = _psCustomCols();
+  const c = cols.find(x=>x.key===key);
+  if (!confirm('Delete column "'+(c?c.name:'')+'" and its contents?')) return;
+  _psSetCustomCols(cols.filter(x=>x.key!==key));
+  psRows.forEach(r=>{ if (r.custom) delete r.custom[key]; });
+  const meta = _psColMeta(); delete meta[key]; _psPersistColMeta(meta);
+  renderProductsPage();
+}
+function psColAssignCells(key) {
+  const cols = _psCustomCols();
+  const c = cols.find(x=>x.key===key);
+  const meta = _psColMeta();
+  openAssignCellsDialog(c?c.name:'', meta[key], newMeta => {
+    if (newMeta) meta[key]=newMeta; else delete meta[key];
+    _psPersistColMeta(meta);
+    renderProductsPage();
+  });
+}
+function psColClear(key) {
+  if (!confirm('Clear all values in this column?')) return;
+  psRows.forEach(r=>{ if (r.custom) delete r.custom[key]; });
+  const vals = _psCustomVals();
+  Object.keys(vals).forEach(id=>{ if(vals[id]) delete vals[id][key]; });
+  localStorage.setItem('bd_ps_customvals', JSON.stringify(vals));
+  renderProductsPage();
+}
+function psColHide(key) {
+  const hidden = _psHiddenCustomCols();
+  if (!hidden.includes(key)) hidden.push(key);
+  _psPersistHiddenCustom(hidden);
+  renderProductsPage();
+}
+function psColUnhide(key) {
+  _psPersistHiddenCustom(_psHiddenCustomCols().filter(k=>k!==key));
+  renderProductsPage();
+}
 function psCustomInput(i, key, val){
   psRows[i].custom = psRows[i].custom || {};
   psRows[i].custom[key] = val;
@@ -8319,7 +8390,13 @@ function psRenderTable() {
   if (!isSvc && show('total_cost'))   thHtml += '<th class="num" style="width:120px;">Total — at cost</th>';
   if (!isSvc && show('total_sell'))   thHtml += '<th class="num" style="width:130px;">Total — at selling</th>';
   if (show('income_acct'))            thHtml += '<th style="width:160px;">Posts To</th>';
-  _psCustomCols().forEach(function(c){ thHtml += '<th style="min-width:110px;">'+escH(c.name)+'</th>'; });
+  { const psHidden = _psHiddenCustomCols();
+    _psCustomCols().forEach(function(c){
+      if (psHidden.includes(c.key)) return;
+      thHtml += '<th class="col-head" style="min-width:110px;position:relative;">'+escH(c.name)
+        + '<span class="col-tri" onclick="event.stopPropagation();psColMenuOpen(event,\''+c.key+'\')">\u25BC</span></th>';
+    });
+  }
   thHtml += '<th style="width:28px;"></th><th style="width:28px;"></th>';
 
   const _cCols = _psCustomCols();
@@ -8357,7 +8434,15 @@ function psRenderTable() {
       + '<option value="">Auto-detect</option>'
       + incomeAccts.replace('value="'+escH(r.income_account)+'"','value="'+escH(r.income_account)+'" selected')
       + '</select></td>';
-    _cCols.forEach(function(c){ td += '<td><input class="ps-cell" type="text" value="'+escH((r.custom&&r.custom[c.key])||'')+'" oninput="psCustomInput('+i+',\''+c.key+'\',this.value)"/></td>'; });
+    { const psHidden = _psHiddenCustomCols();
+      _cCols.forEach(function(c){
+        if (psHidden.includes(c.key)) return;
+        const meta = _psColMeta()[c.key];
+        const val = (r.custom && r.custom[c.key]) || '';
+        const onChangeExpr = `psCustomInput(${i},'${c.key}',VALUE)`;
+        td += '<td>'+renderAssignedCell(meta, val, onChangeExpr, null, 'ps-cell')+'</td>';
+      });
+    }
     td += '<td><button class="ps-del-btn" onclick="psDeleteRow('+i+')">&#x2715;</button></td>'
       + '<td><button class="ps-save-btn" onclick="psSaveRow('+i+')" title="Save">&#x203a;</button></td>';
     return '<tr id="psRow_'+i+'">'+td+'</tr>';
@@ -9591,12 +9676,10 @@ function renderRecordSheet(kind) {
         : `<td style="${hlCss(c)}"><input class="staff-cell" type="text" value="${escH(r.narration||'')}" placeholder="${narrPh}" style="${wrapCss}min-width:150px;"
         oninput="sheetRows('${kind}')[${i}].narration=this.value;sheetRows('${kind}')[${i}]._posted=false"/></td>`;
       case 'custom': {
-        const opts = _sheetMeta(kind)[c.k];
-        if (opts && opts.length) return `<td style="${hlCss(c)}"><select class="staff-cell" style="min-width:100px;"
-          onchange="(sheetRows('${kind}')[${i}].custom=sheetRows('${kind}')[${i}].custom||{})['${c.k}']=this.value">
-          <option value=""></option>${opts.map(o=>`<option ${((r.custom&&r.custom[c.k])||'')===o?'selected':''}>${escH(o)}</option>`).join('')}</select></td>`;
-        return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" value="${escH((r.custom&&r.custom[c.k])||'')}"
-        oninput="(sheetRows('${kind}')[${i}].custom=sheetRows('${kind}')[${i}].custom||{})['${c.k}']=this.value"/></td>`;
+        const meta = _sheetMeta(kind)[c.k];
+        const val = (r.custom && r.custom[c.k]) || '';
+        const onChangeExpr = `(sheetRows('${kind}')[${i}].custom=sheetRows('${kind}')[${i}].custom||{})['${c.k}']=VALUE`;
+        return `<td style="${hlCss(c)}">${renderAssignedCell(meta, val, onChangeExpr)}</td>`;
       }
       case 'unit_price': return `<td style="white-space:nowrap;${hlCss(c)}"><div class="staff-price-wrap"><span class="staff-curr-prefix">${sym}</span>
         <input class="staff-cell num" type="text" inputmode="decimal" value="${r.unit_price>0?fmtCell(r.unit_price):''}" placeholder="0"
@@ -9911,13 +9994,13 @@ async function sheetRestore(kind) {
 })();
 // ── Portal column menu: fixed-position, never clipped ──
 function _sheetMeta(kind){ const st=sheetState[kind]; if(!st.colMeta){ try{ st.colMeta=JSON.parse(localStorage.getItem('bd_colmeta_'+kind)||'{}'); }catch(e){ st.colMeta={}; } } return st.colMeta; }
-function sheetColEditCells(kind, key) {
+function sheetColAssignCells(kind, key) {
   const st = sheetState[kind];
   const c = st.colOrder.find(x=>x.k===key);
-  if (!c || c.t!=='c') { alert('Cell options can be set on custom columns you create. Built-in columns keep their formats.'); return; }
+  if (!c || c.t!=='c') { alert('Cell types can be set on custom columns you create. Built-in columns keep their formats.'); return; }
   const meta = _sheetMeta(kind);
-  openOptionsPortal('CELL OPTIONS — '+sheetColLabel(kind,c), meta[key]||[], opts=>{
-    if (opts.length) meta[key]=opts; else delete meta[key];
+  openAssignCellsDialog(sheetColLabel(kind,c), meta[key], newMeta => {
+    if (newMeta) meta[key]=newMeta; else delete meta[key];
     localStorage.setItem('bd_colmeta_'+kind, JSON.stringify(meta));
     renderRecordSheet(kind);
   });
@@ -9929,10 +10012,137 @@ function sheetColMenuOpen(ev, kind, key) {
     ['+ Insert column left', "sheetColInsert('"+kind+"','"+key+"','left')"],
     ['+ Insert column right', "sheetColInsert('"+kind+"','"+key+"','right')"],
     ['\uD83D\uDDD1 Delete column', "sheetColDelete('"+kind+"','"+key+"')"],
-    ['\u2699 Edit cells', "sheetColEditCells('"+kind+"','"+key+"')"],
+    ['\u2699 Assign Cells', "sheetColAssignCells('"+kind+"','"+key+"')"],
     ['\u2715 Clear column', "sheetColClear('"+kind+"','"+key+"')"],
     ['\uD83D\uDEAB\uD83D\uDC41 Hide column', "sheetColHide('"+kind+"','"+key+"')"],
   ]);
+}
+
+// ── ASSIGN CELLS ─────────────────────────────────────────────
+// Shared by every spreadsheet-style page (Sales/Expenses sheet,
+// Products/Services) to constrain what kind of value a custom column
+// accepts. Column meta shape: null (free text) or
+// { type: 'text'|'number'|'measurement'|'color'|'date'|'dropdown',
+//   options?: string[], unit?: string }
+const ASSIGN_CELL_TYPES = [
+  ['text', 'Free text', ''],
+  ['number', 'Number', ''],
+  ['measurement', 'Measurement', '\u2014 e.g. kg, ltr, pcs'],
+  ['color', 'Color', '\u2014 swatch picker'],
+  ['date', 'Date', ''],
+  ['dropdown', 'Dropdown list', '\u2014 fixed options'],
+];
+const ASSIGN_CELL_UNITS = ['kg','g','ltr','ml','pcs','box','mm','cm','m','ft','in','ton','bag','dozen','pack'];
+
+// Normalizes the legacy shape (a plain array of option strings, from
+// before Assign Cells existed as "Edit cells") into the new typed
+// object shape, so anyone's existing dropdown-list columns keep
+// working exactly as before instead of silently reverting to text.
+function _acNormalizeMeta(meta) {
+  if (Array.isArray(meta)) return meta.length ? { type: 'dropdown', options: meta } : null;
+  return meta || null;
+}
+
+function openAssignCellsDialog(title, currentMeta, onSave) {
+  closeColMenu();
+  const cur = _acNormalizeMeta(currentMeta) || { type: 'text' };
+  const wrap = document.createElement('div');
+  wrap.id = 'colMenuPortal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:12000;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;';
+  wrap.innerHTML = `<div class="col-menu" style="padding:16px;width:min(360px,94vw);" onclick="event.stopPropagation()">
+    <label class="su-label">ASSIGN CELLS \u2014 ${escH(title)}</label>
+    <div style="font-size:0.64rem;color:var(--muted);margin-bottom:10px;">Choose what kind of value this column accepts.</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
+      ${ASSIGN_CELL_TYPES.map(([val,label,hint])=>`
+        <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;font-size:0.76rem;color:var(--white);cursor:pointer;">
+          <input type="radio" name="acType" value="${val}" ${cur.type===val?'checked':''} onchange="acRenderSubFields('${val}')"/> ${label}
+          ${hint?`<span style="color:var(--muted);font-size:0.68rem;">${hint}</span>`:''}
+        </label>`).join('')}
+    </div>
+    <div id="acSubFields"></div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button id="acCancel" style="flex:1;background:var(--surface2);color:var(--off);border:1px solid var(--border2);font-weight:700;font-size:0.76rem;padding:9px;border-radius:8px;cursor:pointer;">Cancel</button>
+      <button id="acOk" style="flex:1;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.76rem;padding:9px;border-radius:8px;cursor:pointer;">Save</button>
+    </div>
+  </div>`;
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) closeColMenu(); });
+  document.body.appendChild(wrap);
+  window._acCurrentMeta = cur;
+  acRenderSubFields(cur.type||'text');
+  wrap.querySelector('#acCancel').onclick = closeColMenu;
+  wrap.querySelector('#acOk').onclick = () => {
+    const type = wrap.querySelector('input[name="acType"]:checked')?.value || 'text';
+    let meta = null;
+    if (type === 'text') {
+      meta = null;
+    } else if (type === 'measurement') {
+      meta = { type, unit: document.getElementById('acUnit')?.value || 'kg' };
+    } else if (type === 'dropdown') {
+      const opts = (document.getElementById('acOptions')?.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+      if (!opts.length) { alert('Add at least one option, or choose Free text instead.'); return; }
+      meta = { type, options: opts };
+    } else {
+      meta = { type };
+    }
+    closeColMenu();
+    onSave(meta);
+  };
+}
+
+function acRenderSubFields(type) {
+  const el = document.getElementById('acSubFields');
+  if (!el) return;
+  const cur = window._acCurrentMeta || {};
+  if (type === 'measurement') {
+    el.innerHTML = `<label class="su-label">Unit</label>
+      <select class="bk-login-input" id="acUnit" style="margin-bottom:6px;">
+        ${ASSIGN_CELL_UNITS.map(u=>`<option ${cur.unit===u?'selected':''}>${u}</option>`).join('')}
+      </select>`;
+  } else if (type === 'dropdown') {
+    el.innerHTML = `<label class="su-label">Options</label>
+      <div style="font-size:0.64rem;color:var(--muted);margin-bottom:6px;">One option per line.</div>
+      <textarea class="bk-login-input" id="acOptions" rows="4" style="margin-bottom:6px;resize:vertical;">${escH((cur.options||[]).join('\n'))}</textarea>`;
+  } else if (type === 'color') {
+    el.innerHTML = `<div style="font-size:0.68rem;color:var(--muted);margin-bottom:6px;">Cells in this column show a color swatch \u2014 click a cell to pick any color.</div>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+// Renders one cell's <input>/<select> according to its column's Assign
+// Cells type. onChangeExpr is a JS expression string containing the
+// literal placeholder VALUE, substituted with the real change handler
+// per call site (Sales/Expenses vs Products use different storage).
+function renderAssignedCell(meta, value, onChangeExpr, idAttr, cellClass) {
+  meta = _acNormalizeMeta(meta);
+  cellClass = cellClass || 'staff-cell';
+  const v = value || '';
+  const idHtml = idAttr ? ` id="${idAttr}"` : '';
+  if (!meta || !meta.type || meta.type === 'text') {
+    return `<input class="${cellClass}"${idHtml} type="text" value="${escH(v)}" oninput="${onChangeExpr.replace('VALUE','this.value')}"/>`;
+  }
+  if (meta.type === 'number') {
+    return `<input class="${cellClass} num"${idHtml} type="number" value="${escH(v)}" oninput="${onChangeExpr.replace('VALUE','this.value')}"/>`;
+  }
+  if (meta.type === 'measurement') {
+    const unitSuffix = ' ' + meta.unit;
+    const num = v.endsWith(unitSuffix) ? v.slice(0, -unitSuffix.length) : v;
+    return `<div style="display:flex;align-items:center;gap:4px;"><input class="${cellClass} num" style="flex:1;min-width:0;"${idHtml} type="number" value="${escH(num)}"
+      oninput="${onChangeExpr.replace('VALUE', `this.value + ' ${meta.unit}'`)}"/><span style="color:var(--muted);font-size:0.7rem;flex-shrink:0;padding-right:6px;">${escH(meta.unit)}</span></div>`;
+  }
+  if (meta.type === 'date') {
+    return `<input class="${cellClass}"${idHtml} type="date" value="${escH(v)}" oninput="${onChangeExpr.replace('VALUE','this.value')}"/>`;
+  }
+  if (meta.type === 'color') {
+    const swatch = v || '#888888';
+    return `<div style="display:flex;align-items:center;gap:6px;padding-left:6px;"><input type="color"${idHtml} value="${escH(swatch)}" style="width:26px;height:26px;padding:0;border:1px solid var(--border2);border-radius:5px;background:none;cursor:pointer;"
+      oninput="${onChangeExpr.replace('VALUE','this.value')}"/><span style="color:var(--muted);font-size:0.68rem;">${escH(swatch)}</span></div>`;
+  }
+  if (meta.type === 'dropdown') {
+    return `<select class="${cellClass}"${idHtml} onchange="${onChangeExpr.replace('VALUE','this.value')}">
+      <option value=""></option>${(meta.options||[]).map(o=>`<option ${v===o?'selected':''}>${escH(o)}</option>`).join('')}</select>`;
+  }
+  return `<input class="${cellClass}"${idHtml} type="text" value="${escH(v)}" oninput="${onChangeExpr.replace('VALUE','this.value')}"/>`;
 }
 
 function openTextPortal(label, initial, cb) {
