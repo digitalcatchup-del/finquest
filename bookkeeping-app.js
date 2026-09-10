@@ -8119,8 +8119,44 @@ async function loadPsColPrefs() {
 }
 
 function togglePsColSelector() {
-  const sel = document.getElementById('psColSelector');
-  if (sel) sel.classList.toggle('hidden');
+  const existing = document.getElementById('psColSelectorPortal');
+  if (existing) { existing.remove(); return; }
+
+  const btn = document.getElementById('psColBtn');
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+
+  const prefs = psColPrefs[psType] || psDefaultPrefs(psType);
+  const cols  = PS_COL_DEFS[psType];
+  const selectorRows = cols.map(c => {
+    const checked = prefs[c.id] !== false;
+    return '<div class="ps-col-row">'
+      + '<label class="ps-col-label">'
+      + '<input type="checkbox" class="ps-col-check" data-col="'+c.id+'"'
+      + (checked?' checked':'')
+      + ' onchange="psColCheck(this.dataset.col,this.checked)"/>'
+      + escH(c.label)
+      + '</label></div>';
+  }).join('');
+
+  const wrap = document.createElement('div');
+  wrap.id = 'psColSelectorPortal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:12000;';
+  wrap.addEventListener('click', e => { if (e.target === wrap) wrap.remove(); });
+
+  const panel = document.createElement('div');
+  panel.id = 'psColSelector';
+  panel.className = 'ps-col-selector';
+  panel.style.cssText = 'position:fixed;z-index:12001;top:'+(rect.bottom+6)+'px;left:'+Math.min(rect.left, window.innerWidth-286)+'px;';
+  panel.addEventListener('click', e => e.stopPropagation());
+  panel.innerHTML = '<div class="ps-col-selector-title">Show / hide columns</div>'
+    + selectorRows
+    + '<button onclick="psSaveColPrefs()" id="psSaveColBtn"'
+    + ' style="width:100%;margin-top:10px;background:var(--gold);color:#000;border:none;font-size:0.78rem;font-weight:700;padding:9px;border-radius:7px;cursor:pointer;">'
+    + 'Save &amp; Close</button>';
+
+  wrap.appendChild(panel);
+  document.body.appendChild(wrap);
 }
 
 // Called on every checkbox change — re-renders the table immediately
@@ -8136,7 +8172,7 @@ async function psSaveColPrefs() {
       updated_at: new Date().toISOString(),
     }, { onConflict:'user_id' });
   } catch(e) {}
-  document.getElementById('psColSelector')?.classList.add('hidden');
+  document.getElementById('psColSelectorPortal')?.remove();
   if (btn) { btn.textContent = 'Saved ✓'; btn.disabled = false; }
 }
 
@@ -8367,6 +8403,7 @@ function psToolboxHtml(){
     + '<button class="tb-icon '+(psSheet.wrap==='clip'?'tb-active':'')+'" title="Clip" onclick="psSetWrap(\'clip\')">✂</button>'
     + '<button class="tb-icon" title="Insert column" onclick="psInsertColumn()">+▥</button>'
     + '<button class="tb-icon" title="Delete column" onclick="psDeleteColumn()">−▥</button>'
+    + '<button class="tb-icon" id="psColBtn" onclick="togglePsColSelector()">🎛 Default Columns ▾</button>'
     + '</div>';
 }
 
@@ -8414,18 +8451,6 @@ async function showProductsPage(type) {
 function renderProductsPage() {
   const isSvc = psType === 'services';
   const prefs = psColPrefs[psType] || psDefaultPrefs(psType);
-  const cols  = PS_COL_DEFS[psType];
-
-  const selectorRows = cols.map(c => {
-    const checked = prefs[c.id] !== false;
-    return '<div class="ps-col-row">'
-      + '<label class="ps-col-label">'
-      + '<input type="checkbox" class="ps-col-check" data-col="'+c.id+'"'
-      + (checked?' checked':'')
-      + ' onchange="psColCheck(this.dataset.col,this.checked)"/>'
-      + escH(c.label)
-      + '</label></div>';
-  }).join('');
 
   document.getElementById('bkContent').innerHTML =
     '<div class="bk-content-header">'
@@ -8434,14 +8459,7 @@ function renderProductsPage() {
     + '<div style="display:flex;gap:8px;align-items:center;position:relative;">'
     + '<button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="showProductsPage(\''+(isSvc?'products':'services')+'\')">'+'Switch to '+(isSvc?'Products':'Services')+'</button>'
     + '<button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" onclick="psToggleToolbox()">⚙ Tools</button>'
-    + '<button class="bk-btn bk-btn-outline" style="font-size:0.74rem;" id="psColBtn" onclick="togglePsColSelector()">⚙ Columns ▾</button>'
-    + '<div id="psColSelector" class="ps-col-selector hidden">'
-    + '<div class="ps-col-selector-title">Show / hide columns</div>'
-    + selectorRows
-    + '<button onclick="psSaveColPrefs()" id="psSaveColBtn"'
-    + ' style="width:100%;margin-top:10px;background:var(--gold);color:#000;border:none;font-size:0.78rem;font-weight:700;padding:9px;border-radius:7px;cursor:pointer;">'
-    + 'Save &amp; Close</button>'
-    + '</div></div></div>'
+    + '</div></div>'
     + (psSheet.open ? psToolboxHtml() : '')
     + '<div class="bk-sheet-wrap" style="font-family:\''+psSheet.font+'\',sans-serif;"><table class="ps-table ps-wrap-'+psSheet.wrap+'" style="min-width:400px;">'
     + '<thead id="psThead"></thead><tbody id="psBody"></tbody>'
