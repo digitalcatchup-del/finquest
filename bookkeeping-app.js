@@ -8156,6 +8156,43 @@ function _psBuiltinDefaultLabel(key){
   return def ? def.label : key;
 }
 function psColLabel(key){ return _psLabels()[key] || _psBuiltinDefaultLabel(key); }
+
+// Per-built-in-column styling (used to build each <th>, replacing what
+// used to be inline per-field width/class literals in a fixed sequence).
+const PS_BUILTIN_META = {
+  name:         { numClass:false, style:'' },
+  barcode:      { numClass:false, style:'width:150px;' },
+  product_type: { numClass:false, style:'min-width:110px;' },
+  service_type: { numClass:false, style:'min-width:110px;' },
+  cost_price:   { numClass:true,  style:'width:110px;' },
+  sell_price:   { numClass:true,  style:'width:110px;' },
+  qty:          { numClass:true,  style:'width:90px;' },
+  qty_date:     { numClass:false, style:'width:130px;' },
+  total_cost:   { numClass:true,  style:'width:120px;' },
+  total_sell:   { numClass:true,  style:'width:130px;' },
+  income_acct:  { numClass:false, style:'width:160px;' },
+};
+// Which built-in columns are even candidates for the current type —
+// mirrors the isSvc/!isSvc checks the old fixed-sequence renderer used.
+function _psColApplies(key, isSvc) {
+  if (key==='sell_price' || key==='income_acct') return true;
+  if (key==='service_type') return isSvc;
+  return !isSvc; // barcode, product_type, cost_price, qty, qty_date, total_cost, total_sell
+}
+function _psDefaultColOrder() {
+  return ['name','barcode','product_type','service_type','cost_price','sell_price','qty','qty_date','total_cost','total_sell','income_acct'];
+}
+function _psColOrder(){ try { return JSON.parse(localStorage.getItem('bd_ps_colorder_'+psType)||'null') || _psDefaultColOrder(); } catch(e){ return _psDefaultColOrder(); } }
+function _psPersistColOrder(arr){ localStorage.setItem('bd_ps_colorder_'+psType, JSON.stringify(arr)); }
+// Merges the stored order with any keys not yet present — a newly
+// created custom column, or (for forward-compatibility) a built-in id
+// added in some future update — so nothing silently disappears.
+function _psEffectiveColOrder() {
+  const order = _psColOrder().slice();
+  _psDefaultColOrder().forEach(k => { if (!order.includes(k)) order.push(k); });
+  _psCustomCols().forEach(c => { if (!order.includes(c.key)) order.push(c.key); });
+  return order;
+}
 function _psHiddenCustomCols(){ try { return JSON.parse(localStorage.getItem('bd_ps_hiddencustom_'+psType)||'[]'); } catch(e){ return []; } }
 function _psPersistHiddenCustom(arr){ localStorage.setItem('bd_ps_hiddencustom_'+psType, JSON.stringify(arr)); }
 
@@ -8184,14 +8221,22 @@ function psColRename(key) {
   });
 }
 function psColInsert(key, side) {
-  // Products' built-in columns render in a fixed sequence, not a single
-  // reorderable list like the Sales sheet's colOrder — so unlike Sales,
-  // a new column always joins the end of the custom columns rather than
-  // literally slotting left/right of the column that was clicked. It's
-  // still reachable from any column's triangle now, not just Tools.
+  const newKey = 'c'+Date.now();
+
+  // Compute the order BEFORE the new column is registered as a custom
+  // column — otherwise _psEffectiveColOrder()'s own merge step would see
+  // it as an unplaced custom column and auto-append it a second time,
+  // on top of the position we splice it into below.
+  const order = _psEffectiveColOrder();
+  const idx = order.indexOf(key);
+  const at = idx===-1 ? order.length : (side==='left' ? idx : idx+1);
+  order.splice(at, 0, newKey);
+  _psPersistColOrder(order);
+
   const cols = _psCustomCols();
-  cols.push({name:'New Column', key:'c'+Date.now()});
+  cols.push({name:'New Column', key:newKey});
   _psSetCustomCols(cols);
+
   renderProductsPage();
 }
 function psColDeleteOne(key) {
@@ -8202,6 +8247,7 @@ function psColDeleteOne(key) {
   _psSetCustomCols(cols.filter(x=>x.key!==key));
   psRows.forEach(r=>{ if (r.custom) delete r.custom[key]; });
   const meta = _psColMeta(); delete meta[key]; _psPersistColMeta(meta);
+  _psPersistColOrder(_psEffectiveColOrder().filter(k=>k!==key));
   renderProductsPage();
 }
 function psColAssignCells(key) {
@@ -8425,70 +8471,78 @@ function psRenderTable() {
   const th = (key, extraCls, extraStyle) => '<th class="col-head'+(extraCls?' '+extraCls:'')+'" style="'+(extraStyle||'')+'position:relative;">'+escH(psColLabel(key))
     + '<span class="col-tri" onclick="event.stopPropagation();psColMenuOpen(event,\''+key+'\')">\u25BC</span></th>';
 
-  let thHtml = '<th style="width:36px;">S/N</th>' + th('name');
-  if (!isSvc && show('barcode'))      thHtml += th('barcode', null, 'width:150px;');
-  if (!isSvc && show('product_type')) thHtml += th('product_type', null, 'min-width:110px;');
-  if (isSvc  && show('service_type')) thHtml += th('service_type', null, 'min-width:110px;');
-  if (!isSvc && show('cost_price'))   thHtml += th('cost_price', 'num', 'width:110px;');
-  if (show('sell_price'))             thHtml += th('sell_price', 'num', 'width:110px;');
-  if (!isSvc && show('qty'))          thHtml += th('qty', 'num', 'width:90px;');
-  if (!isSvc && show('qty_date'))     thHtml += th('qty_date', null, 'width:130px;');
-  if (!isSvc && show('total_cost'))   thHtml += th('total_cost', 'num', 'width:120px;');
-  if (!isSvc && show('total_sell'))   thHtml += th('total_sell', 'num', 'width:130px;');
-  if (show('income_acct'))            thHtml += th('income_acct', null, 'width:160px;');
-  { const psHidden = _psHiddenCustomCols();
-    _psCustomCols().forEach(function(c){
-      if (psHidden.includes(c.key)) return;
-      thHtml += '<th class="col-head" style="min-width:110px;position:relative;">'+escH(c.name)
-        + '<span class="col-tri" onclick="event.stopPropagation();psColMenuOpen(event,\''+c.key+'\')">\u25BC</span></th>';
-    });
-  }
+  // Column order is now a single reorderable list (built-in + custom keys
+  // mixed together), instead of built-ins always rendering in a fixed
+  // sequence before any custom column — this is what lets "Insert column
+  // left/right" actually insert at the clicked position.
+  const order = _psEffectiveColOrder();
+  const psHiddenCustom = _psHiddenCustomCols();
+  const customByKey = Object.fromEntries(_psCustomCols().map(c=>[c.key,c]));
+  const visibleKeys = order.filter(key => {
+    if (customByKey[key]) return !psHiddenCustom.includes(key);
+    if (key === 'name') return true;
+    if (!_psColApplies(key, isSvc)) return false;
+    return show(key);
+  });
+
+  let thHtml = '<th style="width:36px;">S/N</th>';
+  visibleKeys.forEach(key => {
+    if (customByKey[key]) {
+      thHtml += '<th class="col-head" style="min-width:110px;position:relative;">'+escH(customByKey[key].name)
+        + '<span class="col-tri" onclick="event.stopPropagation();psColMenuOpen(event,\''+key+'\')">\u25BC</span></th>';
+    } else {
+      const m = PS_BUILTIN_META[key] || {};
+      thHtml += th(key, m.numClass?'num':null, m.style||'');
+    }
+  });
   thHtml += '<th style="width:28px;"></th><th style="width:28px;"></th>';
 
-  const _cCols = _psCustomCols();
   const _visible = psRows.map(function(r,i){ return {r:r,i:i}; })
     .filter(function(o){ return !psSheet.search || (o.r.name||'').toLowerCase().indexOf(psSheet.search.toLowerCase())>=0; });
   const bodyHtml = _visible.map(function(o){ const r=o.r, i=o.i;
     const atCost = r.cost_price * r.qty;
     const atSell = r.sell_price * r.qty;
-    let td = '<td class="ps-sn">'+(i+1)+'</td>'
-      + '<td><input class="ps-cell" type="text" value="'+escH(r.name)+'"'
-      + ' placeholder="'+(isSvc?'Service':'Product')+' name…"'
-      + ' oninput="psRows['+i+'].name=this.value;psRows['+i+'].saved=false"/></td>';
-    if (!isSvc && show('barcode')) td += '<td><div style="display:flex;align-items:center;gap:3px;">'
-      + '<input class="ps-cell" type="text" value="'+escH(r.barcode||'')+'" style="flex:1;min-width:0;"'
-      + ' placeholder="Scan or type…" oninput="psRows['+i+'].barcode=this.value;psRows['+i+'].saved=false"/>'
-      + '<button type="button" title="Scan barcode" onclick="bdOpenScanner(code=>{psRows['+i+'].barcode=code;psRows['+i+'].saved=false;renderProductsPage();})"'
-      + ' style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.9rem;padding:2px 4px;flex-shrink:0;">\uD83D\uDCF7</button>'
-      + '</div></td>';
-    if (!isSvc && show('product_type')) td += '<td><input class="ps-cell" type="text" value="'+escH(r.product_type||'')+'"'
-      + ' placeholder="e.g. Hair care…" oninput="psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false"/></td>';
-    if (isSvc  && show('service_type')) td += '<td><input class="ps-cell" type="text" value="'+escH(r.product_type||'')+'"'
-      + ' placeholder="e.g. Cleaning…" oninput="psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false"/></td>';
-    if (!isSvc && show('cost_price'))   td += '<td><input class="ps-cell num" type="number" value="'+(r.cost_price||'')+'"'
-      + ' placeholder="0" oninput="psRows['+i+'].cost_price=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>';
-    if (show('sell_price'))             td += '<td><input class="ps-cell num" type="number" value="'+(r.sell_price||'')+'"'
-      + ' placeholder="0" oninput="psRows['+i+'].sell_price=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>';
-    if (!isSvc && show('qty'))          td += '<td><input class="ps-cell num" type="number" value="'+(r.qty||'')+'"'
-      + ' placeholder="0" oninput="psRows['+i+'].qty=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>';
-    if (!isSvc && show('qty_date'))     td += '<td><input class="ps-cell" type="date" value="'+escH(r.qty_date||'')+'"'
-      + ' onchange="psRows['+i+'].qty_date=this.value;psRows['+i+'].saved=false"/></td>';
-    if (!isSvc && show('total_cost'))   td += '<td><div id="psAtCost_'+i+'" class="ps-cell ro num">'+(atCost>0?fmt(atCost):'')+'</div></td>';
-    if (!isSvc && show('total_sell'))   td += '<td><div id="psAtSell_'+i+'" class="ps-cell ro num">'+(atSell>0?fmt(atSell):'')+'</div></td>';
-    if (show('income_acct'))            td += '<td><select class="ps-cell" style="font-size:0.75rem;"'
-      + ' onchange="psRows['+i+'].income_account=this.value;psRows['+i+'].saved=false">'
-      + '<option value="">Auto-detect</option>'
-      + incomeAccts.replace('value="'+escH(r.income_account)+'"','value="'+escH(r.income_account)+'" selected')
-      + '</select></td>';
-    { const psHidden = _psHiddenCustomCols();
-      _cCols.forEach(function(c){
-        if (psHidden.includes(c.key)) return;
-        const meta = _psColMeta()[c.key];
-        const val = (r.custom && r.custom[c.key]) || '';
-        const onChangeExpr = `psCustomInput(${i},'${c.key}',VALUE)`;
+    let td = '<td class="ps-sn">'+(i+1)+'</td>';
+    visibleKeys.forEach(key => {
+      if (customByKey[key]) {
+        const meta = _psColMeta()[key];
+        const val = (r.custom && r.custom[key]) || '';
+        const onChangeExpr = `psCustomInput(${i},'${key}',VALUE)`;
         td += '<td>'+renderAssignedCell(meta, val, onChangeExpr, null, 'ps-cell')+'</td>';
-      });
-    }
+        return;
+      }
+      switch(key) {
+        case 'name': td += '<td><input class="ps-cell" type="text" value="'+escH(r.name)+'"'
+          + ' placeholder="'+(isSvc?'Service':'Product')+' name…"'
+          + ' oninput="psRows['+i+'].name=this.value;psRows['+i+'].saved=false"/></td>'; break;
+        case 'barcode': td += '<td><div style="display:flex;align-items:center;gap:3px;">'
+          + '<input class="ps-cell" type="text" value="'+escH(r.barcode||'')+'" style="flex:1;min-width:0;"'
+          + ' placeholder="Scan or type…" oninput="psRows['+i+'].barcode=this.value;psRows['+i+'].saved=false"/>'
+          + '<button type="button" title="Scan barcode" onclick="bdOpenScanner(code=>{psRows['+i+'].barcode=code;psRows['+i+'].saved=false;renderProductsPage();})"'
+          + ' style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.9rem;padding:2px 4px;flex-shrink:0;">\uD83D\uDCF7</button>'
+          + '</div></td>'; break;
+        case 'product_type': td += '<td><input class="ps-cell" type="text" value="'+escH(r.product_type||'')+'"'
+          + ' placeholder="e.g. Hair care…" oninput="psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false"/></td>'; break;
+        case 'service_type': td += '<td><input class="ps-cell" type="text" value="'+escH(r.product_type||'')+'"'
+          + ' placeholder="e.g. Cleaning…" oninput="psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false"/></td>'; break;
+        case 'cost_price': td += '<td><input class="ps-cell num" type="number" value="'+(r.cost_price||'')+'"'
+          + ' placeholder="0" oninput="psRows['+i+'].cost_price=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>'; break;
+        case 'sell_price': td += '<td><input class="ps-cell num" type="number" value="'+(r.sell_price||'')+'"'
+          + ' placeholder="0" oninput="psRows['+i+'].sell_price=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>'; break;
+        case 'qty': td += '<td><input class="ps-cell num" type="number" value="'+(r.qty||'')+'"'
+          + ' placeholder="0" oninput="psRows['+i+'].qty=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>'; break;
+        case 'qty_date': td += '<td><input class="ps-cell" type="date" value="'+escH(r.qty_date||'')+'"'
+          + ' onchange="psRows['+i+'].qty_date=this.value;psRows['+i+'].saved=false"/></td>'; break;
+        case 'total_cost': td += '<td><div id="psAtCost_'+i+'" class="ps-cell ro num">'+(atCost>0?fmt(atCost):'')+'</div></td>'; break;
+        case 'total_sell': td += '<td><div id="psAtSell_'+i+'" class="ps-cell ro num">'+(atSell>0?fmt(atSell):'')+'</div></td>'; break;
+        case 'income_acct': td += '<td><select class="ps-cell" style="font-size:0.75rem;"'
+          + ' onchange="psRows['+i+'].income_account=this.value;psRows['+i+'].saved=false">'
+          + '<option value="">Auto-detect</option>'
+          + incomeAccts.replace('value="'+escH(r.income_account)+'"','value="'+escH(r.income_account)+'" selected')
+          + '</select></td>'; break;
+        default: td += '<td></td>';
+      }
+    });
     td += '<td><button class="ps-del-btn" onclick="psDeleteRow('+i+')">&#x2715;</button></td>'
       + '<td><button class="ps-save-btn" onclick="psSaveRow('+i+')" title="Save">&#x203a;</button></td>';
     return '<tr id="psRow_'+i+'">'+td+'</tr>';
