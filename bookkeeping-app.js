@@ -8148,6 +8148,14 @@ function _psSetCustomCols(c){ localStorage.setItem('bd_ps_custom_'+psType, JSON.
 function _psCustomVals(){ try { return JSON.parse(localStorage.getItem('bd_ps_customvals')||'{}'); } catch(e){ return {}; } }
 function _psColMeta(){ try { return JSON.parse(localStorage.getItem('bd_ps_colmeta_'+psType)||'{}'); } catch(e){ return {}; } }
 function _psPersistColMeta(m){ localStorage.setItem('bd_ps_colmeta_'+psType, JSON.stringify(m)); }
+function _psLabels(){ try { return JSON.parse(localStorage.getItem('bd_ps_labels_'+psType)||'{}'); } catch(e){ return {}; } }
+function _psPersistLabels(m){ localStorage.setItem('bd_ps_labels_'+psType, JSON.stringify(m)); }
+function _psBuiltinDefaultLabel(key){
+  if (key==='name') return psType==='services' ? 'Service' : 'Product';
+  const def = (PS_COL_DEFS[psType]||[]).find(x=>x.id===key);
+  return def ? def.label : key;
+}
+function psColLabel(key){ return _psLabels()[key] || _psBuiltinDefaultLabel(key); }
 function _psHiddenCustomCols(){ try { return JSON.parse(localStorage.getItem('bd_ps_hiddencustom_'+psType)||'[]'); } catch(e){ return []; } }
 function _psPersistHiddenCustom(arr){ localStorage.setItem('bd_ps_hiddencustom_'+psType, JSON.stringify(arr)); }
 
@@ -8166,24 +8174,31 @@ function psColMenuOpen(ev, key) {
 function psColRename(key) {
   const cols = _psCustomCols();
   const c = cols.find(x=>x.key===key);
-  openTextPortal('RENAME HEADER', c?c.name:'', name=>{
-    if (c) c.name = name;
-    _psSetCustomCols(cols);
-    renderProductsPage();
+  if (c) {
+    openTextPortal('RENAME HEADER', c.name, name=>{ c.name = name; _psSetCustomCols(cols); renderProductsPage(); });
+    return;
+  }
+  const labels = _psLabels();
+  openTextPortal('RENAME HEADER', labels[key] || _psBuiltinDefaultLabel(key), name=>{
+    labels[key] = name; _psPersistLabels(labels); renderProductsPage();
   });
 }
 function psColInsert(key, side) {
+  // Products' built-in columns render in a fixed sequence, not a single
+  // reorderable list like the Sales sheet's colOrder — so unlike Sales,
+  // a new column always joins the end of the custom columns rather than
+  // literally slotting left/right of the column that was clicked. It's
+  // still reachable from any column's triangle now, not just Tools.
   const cols = _psCustomCols();
-  const idx = cols.findIndex(x=>x.key===key);
-  const at = side==='left' ? idx : idx+1;
-  cols.splice(at, 0, {name:'New Column', key:'c'+Date.now()});
+  cols.push({name:'New Column', key:'c'+Date.now()});
   _psSetCustomCols(cols);
   renderProductsPage();
 }
 function psColDeleteOne(key) {
   const cols = _psCustomCols();
   const c = cols.find(x=>x.key===key);
-  if (!confirm('Delete column "'+(c?c.name:'')+'" and its contents?')) return;
+  if (!c) { alert('Built-in columns cannot be deleted — use Hide column instead.'); return; }
+  if (!confirm('Delete column "'+c.name+'" and its contents?')) return;
   _psSetCustomCols(cols.filter(x=>x.key!==key));
   psRows.forEach(r=>{ if (r.custom) delete r.custom[key]; });
   const meta = _psColMeta(); delete meta[key]; _psPersistColMeta(meta);
@@ -8192,25 +8207,53 @@ function psColDeleteOne(key) {
 function psColAssignCells(key) {
   const cols = _psCustomCols();
   const c = cols.find(x=>x.key===key);
+  if (!c) { alert('Cell types can be set on custom columns you create. Built-in columns keep their formats.'); return; }
   const meta = _psColMeta();
-  openAssignCellsDialog(c?c.name:'', meta[key], newMeta => {
+  openAssignCellsDialog(c.name, meta[key], newMeta => {
     if (newMeta) meta[key]=newMeta; else delete meta[key];
     _psPersistColMeta(meta);
     renderProductsPage();
   });
 }
 function psColClear(key) {
+  const cols = _psCustomCols();
+  const c = cols.find(x=>x.key===key);
   if (!confirm('Clear all values in this column?')) return;
-  psRows.forEach(r=>{ if (r.custom) delete r.custom[key]; });
-  const vals = _psCustomVals();
-  Object.keys(vals).forEach(id=>{ if(vals[id]) delete vals[id][key]; });
-  localStorage.setItem('bd_ps_customvals', JSON.stringify(vals));
+  if (c) {
+    psRows.forEach(r=>{ if (r.custom) delete r.custom[key]; });
+    const vals = _psCustomVals();
+    Object.keys(vals).forEach(id=>{ if(vals[id]) delete vals[id][key]; });
+    localStorage.setItem('bd_ps_customvals', JSON.stringify(vals));
+    renderProductsPage();
+    return;
+  }
+  if (key==='total_cost' || key==='total_sell') { alert('This total is calculated — clear Cost Price, Selling Price, or Quantity instead.'); return; }
+  psRows.forEach(r=>{
+    if (key==='name') r.name='';
+    else if (key==='barcode') r.barcode='';
+    else if (key==='product_type' || key==='service_type') r.product_type='';
+    else if (key==='cost_price') r.cost_price=0;
+    else if (key==='sell_price') r.sell_price=0;
+    else if (key==='qty') r.qty=0;
+    else if (key==='qty_date') r.qty_date='';
+    else if (key==='income_acct') r.income_account='';
+    r.saved=false;
+  });
   renderProductsPage();
 }
 function psColHide(key) {
-  const hidden = _psHiddenCustomCols();
-  if (!hidden.includes(key)) hidden.push(key);
-  _psPersistHiddenCustom(hidden);
+  const cols = _psCustomCols();
+  const c = cols.find(x=>x.key===key);
+  if (c) {
+    const hidden = _psHiddenCustomCols();
+    if (!hidden.includes(key)) hidden.push(key);
+    _psPersistHiddenCustom(hidden);
+    renderProductsPage();
+    return;
+  }
+  if (key==='name') { alert('The name column cannot be hidden.'); return; }
+  psColPrefs[psType][key] = false;
+  psSaveColPrefs();
   renderProductsPage();
 }
 function psColUnhide(key) {
@@ -8379,17 +8422,20 @@ function psRenderTable() {
     return '<option value="'+escH(a.account_name)+'">'+escH(a.account_name)+'</option>';
   }).join('');
 
-  let thHtml = '<th style="width:36px;">S/N</th><th>'+(isSvc?'Service':'Product')+'</th>';
-  if (!isSvc && show('barcode'))      thHtml += '<th style="width:150px;">Barcode</th>';
-  if (!isSvc && show('product_type')) thHtml += '<th style="min-width:110px;">Product Type</th>';
-  if (isSvc  && show('service_type')) thHtml += '<th style="min-width:110px;">Service Type</th>';
-  if (!isSvc && show('cost_price'))   thHtml += '<th class="num" style="width:110px;">Cost Price</th>';
-  if (show('sell_price'))             thHtml += '<th class="num" style="width:110px;">Selling Price</th>';
-  if (!isSvc && show('qty'))          thHtml += '<th class="num" style="width:90px;">Qty in Stock</th>';
-  if (!isSvc && show('qty_date'))     thHtml += '<th style="width:130px;">Stock as at</th>';
-  if (!isSvc && show('total_cost'))   thHtml += '<th class="num" style="width:120px;">Total — at cost</th>';
-  if (!isSvc && show('total_sell'))   thHtml += '<th class="num" style="width:130px;">Total — at selling</th>';
-  if (show('income_acct'))            thHtml += '<th style="width:160px;">Posts To</th>';
+  const th = (key, extraCls, extraStyle) => '<th class="col-head'+(extraCls?' '+extraCls:'')+'" style="'+(extraStyle||'')+'position:relative;">'+escH(psColLabel(key))
+    + '<span class="col-tri" onclick="event.stopPropagation();psColMenuOpen(event,\''+key+'\')">\u25BC</span></th>';
+
+  let thHtml = '<th style="width:36px;">S/N</th>' + th('name');
+  if (!isSvc && show('barcode'))      thHtml += th('barcode', null, 'width:150px;');
+  if (!isSvc && show('product_type')) thHtml += th('product_type', null, 'min-width:110px;');
+  if (isSvc  && show('service_type')) thHtml += th('service_type', null, 'min-width:110px;');
+  if (!isSvc && show('cost_price'))   thHtml += th('cost_price', 'num', 'width:110px;');
+  if (show('sell_price'))             thHtml += th('sell_price', 'num', 'width:110px;');
+  if (!isSvc && show('qty'))          thHtml += th('qty', 'num', 'width:90px;');
+  if (!isSvc && show('qty_date'))     thHtml += th('qty_date', null, 'width:130px;');
+  if (!isSvc && show('total_cost'))   thHtml += th('total_cost', 'num', 'width:120px;');
+  if (!isSvc && show('total_sell'))   thHtml += th('total_sell', 'num', 'width:130px;');
+  if (show('income_acct'))            thHtml += th('income_acct', null, 'width:160px;');
   { const psHidden = _psHiddenCustomCols();
     _psCustomCols().forEach(function(c){
       if (psHidden.includes(c.key)) return;
