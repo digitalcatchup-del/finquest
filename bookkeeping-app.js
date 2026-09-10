@@ -7272,13 +7272,14 @@ async function deleteProduct(id) {
 // ── CHART OF ACCOUNTS ─────────────────────────────────────────
 const COA_BASES = { asset:1000, liability:2000, capital:3000, expenditure:4000, income:5000 };
 const COA_LABELS = { capital:'Capital', liability:'Liabilities', asset:'Assets', income:'Income', expenditure:'Expenditure' };
-let coaActiveType = 'capital';
+let coaActiveType = 'asset';
 
 async function openChartOfAccounts() {
   recordsPageChrome();
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading Chart of Accounts…</div>';
+  coaActiveType = 'asset'; // Assets is first left-to-right — always land here, not on whatever tab was last viewed
   await loadAccounts();
   renderCOA();
 }
