@@ -10252,8 +10252,8 @@ function openColMenuPortal(ev, items) {
   const menu = document.createElement('div');
   menu.className = 'col-menu';
   menu.style.cssText = 'position:fixed;z-index:12001;';
-  menu.innerHTML = items.map(([label,call])=>`<div class="col-menu-item" onclick="closeColMenu();${call}">${label}</div>`).join('');
-  wrap.addEventListener('click', closeColMenu);
+  menu.innerHTML = items.map(([label,call])=>`<div class="col-menu-item" onclick="event.stopPropagation();closeColMenu();${call}">${label}</div>`).join('');
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) closeColMenu(); });
   wrap.appendChild(menu);
   document.body.appendChild(wrap);
   const mw = 200, mh = items.length*34+10;
