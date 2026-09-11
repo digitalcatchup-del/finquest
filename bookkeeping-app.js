@@ -8545,8 +8545,8 @@ function psRenderTable() {
           + ' placeholder="e.g. Cleaning…" oninput="psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false"/></td>'; break;
         case 'cost_price': td += '<td><input class="ps-cell num" type="number" value="'+(r.cost_price||'')+'"'
           + ' placeholder="0" oninput="psRows['+i+'].cost_price=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>'; break;
-        case 'sell_price': td += '<td><input class="ps-cell num" type="number" value="'+(r.sell_price||'')+'"'
-          + ' placeholder="0" oninput="psRows['+i+'].sell_price=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>'; break;
+        case 'sell_price': td += '<td><input class="ps-cell num" type="text" inputmode="decimal" value="'+(r.sell_price>0?r.sell_price.toLocaleString('en-NG'):'')+'"'
+          + ' placeholder="0" onclick="this.select()" oninput="psAmtInput(this,'+i+',\'sell_price\')"/></td>'; break;
         case 'qty': td += '<td><input class="ps-cell num" type="number" value="'+(r.qty||'')+'"'
           + ' placeholder="0" oninput="psRows['+i+'].qty=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>'; break;
         case 'qty_date': td += '<td><input class="ps-cell" type="date" value="'+escH(r.qty_date||'')+'"'
@@ -8579,6 +8579,32 @@ function psColCheck(colId, checked) {
   psRenderTable();
 }
 
+
+// Live comma-formatting for Products' price cells — same approach as
+// the Journal's amount inputs (jAmtInput): strips everything but
+// digits/decimal point (so a manually-typed comma is simply absorbed,
+// not rejected), then reformats with thousand separators without
+// erasing a decimal point mid-typing or jumping the cursor to the end.
+function psAmtInput(el, i, field) {
+  const rawStr = el.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  const raw = parseFloat(rawStr) || 0;
+  psRows[i][field] = raw;
+  psRows[i].saved = false;
+
+  const dot = rawStr.indexOf('.');
+  const intPart = dot >= 0 ? rawStr.slice(0, dot) : rawStr;
+  const decPart = dot >= 0 ? '.' + rawStr.slice(dot + 1) : '';
+  const formatted = (intPart ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '') + decPart;
+  if (el.value !== formatted) {
+    const pos = el.selectionStart;
+    const prevLen = el.value.length;
+    el.value = formatted;
+    const diff = formatted.length - prevLen;
+    try { el.setSelectionRange(pos + diff, pos + diff); } catch(e) {}
+  }
+
+  psUpdateTotals(i);
+}
 
 function psUpdateTotals(i) {
   const r=psRows[i];
