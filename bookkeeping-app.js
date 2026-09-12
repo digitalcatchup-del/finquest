@@ -8673,14 +8673,22 @@ async function psSaveRow(i) {
     barcode:r.barcode||null, custom:r.custom||{},
     updated_at:new Date().toISOString(),
   };
+  let error = null;
   if(!r.id) {
-    const {data,error}=await bkDb.from('bk_products').insert({
+    const res = await bkDb.from('bk_products').insert({
       ...payload, user_id:bkUser.id, business_id:activeBusiness?.id||null, is_service:psType==='services', is_active:true,
     }).select().single();
-    if(!error&&data){psRows[i].id=data.id;psRows[i].saved=true;}
+    error = res.error;
+    if(!error && res.data){ psRows[i].id=res.data.id; psRows[i].saved=true; }
   } else {
-    await bkDb.from('bk_products').update(payload).eq('id',r.id).eq('user_id',bkUser.id);
-    psRows[i].saved=true;
+    const res = await bkDb.from('bk_products').update(payload).eq('id',r.id).eq('user_id',bkUser.id);
+    error = res.error;
+    if(!error) psRows[i].saved=true;
+  }
+  if (error) {
+    console.error('psSaveRow failed for row', i, error);
+    if(btn){btn.textContent='⚠';btn.style.color='var(--red)';btn.title='Save failed: '+error.message;}
+    return;
   }
   if(btn){btn.textContent='✓';btn.style.color='var(--green)';setTimeout(()=>{btn.textContent='›';btn.style.color='';},1500);}
 }
@@ -11284,9 +11292,14 @@ function psAutosaveTrigger() {
 }
 
 async function psSaveAll() {
+  let anyFailed = false;
   for (let i=0; i<psRows.length; i++) {
-    if (!psRows[i].saved && psRows[i].name.trim()) await psSaveRow(i);
+    if (!psRows[i].saved && psRows[i].name.trim()) {
+      await psSaveRow(i);
+      if (!psRows[i].saved) anyFailed = true;
+    }
   }
+  if (anyFailed) bdToast('⚠ Some changes could not be saved — check your connection and try again', 'error');
 }
 
 // Suppliers: save all unsaved rows
