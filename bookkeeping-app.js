@@ -4685,14 +4685,17 @@ async function saveJournal(){
   const toSave=journalRows.filter(r=>journalHasData(r));
   if(!toSave.length) return;
 
-  const totalDr=toSave.reduce((a,r)=>a+(r.debit_amount||0),0);
-  const totalCr=toSave.reduce((a,r)=>a+(r.credit_amount||0),0);
-  if(Math.abs(totalDr-totalCr)>0.01){
-    if(msg){ msg.textContent=`⚠ Cannot save — Dr ${fmt(totalDr)} ≠ Cr ${fmt(totalCr)}. Journal must balance.`; msg.className='bk-save-msg err'; }
-    return;
-  }
+  // A row "balances" on its own (or via its splits) — this gates whether
+  // it posts to the ledger, but NOT whether its typed data gets saved.
+  // Every change still saves as a draft even mid-entry; only the actual
+  // ledger posting waits for that specific row to balance.
+  const rowBalances = r => {
+    const drTotal = (r._drSplits&&r._drSplits.length) ? r._drSplits.reduce((a,s)=>a+(parseFloat(s.amount)||0),0) : (parseFloat(r.debit_amount)||0);
+    const crTotal = (r._crSplits&&r._crSplits.length) ? r._crSplits.reduce((a,s)=>a+(parseFloat(s.amount)||0),0) : (parseFloat(r.credit_amount)||0);
+    return drTotal>0 && Math.abs(drTotal-crTotal)<0.01;
+  };
 
-  if(msg){ msg.textContent='Saving & posting…'; msg.className='bk-save-msg pending'; }
+  if(msg){ msg.textContent='Saving…'; msg.className='bk-save-msg pending'; }
 
   const newRows=toSave.filter(r=>!r.id);
   const existRows=toSave.filter(r=>r.id);
@@ -4711,8 +4714,12 @@ async function saveJournal(){
     if(error){ err=error; }
     else if(created){
       created.forEach((s,i)=>{ newRows[i].id=s.id; });
+      // Only rows that actually balance get posted to the ledger — an
+      // unbalanced new row is still saved above (so nothing is lost),
+      // it just doesn't affect the books until it balances.
       const legs=[];
       newRows.forEach((r,i)=>{
+        if (!rowBalances(r)) return;
         const base={ user_id:bkUser.id, business_id:activeBusiness?.id||null, journal_id:created[i].id, txn_date:r.txn_date||null,
                      payee:r.payee||null, payer:r.payer||null, narration:r.narration||null, row_order:r.row_order||0 };
         const drS = r._drSplits&&r._drSplits.length ? r._drSplits : null;
@@ -4731,6 +4738,8 @@ async function saveJournal(){
   if (existRows.length) {
     // One batched upsert for every existing row, instead of one network
     // round-trip per row — this is what made Save & Post slow before.
+    // This upsert always runs regardless of balance — draft data is
+    // never held back.
     const upsertRows = existRows.map(r => ({
       id:r.id, user_id:bkUser.id, business_id:activeBusiness?.id||null,
       txn_date:r.txn_date||null, payee:r.payee||null, payer:r.payer||null, narration:r.narration||null,
@@ -4742,31 +4751,42 @@ async function saveJournal(){
     const { error: upErr } = await bkDb.from('bk_journal').upsert(upsertRows);
     if (upErr) { err = upErr; }
     else {
-      // Replace every existing row's ledger legs in two batched calls
-      // (one delete, one insert) instead of one pair per row.
-      const existIds = existRows.map(r => r.id);
-      await bkDb.from('bk_transactions').delete().in('journal_id', existIds);
+      // Only replace ledger legs for rows that currently balance. A row
+      // that's been edited into a temporarily-unbalanced state keeps its
+      // last-known-good (still internally consistent) legs untouched
+      // rather than being deleted and leaving a gap in the books while
+      // the user is still mid-edit.
+      const balancedExisting = existRows.filter(rowBalances);
+      if (balancedExisting.length) {
+        const existIds = balancedExisting.map(r => r.id);
+        await bkDb.from('bk_transactions').delete().in('journal_id', existIds);
 
-      const legs = [];
-      existRows.forEach(r => {
-        const base = { user_id:bkUser.id, business_id:activeBusiness?.id||null, journal_id:r.id, txn_date:r.txn_date||null,
-                       payee:r.payee||null, payer:r.payer||null, narration:r.narration||null, row_order:r.row_order||0 };
-        const drS = r._drSplits && r._drSplits.length ? r._drSplits : null;
-        const crS = r._crSplits && r._crSplits.length ? r._crSplits : null;
-        if (drS) drS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||'', payee:s.payee||base.payee, debit:s.amount, credit:0, balance:0}));
-        else if (r.debit_account_name && r.debit_record_type && r.debit_amount>0)
-          legs.push({...base, record_type:r.debit_record_type, account_name:r.debit_account_name, debit:r.debit_amount, credit:0, balance:0});
-        if (crS) crS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||'', debit:0, credit:s.amount, balance:0}));
-        else if (r.credit_account_name && r.credit_record_type && r.credit_amount>0)
-          legs.push({...base, record_type:r.credit_record_type, account_name:r.credit_account_name, debit:0, credit:r.credit_amount, balance:0});
-      });
-      if (legs.length) { const { error: legErr } = await bkDb.from('bk_transactions').insert(legs); if (legErr) err = legErr; }
+        const legs = [];
+        balancedExisting.forEach(r => {
+          const base = { user_id:bkUser.id, business_id:activeBusiness?.id||null, journal_id:r.id, txn_date:r.txn_date||null,
+                         payee:r.payee||null, payer:r.payer||null, narration:r.narration||null, row_order:r.row_order||0 };
+          const drS = r._drSplits && r._drSplits.length ? r._drSplits : null;
+          const crS = r._crSplits && r._crSplits.length ? r._crSplits : null;
+          if (drS) drS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||'', payee:s.payee||base.payee, debit:s.amount, credit:0, balance:0}));
+          else if (r.debit_account_name && r.debit_record_type && r.debit_amount>0)
+            legs.push({...base, record_type:r.debit_record_type, account_name:r.debit_account_name, debit:r.debit_amount, credit:0, balance:0});
+          if (crS) crS.forEach(s=>legs.push({...base, record_type:s.record_type, account_name:s.account_name, narration:s.narration||'', debit:0, credit:s.amount, balance:0}));
+          else if (r.credit_account_name && r.credit_record_type && r.credit_amount>0)
+            legs.push({...base, record_type:r.credit_record_type, account_name:r.credit_account_name, debit:0, credit:r.credit_amount, balance:0});
+        });
+        if (legs.length) { const { error: legErr } = await bkDb.from('bk_transactions').insert(legs); if (legErr) err = legErr; }
+      }
     }
   }
 
   if(err){ if(msg){ msg.textContent='Error: '+err.message; msg.className='bk-save-msg err'; } return; }
   journalRows.forEach(r=>r.saved=true);
-  if(msg){ msg.textContent='✓ Saved & posted to all ledgers'; msg.className='bk-save-msg ok'; }
+
+  const allBalance = toSave.every(rowBalances);
+  if(msg){
+    if (allBalance) { msg.textContent='✓ Saved & posted to all ledgers'; msg.className='bk-save-msg ok'; }
+    else { msg.textContent='✓ Saved — unbalanced rows won\'t post to the ledger until complete'; msg.className='bk-save-msg pending'; }
+  }
   await refreshEquation();
   bdRefreshDashboardIfVisible();
 }
@@ -8475,6 +8495,16 @@ function renderProductsPage() {
       + '</div>' : '');
 
   psRenderTable();
+
+  // #psBody is only (re)created here, when renderProductsPage() rebuilds
+  // the whole shell — psRenderTable() just updates its contents on
+  // subsequent calls, so attaching once here is enough; it isn't lost
+  // on every keystroke re-render.
+  const psBodyEl = document.getElementById('psBody');
+  if (psBodyEl) {
+    psBodyEl.addEventListener('input', psAutosaveTrigger);
+    psBodyEl.addEventListener('change', psAutosaveTrigger);
+  }
 }
 
 // Only re-renders the table — dropdown stays untouched
@@ -9124,6 +9154,18 @@ function renderSuppliersPage() {
       <button class="ps-add-btn" onclick="supAddRow()" style="width:100%;max-width:260px;">+ Add Supplier</button>
       <button class="staff-save-static-btn" style="padding:9px 40px;font-size:0.78rem;" onclick="supSaveAll()">Save All</button>
     </div>`;
+
+  const supBodyEl = document.getElementById('supBody');
+  if (supBodyEl) {
+    supBodyEl.addEventListener('input', supAutosaveTrigger);
+    supBodyEl.addEventListener('change', supAutosaveTrigger);
+  }
+}
+
+let _supAutoT = null;
+function supAutosaveTrigger() {
+  clearTimeout(_supAutoT);
+  _supAutoT = setTimeout(()=>supSaveAll(), 1800);
 }
 
 function supAddRow() {
@@ -11228,6 +11270,12 @@ function renderCustomerBlock(cust){
 function staffGetCust(id){return staffCustomers.find(c=>c.id===id);}
 
 // Products: save all unsaved rows
+let _psAutoT = null;
+function psAutosaveTrigger() {
+  clearTimeout(_psAutoT);
+  _psAutoT = setTimeout(()=>psSaveAll(), 1800);
+}
+
 async function psSaveAll() {
   for (let i=0; i<psRows.length; i++) {
     if (!psRows[i].saved && psRows[i].name.trim()) await psSaveRow(i);
