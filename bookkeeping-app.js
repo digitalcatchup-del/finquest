@@ -8365,7 +8365,7 @@ function psColUnhide(key) {
 function psCustomInput(i, key, val){
   psRows[i].custom = psRows[i].custom || {};
   psRows[i].custom[key] = val;
-  if (psRows[i].id) { const m=_psCustomVals(); m[psRows[i].id]=m[psRows[i].id]||{}; m[psRows[i].id][key]=val; localStorage.setItem('bd_ps_customvals', JSON.stringify(m)); }
+  psRows[i].saved = false;
 }
 function psSnapshot(){ psSheet.undo.push(JSON.stringify(psRows)); if(psSheet.undo.length>40)psSheet.undo.shift(); psSheet.redo=[]; }
 function psUndo(){ if(!psSheet.undo.length)return; psSheet.redo.push(JSON.stringify(psRows)); psRows=JSON.parse(psSheet.undo.pop()); renderProductsPage(); }
@@ -8461,10 +8461,17 @@ async function showProductsPage(type) {
     qty_date:       r.qty_as_at || '',
     unit:           r.unit || 'unit',
     income_account: r.income_account || '',
+    custom:         r.custom || {},
     saved:          true,
   }));
+  // Safety net for anyone who entered custom values before this fix,
+  // when they were only ever written to localStorage — merge those in
+  // for any key the database doesn't already have, then let the next
+  // save persist them properly.
   const _cv = _psCustomVals();
-  psRows.forEach(r => { if (r.id && _cv[r.id]) r.custom = _cv[r.id]; });
+  psRows.forEach(r => {
+    if (r.id && _cv[r.id]) r.custom = { ..._cv[r.id], ...r.custom };
+  });
   renderProductsPage();
 }
 
@@ -8663,7 +8670,7 @@ async function psSaveRow(i) {
     product_name:r.name.trim(), price:r.sell_price, cost_price:r.cost_price,
     qty_in_stock:r.qty, unit:r.unit, product_type:r.product_type||null,
     qty_as_at:r.qty_date||null, income_account:r.income_account||null,
-    barcode:r.barcode||null,
+    barcode:r.barcode||null, custom:r.custom||{},
     updated_at:new Date().toISOString(),
   };
   if(!r.id) {
