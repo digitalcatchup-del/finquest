@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -341,6 +342,14 @@ body[data-theme="skyline"] .staff-save-static-btn{color:#ffffff !important;}
 </style>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
+/* Every select's CLOSED state already gets color/background from its
+   own class (.ps-cell, .bk-input, etc.), but none of them style the
+   <option> elements — so the OPEN dropdown list falls back to the
+   browser's native white popup, making light-colored text invisible
+   except on hover (where the browser's own highlight color provides
+   contrast). One global rule fixes every dropdown in the app at once,
+   not just Products' Posts To column. */
+select option{background:var(--surface2);color:var(--white);}
 :root{
   --bg:#0f1117;--surface:#161b27;--surface2:#1d2437;
   --border:#252d3d;--border2:#2e3850;--border3:#3d4f6e;
