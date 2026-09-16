@@ -8399,9 +8399,10 @@ function psPrint(orientation){
   const table = document.querySelector('.ps-table');
   if (!table) return;
   const clone = table.cloneNode(true);
-  clone.querySelectorAll('input,select').forEach(el=>{ const s=document.createElement('span'); s.textContent=el.value||''; el.replaceWith(s); });
+  clone.querySelectorAll('input,select,textarea').forEach(el=>{ const s=document.createElement('span'); s.textContent=el.value||''; el.replaceWith(s); });
   clone.querySelectorAll('button').forEach(b=>b.remove());
   const w = window.open('','_blank');
+  if (!w) { alert('Your browser blocked the print preview popup. Please allow popups for this site and try again.'); return; }
   w.document.write('<html><head><title>'+title+'</title><style>@page{size:'+(orientation||'portrait')+';margin:14mm;}body{font-family:Arial;color:#000;}h2{margin:0 0 2px;}h3{margin:0 0 10px;font-weight:600;}table{width:100%;border-collapse:collapse;font-size:11px;}th,td{border:1px solid #999;padding:4px 6px;text-align:left;}th{background:#eee;}</style></head><body><h2>'+bizName+'</h2><h3>'+title+'</h3>'+clone.outerHTML+'</body></html>');
   w.document.close();
   setTimeout(()=>w.print(), 300);
