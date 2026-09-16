@@ -8406,6 +8406,26 @@ function psPrint(orientation){
   w.document.close();
   setTimeout(()=>w.print(), 300);
 }
+// Renders a text cell as either a plain <input> (Clip/Overflow modes —
+// both already work fine with a single-line input) or a <textarea>
+// (Wrap mode). white-space:normal alone can never wrap an <input>'s
+// value — that's a hard HTML limitation, not a missing style rule —
+// so actually wrapping long text requires swapping the element type.
+function psTextCellHtml(value, placeholder, onInputExpr, extraStyle) {
+  const v = escH(value||'');
+  const style = extraStyle||'';
+  if (psSheet.wrap === 'wrap') {
+    return '<textarea class="ps-cell ps-cell-wrap" style="'+style+'" placeholder="'+escH(placeholder)+'" rows="1"'
+      + ' oninput="'+onInputExpr+';psAutoGrowCell(this)" onfocus="psAutoGrowCell(this)">'+v+'</textarea>';
+  }
+  return '<input class="ps-cell" type="text" value="'+v+'" style="'+style+'" placeholder="'+escH(placeholder)+'"'
+    + ' oninput="'+onInputExpr+'"/>';
+}
+function psAutoGrowCell(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
 function psToolboxHtml(){
   return '<div class="sheet-toolbox" style="margin:8px 16px 0;">'
     + '<input id="psToolSearch" class="bk-input" placeholder="Search…" value="'+escH(psSheet.search)+'" style="width:130px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:6px 9px;font-size:0.74rem;outline:none;" oninput="psToolboxSearch()"/>'
@@ -8563,23 +8583,18 @@ function psRenderTable() {
         const meta = _psColMeta()[key];
         const val = (r.custom && r.custom[key]) || '';
         const onChangeExpr = `psCustomInput(${i},'${key}',VALUE)`;
-        td += '<td>'+renderAssignedCell(meta, val, onChangeExpr, null, 'ps-cell')+'</td>';
+        td += '<td>'+renderAssignedCell(meta, val, onChangeExpr, null, 'ps-cell', psSheet.wrap==='wrap')+'</td>';
         return;
       }
       switch(key) {
-        case 'name': td += '<td><input class="ps-cell" type="text" value="'+escH(r.name)+'"'
-          + ' placeholder="'+(isSvc?'Service':'Product')+' name…"'
-          + ' oninput="psRows['+i+'].name=this.value;psRows['+i+'].saved=false"/></td>'; break;
+        case 'name': td += '<td>'+psTextCellHtml(r.name, (isSvc?'Service':'Product')+' name…', 'psRows['+i+'].name=this.value;psRows['+i+'].saved=false')+'</td>'; break;
         case 'barcode': td += '<td><div style="display:flex;align-items:center;gap:3px;">'
-          + '<input class="ps-cell" type="text" value="'+escH(r.barcode||'')+'" style="flex:1;min-width:0;"'
-          + ' placeholder="Scan or type…" oninput="psRows['+i+'].barcode=this.value;psRows['+i+'].saved=false"/>'
+          + psTextCellHtml(r.barcode, 'Scan or type…', 'psRows['+i+'].barcode=this.value;psRows['+i+'].saved=false', 'flex:1;min-width:0;')
           + '<button type="button" title="Scan barcode" onclick="bdOpenScanner(code=>{psRows['+i+'].barcode=code;psRows['+i+'].saved=false;renderProductsPage();})"'
           + ' style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.9rem;padding:2px 4px;flex-shrink:0;">\uD83D\uDCF7</button>'
           + '</div></td>'; break;
-        case 'product_type': td += '<td><input class="ps-cell" type="text" value="'+escH(r.product_type||'')+'"'
-          + ' placeholder="e.g. Hair care…" oninput="psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false"/></td>'; break;
-        case 'service_type': td += '<td><input class="ps-cell" type="text" value="'+escH(r.product_type||'')+'"'
-          + ' placeholder="e.g. Cleaning…" oninput="psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false"/></td>'; break;
+        case 'product_type': td += '<td>'+psTextCellHtml(r.product_type, 'e.g. Hair care…', 'psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false')+'</td>'; break;
+        case 'service_type': td += '<td>'+psTextCellHtml(r.product_type, 'e.g. Cleaning…', 'psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false')+'</td>'; break;
         case 'cost_price': td += '<td><input class="ps-cell num" type="number" value="'+(r.cost_price||'')+'"'
           + ' placeholder="0" oninput="psRows['+i+'].cost_price=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>'; break;
         case 'sell_price': td += '<td><input class="ps-cell num" type="text" inputmode="decimal" value="'+(r.sell_price>0?r.sell_price.toLocaleString('en-NG'):'')+'"'
@@ -8610,6 +8625,10 @@ function psRenderTable() {
     '<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No '+(isSvc?'services':'products')+' yet. Click + Add below.</td></tr>';
 
   setTimeout(()=>initColumnResize('.ps-table'), 50);
+
+  if (psSheet.wrap === 'wrap' && tbody) {
+    tbody.querySelectorAll('.ps-cell-wrap').forEach(psAutoGrowCell);
+  }
 }
 
 // Checkbox changed — update prefs and re-render TABLE ONLY (dropdown stays open)
@@ -10316,12 +10335,15 @@ function acRenderSubFields(type) {
 // Cells type. onChangeExpr is a JS expression string containing the
 // literal placeholder VALUE, substituted with the real change handler
 // per call site (Sales/Expenses vs Products use different storage).
-function renderAssignedCell(meta, value, onChangeExpr, idAttr, cellClass) {
+function renderAssignedCell(meta, value, onChangeExpr, idAttr, cellClass, wrapMode) {
   meta = _acNormalizeMeta(meta);
   cellClass = cellClass || 'staff-cell';
   const v = value || '';
   const idHtml = idAttr ? ` id="${idAttr}"` : '';
   if (!meta || !meta.type || meta.type === 'text') {
+    if (wrapMode) {
+      return `<textarea class="${cellClass} ps-cell-wrap"${idHtml} rows="1" oninput="${onChangeExpr.replace('VALUE','this.value')};psAutoGrowCell(this)" onfocus="psAutoGrowCell(this)">${escH(v)}</textarea>`;
+    }
     return `<input class="${cellClass}"${idHtml} type="text" value="${escH(v)}" oninput="${onChangeExpr.replace('VALUE','this.value')}"/>`;
   }
   if (meta.type === 'number') {
