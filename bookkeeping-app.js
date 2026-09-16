@@ -5649,7 +5649,7 @@ function initSheetDragScroll(wrap) {
   let startX = 0, scrollLeft = 0, dragging = false;
   wrap.addEventListener('mousedown', function(e) {
     // Only drag if click is directly on the wrap or the table, not on an input/select/button
-    if (e.target.closest('input,select,button,a')) return;
+    if (e.target.closest('input,select,button,a,textarea')) return;
     dragging = true;
     startX = e.pageX - wrap.offsetLeft;
     scrollLeft = wrap.scrollLeft;
@@ -8417,7 +8417,7 @@ function psTextCellHtml(value, placeholder, onInputExpr, extraStyle) {
   const style = extraStyle||'';
   if (psSheet.wrap === 'wrap') {
     return '<textarea class="ps-cell ps-cell-wrap" style="'+style+'" placeholder="'+escH(placeholder)+'" rows="1"'
-      + ' oninput="'+onInputExpr+';psAutoGrowCell(this)" onfocus="psAutoGrowCell(this)">'+v+'</textarea>';
+      + ' oninput="'+onInputExpr+';psAutoGrowCell(this)">'+v+'</textarea>';
   }
   return '<input class="ps-cell" type="text" value="'+v+'" style="'+style+'" placeholder="'+escH(placeholder)+'"'
     + ' oninput="'+onInputExpr+'"/>';
@@ -10343,7 +10343,7 @@ function renderAssignedCell(meta, value, onChangeExpr, idAttr, cellClass, wrapMo
   const idHtml = idAttr ? ` id="${idAttr}"` : '';
   if (!meta || !meta.type || meta.type === 'text') {
     if (wrapMode) {
-      return `<textarea class="${cellClass} ps-cell-wrap"${idHtml} rows="1" oninput="${onChangeExpr.replace('VALUE','this.value')};psAutoGrowCell(this)" onfocus="psAutoGrowCell(this)">${escH(v)}</textarea>`;
+      return `<textarea class="${cellClass} ps-cell-wrap"${idHtml} rows="1" oninput="${onChangeExpr.replace('VALUE','this.value')};psAutoGrowCell(this)">${escH(v)}</textarea>`;
     }
     return `<input class="${cellClass}"${idHtml} type="text" value="${escH(v)}" oninput="${onChangeExpr.replace('VALUE','this.value')}"/>`;
   }
