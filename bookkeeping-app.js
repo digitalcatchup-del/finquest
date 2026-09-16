@@ -5715,8 +5715,8 @@ function exportCSV() {
 }
 
 // ── COLUMN RESIZE ─────────────────────────────────────────────
-function initColumnResize() {
-  const table = document.querySelector('.bk-sheet');
+function initColumnResize(selector) {
+  const table = document.querySelector(selector || '.bk-sheet');
   if (!table) return;
 
   table.querySelectorAll('thead th').forEach(th => {
@@ -8608,6 +8608,8 @@ function psRenderTable() {
   if (thead) thead.innerHTML = '<tr>'+thHtml+'</tr>';
   if (tbody) tbody.innerHTML = bodyHtml ||
     '<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No '+(isSvc?'services':'products')+' yet. Click + Add below.</td></tr>';
+
+  setTimeout(()=>initColumnResize('.ps-table'), 50);
 }
 
 // Checkbox changed — update prefs and re-render TABLE ONLY (dropdown stays open)
