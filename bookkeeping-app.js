@@ -8219,6 +8219,69 @@ function _psBuiltinDefaultLabel(key){
   const def = (PS_COL_DEFS[psType]||[]).find(x=>x.id===key);
   return def ? def.label : key;
 }
+// A column gets a total if it's a genuine "sum of this makes sense"
+// figure — quantities and extended totals, plus any custom column
+// explicitly typed as Number or Measurement via Assign Cells. Unit
+// prices (Cost/Selling Price) are deliberately excluded — summing
+// per-unit prices across different products isn't a meaningful figure.
+function psColIsSummable(key, customByKey) {
+  if (key === 'qty' || key === 'total_cost' || key === 'total_sell') return true;
+  const c = customByKey[key];
+  if (c) {
+    const meta = _acNormalizeMeta(_psColMeta()[key]);
+    return !!(meta && (meta.type === 'number' || meta.type === 'measurement'));
+  }
+  return false;
+}
+function psColumnTotal(key, visibleRows, customByKey) {
+  if (key === 'qty') return visibleRows.reduce((s,r)=>s+(parseFloat(r.qty)||0),0);
+  if (key === 'total_cost') return visibleRows.reduce((s,r)=>s+((parseFloat(r.cost_price)||0)*(parseFloat(r.qty)||0)),0);
+  if (key === 'total_sell') return visibleRows.reduce((s,r)=>s+((parseFloat(r.sell_price)||0)*(parseFloat(r.qty)||0)),0);
+  const c = customByKey[key];
+  if (c) {
+    const meta = _acNormalizeMeta(_psColMeta()[key]);
+    if (meta && meta.type === 'number') {
+      return visibleRows.reduce((s,r)=>s+(parseFloat((r.custom&&r.custom[key])||0)||0),0);
+    }
+    if (meta && meta.type === 'measurement') {
+      const unitSuffix = ' ' + meta.unit;
+      const sum = visibleRows.reduce((s,r)=>{
+        const v = (r.custom&&r.custom[key])||'';
+        const num = v.endsWith(unitSuffix) ? v.slice(0,-unitSuffix.length) : v;
+        return s + (parseFloat(num)||0);
+      },0);
+      return { value: sum, unit: meta.unit };
+    }
+  }
+  return null;
+}
+function psRenderTotalsRow(visibleKeys, customByKey, visibleRows) {
+  const tfoot = document.getElementById('psTfoot');
+  if (!tfoot) return;
+  const hasAnySummable = visibleKeys.some(k => psColIsSummable(k, customByKey));
+  if (!hasAnySummable || !visibleRows.length) { tfoot.innerHTML = ''; return; }
+
+  let html = '<tr class="ps-total-row"><td>TOTAL</td>';
+  visibleKeys.forEach(key => {
+    if (psColIsSummable(key, customByKey)) {
+      const result = psColumnTotal(key, visibleRows, customByKey);
+      let display = '';
+      if (key==='total_cost'||key==='total_sell') {
+        display = fmt(result); // fmt() already includes the currency symbol
+      } else if (result && typeof result === 'object') {
+        display = result.value.toLocaleString(undefined,{maximumFractionDigits:2}) + ' ' + escH(result.unit);
+      } else if (typeof result === 'number') {
+        display = result.toLocaleString(undefined,{maximumFractionDigits:2});
+      }
+      html += '<td class="num">'+display+'</td>';
+    } else {
+      html += '<td></td>';
+    }
+  });
+  html += '<td></td><td></td></tr>';
+  tfoot.innerHTML = html;
+}
+
 function psColLabel(key){ return _psLabels()[key] || _psBuiltinDefaultLabel(key); }
 
 // Per-built-in-column styling (used to build each <th>, replacing what
@@ -8374,6 +8437,7 @@ function psCustomInput(i, key, val){
   psRows[i].custom = psRows[i].custom || {};
   psRows[i].custom[key] = val;
   psRows[i].saved = false;
+  psRefreshTotalsRow();
 }
 function psSnapshot(){ psSheet.undo.push(JSON.stringify(psRows)); if(psSheet.undo.length>40)psSheet.undo.shift(); psSheet.redo=[]; }
 function psUndo(){ if(!psSheet.undo.length)return; psSheet.redo.push(JSON.stringify(psRows)); psRows=JSON.parse(psSheet.undo.pop()); renderProductsPage(); }
@@ -8526,7 +8590,7 @@ function renderProductsPage() {
     + '</div></div>'
     + (psSheet.open ? psToolboxHtml() : '')
     + '<div class="bk-sheet-wrap" style="font-family:\''+psSheet.font+'\',sans-serif;"><table class="ps-table ps-wrap-'+psSheet.wrap+'" style="min-width:400px;">'
-    + '<thead id="psThead"></thead><tbody id="psBody"></tbody>'
+    + '<thead id="psThead"></thead><tbody id="psBody"></tbody><tfoot id="psTfoot"></tfoot>'
     + '</table></div>'
     + '<div style="padding:10px 16px;display:flex;flex-direction:column;gap:8px;max-width:200px;">'
     + '<button class="ps-add-btn" onclick="psAddRow()">+ Add '+(isSvc?'Service':'Product')+'</button>'
@@ -8648,6 +8712,8 @@ function psRenderTable() {
   if (tbody) tbody.innerHTML = bodyHtml ||
     '<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No '+(isSvc?'services':'products')+' yet. Click + Add below.</td></tr>';
 
+  psRenderTotalsRow(visibleKeys, customByKey, _visible.map(o=>o.r));
+
   setTimeout(()=>initColumnResize('.ps-table', psColResized), 50);
 
   if (psSheet.wrap === 'wrap' && tbody) {
@@ -8693,6 +8759,19 @@ function psUpdateTotals(i) {
   const ac=document.getElementById(`psAtCost_${i}`), as_=document.getElementById(`psAtSell_${i}`);
   if(ac) ac.textContent=r.cost_price*r.qty>0?fmt(r.cost_price*r.qty):'';
   if(as_) as_.textContent=r.sell_price*r.qty>0?fmt(r.sell_price*r.qty):'';
+  psRefreshTotalsRow();
+}
+// Recomputes the grand totals row from current state, without a full
+// table rebuild — reads the live column set straight from the DOM
+// (data-col-key, set on every <th>) so it always matches what's
+// actually showing, including any search filter already applied.
+function psRefreshTotalsRow() {
+  const thead = document.getElementById('psThead');
+  if (!thead) return;
+  const visibleKeys = Array.from(thead.querySelectorAll('th[data-col-key]')).map(th => th.dataset.colKey);
+  const customByKey = Object.fromEntries(_psCustomCols().map(c=>[c.key,c]));
+  const visibleRows = psRows.filter(r => !psSheet.search || (r.name||'').toLowerCase().indexOf(psSheet.search.toLowerCase())>=0);
+  psRenderTotalsRow(visibleKeys, customByKey, visibleRows);
 }
 
 function psAddRow() {
