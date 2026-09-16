@@ -5715,7 +5715,7 @@ function exportCSV() {
 }
 
 // ── COLUMN RESIZE ─────────────────────────────────────────────
-function initColumnResize(selector) {
+function initColumnResize(selector, onResize) {
   const table = document.querySelector(selector || '.bk-sheet');
   if (!table) return;
 
@@ -5747,6 +5747,14 @@ function initColumnResize(selector) {
         document.body.style.userSelect = '';
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
+        // Persist the final width — without this, any later re-render
+        // (adding a row, switching tabs, etc.) rebuilds <th> elements
+        // fresh from their default widths and silently discards the
+        // resize, since it only ever existed as an inline DOM style.
+        if (onResize) {
+          const key = th.dataset.colKey;
+          if (key) onResize(key, th.offsetWidth);
+        }
       };
       document.addEventListener('pointermove', onMove);
       document.addEventListener('pointerup', onUp);
@@ -8427,6 +8435,14 @@ function psAutoGrowCell(el) {
   el.style.height = el.scrollHeight + 'px';
 }
 
+function _psColWidths(){ try { return JSON.parse(localStorage.getItem('bd_ps_colwidths_'+psType)||'{}'); } catch(e){ return {}; } }
+function _psPersistColWidths(w){ localStorage.setItem('bd_ps_colwidths_'+psType, JSON.stringify(w)); }
+function psColResized(key, widthPx) {
+  const widths = _psColWidths();
+  widths[key] = widthPx;
+  _psPersistColWidths(widths);
+}
+
 function psToolboxHtml(){
   return '<div class="sheet-toolbox" style="margin:8px 16px 0;">'
     + '<input id="psToolSearch" class="bk-input" placeholder="Search…" value="'+escH(psSheet.search)+'" style="width:130px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:6px 9px;font-size:0.74rem;outline:none;" oninput="psToolboxSearch()"/>'
@@ -8544,8 +8560,13 @@ function psRenderTable() {
     return '<option value="'+escH(a.account_name)+'">'+escH(a.account_name)+'</option>';
   }).join('');
 
-  const th = (key, extraCls, extraStyle) => '<th class="col-head'+(extraCls?' '+extraCls:'')+'" style="'+(extraStyle||'')+'position:relative;">'+escH(psColLabel(key))
-    + '<span class="col-tri" onclick="event.stopPropagation();psColMenuOpen(event,\''+key+'\')">\u25BC</span></th>';
+  const colWidths = _psColWidths();
+  const th = (key, extraCls, extraStyle) => {
+    const storedW = colWidths[key];
+    const widthOverride = storedW ? 'width:'+storedW+'px;min-width:'+storedW+'px;' : '';
+    return '<th class="col-head'+(extraCls?' '+extraCls:'')+'" data-col-key="'+key+'" style="'+(extraStyle||'')+widthOverride+'position:relative;">'+escH(psColLabel(key))
+      + '<span class="col-tri" onclick="event.stopPropagation();psColMenuOpen(event,\''+key+'\')">\u25BC</span></th>';
+  };
 
   // Column order is now a single reorderable list (built-in + custom keys
   // mixed together), instead of built-ins always rendering in a fixed
@@ -8564,7 +8585,9 @@ function psRenderTable() {
   let thHtml = '<th style="width:36px;">S/N</th>';
   visibleKeys.forEach(key => {
     if (customByKey[key]) {
-      thHtml += '<th class="col-head" style="min-width:110px;position:relative;">'+escH(customByKey[key].name)
+      const storedW = colWidths[key];
+      const customWidthStyle = storedW ? 'width:'+storedW+'px;min-width:'+storedW+'px;' : 'min-width:110px;';
+      thHtml += '<th class="col-head" data-col-key="'+key+'" style="'+customWidthStyle+'position:relative;">'+escH(customByKey[key].name)
         + '<span class="col-tri" onclick="event.stopPropagation();psColMenuOpen(event,\''+key+'\')">\u25BC</span></th>';
     } else {
       const m = PS_BUILTIN_META[key] || {};
@@ -8625,7 +8648,7 @@ function psRenderTable() {
   if (tbody) tbody.innerHTML = bodyHtml ||
     '<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No '+(isSvc?'services':'products')+' yet. Click + Add below.</td></tr>';
 
-  setTimeout(()=>initColumnResize('.ps-table'), 50);
+  setTimeout(()=>initColumnResize('.ps-table', psColResized), 50);
 
   if (psSheet.wrap === 'wrap' && tbody) {
     tbody.querySelectorAll('.ps-cell-wrap').forEach(psAutoGrowCell);
