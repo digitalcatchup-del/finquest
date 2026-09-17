@@ -8224,35 +8224,16 @@ function _psBuiltinDefaultLabel(key){
 // explicitly typed as Number or Measurement via Assign Cells. Unit
 // prices (Cost/Selling Price) are deliberately excluded — summing
 // per-unit prices across different products isn't a meaningful figure.
+// Only columns that calculate an actual monetary amount get a total —
+// Quantity is a count, not money, and custom Number/Measurement columns
+// (e.g. "Boxes", "Weight") aren't inherently monetary either, so none
+// of those get summed here even though they're numeric.
 function psColIsSummable(key, customByKey) {
-  if (key === 'qty' || key === 'total_cost' || key === 'total_sell') return true;
-  const c = customByKey[key];
-  if (c) {
-    const meta = _acNormalizeMeta(_psColMeta()[key]);
-    return !!(meta && (meta.type === 'number' || meta.type === 'measurement'));
-  }
-  return false;
+  return key === 'total_cost' || key === 'total_sell';
 }
 function psColumnTotal(key, visibleRows, customByKey) {
-  if (key === 'qty') return visibleRows.reduce((s,r)=>s+(parseFloat(r.qty)||0),0);
   if (key === 'total_cost') return visibleRows.reduce((s,r)=>s+((parseFloat(r.cost_price)||0)*(parseFloat(r.qty)||0)),0);
   if (key === 'total_sell') return visibleRows.reduce((s,r)=>s+((parseFloat(r.sell_price)||0)*(parseFloat(r.qty)||0)),0);
-  const c = customByKey[key];
-  if (c) {
-    const meta = _acNormalizeMeta(_psColMeta()[key]);
-    if (meta && meta.type === 'number') {
-      return visibleRows.reduce((s,r)=>s+(parseFloat((r.custom&&r.custom[key])||0)||0),0);
-    }
-    if (meta && meta.type === 'measurement') {
-      const unitSuffix = ' ' + meta.unit;
-      const sum = visibleRows.reduce((s,r)=>{
-        const v = (r.custom&&r.custom[key])||'';
-        const num = v.endsWith(unitSuffix) ? v.slice(0,-unitSuffix.length) : v;
-        return s + (parseFloat(num)||0);
-      },0);
-      return { value: sum, unit: meta.unit };
-    }
-  }
   return null;
 }
 function psRenderTotalsRow(visibleKeys, customByKey, visibleRows) {
@@ -8265,14 +8246,7 @@ function psRenderTotalsRow(visibleKeys, customByKey, visibleRows) {
   visibleKeys.forEach(key => {
     if (psColIsSummable(key, customByKey)) {
       const result = psColumnTotal(key, visibleRows, customByKey);
-      let display = '';
-      if (key==='total_cost'||key==='total_sell') {
-        display = fmt(result); // fmt() already includes the currency symbol
-      } else if (result && typeof result === 'object') {
-        display = result.value.toLocaleString(undefined,{maximumFractionDigits:2}) + ' ' + escH(result.unit);
-      } else if (typeof result === 'number') {
-        display = result.toLocaleString(undefined,{maximumFractionDigits:2});
-      }
+      const display = fmt(result); // fmt() already includes the currency symbol
       html += '<td class="num">'+display+'</td>';
     } else {
       html += '<td></td>';
