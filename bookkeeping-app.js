@@ -8256,6 +8256,36 @@ function psRenderTotalsRow(visibleKeys, customByKey, visibleRows) {
   tfoot.innerHTML = html;
 }
 
+// Opens Assign Cells scoped to ONE cell rather than the whole column.
+// customMeta[key] absent = no override, defers to the column's type.
+// customMeta[key] present (even {type:'text'}) = an explicit override,
+// which is why "Free text" here still needs to be stored explicitly
+// rather than treated the same as "no override" the way the column-
+// level dialog treats it.
+function psCellAssignCells(i, key) {
+  const r = psRows[i];
+  const hasOverride = !!(r.customMeta && Object.prototype.hasOwnProperty.call(r.customMeta, key));
+  const effectiveMeta = hasOverride ? r.customMeta[key] : _psColMeta()[key];
+  const cols = _psCustomCols();
+  const colName = (cols.find(c=>c.key===key)||{}).name || '';
+
+  openAssignCellsDialog(colName + ' — this cell', effectiveMeta, newMeta => {
+    r.customMeta = r.customMeta || {};
+    r.customMeta[key] = newMeta || { type: 'text' };
+    r.saved = false;
+    renderProductsPage();
+    psAutosaveTrigger();
+  }, hasOverride ? {
+    label: 'Use column default instead',
+    onReset: () => {
+      delete r.customMeta[key];
+      r.saved = false;
+      renderProductsPage();
+      psAutosaveTrigger();
+    },
+  } : null, true);
+}
+
 function psColLabel(key){ return _psLabels()[key] || _psBuiltinDefaultLabel(key); }
 
 // Per-built-in-column styling (used to build each <th>, replacing what
@@ -8543,6 +8573,7 @@ async function showProductsPage(type) {
     unit:           r.unit || 'unit',
     income_account: r.income_account || '',
     custom:         r.custom || {},
+    customMeta:     r.custom_meta || {},
     saved:          true,
   }));
   // Safety net for anyone who entered custom values before this fix,
@@ -8648,10 +8679,17 @@ function psRenderTable() {
     let td = '<td class="ps-sn">'+(i+1)+'</td>';
     visibleKeys.forEach(key => {
       if (customByKey[key]) {
-        const meta = _psColMeta()[key];
+        const hasOverride = !!(r.customMeta && Object.prototype.hasOwnProperty.call(r.customMeta, key));
+        const meta = hasOverride ? r.customMeta[key] : _psColMeta()[key];
         const val = (r.custom && r.custom[key]) || '';
         const onChangeExpr = `psCustomInput(${i},'${key}',VALUE)`;
-        td += '<td>'+renderAssignedCell(meta, val, onChangeExpr, null, 'ps-cell', psSheet.wrap==='wrap')+'</td>';
+        const cellHtml = renderAssignedCell(meta, val, onChangeExpr, null, 'ps-cell', psSheet.wrap==='wrap');
+        td += '<td style="position:relative;">'
+          + cellHtml
+          + '<span class="ps-cell-assign-trigger'+(hasOverride?' ps-cell-assign-override':'')+'"'
+          + ' title="'+(hasOverride?'Type overridden for this cell — click to change':'Change type for just this cell')+'"'
+          + ' onclick="event.stopPropagation();psCellAssignCells('+i+',\''+key+'\')">\u2699</span>'
+          + '</td>';
         return;
       }
       switch(key) {
@@ -8774,7 +8812,7 @@ async function psSaveRow(i) {
     product_name:r.name.trim(), price:r.sell_price, cost_price:r.cost_price,
     qty_in_stock:r.qty, unit:r.unit, product_type:r.product_type||null,
     qty_as_at:r.qty_date||null, income_account:r.income_account||null,
-    barcode:r.barcode||null, custom:r.custom||{},
+    barcode:r.barcode||null, custom:r.custom||{}, custom_meta:r.customMeta||{},
     updated_at:new Date().toISOString(),
   };
   let error = null;
@@ -10348,7 +10386,7 @@ function _acNormalizeMeta(meta) {
   return meta || null;
 }
 
-function openAssignCellsDialog(title, currentMeta, onSave) {
+function openAssignCellsDialog(title, currentMeta, onSave, resetOption, isCellScope) {
   closeColMenu();
   const cur = _acNormalizeMeta(currentMeta) || { type: 'text' };
   const wrap = document.createElement('div');
@@ -10356,7 +10394,7 @@ function openAssignCellsDialog(title, currentMeta, onSave) {
   wrap.style.cssText = 'position:fixed;inset:0;z-index:12000;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;';
   wrap.innerHTML = `<div class="col-menu" style="padding:16px;width:min(360px,94vw);" onclick="event.stopPropagation()">
     <label class="su-label">ASSIGN CELLS \u2014 ${escH(title)}</label>
-    <div style="font-size:0.64rem;color:var(--muted);margin-bottom:10px;">Choose what kind of value this column accepts.</div>
+    <div style="font-size:0.64rem;color:var(--muted);margin-bottom:10px;">Choose what kind of value this ${isCellScope?'cell':'column'} accepts.</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
       ${ASSIGN_CELL_TYPES.map(([val,label,hint])=>`
         <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;font-size:0.76rem;color:var(--white);cursor:pointer;">
@@ -10365,6 +10403,7 @@ function openAssignCellsDialog(title, currentMeta, onSave) {
         </label>`).join('')}
     </div>
     <div id="acSubFields"></div>
+    ${resetOption ? `<div id="acResetLink" style="text-align:center;font-size:0.7rem;color:var(--muted);text-decoration:underline;cursor:pointer;margin:2px 0 10px;">${escH(resetOption.label)}</div>` : ''}
     <div style="display:flex;gap:8px;margin-top:6px;">
       <button id="acCancel" style="flex:1;background:var(--surface2);color:var(--off);border:1px solid var(--border2);font-weight:700;font-size:0.76rem;padding:9px;border-radius:8px;cursor:pointer;">Cancel</button>
       <button id="acOk" style="flex:1;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.76rem;padding:9px;border-radius:8px;cursor:pointer;">Save</button>
@@ -10375,6 +10414,9 @@ function openAssignCellsDialog(title, currentMeta, onSave) {
   window._acCurrentMeta = cur;
   acRenderSubFields(cur.type||'text');
   wrap.querySelector('#acCancel').onclick = closeColMenu;
+  if (resetOption) {
+    wrap.querySelector('#acResetLink').onclick = () => { closeColMenu(); resetOption.onReset(); };
+  }
   wrap.querySelector('#acOk').onclick = () => {
     const type = wrap.querySelector('input[name="acType"]:checked')?.value || 'text';
     let meta = null;
