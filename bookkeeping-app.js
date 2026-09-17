@@ -2638,8 +2638,8 @@ function bdPickProduct(i, productId) {
   const row = salesRows[i];
   if (!row) return;
   const nameColKey = _salesProductNameColKey();
-  const specificName = (nameColKey && p.custom && p.custom[nameColKey]) || '';
-  row.narration = specificName || p.product_name;
+  const specificName = (nameColKey && p.custom && p.custom[nameColKey]) || p.product_name;
+  row.narration = [p.product_type, specificName].filter(Boolean).join(', ');
   row.unit_price = parseFloat(p.price)||0;
   row.product_id = p.id;
   row.qty = row.qty || 1;
