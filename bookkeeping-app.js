@@ -8114,7 +8114,7 @@ const PS_COL_DEFS = {
     { id:'cost_price',   label:'Cost Price',                      def:false },
     { id:'sell_price',   label:'Selling Price',                   def:true  },
     { id:'qty',          label:'Quantity in Stock',               def:true  },
-    { id:'qty_date',     label:'Quantity in Stock as at',         def:true  },
+    { id:'qty_date',     label:'Stock as at',         def:true  },
     { id:'total_cost',   label:'Total in stock — at cost price',  def:false },
     { id:'total_sell',   label:'Total in stock — at selling price',def:true },
     { id:'income_acct',  label:'Posts To (Income Account)',       def:false },
@@ -8281,7 +8281,7 @@ function _psColApplies(key, isSvc) {
   return !isSvc; // barcode, product_type, cost_price, qty, qty_date, total_cost, total_sell
 }
 function _psDefaultColOrder() {
-  return ['name','barcode','product_type','service_type','cost_price','sell_price','qty','qty_date','total_cost','total_sell','income_acct'];
+  return ['qty_date','name','barcode','product_type','service_type','cost_price','sell_price','qty','total_cost','total_sell','income_acct'];
 }
 function _psColOrder(){ try { return JSON.parse(localStorage.getItem('bd_ps_colorder_'+psType)||'null') || _psDefaultColOrder(); } catch(e){ return _psDefaultColOrder(); } }
 function _psPersistColOrder(arr){ localStorage.setItem('bd_ps_colorder_'+psType, JSON.stringify(arr)); }
@@ -8292,6 +8292,12 @@ function _psEffectiveColOrder() {
   const order = _psColOrder().slice();
   _psDefaultColOrder().forEach(k => { if (!order.includes(k)) order.push(k); });
   _psCustomCols().forEach(c => { if (!order.includes(c.key)) order.push(c.key); });
+  // Force qty_date first regardless of what's already stored — there's
+  // no drag-to-reorder for built-in columns, only Insert-adjacent for
+  // new custom ones, so nobody could have deliberately placed it
+  // elsewhere; any existing stored order simply predates this change.
+  const qtyDateIdx = order.indexOf('qty_date');
+  if (qtyDateIdx > 0) { order.splice(qtyDateIdx, 1); order.unshift('qty_date'); }
   return order;
 }
 function _psHiddenCustomCols(){ try { return JSON.parse(localStorage.getItem('bd_ps_hiddencustom_'+psType)||'[]'); } catch(e){ return []; } }
