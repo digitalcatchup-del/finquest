@@ -2588,7 +2588,7 @@ async function bdLoadSalesProductCache() {
   const bizId = activeBusiness?.id || null;
   if (salesProductCacheBizId === bizId) return; // already loaded for this business
   try {
-    let q = bkDb.from('bk_products').select('id,product_name,price,qty_in_stock').eq('is_service', false).eq('is_active', true);
+    let q = bkDb.from('bk_products').select('id,product_name,product_type,price,qty_in_stock').eq('is_service', false).eq('is_active', true);
     q = bizId ? q.or('business_id.eq.'+bizId+',and(business_id.is.null,user_id.eq.'+bkUser.id+')') : q.eq('user_id', bkUser.id);
     const { data } = await q.order('product_name');
     salesProductCache = data || [];
@@ -2603,7 +2603,8 @@ function bdShowProductSuggestions(i, query) {
   const matches = salesProductCache.filter(p => (p.product_name||'').toLowerCase().includes(q)).slice(0,6);
   if (!matches.length) { box.classList.add('hidden'); box.innerHTML=''; return; }
   box.innerHTML = matches.map(p => `<div class="bd-suggest-item" onmousedown="bdPickProduct(${i},'${p.id}')">
-    <span>${escH(p.product_name)}</span><span style="color:var(--muted);font-size:0.66rem;white-space:nowrap;">${fmt(p.price)} \u00b7 ${p.qty_in_stock} in stock</span>
+    <span>${escH(p.product_name)}${p.product_type?` <span style="color:var(--muted);font-weight:400;">— ${escH(p.product_type)}</span>`:''}</span>
+    <span style="color:var(--muted);font-size:0.66rem;white-space:nowrap;">${fmt(p.price)} \u00b7 ${p.qty_in_stock} in stock</span>
   </div>`).join('');
   box.classList.remove('hidden');
 }
