@@ -10183,7 +10183,7 @@ function renderRecordSheet(kind) {
         oninput="${numFn}(${i},'qty',this.value)"/></td>`;
       case 'total': return `<td style="white-space:nowrap;${hlCss(c)}"><div class="staff-cell ro" id="${kind==='sales'?'sale_total_':'etotal_'}${i}">${staffFmtAmt(r.total)}</div></td>`;
       case 'pay_mode': return `<td style="${hlCss(c)}"><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
-        onchange="sheetRows('${kind}')[${i}].pay_mode=this.value">
+        onchange="sheetRows('${kind}')[${i}].pay_mode=this.value;sheetRows('${kind}')[${i}]._posted=false">
         ${[['cash','Cash'],['transfer','Bank Transfer'],['debitcard','Debit Card'],['creditcard','Credit Card'],['pos','POS'],['cheque','Cheque'],['credit','On Credit']].map(([v,l])=>`<option value="${v}" ${(r.pay_mode||'cash')===v?'selected':''}>${l}</option>`).join('')}
       </select></td>`;
       case 'save': return `<td><button class="staff-save-row-btn" onclick="bdSaveWrap(this,()=>${saveFn}(${i}))" title="Save">&rsaquo;</button></td>`;
