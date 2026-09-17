@@ -8286,6 +8286,132 @@ function psCellAssignCells(i, key) {
   } : null, true);
 }
 
+// ── STOCK AS AT: custom calendar with a format switcher ─────────
+// A native <input type="date"> can't be modified — its calendar popup
+// is rendered entirely by the browser with zero access for page JS/CSS
+// to inject anything into it. This is a fully custom calendar instead,
+// giving full control over the format-switcher's placement.
+function _psQtyDateFormat(){ return localStorage.getItem('bd_ps_qtydateformat_'+psType) || 'slash'; }
+function _psPersistQtyDateFormat(f){ localStorage.setItem('bd_ps_qtydateformat_'+psType, f); }
+function _psOrdinalSuffix(n) {
+  const s = ['th','st','nd','rd'], v = n % 100;
+  return s[(v-20)%10] || s[v] || s[0];
+}
+const PS_MONTH_FULL   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const PS_MONTH_ABBREV = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
+const PS_DATE_FORMAT_LABELS = { slash:'09/16/2026', full:'September 16th 2026', abbrev:'Sept 16th 2026' };
+function psFormatQtyDate(iso, format) {
+  if (!iso) return '';
+  const d = new Date(iso+'T00:00:00');
+  const day = d.getDate(), year = d.getFullYear();
+  if (format === 'full')   return PS_MONTH_FULL[d.getMonth()]+' '+day+_psOrdinalSuffix(day)+' '+year;
+  if (format === 'abbrev') return PS_MONTH_ABBREV[d.getMonth()]+' '+day+_psOrdinalSuffix(day)+' '+year;
+  return String(d.getMonth()+1).padStart(2,'0')+'/'+String(day).padStart(2,'0')+'/'+year;
+}
+
+let _psCalState = null;
+let _psCalOutsideClickHandler = null;
+function psOpenDatePicker(ev, rowIndex) {
+  ev.stopPropagation();
+  psCloseDatePicker(); // in case a different cell's calendar is still open
+  const cellRect = ev.currentTarget.getBoundingClientRect();
+  const iso = psRows[rowIndex].qty_date;
+  const base = iso ? new Date(iso+'T00:00:00') : new Date();
+  _psCalState = { rowIndex, year: base.getFullYear(), month: base.getMonth() };
+
+  const panel = document.createElement('div');
+  panel.id = 'psDatePanel';
+  panel.className = 'col-menu';
+  panel.style.cssText = 'position:fixed;z-index:12001;padding:12px;width:270px;top:'+(cellRect.bottom+6)+'px;left:'+Math.min(cellRect.left, window.innerWidth-286)+'px;';
+  panel.addEventListener('click', e=>e.stopPropagation());
+  panel.innerHTML = psCalendarHtml();
+  document.body.appendChild(panel);
+
+  // Close on any click outside the panel — but NOT a full-screen
+  // overlay, which would block clicks meant for a different date
+  // cell (forcing an extra click just to dismiss this one first).
+  // Deferred to the next tick so the click that just opened this
+  // panel doesn't immediately trigger its own close.
+  setTimeout(() => {
+    _psCalOutsideClickHandler = e => {
+      if (!panel.contains(e.target) && !e.target.closest('.ps-date-cell')) psCloseDatePicker();
+    };
+    document.addEventListener('click', _psCalOutsideClickHandler, true);
+  }, 0);
+}
+function psCloseDatePicker(){
+  document.getElementById('psDatePanel')?.remove();
+  if (_psCalOutsideClickHandler) { document.removeEventListener('click', _psCalOutsideClickHandler, true); _psCalOutsideClickHandler = null; }
+  _psCalState = null;
+}
+
+function psCalendarHtml() {
+  const { year, month, rowIndex } = _psCalState;
+  const selectedISO = psRows[rowIndex].qty_date;
+  const fmt = _psQtyDateFormat();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  let cells = '';
+  for (let i=0;i<firstDay;i++) {
+    cells += '<div class="ps-cal-day ps-cal-out">'+(daysInPrevMonth-firstDay+i+1)+'</div>';
+  }
+  for (let d=1; d<=daysInMonth; d++) {
+    const iso = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    cells += '<div class="ps-cal-day'+(iso===selectedISO?' ps-cal-selected':'')+'" onclick="psPickDate(\''+iso+'\')">'+d+'</div>';
+  }
+  const trailing = (7 - ((firstDay+daysInMonth) % 7)) % 7;
+  for (let i=1;i<=trailing;i++) cells += '<div class="ps-cal-day ps-cal-out">'+i+'</div>';
+
+  return '<div style="position:relative;margin-bottom:10px;">'
+    + '<button onclick="psToggleFormatMenu(event)" class="ps-cal-format-btn">'
+    + '<span>Format: '+escH(PS_DATE_FORMAT_LABELS[fmt])+'</span><span>\u25BE</span></button>'
+    + '<div id="psFormatMenu" class="ps-cal-format-menu hidden">'
+    + Object.entries(PS_DATE_FORMAT_LABELS).map(([key,label])=>
+        '<div class="ps-cal-format-opt" onclick="psSetQtyDateFormat(\''+key+'\')">'+label+'</div>').join('')
+    + '</div></div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+    + '<button onclick="psCalNav(-1)" class="ps-cal-nav">\u2039</button>'
+    + '<span style="font-size:0.78rem;font-weight:700;color:var(--white);">'+PS_MONTH_FULL[month]+' '+year+'</span>'
+    + '<button onclick="psCalNav(1)" class="ps-cal-nav">\u203a</button></div>'
+    + '<div class="ps-cal-grid ps-cal-dow">'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>'<div>'+d+'</div>').join('')+'</div>'
+    + '<div class="ps-cal-grid" id="psCalDays">'+cells+'</div>'
+    + '<button onclick="psClearDate()" class="ps-cal-clear">Clear date</button>';
+}
+
+function psCalNav(delta) {
+  _psCalState.month += delta;
+  if (_psCalState.month < 0) { _psCalState.month = 11; _psCalState.year--; }
+  if (_psCalState.month > 11) { _psCalState.month = 0; _psCalState.year++; }
+  document.getElementById('psDatePanel').innerHTML = psCalendarHtml();
+}
+function psPickDate(iso) {
+  const { rowIndex } = _psCalState;
+  psRows[rowIndex].qty_date = iso;
+  psRows[rowIndex].saved = false;
+  psCloseDatePicker();
+  psRenderTable();
+  psAutosaveTrigger();
+}
+function psClearDate() {
+  const { rowIndex } = _psCalState;
+  psRows[rowIndex].qty_date = '';
+  psRows[rowIndex].saved = false;
+  psCloseDatePicker();
+  psRenderTable();
+  psAutosaveTrigger();
+}
+function psToggleFormatMenu(ev) {
+  ev.stopPropagation();
+  document.getElementById('psFormatMenu')?.classList.toggle('hidden');
+}
+function psSetQtyDateFormat(f) {
+  _psPersistQtyDateFormat(f);
+  if (document.getElementById('psDatePanel')) document.getElementById('psDatePanel').innerHTML = psCalendarHtml();
+  psRenderTable(); // applies the new format to every Stock as at cell, not just this one
+}
+
 function psColLabel(key){ return _psLabels()[key] || _psBuiltinDefaultLabel(key); }
 
 // Per-built-in-column styling (used to build each <th>, replacing what
@@ -8707,8 +8833,9 @@ function psRenderTable() {
           + ' placeholder="0" onclick="this.select()" oninput="psAmtInput(this,'+i+',\'sell_price\')"/></td>'; break;
         case 'qty': td += '<td><input class="ps-cell num" type="number" value="'+(r.qty||'')+'"'
           + ' placeholder="0" oninput="psRows['+i+'].qty=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>'; break;
-        case 'qty_date': td += '<td><input class="ps-cell" type="date" value="'+escH(r.qty_date||'')+'"'
-          + ' onchange="psRows['+i+'].qty_date=this.value;psRows['+i+'].saved=false"/></td>'; break;
+        case 'qty_date': td += '<td><div class="ps-cell ps-date-cell" onclick="psOpenDatePicker(event,'+i+')">'
+          + '<span>'+escH(r.qty_date ? psFormatQtyDate(r.qty_date, _psQtyDateFormat()) : '')+'</span>'
+          + '<span class="ps-date-cal-icon">\uD83D\uDCC5</span></div></td>'; break;
         case 'total_cost': td += '<td><div id="psAtCost_'+i+'" class="ps-cell ro num">'+(atCost>0?fmt(atCost):'')+'</div></td>'; break;
         case 'total_sell': td += '<td><div id="psAtSell_'+i+'" class="ps-cell ro num">'+(atSell>0?fmt(atSell):'')+'</div></td>'; break;
         case 'income_acct': td += '<td><select class="ps-cell" style="font-size:0.75rem;"'
