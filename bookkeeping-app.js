@@ -2588,24 +2588,44 @@ async function bdLoadSalesProductCache() {
   const bizId = activeBusiness?.id || null;
   if (salesProductCacheBizId === bizId) return; // already loaded for this business
   try {
-    let q = bkDb.from('bk_products').select('id,product_name,product_type,price,qty_in_stock').eq('is_service', false).eq('is_active', true);
+    let q = bkDb.from('bk_products').select('id,product_name,product_type,price,qty_in_stock,custom').eq('is_service', false).eq('is_active', true);
     q = bizId ? q.or('business_id.eq.'+bizId+',and(business_id.is.null,user_id.eq.'+bkUser.id+')') : q.eq('user_id', bkUser.id);
     const { data } = await q.order('product_name');
     salesProductCache = data || [];
     salesProductCacheBizId = bizId;
   } catch(e) { salesProductCache = []; }
 }
+// Some users create a custom "Name" column in Products to hold the
+// specific item (e.g. "Mamuda Choco Snacks"), using the built-in
+// Product/Product Type fields as broader categories instead (e.g.
+// "Beverage"/"Biscuit"). Reads Products' own stored column list
+// directly — not the psType-dependent _psCustomCols() helper, since
+// this runs from the Sales page where psType may not even be 'products'.
+function _salesProductNameColKey() {
+  try {
+    const cols = JSON.parse(localStorage.getItem('bd_ps_custom_products') || '[]');
+    const nameCol = cols.find(c => (c.name||'').trim().toLowerCase() === 'name');
+    return nameCol ? nameCol.key : null;
+  } catch(e) { return null; }
+}
 function bdShowProductSuggestions(i, query) {
   const box = document.getElementById('salesSuggest_'+i);
   if (!box) return;
   const q = (query||'').trim().toLowerCase();
   if (!q) { box.classList.add('hidden'); box.innerHTML=''; return; }
-  const matches = salesProductCache.filter(p => (p.product_name||'').toLowerCase().includes(q)).slice(0,6);
+  const nameColKey = _salesProductNameColKey();
+  const specificNameOf = p => (nameColKey && p.custom && p.custom[nameColKey]) || '';
+  const matches = salesProductCache.filter(p =>
+    (p.product_name||'').toLowerCase().includes(q) || specificNameOf(p).toLowerCase().includes(q)
+  ).slice(0,6);
   if (!matches.length) { box.classList.add('hidden'); box.innerHTML=''; return; }
-  box.innerHTML = matches.map(p => `<div class="bd-suggest-item" onmousedown="bdPickProduct(${i},'${p.id}')">
-    <span>${escH(p.product_name)}${p.product_type?` <span style="color:var(--muted);font-weight:400;">— ${escH(p.product_type)}</span>`:''}</span>
+  box.innerHTML = matches.map(p => {
+    const label = [p.product_name, p.product_type, specificNameOf(p)].filter(Boolean).join(', ');
+    return `<div class="bd-suggest-item" onmousedown="bdPickProduct(${i},'${p.id}')">
+    <span>${escH(label)}</span>
     <span style="color:var(--muted);font-size:0.66rem;white-space:nowrap;">${fmt(p.price)} \u00b7 ${p.qty_in_stock} in stock</span>
-  </div>`).join('');
+  </div>`;
+  }).join('');
   box.classList.remove('hidden');
 }
 function bdHideProductSuggestions(i) {
@@ -2617,7 +2637,9 @@ function bdPickProduct(i, productId) {
   if (!p) return;
   const row = salesRows[i];
   if (!row) return;
-  row.narration = p.product_name;
+  const nameColKey = _salesProductNameColKey();
+  const specificName = (nameColKey && p.custom && p.custom[nameColKey]) || '';
+  row.narration = specificName || p.product_name;
   row.unit_price = parseFloat(p.price)||0;
   row.product_id = p.id;
   row.qty = row.qty || 1;
