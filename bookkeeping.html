@@ -943,6 +943,24 @@ body{padding-top:0;}
 td:hover .ps-cell-assign-trigger{opacity:0.55;}
 .ps-cell-assign-trigger:hover{opacity:1 !important;color:var(--gold);}
 .ps-cell-assign-override{opacity:0.85 !important;color:var(--gold);}
+.ps-date-cell{display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.ps-date-cell:hover{background:var(--gold-t006);}
+.ps-date-cal-icon{font-size:0.72rem;opacity:0.6;flex-shrink:0;}
+.ps-cal-format-btn{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--off);font-size:0.7rem;padding:7px 9px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:inherit;}
+.ps-cal-format-btn:hover{border-color:var(--gold);}
+.ps-cal-format-menu{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--surface2);border:1px solid var(--gold);border-radius:7px;z-index:5;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,0.4);}
+.ps-cal-format-opt{padding:9px 10px;font-size:0.72rem;cursor:pointer;color:var(--white);}
+.ps-cal-format-opt:hover{background:var(--gold-dim);color:var(--gold);}
+.ps-cal-nav{background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;padding:2px 10px;font-weight:700;}
+.ps-cal-nav:hover{color:var(--white);}
+.ps-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.ps-cal-dow{color:var(--muted);font-size:0.6rem;text-align:center;margin-bottom:4px;font-weight:700;}
+.ps-cal-day{text-align:center;padding:6px 0;font-size:0.72rem;color:var(--white);cursor:pointer;border-radius:5px;}
+.ps-cal-day:hover{background:var(--gold-dim);}
+.ps-cal-out{color:var(--muted2);}
+.ps-cal-selected{background:var(--gold);color:#000;font-weight:800;}
+.ps-cal-clear{width:100%;margin-top:8px;background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.7rem;padding:7px;border-radius:6px;cursor:pointer;font-family:inherit;}
+.ps-cal-clear:hover{border-color:var(--red);color:var(--red);}
 .ps-cell:focus{background:var(--gold-t006);}
 .ps-cell.num{text-align:right;}
 .ps-cell.ro{pointer-events:none;color:var(--gold);text-align:right;font-weight:700;}
@@ -1518,6 +1536,6 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
-<script src="bookkeeping-app.js?v=25"></script>
+<script src="bookkeeping-app.js?v=26"></script>
 </body>
 </html>
