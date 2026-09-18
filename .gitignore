@@ -1,2 +1,5 @@
 # Migration files
 migrations/*.sql
+
+# Wrangler's local cache/account info — machine-specific, not project code
+.wrangler/

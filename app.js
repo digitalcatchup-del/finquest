@@ -799,7 +799,7 @@ function renderProfileHeader(profile) {
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px;">
           <button class="profile-edit-btn" onclick="openEditProfile()">Edit Profile</button>
           ${currentUser?.username && ['digitalcatchup'].includes(currentUser.username.toLowerCase()) ?
-            `<button class="profile-edit-btn" onclick="window.open('https://butterflydynamixllc.com/bookkeeping','_blank')" style="border-color:var(--gold);color:var(--gold);">📊 Bookkeeping</button>
+            `<button class="profile-edit-btn" onclick="window.open('https://app.butterflydynamixllc.com','_blank')" style="border-color:var(--gold);color:var(--gold);">📊 Bookkeeping</button>
             <button class="profile-edit-btn" onclick="launchTrack('biz-acc-vol1')" style="border-color:var(--gold);color:var(--gold);">📚 Lessons</button>
             <button class="profile-edit-btn" onclick="showPage('servicesPage')" style="border-color:var(--gold);color:var(--gold);">🧾 Services</button>
             <button class="profile-edit-btn" onclick="openArticlesPage()" style="border-color:var(--gold);color:var(--gold);">📰 View Articles</button>
