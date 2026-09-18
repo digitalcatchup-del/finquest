@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -72,7 +73,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .hero-eyebrow{font-size:1.05rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;z-index:1;position:relative;}
 .hero-heading{font-size:clamp(2.2rem,5vw,3.8rem);font-weight:900;letter-spacing:-0.03em;color:var(--white);line-height:1.1;margin-bottom:14px;z-index:1;position:relative;}
 .hero-heading span{color:var(--gold);}
-.hero-sub{font-size:0.95rem;color:var(--muted);max-width:480px;line-height:1.7;margin-bottom:32px;z-index:1;position:relative;}
+.hero-sub{font-size:0.95rem;color:var(--muted);max-width:480px;line-height:1.7;margin:0 auto 32px;z-index:1;position:relative;}
 .search-wrap{width:100%;max-width:620px;z-index:50;position:relative;margin-bottom:48px;}
 .search-box{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:4px 4px 4px 18px;transition:border-color 0.2s,box-shadow 0.2s;gap:8px;position:relative;}
 .search-box:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.08);}
@@ -84,7 +85,32 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 #searchFakePlaceholderText{pointer-events:auto;cursor:pointer;}
 .search-btn{background:none;color:var(--gold);border:none;width:auto;height:auto;flex-shrink:0;font-size:1.6rem;line-height:1;font-weight:900;cursor:pointer;transition:opacity 0.15s;position:relative;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 10px 0 4px;}
 .search-btn:hover{opacity:0.75;}
-#homeDefaultContent{width:100%;min-width:0;}
+#chatModeHeader{display:none;}
+body.chat-active #chatModeHeader{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);flex-shrink:0;width:100%;position:relative;z-index:1;}
+.chat-mode-label{font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);}
+.chat-new-btn{background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;padding:0;}
+.chat-new-btn:hover{color:var(--off);}
+#chatMessages{display:none;}
+body.chat-active #chatMessages{display:flex;flex-direction:column;gap:16px;width:100%;max-width:760px;margin:0 auto;padding:24px 20px 8px;overflow-y:auto;flex:1;min-height:0;scroll-behavior:smooth;}
+.chat-msg{display:flex;align-items:flex-start;gap:10px;width:100%;}
+.chat-msg-user{flex-direction:row-reverse;}
+.chat-msg-avatar{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:0.95rem;}
+.chat-msg-bubble{max-width:78%;padding:12px 16px;border-radius:12px;font-size:0.9rem;line-height:1.65;}
+.chat-msg-bubble p{margin:0 0 8px;}.chat-msg-bubble p:last-child{margin-bottom:0;}
+.chat-msg-bubble-user{background:var(--gold);color:#000;border-radius:12px 12px 2px 12px;font-weight:600;}
+.chat-msg-bubble-assistant{background:var(--surface);border:1px solid var(--border2);color:var(--off);border-radius:12px 12px 12px 2px;}
+#chatComposerBar{display:none;}
+body.chat-active #chatComposerBar{display:block;flex-shrink:0;padding:12px 20px 20px;width:100%;position:relative;z-index:1;}
+.chat-composer-inner{display:flex;align-items:center;gap:8px;max-width:700px;margin:0 auto;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:6px 6px 6px 16px;transition:border-color 0.2s,box-shadow 0.2s;}
+.chat-composer-inner:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.08);}
+.chat-composer-input{flex:1;background:none;border:none;outline:none;color:var(--white);font-size:0.9rem;padding:10px 0;font-family:inherit;min-width:0;}
+.chat-composer-input:disabled{opacity:0.5;}
+.chat-composer-send{background:var(--gold);border:none;color:#000;font-size:1.3rem;font-weight:900;width:38px;height:38px;border-radius:8px;cursor:pointer;flex-shrink:0;transition:opacity 0.15s;}
+.chat-composer-send:hover{opacity:0.85;}.chat-composer-send:disabled{opacity:0.4;cursor:default;}
+body.chat-active{overflow:hidden;}
+body.chat-active #heroSection{height:calc(var(--app-vh, 1vh) * 100 - var(--nav-h, 57px));min-height:calc(var(--app-vh, 1vh) * 100 - var(--nav-h, 57px));padding:0;justify-content:flex-start;align-items:stretch;overflow:hidden;}
+body.chat-active .hero-bg,body.chat-active #heroIntro,body.chat-active #heroSearchWrap{display:none;}
+body.chat-active footer{display:none;}
 .trending-section{width:100%;max-width:920px;z-index:1;position:relative;min-width:0;margin:0 auto;}
 .trending-label-row{display:flex;align-items:center;gap:16px;margin-bottom:12px;}
 .trending-label{font-size:0.68rem;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:var(--white);white-space:nowrap;flex-shrink:0;}
@@ -119,27 +145,33 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:14px 4
 .step h3{font-size:0.88rem;font-weight:800;color:var(--white);margin-bottom:6px;}
 .step p{font-size:0.77rem;color:var(--muted);line-height:1.65;}
 .step-arrow{position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:1.2rem;z-index:1;}
-.ai-chat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
-.ai-chat-messages{display:flex;flex-direction:column;gap:16px;max-height:480px;overflow-y:auto;padding-bottom:4px;scroll-behavior:smooth;}
-.ai-msg{display:flex;align-items:flex-start;gap:10px;}
-.ai-msg-user{flex-direction:row-reverse;}
-.ai-msg-avatar{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1rem;}
-.ai-msg-bubble{max-width:80%;padding:12px 16px;border-radius:12px;font-size:0.88rem;line-height:1.6;}
-.ai-msg-bubble p{margin:0 0 8px;}.ai-msg-bubble p:last-child{margin-bottom:0;}
-.ai-msg-bubble-user{background:var(--gold);color:#000;border-radius:12px 12px 2px 12px;font-weight:600;}
-.ai-msg-bubble-assistant{background:var(--surface);border:1px solid var(--border2);color:var(--off);border-radius:12px 12px 12px 2px;}
 .ai-typing{display:flex;align-items:center;gap:5px;padding:14px 18px;}
 .ai-typing span{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;animation:aiTypingBounce 1.2s infinite ease-in-out;}
 .ai-typing span:nth-child(2){animation-delay:0.2s;}
 .ai-typing span:nth-child(3){animation-delay:0.4s;}
 @keyframes aiTypingBounce{0%,80%,100%{transform:scale(0.7);opacity:0.4;}40%{transform:scale(1);opacity:1;}}
-.ai-chat-composer{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
-.ai-composer-input{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 14px;font-size:0.88rem;font-family:inherit;}
-.ai-composer-input:focus{outline:none;border-color:var(--gold);}
-.ai-composer-input:disabled{opacity:0.5;}
-.ai-send-btn{background:var(--gold);border:none;color:#000;font-size:1.2rem;font-weight:900;width:42px;height:42px;border-radius:8px;cursor:pointer;flex-shrink:0;transition:opacity 0.15s;}
-.ai-send-btn:hover{opacity:0.85;}.ai-send-btn:disabled{opacity:0.4;cursor:default;}
 .services-wrap{max-width:1040px;margin:0 auto;padding:0 32px 80px;}
+/* ── CHAT SIDEBAR ─────────────────────────────────────────── */
+.sidebar-toggle-btn{display:flex;flex-direction:column;justify-content:center;gap:4px;width:38px;height:38px;background:none;border:none;cursor:pointer;padding:0;margin-right:14px;border-radius:6px;transition:background 0.15s;}
+.sidebar-toggle-btn:hover{background:var(--surface2);}
+.sidebar-toggle-btn span{display:block;width:18px;height:2px;background:var(--off);border-radius:1px;margin:0 auto;}
+.chat-sb-backdrop{display:none;position:fixed;inset:0;background:rgba(10,13,20,0.6);z-index:390;opacity:0;transition:opacity 0.2s ease;pointer-events:none;}
+.chat-sb-backdrop.open{display:block;opacity:1;pointer-events:auto;}
+.chat-sidebar{position:fixed;top:0;left:0;height:100vh;height:calc(var(--app-vh, 1vh) * 100);width:280px;max-width:82vw;background:var(--surface);border-right:1px solid var(--border);z-index:400;display:flex;flex-direction:column;padding:16px 12px;transform:translateX(-100%);transition:transform 0.25s ease;overflow-y:auto;}
+.chat-sidebar.open{transform:translateX(0);}
+.chat-sb-top{display:flex;flex-direction:column;gap:2px;}
+.chat-sb-item{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:var(--off);font-family:inherit;font-size:0.85rem;font-weight:600;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.15s;}
+.chat-sb-item:hover{background:var(--surface2);}
+.chat-sb-primary{color:var(--gold);}
+.chat-sb-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+.chat-sb-divider{height:1px;background:var(--border);margin:12px 4px;flex-shrink:0;}
+.chat-sb-recents{flex:1;min-height:0;display:flex;flex-direction:column;}
+.chat-sb-recents-label{font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);padding:6px 12px 8px;margin:0;}
+.chat-sb-chat-item{display:block;width:100%;background:none;border:none;color:var(--off);font-family:inherit;font-size:0.82rem;text-align:left;padding:9px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.15s;}
+.chat-sb-chat-item:hover{background:var(--surface2);}
+.chat-sb-chat-item.active{background:var(--surface2);color:var(--gold);}
+.chat-sb-empty{padding:10px 12px;font-size:0.78rem;color:var(--muted);}
+
 .services-hero{text-align:center;padding:60px 20px 48px;border-bottom:1px solid var(--border);}
 .services-hero-title{font-size:2rem;font-weight:900;color:var(--white);line-height:1.2;margin:12px 0 14px;}
 .services-hero-sub{font-size:0.9rem;color:var(--muted);max-width:500px;margin:0 auto 20px;}
@@ -283,17 +315,18 @@ footer{border-top:1px solid var(--border);padding:24px 40px;display:flex;justify
 .pw-strength{height:3px;border-radius:2px;background:var(--border2);margin-top:6px;overflow:hidden;}
 .pw-strength-fill{height:100%;border-radius:2px;width:0%;transition:all 0.3s;}
 .avatar-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
-.av-opt{width:44px;height:44px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.3rem;cursor:pointer;transition:all 0.15s;}
-.av-opt.selected{border-color:var(--gold);background:var(--gold-dim);}
+.avatar-opt{width:44px;height:44px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.3rem;cursor:pointer;transition:all 0.15s;}
+.avatar-opt.selected{border-color:var(--gold);background:var(--gold-dim);}
 .step-nav{display:flex;gap:8px;margin-top:20px;}
-.welcome-screen{padding:40px 28px;text-align:center;}
-.welcome-avatar{font-size:3rem;margin-bottom:12px;}
-.welcome-name{font-size:1.3rem;font-weight:900;color:var(--white);margin-bottom:6px;}
-.welcome-sub{font-size:0.82rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
-.welcome-flavors{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;}
 .wf-chip{background:var(--gold-dim);border:1px solid rgba(201,168,76,0.3);border-radius:3px;padding:5px 12px;font-size:0.72rem;font-weight:700;color:var(--gold);}
 .switch-mode{text-align:center;margin-top:14px;font-size:0.75rem;color:var(--muted);}
 .switch-mode button{background:none;border:none;color:var(--gold);font-size:0.75rem;cursor:pointer;font-weight:700;text-decoration:underline;}
+.otp-row{display:flex;gap:8px;justify-content:center;margin-bottom:6px;}
+.otp-box{width:44px;height:52px;text-align:center;font-size:1.15rem;font-weight:700;color:var(--white);background:var(--surface2);border:1px solid var(--border2);border-radius:6px;font-family:inherit;}
+.otp-box:focus{outline:none;border-color:var(--gold);}
+.otp-box.error{border-color:var(--red);color:var(--red);}
+.resend-text{text-align:center;font-size:0.75rem;color:var(--muted);margin-top:16px;}
+.resend-text button{background:none;border:none;color:var(--gold);font-size:0.75rem;font-weight:700;text-decoration:underline;cursor:pointer;font-family:inherit;}
 .forgot-link{font-size:0.7rem;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;margin-top:4px;display:inline-block;}
 .lesson-modal{max-width:560px;}
 .modal-head{padding:24px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;}
@@ -534,6 +567,8 @@ nav{padding:12px 16px;flex-wrap:wrap;gap:8px;position:relative;}
 .search-btn{font-size:1.4rem;padding:0 8px 0 4px;}
 .nav-auth-btn{padding:12px 14px !important;font-size:0.7rem !important;min-height:44px;}
 #heroSection{padding:48px 20px 32px;min-height:auto;padding-top:80px;}
+body.chat-active #heroSection{padding-top:0;}
+.chat-msg-bubble{max-width:88%;}
 #trust{gap:28px;padding:20px;}
 #how,#pricing,#newsletter{padding:48px 20px;}
 #tip{padding:36px 20px;}
@@ -573,24 +608,21 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
 <body>
 
 <nav>
+  <button class="sidebar-toggle-btn" id="chatSidebarToggle" onclick="toggleChatSidebar()" aria-label="Open sidebar" style="display:none;"><span></span><span></span><span></span></button>
   <div class="logo-wrap" onclick="showPage('homePage')" style="cursor:pointer;">
     <div class="logo-text"><span class="logo-main">Butterfly Dynamix</span></div>
   </div>
   <div class="nav-center">
     <button class="nav-link" onclick="showPage('homePage')">Home</button>
-    <button class="nav-link" onclick="openArticlesPage()">Articles</button>
-    <button class="nav-link" onclick="showPage('howPage')">How It Works</button>
   </div>
   <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileNav()" aria-label="Menu"><span></span><span></span><span></span></button>
   <div class="mobile-nav-dropdown" id="mobileNavDropdown">
     <button class="mobile-nav-link" onclick="showPage('homePage');closeMobileNav();">Home</button>
-    <button class="mobile-nav-link" onclick="openArticlesPage();closeMobileNav();">Articles</button>
-    <button class="mobile-nav-link" onclick="showPage('howPage');closeMobileNav();">How It Works</button>
   </div>
   <div class="nav-right">
     <div id="guestNav" style="display:flex;align-items:center;gap:8px;">
       <button class="btn btn-outline nav-auth-btn" onclick="openAuth('login')" style="padding:7px 14px;font-size:0.68rem;">Log In</button>
-      <button class="btn btn-gold nav-auth-btn" onclick="openAuth('signup')" style="padding:7px 14px;font-size:0.68rem;">Join Free</button>
+      <button class="btn btn-gold nav-auth-btn" onclick="openAuth('signup')" style="padding:7px 14px;font-size:0.68rem;">Sign Up</button>
     </div>
     <div class="nav-user" id="userNav">
       <span class="nav-trial-badge" id="navTrialBadge" style="display:none;"></span>
@@ -602,14 +634,40 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
   </div>
 </nav>
 
+<div class="chat-sb-backdrop" id="chatSbBackdrop" onclick="closeChatSidebar()"></div>
+<aside class="chat-sidebar" id="chatSidebar">
+  <div class="chat-sb-top">
+    <button class="chat-sb-item chat-sb-primary" onclick="startNewChat()">
+      <span class="chat-sb-icon">＋</span> New chat
+    </button>
+  </div>
+  <div class="chat-sb-divider"></div>
+  <div class="chat-sb-top">
+    <button class="chat-sb-item" onclick="closeChatSidebar();window.open('https://butterflydynamixllc.com/bookkeeping','_blank')">
+      <span class="chat-sb-icon">📊</span> ERP
+    </button>
+  </div>
+  <div class="chat-sb-divider"></div>
+  <div class="chat-sb-recents">
+    <p class="chat-sb-recents-label">All Chats</p>
+    <div id="chatSbList"></div>
+  </div>
+</aside>
+
 <div id="homePage" class="page">
 <section id="heroSection">
   <div class="hero-bg"></div>
-  <p class="hero-eyebrow">Think Finance</p>
-  <h1 class="hero-heading">Think <span id="flavorWord" style="color:var(--gold);">Butterfly Dynamix</span></h1>
-  <p class="hero-sub">Research any topic related to finance or read an insightful article.</p>
-  <p style="font-size:0.85rem;color:var(--muted);margin-top:-8px;margin-bottom:20px;position:relative;z-index:1;">What's Your Flavor?</p>
-  <div class="search-wrap">
+  <div id="chatModeHeader">
+    <span class="chat-mode-label">✨ AI Tutor</span>
+    <button class="chat-new-btn" onclick="clearAIChat()">✕ New chat</button>
+  </div>
+  <div id="heroIntro">
+    <p class="hero-eyebrow">Think Finance</p>
+    <h1 class="hero-heading">Think <span id="flavorWord" style="color:var(--gold);">Butterfly Dynamix</span></h1>
+    <p class="hero-sub">Research any topic related to finance.</p>
+    <p style="font-size:0.85rem;color:var(--muted);margin-top:-8px;margin-bottom:20px;position:relative;z-index:1;">What's Your Flavor?</p>
+  </div>
+  <div class="search-wrap" id="heroSearchWrap">
     <div class="search-box">
       <span class="search-icon" onclick="document.getElementById('searchInput').focus();" style="cursor:pointer;">✨</span>
       <input class="search-input" type="text" id="searchInput" placeholder=" " autocomplete="off" oninput="updateFakePlaceholder(this.value,'searchFakePlaceholder');" onkeydown="onSearchKey(event)" onfocus="hideFakePlaceholder('searchFakePlaceholder')" onblur="showFakePlaceholder('searchFakePlaceholder','searchInput')"/>
@@ -617,55 +675,13 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
       <button class="search-btn" onclick="doSearch()" aria-label="Ask AI">›</button>
     </div>
   </div>
-  <div id="homeSearchResults" style="display:none;width:100%;max-width:760px;position:relative;z-index:1;"></div>
-  <div id="homeDefaultContent">
-    <div class="trending-section">
-      <div class="trending-label-row"><span class="trending-label">Articles</span><div class="trending-line"></div></div>
-      <div class="trending-ticker-wrap" id="trendingTickerWrap"><div class="trending-ticker" id="trendingTicker"></div></div>
+  <div id="chatMessages"></div>
+  <div id="chatComposerBar">
+    <div class="chat-composer-inner">
+      <input class="chat-composer-input" id="chatComposerInput" type="text" placeholder="Ask a follow-up…" autocomplete="off"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFollowUp();}" />
+      <button class="chat-composer-send" id="chatComposerSendBtn" onclick="sendFollowUp()" aria-label="Send">›</button>
     </div>
-  </div>
-</section>
-<section id="trust">
-  <div class="trust-stat"><div class="trust-val">1</div><div class="trust-lbl">New Article Weekly</div></div>
-  <div class="trust-stat"><div class="trust-val">✨</div><div class="trust-lbl">AI Finance Tutor</div></div>
-</section>
-<section id="how">
-  <p class="section-eyebrow">How It Works</p>
-  <h2 class="section-heading">Two ways to build your financial knowledge.</h2>
-  <div class="steps">
-    <div class="step" onclick="document.getElementById('searchInput').focus();window.scrollTo({top:0,behavior:'smooth'});" style="cursor:pointer;">
-      <div class="step-num">Step 01</div><div class="step-icon">✨</div>
-      <h3>Ask the AI Tutor</h3>
-      <p>Type any finance or accounting question into the search bar and get a clear, expert answer instantly.</p>
-      <div class="step-arrow">→</div>
-    </div>
-    <div class="step" onclick="openArticlesPage();" style="cursor:pointer;">
-      <div class="step-num">Step 02</div><div class="step-icon">📰</div>
-      <h3>Read the Articles</h3>
-      <p>Deep-dive into professionally written articles on real accounting and finance concepts — then comment and discuss.</p>
-      <div class="step-arrow">→</div>
-    </div>
-  </div>
-</section>
-<section id="tip">
-  <div class="tip-inner">
-    <div><div class="tip-date-badge" id="tipDate">Today</div></div>
-    <div>
-      <p class="tip-eyebrow">Daily Insight</p>
-      <p class="tip-text" id="tipText"></p>
-      <p class="tip-source" id="tipSource"></p>
-    </div>
-  </div>
-</section>
-<section id="newsletter">
-  <div class="nl-inner">
-    <h2>Stay Sharp Every Week</h2>
-    <p>One insight, one opinion and one community highlight — every week. Free, no spam.</p>
-    <div class="nl-form">
-      <input class="nl-input" type="email" placeholder="Enter your email address" id="nlEmail"/>
-      <button class="btn btn-gold" onclick="nlSubmit()">Subscribe</button>
-    </div>
-    <p class="nl-note" id="nlNote">Be among the first to join. Unsubscribe anytime.</p>
   </div>
 </section>
 <footer>
@@ -673,7 +689,6 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
   <div class="footer-links">
     <button class="footer-link" onclick="showPage('privacyPage')">Privacy Policy</button>
     <button class="footer-link" onclick="showPage('termsPage')">Terms of Service</button>
-    <button class="footer-link" onclick="openArticlesPage()">Articles</button>
   </div>
   <span class="footer-copy">© 2025 Butterfly Dynamix LLC. All rights reserved.</span>
 </footer>
@@ -990,7 +1005,7 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
     </div>
     <div id="signupFlow">
       <div class="auth-step active" id="sStep1">
-        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot"></div><span class="si-label">Step 1 of 2</span></div>
+        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot"></div><div class="si-dot"></div><span class="si-label">Step 1 of 3</span></div>
         <h2 class="auth-heading">Create your account</h2>
         <p class="auth-sub">Join professionals building their financial edge on Butterfly Dynamix.</p>
         <div class="field-row">
@@ -1003,11 +1018,28 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
           <div class="pw-strength"><div class="pw-strength-fill" id="pwFill"></div></div>
           <div class="field-err" id="ePW">Min. 8 characters required</div>
         </div>
-        <div class="step-nav"><button class="btn btn-gold btn-full" onclick="goStep1()">Continue →</button></div>
+        <div class="step-nav"><button class="btn btn-gold btn-full" id="step1ContinueBtn" onclick="goStep1()">Continue →</button></div>
         <div class="switch-mode">Already have an account? <button onclick="switchAuthTab('login')">Log in</button></div>
       </div>
+      <div class="auth-step" id="sStep2">
+        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot done"></div><div class="si-dot"></div><span class="si-label">Step 2 of 3</span></div>
+        <h2 class="auth-heading">Check your email</h2>
+        <p class="auth-sub">We sent a 6-digit code to <strong id="verifyEmailDisplay" style="color:var(--off);"></strong>. Enter it below to verify your account.</p>
+        <div class="otp-row" id="otpRow">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="0" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="1" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="2" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="3" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="4" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="5" oninput="onOtpInput(this)" onkeydown="onOtpKeydown(event,this)" onpaste="onOtpPaste(event)"/>
+        </div>
+        <div class="field-err" style="text-align:center;" id="eOtp">That code's not right. Try again.</div>
+        <div class="step-nav"><button class="btn btn-gold btn-full" id="verifyBtn" onclick="verifyEmailCode()">Verify →</button></div>
+        <p class="resend-text" id="resendText">Resend code in 0:60</p>
+        <div class="switch-mode"><button onclick="backToStep1FromVerify()">← Use a different email</button></div>
+      </div>
       <div class="auth-step" id="sStep3">
-        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot done"></div><span class="si-label">Step 2 of 2</span></div>
+        <div class="step-indicator"><div class="si-dot done"></div><div class="si-dot done"></div><div class="si-dot done"></div><span class="si-label">Step 3 of 3</span></div>
         <h2 class="auth-heading">Set up your profile</h2>
         <p class="auth-sub">How other learners will see you in the community.</p>
         <div class="field"><label>Username</label><input type="text" id="suname" placeholder="e.g. finwiz_alex"/><div class="field-err" id="eUname">Required</div></div>
@@ -1019,17 +1051,7 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
           and
           <a href="#" onclick="event.preventDefault();closeAuth();showPage('privacyPage')" style="color:var(--gold);text-decoration:underline;">Privacy Policy</a>.
         </p>
-        <div class="step-nav"><button class="btn btn-ghost" onclick="showStep(1)">← Back</button><button class="btn btn-gold" style="flex:1" id="signupSubmitBtn" onclick="completeSignup()">Create Account →</button></div>
-      </div>
-      <div class="auth-step" id="sWelcome">
-        <div class="welcome-screen">
-          <div class="welcome-avatar" id="wAvatar">😎</div>
-          <h2 class="welcome-name">Welcome, <span id="wName">Alex</span>!</h2>
-          <p class="welcome-sub">Your pip score starts at <strong>1.00000</strong> — every correct answer moves it forward.</p>
-          <div class="welcome-flavors" id="wFlavors"></div>
-          <button class="btn btn-gold btn-full" style="margin-bottom:8px" onclick="enterApp()">Start Learning →</button>
-          <button class="btn btn-ghost btn-full" onclick="closeAuth()">Explore first</button>
-        </div>
+        <div class="step-nav"><button class="btn btn-gold btn-full" style="flex:1" id="signupSubmitBtn" onclick="completeSignup()">Create Account →</button></div>
       </div>
     </div>
     <div id="loginFlow" style="display:none;">
@@ -1043,7 +1065,7 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
         </div>
         <button class="forgot-link">Forgot password?</button>
         <div class="step-nav" style="margin-top:14px;"><button class="btn btn-gold btn-full" id="loginSubmitBtn" onclick="doLogin()">Log In →</button></div>
-        <div class="switch-mode">No account yet? <button onclick="switchAuthTab('signup')">Join free</button></div>
+        <div class="switch-mode">No account yet? <button onclick="switchAuthTab('signup')">Sign up</button></div>
       </div>
     </div>
   </div>
@@ -1159,12 +1181,10 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://checkout.flutterwave.com/v3.js"></script>
-<script src="supabase-config.js?v=65"></script>
-<script src="data.js?v=65"></script>
-<script src="auth.js?v=65"></script>
-<script src="app.js?v=66"></script>
-<script src="article-editor.js?v=4.1"></script>
-<script src="track.js?v=65"></script>
+<script src="/supabase-config.js?v=65"></script>
+<script src="/data.js?v=67"></script>
+<script src="/auth.js?v=67"></script>
+<script src="/app.js?v=67"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof checkStripeRedirect === 'function') checkStripeRedirect();
@@ -1177,5 +1197,6 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
     }
   });
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"7d0da1bb13154551bb08ff68599eb91c","r":1,"spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>

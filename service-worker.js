@@ -1,6 +1,12 @@
-// Butterfly Dynamix Bookkeeping — Service Worker v13
-// v4: force cache clear after profile/multi-business update
-const CACHE_NAME = 'bd-bookkeeping-v14';
+// Butterfly Dynamix Bookkeeping — Service Worker v15
+// v15: full cache reset — bookkeeping-app.js was being served stale
+// indefinitely (cache-first, no version query string, not covered by
+// this SW's own asset list) until app.js itself started using a
+// versioned URL. Bumping CACHE_NAME here forces every existing
+// client's old cache to be deleted on next activate, so this only
+// needs to happen once — going forward the ?v= query string on
+// bookkeeping-app.js is what keeps things fresh, not this bump.
+const CACHE_NAME = 'bd-bookkeeping-v15';
 const ASSETS_TO_CACHE = [
   '/bookkeeping',
   '/bookkeeping.html',

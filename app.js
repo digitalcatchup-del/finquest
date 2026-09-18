@@ -93,6 +93,30 @@ editorPage: '/editor',
 
 let _routingFromPopstate = false; // guards against re-pushing history during back/forward
 
+// ── LAZY SCRIPT LOADING ──────────────────────────────────────
+// Lessons content (data-lessons.js) and Articles content/editor
+// (data-articles.js, article-editor.js) are the bulk of this app's JS
+// weight but only matter to a fraction of visitors on a given visit —
+// loaded on demand instead of on every homepage hit. See performance
+// notes left where each is wired up (launchTrack, openArticlesPage, etc).
+const _loadedScripts = new Set();
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    if (_loadedScripts.has(src)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => { _loadedScripts.add(src); resolve(); };
+    s.onerror = () => reject(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+function safePushState(state, url) {
+  if (location.pathname === url) return;
+  try { history.pushState(state, '', url); }
+  catch (e) { console.warn('pushState failed, continuing without URL update:', e); }
+}
+
 function showPage(page, customUrl) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(page).classList.add('active');
@@ -100,7 +124,7 @@ function showPage(page, customUrl) {
 
   if (!_routingFromPopstate) {
     const url = customUrl || PAGE_SLUGS[page] || '/';
-    if (location.pathname !== url) history.pushState({ page, url }, '', url);
+    safePushState({ page, url }, url);
   }
 }
 
@@ -114,15 +138,25 @@ window.addEventListener('popstate', (e) => {
 // Reads a URL path and shows the matching page — used both for the
 // initial page load and for Back/Forward navigation.
 
+// Articles and How It Works are now admin-only content, reachable only
+// from the owner's own profile page — not part of the public site.
+function isAdminUser() {
+  return !!(currentUser?.username && ['digitalcatchup'].includes(currentUser.username.toLowerCase()));
+}
+
 function routeToPath(path) {
   // Fixed the regex here: /\/+$/ instead of //+$/
   const parts = path.replace(/\/+$/, '').split('/').filter(Boolean); 
   
-  if (parts[0] === 'articles' && parts[1]) { openArticle(parts[1]); return; }
-  if (parts[0] === 'articles') { openArticlesPage(); return; }
+  if (parts[0] === 'chat' && parts[1]) { openChatFromRoute(parts[1]); return; }
+  if (parts[0] === 'chat') { restoreChatFromStorage(); return; }
+  exitChatMode(); // any other route leaves full-screen chat mode (history/localStorage untouched)
+
+  if (parts[0] === 'articles' && parts[1]) { if (isAdminUser()) openArticle(parts[1]); else showPage('homePage'); return; }
+  if (parts[0] === 'articles') { if (isAdminUser()) openArticlesPage(); else showPage('homePage'); return; }
   if (parts[0] === 'profile' && parts[1]) { openProfileByUsername(parts[1], 'homePage'); return; }
   if (parts[0] === 'services') { showPage('servicesPage'); return; }
-  if (parts[0] === 'how-it-works') { showPage('howPage'); return; }
+  if (parts[0] === 'how-it-works') { if (isAdminUser()) showPage('howPage'); else showPage('homePage'); return; }
   if (parts[0] === 'privacy') { showPage('privacyPage'); return; }
   if (parts[0] === 'terms') { showPage('termsPage'); return; }
   if (parts[0] === 'lessons') {
@@ -167,6 +201,7 @@ function openAuth(tab = 'signup') {
 function closeAuth() {
   document.getElementById('authOverlay').classList.remove('open');
   document.body.style.overflow = '';
+  if (typeof _resendCooldownInterval !== 'undefined') clearInterval(_resendCooldownInterval);
 }
 
 function switchAuthTab(tab) {
@@ -178,11 +213,7 @@ function switchAuthTab(tab) {
 
 function showStep(step) {
   document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
-  if (step === 'welcome') {
-    document.getElementById('sWelcome').classList.add('active');
-  } else {
-    document.getElementById(`sStep${step}`).classList.add('active');
-  }
+  document.getElementById(`sStep${step}`).classList.add('active');
 }
 
 function goStep1() {
@@ -201,7 +232,67 @@ function goStep1() {
   if (pw.length < 8) { document.getElementById('ePW').classList.add('show'); valid = false; }
   else document.getElementById('ePW').classList.remove('show');
 
-  if (valid) showStep(3);
+  if (valid && typeof sendSignupVerification === 'function') sendSignupVerification();
+}
+
+// ── EMAIL VERIFICATION (OTP) ─────────────────────────────────
+let _resendCooldownInterval = null;
+
+function clearOtpBoxes() {
+  document.querySelectorAll('.otp-box').forEach(b => { b.value = ''; b.classList.remove('error'); });
+}
+function focusFirstOtpBox() {
+  document.querySelector('.otp-box[data-idx="0"]')?.focus();
+}
+function getOtpValue() {
+  return Array.from(document.querySelectorAll('.otp-box')).map(b => b.value).join('');
+}
+function markOtpBoxesError() {
+  document.querySelectorAll('.otp-box').forEach(b => b.classList.add('error'));
+}
+function onOtpInput(el) {
+  el.value = el.value.replace(/[^0-9]/g, '').slice(0, 1);
+  el.classList.remove('error');
+  document.getElementById('eOtp').classList.remove('show');
+  const idx = parseInt(el.dataset.idx, 10);
+  if (el.value && idx < 5) document.querySelector(`.otp-box[data-idx="${idx + 1}"]`)?.focus();
+  if (getOtpValue().length === 6) verifyEmailCode();
+}
+function onOtpKeydown(e, el) {
+  const idx = parseInt(el.dataset.idx, 10);
+  if (e.key === 'Backspace' && !el.value && idx > 0) {
+    const prev = document.querySelector(`.otp-box[data-idx="${idx - 1}"]`);
+    if (prev) { prev.focus(); prev.value = ''; }
+  }
+}
+function onOtpPaste(e) {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+  const boxes = document.querySelectorAll('.otp-box');
+  text.split('').forEach((ch, i) => { if (boxes[i]) boxes[i].value = ch; });
+  if (text.length === 6) verifyEmailCode();
+  else boxes[text.length]?.focus();
+}
+function startResendCooldown(seconds) {
+  clearInterval(_resendCooldownInterval);
+  let remaining = seconds;
+  const el = document.getElementById('resendText');
+  function tick() {
+    if (remaining <= 0) {
+      clearInterval(_resendCooldownInterval);
+      el.innerHTML = `<button onclick="resendVerificationCode()">Resend code</button>`;
+      return;
+    }
+    const m = Math.floor(remaining / 60), s = String(remaining % 60).padStart(2, '0');
+    el.textContent = `Resend code in ${m}:${s}`;
+    remaining--;
+  }
+  tick();
+  _resendCooldownInterval = setInterval(tick, 1000);
+}
+function backToStep1FromVerify() {
+  clearInterval(_resendCooldownInterval);
+  showStep(1);
 }
 
 function checkPW(input) {
@@ -236,11 +327,6 @@ function selectAvatar(avatar, el) {
 }
 
 // ── ENTER APP (after login/signup) ───────────────────────────
-function enterApp() {
-  closeAuth();
-  showPage('homePage');
-}
-
 // ── SERVICES PAGE ─────────────────────────────────────────────
 function selectService(name) {
   showPage('servicesPage');
@@ -501,7 +587,7 @@ function answerNugget(idx, correct, btn) {
   if (idx === correct) {
     fb.textContent = '✓ Correct!';
     fb.classList.add('show', 'cfb');
-    pr.innerHTML = '⚡ +0.00010 pips awarded';
+    pr.innerHTML = 'âš¡ +0.00010 pips awarded';
     pr.classList.add('show');
     if (currentUser) awardPips(0.00010, 'quiz_correct');
   } else {
@@ -529,8 +615,9 @@ function goToNewsletter() {
 }
 
 // ── ARTICLES ─────────────────────────────────────────────────
-function openArticlesPage() {
+async function openArticlesPage() {
   showPage('articlesPage');
+  if (typeof articles === 'undefined') await loadScriptOnce('/data-articles.js?v=1');
   loadArticlesFromDb().then(() => renderArticlesGrid());
 }
 
@@ -559,6 +646,7 @@ function renderArticlesGrid() {
 async function openArticle(slug) {
   showPage('articleDetailPage', '/articles/' + slug);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (typeof articles === 'undefined') await loadScriptOnce('/data-articles.js?v=1');
   await renderArticleDetail(slug);
 }
 
@@ -714,7 +802,9 @@ function renderProfileHeader(profile) {
             `<button class="profile-edit-btn" onclick="window.open('https://butterflydynamixllc.com/bookkeeping','_blank')" style="border-color:var(--gold);color:var(--gold);">📊 Bookkeeping</button>
             <button class="profile-edit-btn" onclick="launchTrack('biz-acc-vol1')" style="border-color:var(--gold);color:var(--gold);">📚 Lessons</button>
             <button class="profile-edit-btn" onclick="showPage('servicesPage')" style="border-color:var(--gold);color:var(--gold);">🧾 Services</button>
-            <button class="profile-edit-btn" onclick="openArticleEditor()" style="border-color:var(--gold);color:var(--gold);">✏️ Edit Articles</button>` : ''}
+            <button class="profile-edit-btn" onclick="openArticlesPage()" style="border-color:var(--gold);color:var(--gold);">📰 View Articles</button>
+            <button class="profile-edit-btn" onclick="openArticleEditor()" style="border-color:var(--gold);color:var(--gold);">✏️ Edit Articles</button>
+            <button class="profile-edit-btn" onclick="showPage('howPage')" style="border-color:var(--gold);color:var(--gold);">❓ How It Works</button>` : ''}
         </div>` : ''}
     </div>`;
 }
@@ -816,17 +906,27 @@ async function saveProfileEdits() {
 let currentEditingArticleLegacy = null;
 
 // Wrapper to integrate with new block editor
-function openArticleEditor(slug = null) {
+async function openArticleEditor(slug = null) {
   if (!currentUser || !['digitalcatchup'].includes(currentUser.username.toLowerCase())) {
     alert('This feature is only available for administrators.');
     return;
   }
-  
-  // Use the new block editor from article-editor.js
-  if (typeof window.openArticleEditor === 'function' && window.openArticleEditor !== openArticleEditor) {
+
+  const editorSrc = '/article-editor.js?v=4.1';
+  if (!_loadedScripts.has(editorSrc)) {
+    await Promise.all([
+      typeof articles === 'undefined' ? loadScriptOnce('/data-articles.js?v=1') : Promise.resolve(),
+      loadScriptOnce(editorSrc),
+    ]);
+  }
+
+  // article-editor.js overwrites window.openArticleEditor with the real
+  // block editor as soon as it loads — call that version directly rather
+  // than comparing function identity, which breaks once the reassignment
+  // above has happened (both sides would resolve to the same reference).
+  if (typeof window.openArticleEditor === 'function' && _loadedScripts.has(editorSrc)) {
     window.openArticleEditor(slug);
   } else {
-    // Fallback to legacy if new editor not loaded
     openArticleEditorLegacy(slug);
   }
 }
@@ -1116,20 +1216,6 @@ async function handleFlutterwaveSuccess(plan, response) {
   document.getElementById('paymentSuccess').classList.add('show');
 }
 
-// ── DAILY TIP ────────────────────────────────────────────────
-function initDailyTip() {
-  const tips = dailyTips || [];
-  if (!tips.length) return;
-  const idx  = new Date().getDate() % tips.length;
-  const tip  = tips[idx];
-  const dateEl   = document.getElementById('tipDate');
-  const textEl   = document.getElementById('tipText');
-  const sourceEl = document.getElementById('tipSource');
-  if (dateEl)   dateEl.textContent   = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long' });
-  if (textEl)   textEl.textContent   = tip.text;
-  if (sourceEl) sourceEl.textContent = tip.source || '';
-}
-
 // ── AI CHAT INPUT HANDLING ────────────────────────────────────
 function onSearch() { /* no-op in AI mode — no live suggestions */ }
 
@@ -1278,8 +1364,114 @@ function showFakePlaceholder(wrapId, inputId) {
 // folder (see README), then set ANTHROPIC_API_KEY in Supabase secrets.
 // Until the function is deployed, the chat shows a friendly setup note.
 
-let aiChatHistory = []; // { role: 'user'|'assistant', content: string }[]
-let aiChatActive  = false;
+let aiChatHistory  = []; // { role: 'user'|'assistant', content: string }[]
+let aiChatActive   = false;
+let currentChatId  = null;  // uuid of the synced chat currently open (null = new/unsaved, or anonymous)
+let userChatsList  = [];    // cached { id, title, updated_at }[] for the sidebar/Chats page, most recent first
+// Bootstraps the Lessons feature on first use: track.js (the actual
+// implementation, as _launchTrackImpl) and data-lessons.js (~260KB of
+// lesson content) only load when someone actually opens Lessons.
+async function launchTrack(key) {
+  if (typeof _launchTrackImpl !== 'function') {
+    await Promise.all([
+      loadScriptOnce('/data-lessons.js?v=1'),
+      loadScriptOnce('/track.js?v=67'),
+    ]);
+  }
+  return _launchTrackImpl(key);
+}
+
+const CHAT_STORAGE_KEY = 'bdxAiChatHistory'; // anonymous-visitor fallback only
+
+// ── CHAT SIDEBAR ─────────────────────────────────────────────
+function toggleChatSidebar() {
+  const sb = document.getElementById('chatSidebar');
+  if (sb.classList.contains('open')) closeChatSidebar(); else openChatSidebar();
+}
+function openChatSidebar() {
+  document.getElementById('chatSidebar').classList.add('open');
+  document.getElementById('chatSbBackdrop').classList.add('open');
+  loadUserChatsList();
+}
+function closeChatSidebar() {
+  document.getElementById('chatSidebar').classList.remove('open');
+  document.getElementById('chatSbBackdrop').classList.remove('open');
+}
+
+async function loadUserChatsList() {
+  if (!currentUser) { userChatsList = []; renderChatSidebarList(); return; }
+  const { data, error } = await db.from('ai_chats')
+    .select('id, title, updated_at')
+    .eq('user_id', currentUser.id)
+    .order('updated_at', { ascending: false });
+  if (!error && data) userChatsList = data;
+  renderChatSidebarList();
+}
+
+function renderChatSidebarList() {
+  const list = document.getElementById('chatSbList');
+  if (!list) return;
+  if (!userChatsList.length) {
+    list.innerHTML = `<p class="chat-sb-empty">No chats yet — ask a question to get started.</p>`;
+    return;
+  }
+  list.innerHTML = userChatsList.map(c => `
+    <button class="chat-sb-chat-item${c.id === currentChatId ? ' active' : ''}" onclick="openChat('${c.id}')">${escapeHtml(c.title || 'New chat')}</button>
+  `).join('');
+}
+
+// Saves the current conversation. Logged-in users sync to their account
+// (ai_chats table, RLS-scoped to auth.uid()); anonymous visitors fall
+// back to a single session-local chat in localStorage, as before.
+async function persistChat() {
+  if (!currentUser) { saveChatToStorage(); return; }
+  if (!aiChatHistory.length) return;
+
+  const title = (aiChatHistory[0].content || 'New chat').slice(0, 60);
+
+  if (currentChatId) {
+    await db.from('ai_chats')
+      .update({ messages: aiChatHistory, title, updated_at: new Date().toISOString() })
+      .eq('id', currentChatId);
+  } else {
+    const { data, error } = await db.from('ai_chats')
+      .insert({ user_id: currentUser.id, title, messages: aiChatHistory })
+      .select('id')
+      .single();
+    if (!error && data) {
+      currentChatId = data.id;
+      const url = '/chat/' + currentChatId;
+      safePushState({ page: 'homePage', url }, url);
+    }
+  }
+  loadUserChatsList();
+}
+
+async function openChat(id) {
+  if (!currentUser || !id) return;
+  const { data, error } = await db.from('ai_chats').select('id, messages').eq('id', id).single();
+  if (error || !data) return;
+  currentChatId  = id;
+  aiChatHistory  = data.messages || [];
+  aiChatActive   = true;
+  enterChatMode();
+  renderChatMessages(false);
+  closeChatSidebar();
+  renderChatSidebarList();
+}
+
+// Called from routeToPath() for /chat/<id> — see restoreSession() in
+// auth.js for why this also gets re-invoked once login state settles.
+async function openChatFromRoute(id) {
+  showPage('homePage');
+  if (!currentUser) return; // not logged in (yet, or at all) — stay on landing
+  await openChat(id);
+}
+
+function startNewChat() {
+  clearAIChat();
+  closeChatSidebar();
+}
 
 const AI_SYSTEM_PROMPT = `You are an expert financial education tutor for Butterfly Dynamix, a professional education platform. You help students and professionals understand any topic related to money, finance, and business.
 
@@ -1305,20 +1497,55 @@ function doSearch() {
   askAI(val);
 }
 
-async function askAI(question) {
-  if (currentUser) {
-    db.from('search_log').insert({ user_id: currentUser.id, query: question }).then(() => {});
+// Puts the page into full-screen chat mode (hero copy hidden, chat fills
+// the viewport under the nav). Pushes /chat (or /chat/<id> once synced)
+// into the URL so a refresh restores the conversation.
+function enterChatMode() {
+  if (typeof setAppVH === 'function') setAppVH();
+  document.body.classList.add('chat-active');
+  if (!_routingFromPopstate) {
+    const url = currentChatId ? ('/chat/' + currentChatId) : '/chat';
+    safePushState({ page: 'homePage', url }, url);
   }
+}
 
-  document.getElementById('homeDefaultContent').style.display = 'none';
-  const panel = document.getElementById('homeSearchResults');
-  panel.style.display = 'block';
-  aiChatActive = true;
+function exitChatMode() {
+  document.body.classList.remove('chat-active');
+}
 
+function saveChatToStorage() {
+  try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(aiChatHistory)); }
+  catch (e) { /* storage unavailable — chat still works, just won't persist */ }
+}
+
+// Called from routeToPath() when the URL is /chat (direct load or refresh)
+// — anonymous-visitor / not-yet-synced fallback only. Logged-in synced
+// chats load via openChatFromRoute() for /chat/<id> instead.
+function restoreChatFromStorage() {
+  showPage('homePage');
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    const hist = raw ? JSON.parse(raw) : null;
+    if (!Array.isArray(hist) || !hist.length) return;
+    aiChatHistory = hist;
+    aiChatActive  = true;
+    enterChatMode();
+    renderChatMessages(false);
+  } catch (e) { /* corrupt or missing storage — just show the landing page */ }
+}
+
+async function askAI(question) {
   aiChatHistory.push({ role: 'user', content: question });
+  aiChatActive = true;
+  enterChatMode();
+
   document.getElementById('searchInput').value = '';
   showFakePlaceholder('searchFakePlaceholder', 'searchInput');
-  renderChatPanel(true);
+  const composerInput = document.getElementById('chatComposerInput');
+  if (composerInput) composerInput.value = '';
+
+  renderChatMessages(true);
+  persistChat(); // fire-and-forget save of the user's message so it's never lost mid-reply
 
   let reply = '';
   try {
@@ -1350,60 +1577,52 @@ async function askAI(question) {
   }
 
   aiChatHistory.push({ role: 'assistant', content: reply });
-  renderChatPanel(false);
+  renderChatMessages(false);
+  persistChat();
 }
 
-function renderChatPanel(isLoading) {
-  const panel = document.getElementById('homeSearchResults');
+function renderChatMessages(isLoading) {
+  const panel = document.getElementById('chatMessages');
+  if (!panel) return;
 
   const messagesHtml = aiChatHistory.map((msg, idx) => {
     const isLastAssistant = !isLoading && idx === aiChatHistory.length - 1 && msg.role === 'assistant';
     if (msg.role === 'user') {
-      return `<div class="ai-msg ai-msg-user">
-        <div class="ai-msg-bubble ai-msg-bubble-user">${escapeHtml(msg.content)}</div>
+      return `<div class="chat-msg chat-msg-user">
+        <div class="chat-msg-bubble chat-msg-bubble-user">${escapeHtml(msg.content)}</div>
       </div>`;
     } else {
-      return `<div class="ai-msg ai-msg-assistant"${isLastAssistant ? ' id="aiLatestResponse"' : ''}>
-        <div class="ai-msg-avatar">✨</div>
-        <div class="ai-msg-bubble ai-msg-bubble-assistant">${formatAIText(msg.content)}</div>
+      return `<div class="chat-msg chat-msg-assistant"${isLastAssistant ? ' id="aiLatestResponse"' : ''}>
+        <div class="chat-msg-avatar">✨</div>
+        <div class="chat-msg-bubble chat-msg-bubble-assistant">${formatAIText(msg.content)}</div>
       </div>`;
     }
   }).join('');
 
   const typingHtml = isLoading ? `
-    <div class="ai-msg ai-msg-assistant" id="aiLatestResponse">
-      <div class="ai-msg-avatar">✨</div>
-      <div class="ai-msg-bubble ai-msg-bubble-assistant ai-typing">
+    <div class="chat-msg chat-msg-assistant" id="aiLatestResponse">
+      <div class="chat-msg-avatar">✨</div>
+      <div class="chat-msg-bubble chat-msg-bubble-assistant ai-typing">
         <span></span><span></span><span></span>
       </div>
     </div>` : '';
 
-  panel.innerHTML = `
-    <div class="ai-chat-header">
-      <span style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);">✨ AI Tutor</span>
-      <button onclick="clearAIChat()" style="background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;padding:0;">✕ New chat</button>
-    </div>
-    <div class="ai-chat-messages" id="aiMessages">
-      ${messagesHtml}
-      ${typingHtml}
-    </div>
-    <div class="ai-chat-composer">
-      <input class="ai-composer-input" id="aiFollowUpInput" type="text"
-        placeholder="Ask a follow-up…"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFollowUp();}"
-        ${isLoading ? 'disabled' : ''} />
-      <button class="ai-send-btn" onclick="sendFollowUp()" ${isLoading ? 'disabled' : ''}>›</button>
-    </div>`;
+  panel.innerHTML = messagesHtml + typingHtml;
+
+  const composerInput = document.getElementById('chatComposerInput');
+  const sendBtn       = document.getElementById('chatComposerSendBtn');
+  if (composerInput) composerInput.disabled = isLoading;
+  if (sendBtn)        sendBtn.disabled       = isLoading;
 
   requestAnimationFrame(() => {
-    // No automatic scrolling or focus — page stays still.
-    // User scrolls and interacts at their own pace.
+    panel.scrollTop = panel.scrollHeight;
+    if (!isLoading) composerInput?.focus();
   });
 }
 
 function sendFollowUp() {
-  const inp = document.getElementById('aiFollowUpInput');
-  if (!inp) return;
+  const inp = document.getElementById('chatComposerInput');
+  if (!inp || inp.disabled) return;
   const val = inp.value.trim();
   if (!val) return;
   inp.value = '';
@@ -1413,11 +1632,14 @@ function sendFollowUp() {
 function clearAIChat() {
   aiChatHistory = [];
   aiChatActive  = false;
-  document.getElementById('homeSearchResults').style.display = 'none';
-  document.getElementById('homeSearchResults').innerHTML = '';
-  document.getElementById('homeDefaultContent').style.display = '';
+  currentChatId = null;
+  try { localStorage.removeItem(CHAT_STORAGE_KEY); } catch (e) {}
+  exitChatMode();
+  document.getElementById('chatMessages').innerHTML = '';
   document.getElementById('searchInput').value = '';
   showFakePlaceholder('searchFakePlaceholder', 'searchInput');
+  renderChatSidebarList();
+  safePushState({ page: 'homePage', url: '/' }, '/');
 }
 
 function escapeHtml(str) {
@@ -1605,6 +1827,27 @@ function buildArticlesTicker() {
   });
 }
 
+// ── VIEWPORT HEIGHT FIX (mobile browsers) ──────────────────────
+// 100vh on mobile is measured with the browser chrome (address bar)
+// hidden, which overstates the visible area whenever the chrome is
+// showing. That mismatch, combined with overflow:hidden in chat mode,
+// pushed the composer bar off-screen with no way to scroll to it.
+// This mirrors the real visible height in a CSS var instead.
+function setAppVH() {
+  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  document.documentElement.style.setProperty('--app-vh', (h * 0.01) + 'px');
+  const navEl = document.querySelector('nav');
+  if (navEl) document.documentElement.style.setProperty('--nav-h', navEl.offsetHeight + 'px');
+}
+setAppVH();
+window.addEventListener('resize', setAppVH);
+window.addEventListener('orientationchange', setAppVH);
+// iOS Safari doesn't reliably fire window 'resize' when the on-screen
+// keyboard opens/closes — visualViewport does, so watch that too.
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', setAppVH);
+}
+
 // ── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
   _routingFromPopstate = true;   // first paint shouldn't push a duplicate history entry
@@ -1612,7 +1855,6 @@ document.addEventListener('DOMContentLoaded', function () {
   _routingFromPopstate = false;
   buildAvatarGrid();
   buildArticlesTicker();
-  initDailyTip();
   // Small delay to ensure data.js searchQuestionBatches is available
   setTimeout(() => {
     if (typeof startSearchPlaceholderRotation === 'function') {
