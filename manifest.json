@@ -1,13 +1,13 @@
 {
-  "name": "Butterfly Dynamix Bookkeeping",
-  "short_name": "BD Books",
+  "name": "Butterfly Dynamix ERP",
+  "short_name": "Butterfly Dynamix",
   "description": "Simple bookkeeping for small businesses",
   "id": "/bookkeeping",
   "start_url": "/bookkeeping",
   "scope": "/bookkeeping",
   "display": "standalone",
-  "background_color": "#0f1117",
-  "theme_color": "#d4af37",
+  "background_color": "#0b0d12",
+  "theme_color": "#c9a84c",
   "orientation": "portrait-primary",
   "lang": "en",
   "icons": [

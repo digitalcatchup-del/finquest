@@ -1035,12 +1035,12 @@ async function doLogin() {
   const email = document.getElementById('loginEmail')?.value.trim();
   const pw    = document.getElementById('loginPW')?.value;
   const err   = document.getElementById('loginErr');
-  if (!email||!pw) { if(err) err.textContent='Please enter email and password.'; return; }
-  if (err) err.textContent='Logging in…';
+  if (!email||!pw) { if(err) { err.textContent='Please enter email and password.'; err.style.color='var(--red)'; } return; }
+  if (err) { err.textContent='Logging in…'; err.style.color='var(--gold)'; }
 
   const { data:{ session }, error } = await bkDb.auth.signInWithPassword({ email, password:pw });
   if (error||!session) {
-    if (err) err.textContent = error?.message||'Login failed. Please try again.';
+    if (err) { err.textContent = error?.message||'Login failed. Please try again.'; err.style.color='var(--red)'; }
     return;
   }
   bkUser = session.user;
@@ -1829,14 +1829,23 @@ const CREDIT_NORMAL = ['capital','liability','income'];
 (async () => {
   const { data:{ session } } = await bkDb.auth.getSession();
   if (!session) {
-    const { data:r } = await bkDb.auth.refreshSession();
-    if (r?.session) {
-      bkUser = r.session.user;
-      hideAuthScreen();
-      await continueInit();
-    } else {
-      showAuthScreen('landing');
+    // Only attempt a refresh if a session was actually ever stored —
+    // otherwise (a brand-new visitor reaching the registration page,
+    // or someone who just logged out) this was an unconditional,
+    // pointless network round-trip attempting to refresh a token that
+    // never existed, which is exactly what delayed the auth screen
+    // from appearing.
+    const hasStoredSession = Object.keys(localStorage).some(k => k.startsWith('sb-') && k.includes('auth-token'));
+    if (hasStoredSession) {
+      const { data:r } = await bkDb.auth.refreshSession();
+      if (r?.session) {
+        bkUser = r.session.user;
+        hideAuthScreen();
+        await continueInit();
+        return;
+      }
     }
+    showAuthScreen('landing');
   } else {
     bkUser = session.user;
     hideAuthScreen();
@@ -7973,6 +7982,11 @@ async function saveAccountSettings() {
 async function bkSignOut() {
   await bkDb.auth.signOut();
   bkUser=null;
+  // Clear the saved route — otherwise it's still sitting in
+  // sessionStorage from before logout, and logging back in would
+  // restore whatever page was open then instead of landing on the
+  // dashboard.
+  try { sessionStorage.removeItem('bd_route'); } catch(e) {}
   showAuthScreen('landing');
 }
 
