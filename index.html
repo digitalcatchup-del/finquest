@@ -1185,6 +1185,18 @@ footer{padding:16px 20px;flex-direction:column;text-align:center;}
 <script src="/auth.js?v=67"></script>
 <script src="/app.js?v=67"></script>
 <script>
+  // Cleans up any lingering service worker from an earlier version of
+  // the app. This site doesn't register one anymore, so a worker still
+  // active in a visitor's browser from a past visit could otherwise
+  // keep serving stale cached pages indefinitely, with no way for the
+  // current code to tell it to update.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(reg) { reg.unregister(); });
+    });
+  }
+</script>
+<script>
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof checkStripeRedirect === 'function') checkStripeRedirect();
     if (typeof restoreSession === 'function') restoreSession();
