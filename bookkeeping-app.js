@@ -8760,6 +8760,19 @@ function psSetColumnAlign(alignment) {
   _psPersistColAlign(align);
   psRenderTable();
 }
+// Sorts rows by when they were originally recorded (not shown anywhere,
+// just used as the sort key), rather than any other field. Rows
+// missing a created_at (shouldn't normally happen post-fix, but a
+// safety net) sort as oldest so they don't jump unpredictably.
+function psSortByCreated(direction) {
+  psSnapshot();
+  psRows.sort((a, b) => {
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return direction === 'desc' ? tb - ta : ta - tb;
+  });
+  renderProductsPage();
+}
 function psDecimals(d){ psSheet.decimals = Math.max(0, Math.min(4, (psSheet.decimals===null?0:psSheet.decimals)+d)); renderProductsPage(); }
 function psToolboxSearch(){ psSheet.search = document.getElementById('psToolSearch')?.value||''; psRenderTable(); }
 function psInsertColumn(){
@@ -8840,6 +8853,8 @@ function psToolboxHtml(){
     + '<button class="tb-icon" title="Align cells left — click a cell in the target column first" onclick="psSetColumnAlign(\'left\')">L</button>'
     + '<button class="tb-icon" title="Align cells center — click a cell in the target column first" onclick="psSetColumnAlign(\'center\')">C</button>'
     + '<button class="tb-icon" title="Align cells right — click a cell in the target column first" onclick="psSetColumnAlign(\'right\')">R</button>'
+    + '<button class="tb-icon" title="Sort by date/time recorded — ascending (oldest first)" onclick="psSortByCreated(\'asc\')">▲</button>'
+    + '<button class="tb-icon" title="Sort by date/time recorded — descending (newest first)" onclick="psSortByCreated(\'desc\')">▼</button>'
     + '<button class="tb-icon" title="Insert column" onclick="psInsertColumn()">+▥</button>'
     + '<button class="tb-icon" title="Delete column" onclick="psDeleteColumn()">−▥</button>'
     + '<button class="tb-icon" id="psColBtn" onclick="togglePsColSelector()">🎛 Default Columns ▾</button>'
@@ -8864,7 +8879,7 @@ async function showProductsPage(type) {
     _pq = activeBusiness?.id
       ? _pq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
       : _pq.eq('user_id', bkUser.id);
-    const res = await _pq.eq('is_service',psType==='services').eq('is_active',true).order('product_name');
+    const res = await _pq.eq('is_service',psType==='services').eq('is_active',true).order('created_at');
     data = res.data;
     bdCacheWrite('products', data, psType);
   }
@@ -8882,6 +8897,7 @@ async function showProductsPage(type) {
     income_account: r.income_account || '',
     custom:         r.custom || {},
     customMeta:     r.custom_meta || {},
+    created_at:     r.created_at || null,
     saved:          true,
   }));
   // Safety net for anyone who entered custom values before this fix,
@@ -9114,7 +9130,7 @@ function psRefreshTotalsRow() {
 
 function psAddRow() {
   psSnapshot();
-  psRows.push({id:null,name:'',barcode:'',product_type:'',cost_price:0,sell_price:0,qty:0,qty_date:'',unit:'unit',income_account:'',saved:false});
+  psRows.push({id:null,name:'',barcode:'',product_type:'',cost_price:0,sell_price:0,qty:0,qty_date:'',unit:'unit',income_account:'',created_at:new Date().toISOString(),saved:false});
   renderProductsPage();
   setTimeout(()=>{ document.querySelectorAll('#psBody tr').item(psRows.length-1)?.querySelector('input')?.focus(); },40);
 }
