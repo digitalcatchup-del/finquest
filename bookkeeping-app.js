@@ -1884,10 +1884,18 @@ async function continueInit() {
   applyRoleMenu(userRole);
   try { closeBkMenu(); } catch(e) {}
 
-  // Load businesses (async, non-blocking for UI)
+  // Load businesses BEFORE routing — this must be awaited, not
+  // fire-and-forget. activeBusiness (set inside loadUserBusinesses)
+  // is what every page's data queries filter by; rendering the
+  // current page before this resolves was the root cause of pages
+  // showing stale/wrong data and settings on refresh, only becoming
+  // correct once you navigated away and back (by which point this
+  // had quietly finished in the background).
   if (userRole !== 'employee') {
-    loadUserBusinesses().catch(()=>{});
-    loadProfileData().then(d=>{ profileData = d; }).catch(()=>{});
+    await Promise.all([
+      loadUserBusinesses().catch(()=>{}),
+      loadProfileData().then(d=>{ profileData = d; }).catch(()=>{}),
+    ]);
   }
 
   // Route by role — employees go to Staff Pages, owners/managers go to Dashboard
