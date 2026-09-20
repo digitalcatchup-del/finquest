@@ -160,7 +160,8 @@ select.bk-cell,input.bk-cell{min-height:34px;}
 
 /* ── DESKTOP AUTH LAYOUTS ── */
 .auth-split{display:flex;gap:56px;align-items:stretch;}
-.auth-brand{flex:1 1 45%;display:flex;flex-direction:column;padding:10px 0;}
+.auth-brand{flex:1 1 45%;display:flex;flex-direction:column;padding:10px 0;position:relative;}
+.auth-brand-glow{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse 70% 50% at 50% 40%,rgba(201,168,76,0.10) 0%,transparent 70%);pointer-events:none;}
 .auth-formcol{flex:1 1 55%;}
 @media(max-width:899px){.auth-split{display:block;}.auth-brand{display:none;}}
 .ri-grid2{display:grid;grid-template-columns:1fr;column-gap:16px;}
@@ -350,26 +351,26 @@ body[data-theme="skyline"] .staff-save-static-btn{color:#ffffff !important;}
    not just Products' Posts To column. */
 select option{background:var(--surface2);color:var(--white);}
 :root{
-  --bg:#0f1117;--surface:#161b27;--surface2:#1d2437;
+  --bg:#0b0d12;--surface:#14171f;--surface2:#181c25;
   --border:#252d3d;--border2:#2e3850;--border3:#3d4f6e;
-  --white:#f1f5f9;--off:#c8d3e8;--muted:#6b7a99;--muted2:#4a5568;
-  --gold:#d4af37;--gold-dim:var(--gold-t012);--accent-ink:#000;
-  --gold-t0:var(--gold-t0);
---gold-t0025:var(--gold-t0025);
---gold-t003:var(--gold-t003);
---gold-t004:var(--gold-t004);
---gold-t005:var(--gold-t005);
---gold-t006:var(--gold-t006);
---gold-t007:var(--gold-t007);
---gold-t008:var(--gold-t008);
---gold-t01:var(--gold-t01);
---gold-t010:var(--gold-t010);
---gold-t012:var(--gold-t012);
---gold-t014:var(--gold-t014);
---gold-t015:var(--gold-t015);
---gold-t02:var(--gold-t02);
---gold-t03:var(--gold-t03);
---gold-t06:var(--gold-t06);
+  --white:#f4f5f7;--off:#d4d8e0;--muted:#8a93a6;--muted2:#5c6478;
+  --gold:#c9a84c;--gold-dim:var(--gold-t012);--accent-ink:#000;
+  --gold-t0:rgba(201,168,76,0);
+--gold-t0025:rgba(201,168,76,0.025);
+--gold-t003:rgba(201,168,76,0.03);
+--gold-t004:rgba(201,168,76,0.04);
+--gold-t005:rgba(201,168,76,0.05);
+--gold-t006:rgba(201,168,76,0.06);
+--gold-t007:rgba(201,168,76,0.07);
+--gold-t008:rgba(201,168,76,0.08);
+--gold-t01:rgba(201,168,76,0.1);
+--gold-t010:rgba(201,168,76,0.10);
+--gold-t012:rgba(201,168,76,0.12);
+--gold-t014:rgba(201,168,76,0.14);
+--gold-t015:rgba(201,168,76,0.15);
+--gold-t02:rgba(201,168,76,0.2);
+--gold-t03:rgba(201,168,76,0.3);
+--gold-t06:rgba(201,168,76,0.6);
   
   --green:#1a7a4a;--green-l:#d1fae5;
   --red:#c0392b;--red-l:#fee2e2;
@@ -1539,7 +1540,7 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
-<script src="bookkeeping-app.js?v=39"></script>
+<script src="bookkeeping-app.js?v=40"></script>
 <script>
   // Cleans up any lingering service worker from an earlier version of
   // this app. Nothing here registers one anymore, so a worker still

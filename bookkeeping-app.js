@@ -141,18 +141,26 @@ function showAuthScreen(view) {
   content.style.maxWidth = (isDesk && (view==='landing'||view==='signup'||view==='login')) ? '1100px' : '520px';
 
   const logo = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-    <div style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🏦</div>
+    <svg viewBox="0 0 100 100" width="38" height="38" xmlns="http://www.w3.org/2000/svg" aria-label="Butterfly Dynamix">
+      <path d="M48 42 C30 20, 8 22, 6 38 C4 52, 22 56, 48 48 Z" fill="var(--gold)"/>
+      <path d="M52 42 C70 20, 92 22, 94 38 C96 52, 78 56, 52 48 Z" fill="var(--gold)"/>
+      <path d="M48 50 C34 58, 20 62, 16 76 C14 84, 22 88, 30 82 C34 78, 30 68, 48 58 Z" fill="var(--gold)"/>
+      <path d="M52 50 C66 58, 80 62, 84 76 C86 84, 78 88, 70 82 C66 78, 70 68, 52 58 Z" fill="var(--gold)"/>
+      <path d="M50 30 Q46 20 42 16 M50 30 Q54 20 58 16" stroke="var(--gold)" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="50" cy="50" rx="2.5" ry="22" fill="var(--gold)"/>
+    </svg>
     <div><div style="font-weight:800;font-size:0.95rem;color:var(--white);">Butterfly Dynamix</div>
-    <div style="font-size:0.62rem;letter-spacing:0.18em;color:var(--gold);font-weight:700;">ACCOUNTING</div></div>
+    <div style="font-size:0.62rem;letter-spacing:0.18em;color:var(--gold);font-weight:700;">ERP</div></div>
   </div>`;
 
   const brandPanel = `<div class="auth-brand">
-    <div>
+    <div class="auth-brand-glow"></div>
+    <div style="position:relative;z-index:1;">
       ${logo}
       <h1 style="font-size:2.1rem;font-weight:900;line-height:1.2;margin:36px 0 0;color:var(--white);">Think Finance,<br>Think <span style="color:var(--gold);">Butterfly Dynamix</span></h1>
       <p style="font-size:0.92rem;color:var(--muted);line-height:1.6;margin:20px 0 0;">Built for micro, small and medium enterprises — manage multiple businesses, track finances, and grow with confidence.</p>
     </div>
-    <div style="display:flex;flex-direction:column;gap:14px;margin-top:24px;">
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:24px;position:relative;z-index:1;">
       ${['Multi-business portfolio management','Real-time cash flow tracking','Invoices, expenses & payroll'].map(f=>`
         <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;color:var(--off);">
           <span style="color:var(--gold);">✓</span> ${f}</div>`).join('')}
