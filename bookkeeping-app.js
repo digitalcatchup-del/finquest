@@ -8452,16 +8452,19 @@ function _psEffectiveTotalFormula(key) {
 // the three numeric built-ins, plus any custom column typed as Number
 // or Measurement via Assign Cells.
 function psTotalFormulaEligibleColumns() {
+  // Built-in names read through psColLabel() so a renamed column shows
+  // its current name here too, not the original default.
   const cols = [
-    { key:'cost_price', name:'Cost price' },
-    { key:'sell_price', name:'Selling price' },
-    { key:'qty', name:'Quantity in stock' },
+    { key:'cost_price', name:psColLabel('cost_price') },
+    { key:'sell_price', name:psColLabel('sell_price') },
+    { key:'qty', name:psColLabel('qty') },
   ];
-  const meta = _psColMeta();
-  _psCustomCols().forEach(c => {
-    const m = meta[c.key];
-    if (m && (m.type === 'number' || m.type === 'measurement')) cols.push({ key:c.key, name:c.name });
-  });
+  // Every custom column is eligible, regardless of whether its type has
+  // been explicitly set via Assign Cells — a freshly-added column with
+  // no type set yet (which renders as plain text) may still hold
+  // numeric-looking values the user wants to use in a formula, and
+  // _psNumericValueOf() already parses whatever's actually there.
+  _psCustomCols().forEach(c => cols.push({ key:c.key, name:c.name }));
   return cols;
 }
 function _psColDisplayName(key) {
