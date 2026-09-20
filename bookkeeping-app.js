@@ -231,6 +231,25 @@ function showAuthScreen(view) {
       : logo + signupForm;
     setTimeout(()=>document.getElementById('suEmail')?.focus(), 50);
 
+  } else if (view==='verify-email') {
+    const verifyForm = `
+      <div style="font-size:1.4rem;font-weight:900;color:var(--white);margin:${isDesk?'0':'20px'} 0 4px;">Check your email</div>
+      <div style="font-size:0.85rem;color:var(--muted);margin-bottom:22px;line-height:1.5;">We sent a 6-digit code to <strong style="color:var(--off);">${escH(bkPendingSignupEmail)}</strong>. Enter it below to verify your account.</div>
+      <div class="bk-login-form">
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px;">
+          ${[0,1,2,3,4,5].map(i=>`<input type="text" inputmode="numeric" maxlength="1" class="bk-otp-box" data-idx="${i}" oninput="bkOnOtpInput(this)" onkeydown="bkOnOtpKeydown(event,this)" onpaste="bkOnOtpPaste(event)"/>`).join('')}
+        </div>
+        <div class="bk-login-err" id="bkEOtp" style="text-align:center;min-height:16px;"></div>
+        <button class="bk-login-btn" id="bkVerifyBtn" style="background:var(--gold);color:#000;" onclick="bkVerifyEmailCode()">Verify →</button>
+        <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--muted);" id="bkResendText">Resend code in 1:00</div>
+        <div style="text-align:center;margin-top:8px;"><span style="color:var(--gold);font-weight:700;cursor:pointer;font-size:0.8rem;" onclick="bkBackToSignupFromVerify()">← Use a different email</span></div>
+      </div>`;
+    content.innerHTML = isDesk
+      ? `<div class="auth-split">${brandPanel}<div class="auth-formcol">${verifyForm}</div></div>`
+      : logo + verifyForm;
+    bkClearOtpBoxes();
+    setTimeout(()=>{ bkFocusFirstOtpBox(); bkStartResendCooldown(60); }, 50);
+
   } else if (view==='personal-info') {
     const stepper = `
       <div style="display:flex;align-items:center;gap:0;margin:18px 0 24px;">
@@ -266,7 +285,7 @@ function showAuthScreen(view) {
           <div><label class="su-label">PHONE NUMBER *</label><input class="bk-login-input" type="tel" id="ri_phone" placeholder="+234 801 234 5678"/></div>
           <div><label class="su-label">EMAIL ADDRESS</label><input class="bk-login-input" value="${escH(bkUser?.email||'')}" disabled style="opacity:0.55;"/></div>
         </div>
-        <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin:14px 0 4px;">Origin &amp; Residential Address</div>
+        <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin:14px 0 4px;">Origin</div>
         <div class="ri-grid2">
           <div><label class="su-label">COUNTRY OF ORIGIN *</label><input class="bk-login-input" id="ri_origin_country" value="Nigeria"/></div>
           <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_state"><option value="">Select State</option>${stateOpts}</select></div>
@@ -1021,14 +1040,107 @@ async function doSignUp() {
     if (err) { err.textContent = error.message; err.style.color='var(--red)'; }
     return;
   }
-  if (!data?.user) {
-    if (err) { err.textContent='Account created — please check your email to confirm, then log in.'; err.style.color='var(--gold)'; }
+
+  // The presence of a session (not just data.user, which Supabase
+  // returns either way) is what actually indicates whether email
+  // confirmation is required — signUp() always returns a user object
+  // even when the account still needs verifying.
+  if (data.session) {
+    bkUser = data.user;
+    showAuthScreen('personal-info');
     return;
   }
 
-  // Auth user created and session set — continue to personal info (step 2)
-  bkUser = data.user;
+  bkPendingSignupEmail = email;
+  showAuthScreen('verify-email');
+}
+
+// ── EMAIL VERIFICATION (OTP) ────────────────────────────────
+function bkClearOtpBoxes() {
+  document.querySelectorAll('.bk-otp-box').forEach(b => { b.value = ''; b.classList.remove('error'); });
+}
+function bkFocusFirstOtpBox() {
+  document.querySelector('.bk-otp-box[data-idx="0"]')?.focus();
+}
+function bkGetOtpValue() {
+  return Array.from(document.querySelectorAll('.bk-otp-box')).map(b => b.value).join('');
+}
+function bkMarkOtpBoxesError() {
+  document.querySelectorAll('.bk-otp-box').forEach(b => b.classList.add('error'));
+}
+function bkOnOtpInput(el) {
+  el.value = el.value.replace(/[^0-9]/g, '').slice(0, 1);
+  el.classList.remove('error');
+  document.getElementById('bkEOtp')?.classList.remove('show');
+  const idx = parseInt(el.dataset.idx, 10);
+  if (el.value && idx < 5) document.querySelector(`.bk-otp-box[data-idx="${idx + 1}"]`)?.focus();
+  if (bkGetOtpValue().length === 6) bkVerifyEmailCode();
+}
+function bkOnOtpKeydown(e, el) {
+  const idx = parseInt(el.dataset.idx, 10);
+  if (e.key === 'Backspace' && !el.value && idx > 0) {
+    const prev = document.querySelector(`.bk-otp-box[data-idx="${idx - 1}"]`);
+    if (prev) { prev.focus(); prev.value = ''; }
+  }
+}
+function bkOnOtpPaste(e) {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+  const boxes = document.querySelectorAll('.bk-otp-box');
+  text.split('').forEach((ch, i) => { if (boxes[i]) boxes[i].value = ch; });
+  if (text.length === 6) bkVerifyEmailCode();
+  else boxes[text.length]?.focus();
+}
+function bkStartResendCooldown(seconds) {
+  clearInterval(_bkResendCooldownInterval);
+  let remaining = seconds;
+  const el = document.getElementById('bkResendText');
+  function tick() {
+    if (!el) return;
+    if (remaining <= 0) {
+      clearInterval(_bkResendCooldownInterval);
+      el.innerHTML = `<span style="color:var(--gold);font-weight:700;cursor:pointer;" onclick="bkResendVerificationCode()">Resend code</span>`;
+      return;
+    }
+    const m = Math.floor(remaining / 60), s = String(remaining % 60).padStart(2, '0');
+    el.textContent = `Resend code in ${m}:${s}`;
+    remaining--;
+  }
+  tick();
+  _bkResendCooldownInterval = setInterval(tick, 1000);
+}
+async function bkVerifyEmailCode() {
+  const code  = bkGetOtpValue();
+  const email = bkPendingSignupEmail;
+  const errEl = document.getElementById('bkEOtp');
+  const btn   = document.getElementById('bkVerifyBtn');
+  if (code.length !== 6) {
+    if (errEl) { errEl.textContent = 'Enter all 6 digits'; errEl.classList.add('show'); }
+    return;
+  }
+  if (btn) { btn.textContent = 'Verifying…'; btn.disabled = true; }
+  if (errEl) errEl.classList.remove('show');
+
+  const { data, error } = await bkDb.auth.verifyOtp({ email, token: code, type: 'signup' });
+
+  if (btn) { btn.textContent = 'Verify →'; btn.disabled = false; }
+  if (error) {
+    if (errEl) { errEl.textContent = "That code's not right. Try again."; errEl.classList.add('show'); }
+    bkMarkOtpBoxesError();
+    return;
+  }
+  clearInterval(_bkResendCooldownInterval);
+  bkUser = data?.session?.user || data?.user;
   showAuthScreen('personal-info');
+}
+async function bkResendVerificationCode() {
+  const email = bkPendingSignupEmail;
+  const { error } = await bkDb.auth.resend({ type: 'signup', email });
+  if (!error) bkStartResendCooldown(60);
+}
+function bkBackToSignupFromVerify() {
+  clearInterval(_bkResendCooldownInterval);
+  showAuthScreen('signup');
 }
 
 async function doLogin() {
@@ -1785,6 +1897,8 @@ const DEFAULT_ACCOUNTS = {
 
 // ── STATE ────────────────────────────────────────────────────
 let bkUser        = null;
+let bkPendingSignupEmail = '';
+let _bkResendCooldownInterval = null;
 
 // ── LAZY SCRIPT LOADING ──────────────────────────────────────
 // Sales module (customers, invoices, quotes, AR aging) only loads
