@@ -2728,7 +2728,7 @@ async function bdLoadSalesProductCache() {
   const bizId = activeBusiness?.id || null;
   if (salesProductCacheBizId === bizId) return; // already loaded for this business
   try {
-    let q = bkDb.from('bk_products').select('id,product_name,product_type,price,qty_in_stock,custom').eq('is_service', false).eq('is_active', true);
+    let q = bkDb.from('bk_products').select('id,product_name,product_type,price,cost_price,qty_in_stock,custom').eq('is_service', false).eq('is_active', true);
     q = bizId ? q.or('business_id.eq.'+bizId+',and(business_id.is.null,user_id.eq.'+bkUser.id+')') : q.eq('user_id', bkUser.id);
     const { data } = await q.order('product_name');
     salesProductCache = data || [];
@@ -5064,12 +5064,12 @@ const ACCOUNTING_RULES = [
     type:'liability' },
   { id:'inventory',
     keys:['inventory','stock adjustment','closing stock','opening stock','stocktake','stock count'],
-    debit:'Inventory/Stock', credit:'Purchases',
+    debit:'Inventory / Stock', credit:'Purchases',
     principle:'Inventory Adjustment: Stock (asset) increases on debit; Purchases adjusted on credit.',
     type:'asset' },
   { id:'cogs',
     keys:['cost of goods sold','cost of sales','cogs','goods sold'],
-    debit:'Cost of Goods Sold', credit:'Inventory/Stock',
+    debit:'Cost of Goods Sold', credit:'Inventory / Stock',
     principle:'COGS: Cost of Goods Sold (expense) increases on debit; Inventory (asset) decreases on credit.',
     type:'expenditure' },
 
@@ -10432,6 +10432,8 @@ async function salesSaveRow(i){
   const r=salesRows[i];
   if(!r||!r.total) return;
   if(r._posted) return;
+  const err = bdValidateSaleRow(r);
+  if (err) { alert(err); return; }
   const btn=document.querySelector('#salesrow_'+i+' .staff-save-row-btn');
   if(btn){btn.textContent='...';btn.disabled=true;}
   try{
@@ -10460,6 +10462,10 @@ async function salesSaveAll(){
   }
   const rows=flat;
   if(!rows.length){ alert('No new rows to save — all have already been posted.'); return; }
+  for (const r of rows) {
+    const err = bdValidateSaleRow(r);
+    if (err) { alert(err); return; }
+  }
   for(const r of rows){
     if(navigator.onLine) await autoPostSaleRow(r,'',date);
     else { await bdSaveOffline(r,'',date); }
@@ -11630,6 +11636,12 @@ async function sheetSaveBundle(kind, i) {
   if (btn) { btn.textContent='...'; btn.disabled=true; }
   const gid = (crypto.randomUUID ? crypto.randomUUID() : 'g'+Date.now()+Math.random().toString(16).slice(2));
   const date = new Date().toISOString().slice(0,10);
+  if (kind === 'sales') {
+    for (const x of valid) {
+      const err = bdValidateSaleRow(x);
+      if (err) { alert(err); return; }
+    }
+  }
   try {
     for (const x of valid) {
       x.txn_group_id = gid;
@@ -12150,6 +12162,8 @@ async function staffSaveRow(custId, rowIdx) {
   if (!cust) return;
   const row = cust.rows[rowIdx];
   if (!row || !row.total) return;
+  const err = bdValidateSaleRow(row);
+  if (err) { alert(err); return; }
   const btn = document.querySelector('#srow_'+custId+'_'+rowIdx+' .staff-save-row-btn');
   if (btn) { btn.textContent = '…'; btn.disabled = true; }
   try {
@@ -13771,6 +13785,14 @@ async function staffIncomeAccount(narration) {
 // Reduce stock for a sale that is actually linked to a registered
 // product. Freehand-typed narration with no product_id is left
 // untouched — matching a name by text alone is too unreliable.
+// Every sale must be linked to an actual product — without that link
+// there's no way to know what to deduct from stock or what it cost,
+// so free-text sales (picked from nowhere, no product_id) are rejected
+// here rather than silently skipping the stock/COGS side for them.
+function bdValidateSaleRow(row) {
+  if (!row.product_id) return 'Please pick a product from the list for every sale row before saving.';
+  return null;
+}
 async function bdDeductStockForSale(row) {
   if (!row.product_id) return;
   const qty = parseFloat(row.qty) || 1;
@@ -13876,8 +13898,63 @@ async function autoPostSaleRow(row, customerName, txnDate, forcedBusinessId) {
   txns.forEach(t=>{ if(bizId) t.business_id=bizId; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; t.payment_mode=payMode; });
   if (txns.length) await bkDb.from('bk_transactions').insert(txns);
 
+  await postCogsForSale(row, bizId, date);
   await bdDeductStockForSale(row);
   bdRefreshDashboardIfVisible();
+}
+
+// Debit Cost of Goods Sold — Credit Inventory / Stock, at the
+// product's cost price (not selling price). This is the piece that
+// was missing alongside the existing quantity deduction: without it,
+// a sale recorded revenue but never reduced the inventory asset's
+// book value or recorded the actual cost of what was sold, so gross
+// profit and the balance sheet were both wrong. Silently does nothing
+// for a row with no linked product, or a product with no cost price
+// set — there's nothing meaningful to post in that case.
+async function postCogsForSale(row, bizId, date) {
+  if (!row.product_id) return;
+  const qty = parseFloat(row.qty) || 0;
+  if (qty <= 0) return;
+  try {
+    const { data: product } = await bkDb.from('bk_products').select('cost_price').eq('id', row.product_id).single();
+    const costPrice = parseFloat(product?.cost_price) || 0;
+    if (costPrice <= 0) return; // no cost recorded for this product — nothing to post
+    const amount = costPrice * qty;
+    const narration = 'Cost of goods sold' + (row.narration ? ' — ' + row.narration : '');
+
+    const { data: jnl, error: jErr } = await bkDb.from('bk_journal').insert({
+      user_id: bkUser.id, business_id: bizId, txn_date: date, narration: narration,
+      debit_account_name: 'Cost of Goods Sold', debit_record_type: 'expenditure',
+      credit_account_name: 'Inventory / Stock', credit_record_type: 'asset',
+      debit_amount: amount, credit_amount: amount, created_at: new Date().toISOString(),
+    }).select().single();
+    if (jErr || !jnl) return;
+
+    const [cogsRes, invRes] = await Promise.all([
+      bkDb.from('bk_accounts').select('id').eq('user_id', bkUser.id).eq('account_name', 'Cost of Goods Sold').maybeSingle(),
+      bkDb.from('bk_accounts').select('id').eq('user_id', bkUser.id).eq('account_name', 'Inventory / Stock').maybeSingle(),
+    ]);
+    const getLastBal = async (acctName) => {
+      const { data } = await bkDb.from('bk_transactions').select('balance').match(bizMatch())
+        .eq('account_name', acctName).order('created_at', { ascending: false }).limit(1);
+      return parseFloat(data?.[0]?.balance) || 0;
+    };
+    const [cogsLastBal, invLastBal] = await Promise.all([getLastBal('Cost of Goods Sold'), getLastBal('Inventory / Stock')]);
+
+    const txns = [];
+    if (cogsRes?.data) txns.push({
+      user_id: bkUser.id, journal_id: jnl.id, record_type: 'expenditure', account_name: 'Cost of Goods Sold',
+      txn_date: date, narration, debit: amount, credit: 0,
+      balance: cogsLastBal + amount, created_at: new Date().toISOString(),
+    });
+    if (invRes?.data) txns.push({
+      user_id: bkUser.id, journal_id: jnl.id, record_type: 'asset', account_name: 'Inventory / Stock',
+      txn_date: date, narration, debit: 0, credit: amount,
+      balance: invLastBal - amount, created_at: new Date().toISOString(),
+    });
+    txns.forEach(t => { if (bizId) t.business_id = bizId; if (row.txn_group_id) t.txn_group_id = row.txn_group_id; });
+    if (txns.length) await bkDb.from('bk_transactions').insert(txns);
+  } catch (e) {}
 }
 
 // Save a customer block AND auto-post all rows to the accounting ledger
@@ -13896,6 +13973,10 @@ async function staffSaveCustomer(custId) {
 
   const date = new Date().toISOString().slice(0,10);
   const rows  = (cust.rows || []).filter(function(r){ return r.total > 0; });
+  for (const row of rows) {
+    const err = bdValidateSaleRow(row);
+    if (err) { alert(err); cust._posting = false; if (saveBtn) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; } return; }
+  }
 
   try {
     const isOnline = navigator.onLine;
