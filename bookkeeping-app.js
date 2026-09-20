@@ -9032,12 +9032,12 @@ function psRenderTable() {
           + '</div></td>'; break;
         case 'product_type': td += '<td>'+psTextCellHtml(r.product_type, 'e.g. Hair care…', 'psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false')+'</td>'; break;
         case 'service_type': td += '<td>'+psTextCellHtml(r.product_type, 'e.g. Cleaning…', 'psRows['+i+'].product_type=this.value;psRows['+i+'].saved=false')+'</td>'; break;
-        case 'cost_price': td += '<td><input class="ps-cell num" type="number" value="'+(r.cost_price||'')+'"'
-          + ' placeholder="0" oninput="psRows['+i+'].cost_price=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>'; break;
+        case 'cost_price': td += '<td><input class="ps-cell num" type="text" inputmode="decimal" value="'+(r.cost_price>0?r.cost_price.toLocaleString('en-NG'):'')+'"'
+          + ' placeholder="0" onclick="this.select()" oninput="psAmtInput(this,'+i+',\'cost_price\')"/></td>'; break;
         case 'sell_price': td += '<td><input class="ps-cell num" type="text" inputmode="decimal" value="'+(r.sell_price>0?r.sell_price.toLocaleString('en-NG'):'')+'"'
           + ' placeholder="0" onclick="this.select()" oninput="psAmtInput(this,'+i+',\'sell_price\')"/></td>'; break;
-        case 'qty': td += '<td><input class="ps-cell num" type="number" value="'+(r.qty||'')+'"'
-          + ' placeholder="0" oninput="psRows['+i+'].qty=parseFloat(this.value)||0;psRows['+i+'].saved=false;psUpdateTotals('+i+')"/></td>'; break;
+        case 'qty': td += '<td><input class="ps-cell num" type="text" inputmode="decimal" value="'+(r.qty>0?r.qty.toLocaleString('en-NG'):'')+'"'
+          + ' placeholder="0" onclick="this.select()" oninput="psAmtInput(this,'+i+',\'qty\')"/></td>'; break;
         case 'qty_date': td += '<td><div class="ps-cell ps-date-cell" onclick="psOpenDatePicker(event,'+i+')">'
           + '<span>'+escH(r.qty_date ? psFormatQtyDate(r.qty_date, _psQtyDateFormat()) : '')+'</span>'
           + '<span class="ps-date-cal-icon">\uD83D\uDCC5</span></div></td>'; break;
@@ -9085,6 +9085,26 @@ function psColCheck(colId, checked) {
 // digits/decimal point (so a manually-typed comma is simply absorbed,
 // not rejected), then reformats with thousand separators without
 // erasing a decimal point mid-typing or jumping the cursor to the end.
+// Generic version of the same live comma-formatting psAmtInput does,
+// but usable anywhere an onChangeExpr callback is built (e.g. custom
+// columns), not just built-in row fields. Reformats the cell's
+// displayed value in place and returns the raw numeric string for the
+// caller to use.
+function psGenericAmtFormat(el) {
+  const rawStr = el.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  const dot = rawStr.indexOf('.');
+  const intPart = dot >= 0 ? rawStr.slice(0, dot) : rawStr;
+  const decPart = dot >= 0 ? '.' + rawStr.slice(dot + 1) : '';
+  const formatted = (intPart ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '') + decPart;
+  if (el.value !== formatted) {
+    const pos = el.selectionStart;
+    const prevLen = el.value.length;
+    el.value = formatted;
+    const diff = formatted.length - prevLen;
+    try { el.setSelectionRange(pos + diff, pos + diff); } catch(e) {}
+  }
+  return rawStr;
+}
 function psAmtInput(el, i, field) {
   const rawStr = el.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
   const raw = parseFloat(rawStr) || 0;
@@ -10808,9 +10828,14 @@ function renderAssignedCell(meta, value, onChangeExpr, idAttr, cellClass, wrapMo
     return `<input class="${cellClass}"${idHtml} type="text" value="${escH(v)}" oninput="${onChangeExpr.replace('VALUE','this.value')}"/>`;
   }
   if (meta.type === 'number') {
-    return `<input class="${cellClass} num"${idHtml} type="number" value="${escH(v)}" oninput="${onChangeExpr.replace('VALUE','this.value')}"/>`;
+    // type="text" with the same live comma-formatter used elsewhere —
+    // not type="number", which can't display commas at all.
+    return `<input class="${cellClass} num"${idHtml} type="text" inputmode="decimal" value="${v?Number(v).toLocaleString('en-NG'):''}" oninput="${onChangeExpr.replace('VALUE','psGenericAmtFormat(this)')}"/>`;
   }
   if (meta.type === 'measurement') {
+    // Deliberately NOT comma-formatted — this type supports ranges like
+    // "0-5", and comma-formatting requires stripping non-numeric
+    // characters (including the hyphen), which would break that.
     const unitSuffix = ' ' + meta.unit;
     const num = v.endsWith(unitSuffix) ? v.slice(0, -unitSuffix.length) : v;
     // type="text" (not "number") deliberately — a native number input
