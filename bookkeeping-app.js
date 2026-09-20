@@ -8744,6 +8744,22 @@ function psRedo(){ if(!psSheet.redo.length)return; psSheet.undo.push(JSON.string
 function psToggleToolbox(){ psSheet.open=!psSheet.open; renderProductsPage(); }
 function psSetFont(f){ psSheet.font=f; renderProductsPage(); }
 function psSetWrap(w){ psSheet.wrap=w; renderProductsPage(); }
+
+// ── PER-COLUMN CELL ALIGNMENT ────────────────────────────────
+// Default is right for every column (built-in or custom); users can
+// override individual columns via the toolbox align buttons. Headers
+// are never affected — they always stay left-aligned.
+function _psColAlign(){ try { return JSON.parse(localStorage.getItem('bd_ps_colalign_'+psType)||'{}'); } catch(e){ return {}; } }
+function _psPersistColAlign(a){ localStorage.setItem('bd_ps_colalign_'+psType, JSON.stringify(a)); }
+function _psEffectiveColAlign(key){ return _psColAlign()[key] || 'right'; }
+let _psFocusedColKey = null;
+function psSetColumnAlign(alignment) {
+  if (!_psFocusedColKey) { alert('Click into a cell in the column you want to align first.'); return; }
+  const align = _psColAlign();
+  align[_psFocusedColKey] = alignment;
+  _psPersistColAlign(align);
+  psRenderTable();
+}
 function psDecimals(d){ psSheet.decimals = Math.max(0, Math.min(4, (psSheet.decimals===null?0:psSheet.decimals)+d)); renderProductsPage(); }
 function psToolboxSearch(){ psSheet.search = document.getElementById('psToolSearch')?.value||''; psRenderTable(); }
 function psInsertColumn(){
@@ -8821,6 +8837,9 @@ function psToolboxHtml(){
     + '<button class="tb-icon '+(psSheet.wrap==='overflow'?'tb-active':'')+'" title="Overflow" onclick="psSetWrap(\'overflow\')">⇥</button>'
     + '<button class="tb-icon '+(psSheet.wrap==='wrap'?'tb-active':'')+'" title="Wrap" onclick="psSetWrap(\'wrap\')">⤶</button>'
     + '<button class="tb-icon '+(psSheet.wrap==='clip'?'tb-active':'')+'" title="Clip" onclick="psSetWrap(\'clip\')">✂</button>'
+    + '<button class="tb-icon" title="Align cells left — click a cell in the target column first" onclick="psSetColumnAlign(\'left\')">L</button>'
+    + '<button class="tb-icon" title="Align cells center — click a cell in the target column first" onclick="psSetColumnAlign(\'center\')">C</button>'
+    + '<button class="tb-icon" title="Align cells right — click a cell in the target column first" onclick="psSetColumnAlign(\'right\')">R</button>'
     + '<button class="tb-icon" title="Insert column" onclick="psInsertColumn()">+▥</button>'
     + '<button class="tb-icon" title="Delete column" onclick="psDeleteColumn()">−▥</button>'
     + '<button class="tb-icon" id="psColBtn" onclick="togglePsColSelector()">🎛 Default Columns ▾</button>'
@@ -8912,6 +8931,10 @@ function renderProductsPage() {
   if (psBodyEl) {
     psBodyEl.addEventListener('input', psAutosaveTrigger);
     psBodyEl.addEventListener('change', psAutosaveTrigger);
+    psBodyEl.addEventListener('focusin', e => {
+      const td = e.target.closest('td[data-col-key]');
+      if (td) _psFocusedColKey = td.dataset.colKey;
+    });
   }
 }
 
@@ -8967,6 +8990,7 @@ function psRenderTable() {
     const atSell = psComputeConfiguredTotal(r, 'total_sell');
     let td = '<td class="ps-sn">'+(i+1)+'</td>';
     visibleKeys.forEach(key => {
+      const beforeLen = td.length;
       if (customByKey[key]) {
         const hasOverride = !!(r.customMeta && Object.prototype.hasOwnProperty.call(r.customMeta, key));
         const meta = hasOverride ? r.customMeta[key] : _psColMeta()[key];
@@ -8979,6 +9003,8 @@ function psRenderTable() {
           + ' title="'+(hasOverride?'Type overridden for this cell — click to change':'Change type for just this cell')+'"'
           + ' onclick="event.stopPropagation();psCellAssignCells('+i+',\''+key+'\')">\u2699</span>'
           + '</td>';
+        const patched0 = td.slice(beforeLen).replace(/^<td/, `<td data-col-key="${key}" class="ps-align-${_psEffectiveColAlign(key)}"`);
+        td = td.slice(0, beforeLen) + patched0;
         return;
       }
       switch(key) {
@@ -9008,6 +9034,8 @@ function psRenderTable() {
           + '</select></td>'; break;
         default: td += '<td></td>';
       }
+      const patched = td.slice(beforeLen).replace(/^<td/, `<td data-col-key="${key}" class="ps-align-${_psEffectiveColAlign(key)}"`);
+      td = td.slice(0, beforeLen) + patched;
     });
     td += '<td><button class="ps-del-btn" onclick="psDeleteRow('+i+')">&#x2715;</button></td>'
       + '<td><button class="ps-save-btn" onclick="psSaveRow('+i+')" title="Save">&#x203a;</button></td>';
