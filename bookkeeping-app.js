@@ -10627,7 +10627,12 @@ function renderAssignedCell(meta, value, onChangeExpr, idAttr, cellClass, wrapMo
   if (meta.type === 'measurement') {
     const unitSuffix = ' ' + meta.unit;
     const num = v.endsWith(unitSuffix) ? v.slice(0, -unitSuffix.length) : v;
-    return `<div style="display:flex;align-items:center;gap:4px;"><input class="${cellClass} num" style="flex:1;min-width:0;"${idHtml} type="number" value="${escH(num)}"
+    // type="text" (not "number") deliberately — a native number input
+    // rejects/clears anything that isn't a strictly valid number on
+    // blur, which silently wipes ranges like "0-5" the moment focus
+    // leaves the cell (e.g. clicking + Add Product). inputmode="decimal"
+    // still gives a numeric-friendly keyboard on mobile.
+    return `<div style="display:flex;align-items:center;gap:4px;"><input class="${cellClass} num" style="flex:1;min-width:0;"${idHtml} type="text" inputmode="decimal" value="${escH(num)}"
       oninput="${onChangeExpr.replace('VALUE', `this.value + ' ${meta.unit}'`)}"/><span style="color:var(--muted);font-size:0.7rem;flex-shrink:0;padding-right:6px;">${escH(meta.unit)}</span></div>`;
   }
   if (meta.type === 'date') {
