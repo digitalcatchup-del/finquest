@@ -3912,6 +3912,7 @@ async function jrnLoadRange(from, to) {
       debit_account_name:r.debit_account_name||'', debit_record_type:r.debit_record_type||'',
       credit_account_name:r.credit_account_name||'', credit_record_type:r.credit_record_type||'',
       debit_amount:parseFloat(r.debit_amount)||0, credit_amount:parseFloat(r.credit_amount)||0,
+      product_id:r.product_id||null, qty:r.qty||null, sale_ref_id:r.sale_ref_id||null,
       row_order:r.row_order, saved:true
     }));
     const splitIds2 = savedRows.filter(r=>r.debit_account_name==='(Split)'||r.credit_account_name==='(Split)').map(r=>r.id);
@@ -4041,6 +4042,7 @@ async function jrnDateFill(dateStr) {
       debit_account_name:r.debit_account_name||'', debit_record_type:r.debit_record_type||'',
       credit_account_name:r.credit_account_name||'', credit_record_type:r.credit_record_type||'',
       debit_amount:parseFloat(r.debit_amount)||0, credit_amount:parseFloat(r.credit_amount)||0,
+      product_id:r.product_id||null, qty:r.qty||null, sale_ref_id:r.sale_ref_id||null,
       row_order:r.row_order, saved:true
     }));
   } catch(e) { journalRows = []; }
@@ -4479,6 +4481,7 @@ async function openJournal() {
     debit_account_name:r.debit_account_name||'', debit_record_type:r.debit_record_type||'',
     credit_account_name:r.credit_account_name||'', credit_record_type:r.credit_record_type||'',
     debit_amount:parseFloat(r.debit_amount)||0, credit_amount:parseFloat(r.credit_amount)||0,
+    product_id:r.product_id||null, qty:r.qty||null, sale_ref_id:r.sale_ref_id||null,
     row_order:r.row_order, saved:true
   }));
 
@@ -4773,9 +4776,35 @@ function addJournalRow(){
 async function deleteJournalRow(i){
   const row=journalRows[i];
   if(row.id){
-    // Delete ledger transactions first, then the journal entry
-    await bkDb.from('bk_transactions').delete().eq('journal_id',row.id).eq('user_id',bkUser.id);
-    await bkDb.from('bk_journal').delete().eq('id',row.id).eq('user_id',bkUser.id);
+    if (row.sale_ref_id) {
+      // This entry came from a sale — it has a sibling entry (revenue
+      // and Cost of Goods Sold share one sale_ref_id), and stock was
+      // deducted when the sale was originally posted. Both entries
+      // need to go together, and the deduction needs to be reversed
+      // exactly once — restoring it separately for each of the two
+      // linked rows would double-count it back.
+      const { data: linked } = await bkDb.from('bk_journal').select('id,product_id,qty')
+        .eq('sale_ref_id', row.sale_ref_id).eq('user_id', bkUser.id);
+      for (const entry of (linked || [])) {
+        await bkDb.from('bk_transactions').delete().eq('journal_id', entry.id).eq('user_id', bkUser.id);
+        await bkDb.from('bk_journal').delete().eq('id', entry.id).eq('user_id', bkUser.id);
+      }
+      const restoreQty = parseFloat(row.qty) || 0;
+      if (row.product_id && restoreQty > 0) {
+        try {
+          const { data: product } = await bkDb.from('bk_products').select('qty_in_stock').eq('id', row.product_id).single();
+          if (product) {
+            const restoredQty = (parseFloat(product.qty_in_stock) || 0) + restoreQty;
+            await bkDb.from('bk_products').update({ qty_in_stock: restoredQty }).eq('id', row.product_id);
+            salesProductCacheBizId = undefined; // stock changed — refresh the picker cache next time it's used
+          }
+        } catch(e) {}
+      }
+    } else {
+      // Delete ledger transactions first, then the journal entry
+      await bkDb.from('bk_transactions').delete().eq('journal_id',row.id).eq('user_id',bkUser.id);
+      await bkDb.from('bk_journal').delete().eq('id',row.id).eq('user_id',bkUser.id);
+    }
   }
   journalRows.splice(i,1);
   renderJournalRows();
@@ -13830,6 +13859,9 @@ async function autoPostSaleRow(row, customerName, txnDate, forcedBusinessId) {
   const amount     = parseFloat(row.total) || 0;
   const narration  = (row.narration || 'Sale') + (customerName ? ' — ' + customerName : '');
   const date       = txnDate || new Date().toISOString().slice(0,10);
+  // Shared by both journal entries this sale posts (revenue + COGS),
+  // so deleting either one later finds and removes both together.
+  const saleRefId  = (crypto.randomUUID ? crypto.randomUUID() : 'sale'+Date.now()+Math.random().toString(16).slice(2));
 
   // 1. Write to bk_journal
   const { data: jnl, error: jErr } = await bkDb.from('bk_journal').insert({
@@ -13843,6 +13875,9 @@ async function autoPostSaleRow(row, customerName, txnDate, forcedBusinessId) {
     credit_record_type:   'income',
     debit_amount:         amount,
     credit_amount:        amount,
+    product_id:           row.product_id || null,
+    qty:                  parseFloat(row.qty) || null,
+    sale_ref_id:          saleRefId,
     created_at:           new Date().toISOString(),
   }).select().single();
 
@@ -13898,7 +13933,7 @@ async function autoPostSaleRow(row, customerName, txnDate, forcedBusinessId) {
   txns.forEach(t=>{ if(bizId) t.business_id=bizId; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; t.payment_mode=payMode; });
   if (txns.length) await bkDb.from('bk_transactions').insert(txns);
 
-  await postCogsForSale(row, bizId, date);
+  await postCogsForSale(row, bizId, date, saleRefId);
   await bdDeductStockForSale(row);
   bdRefreshDashboardIfVisible();
 }
@@ -13911,7 +13946,7 @@ async function autoPostSaleRow(row, customerName, txnDate, forcedBusinessId) {
 // profit and the balance sheet were both wrong. Silently does nothing
 // for a row with no linked product, or a product with no cost price
 // set — there's nothing meaningful to post in that case.
-async function postCogsForSale(row, bizId, date) {
+async function postCogsForSale(row, bizId, date, saleRefId) {
   if (!row.product_id) return;
   const qty = parseFloat(row.qty) || 0;
   if (qty <= 0) return;
@@ -13926,7 +13961,9 @@ async function postCogsForSale(row, bizId, date) {
       user_id: bkUser.id, business_id: bizId, txn_date: date, narration: narration,
       debit_account_name: 'Cost of Goods Sold', debit_record_type: 'expenditure',
       credit_account_name: 'Inventory / Stock', credit_record_type: 'asset',
-      debit_amount: amount, credit_amount: amount, created_at: new Date().toISOString(),
+      debit_amount: amount, credit_amount: amount,
+      product_id: row.product_id, qty: qty, sale_ref_id: saleRefId,
+      created_at: new Date().toISOString(),
     }).select().single();
     if (jErr || !jnl) return;
 
