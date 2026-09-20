@@ -8255,8 +8255,7 @@ function psColIsSummable(key, customByKey) {
   return key === 'total_cost' || key === 'total_sell';
 }
 function psColumnTotal(key, visibleRows, customByKey) {
-  if (key === 'total_cost') return visibleRows.reduce((s,r)=>s+((parseFloat(r.cost_price)||0)*(parseFloat(r.qty)||0)),0);
-  if (key === 'total_sell') return visibleRows.reduce((s,r)=>s+((parseFloat(r.sell_price)||0)*(parseFloat(r.qty)||0)),0);
+  if (key === 'total_cost' || key === 'total_sell') return visibleRows.reduce((s,r)=>s+psComputeConfiguredTotal(r, key),0);
   return null;
 }
 function psRenderTotalsRow(visibleKeys, customByKey, visibleRows) {
@@ -8435,7 +8434,135 @@ function psSetQtyDateFormat(f) {
   psRenderTable(); // applies the new format to every Stock as at cell, not just this one
 }
 
+// ── CONFIGURABLE TOTAL FORMULAS ──────────────────────────────
+// total_cost and total_sell default to cost_price×qty / sell_price×qty,
+// but users can reassign which columns feed into them and how.
+function _psTotalFormulas(){ try { return JSON.parse(localStorage.getItem('bd_ps_totalformulas_'+psType)||'{}'); } catch(e){ return {}; } }
+function _psPersistTotalFormulas(f){ localStorage.setItem('bd_ps_totalformulas_'+psType, JSON.stringify(f)); }
+function _psDefaultTotalFormula(key) {
+  if (key === 'total_cost') return { columns: ['cost_price','qty'], operation: 'multiply' };
+  if (key === 'total_sell') return { columns: ['sell_price','qty'], operation: 'multiply' };
+  return { columns: [], operation: 'multiply' };
+}
+function _psEffectiveTotalFormula(key) {
+  const stored = _psTotalFormulas()[key];
+  return stored || _psDefaultTotalFormula(key);
+}
+// Columns eligible to feed a total formula — must be numeric-compatible:
+// the three numeric built-ins, plus any custom column typed as Number
+// or Measurement via Assign Cells.
+function psTotalFormulaEligibleColumns() {
+  const cols = [
+    { key:'cost_price', name:'Cost price' },
+    { key:'sell_price', name:'Selling price' },
+    { key:'qty', name:'Quantity in stock' },
+  ];
+  const meta = _psColMeta();
+  _psCustomCols().forEach(c => {
+    const m = meta[c.key];
+    if (m && (m.type === 'number' || m.type === 'measurement')) cols.push({ key:c.key, name:c.name });
+  });
+  return cols;
+}
+function _psColDisplayName(key) {
+  const found = psTotalFormulaEligibleColumns().find(c=>c.key===key);
+  return found ? found.name : key;
+}
+function _psNumericValueOf(row, key) {
+  if (key === 'cost_price') return parseFloat(row.cost_price) || 0;
+  if (key === 'sell_price') return parseFloat(row.sell_price) || 0;
+  if (key === 'qty') return parseFloat(row.qty) || 0;
+  const meta = _psColMeta()[key];
+  const raw = (row.custom && row.custom[key]) || '';
+  if (meta && meta.type === 'measurement') {
+    const unitSuffix = ' ' + meta.unit;
+    const num = raw.endsWith(unitSuffix) ? raw.slice(0,-unitSuffix.length) : raw;
+    return parseFloat(num) || 0;
+  }
+  return parseFloat(raw) || 0;
+}
+function psComputeConfiguredTotal(row, key) {
+  const formula = _psEffectiveTotalFormula(key);
+  if (!formula.columns.length) return 0;
+  const values = formula.columns.map(c => _psNumericValueOf(row, c));
+  let result = values[0];
+  for (let i=1; i<values.length; i++) {
+    if (formula.operation==='multiply') result *= values[i];
+    else if (formula.operation==='add') result += values[i];
+    else if (formula.operation==='subtract') result -= values[i];
+    else if (formula.operation==='divide') result = values[i]!==0 ? result/values[i] : 0;
+  }
+  return result;
+}
+
 function psColLabel(key){ return _psLabels()[key] || _psBuiltinDefaultLabel(key); }
+
+let _psFormulaDialogState = null;
+function psOpenTotalFormulaDialog(key) {
+  closeColMenu();
+  const formula = _psEffectiveTotalFormula(key);
+  _psFormulaDialogState = { key, columns: [...formula.columns], operation: formula.operation };
+
+  const wrap = document.createElement('div');
+  wrap.id = 'colMenuPortal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:12000;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;';
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) closeColMenu(); });
+  const panel = document.createElement('div');
+  panel.className = 'col-menu psFormulaPanel';
+  panel.style.cssText = 'padding:16px;width:min(380px,94vw);';
+  panel.addEventListener('click', e=>e.stopPropagation());
+  panel.innerHTML = psTotalFormulaHtml();
+  wrap.appendChild(panel);
+  document.body.appendChild(wrap);
+}
+function psTotalFormulaHtml() {
+  const { key, columns, operation } = _psFormulaDialogState;
+  const eligible = psTotalFormulaEligibleColumns();
+  const availableToAdd = eligible.filter(c => !columns.includes(c.key));
+  const opLabels = { multiply:'\u00d7', add:'+', subtract:'\u2212', divide:'\u00f7' };
+  const previewText = columns.length
+    ? columns.map(c=>_psColDisplayName(c)).join(' '+opLabels[operation]+' ')
+    : 'Select at least one column';
+
+  return `<label class="su-label">CONFIGURE TOTAL \u2014 ${escH(psColLabel(key))}</label>
+    <div style="font-size:0.64rem;color:var(--muted);margin-bottom:12px;">Choose which columns combine to produce this total, and how.</div>
+    <div style="font-size:0.68rem;color:var(--muted);margin-bottom:6px;">Columns</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+      ${columns.map((c,idx)=>`<span style="background:var(--gold-t012);color:var(--gold);font-size:0.72rem;padding:5px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;">${escH(_psColDisplayName(c))}<span style="cursor:pointer;" onclick="psFormulaRemoveCol(${idx})">\u2715</span></span>`).join('')}
+      ${availableToAdd.length ? `<select onchange="if(this.value){psFormulaAddCol(this.value);this.value='';}" style="font-size:0.72rem;background:var(--surface2);color:var(--off);border:1px dashed var(--border2);border-radius:6px;padding:5px 8px;">
+        <option value="">+ Add column</option>
+        ${availableToAdd.map(c=>`<option value="${c.key}">${escH(c.name)}</option>`).join('')}
+      </select>` : ''}
+    </div>
+    <div style="font-size:0.68rem;color:var(--muted);margin:10px 0 6px;">Operation</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;">
+      ${Object.entries(opLabels).map(([op,sym])=>`<button onclick="psFormulaSetOp('${op}')" style="padding:9px 0;font-size:0.85rem;border-radius:7px;cursor:pointer;border:1px solid ${operation===op?'var(--gold)':'var(--border2)'};background:${operation===op?'var(--gold-t012)':'var(--surface2)'};color:${operation===op?'var(--gold)':'var(--off)'};">${sym}</button>`).join('')}
+    </div>
+    <div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:0.7rem;color:var(--muted);margin-bottom:14px;">
+      Preview: <span style="color:var(--white);font-weight:600;">${escH(previewText)}</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeColMenu()" style="flex:1;background:var(--surface2);color:var(--off);border:1px solid var(--border2);font-weight:700;font-size:0.76rem;padding:9px;border-radius:8px;cursor:pointer;">Cancel</button>
+      <button onclick="psFormulaSave()" style="flex:1;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.76rem;padding:9px;border-radius:8px;cursor:pointer;">Save</button>
+    </div>`;
+}
+function psFormulaRefresh() { document.querySelector('.psFormulaPanel').innerHTML = psTotalFormulaHtml(); }
+function psFormulaRemoveCol(idx) { _psFormulaDialogState.columns.splice(idx,1); psFormulaRefresh(); }
+function psFormulaAddCol(key) { _psFormulaDialogState.columns.push(key); psFormulaRefresh(); }
+function psFormulaSetOp(op) { _psFormulaDialogState.operation = op; psFormulaRefresh(); }
+function psFormulaSave() {
+  const { key, columns, operation } = _psFormulaDialogState;
+  if (!columns.length) { alert('Select at least one column.'); return; }
+  const formulas = _psTotalFormulas();
+  formulas[key] = { columns, operation };
+  _psPersistTotalFormulas(formulas);
+  closeColMenu();
+  renderProductsPage();
+  // No autosave/DB write needed here — total_cost/total_sell are
+  // computed at render time from existing row data, never stored as
+  // their own fields. Only the formula config itself (in localStorage)
+  // changed.
+}
 
 // Per-built-in-column styling (used to build each <th>, replacing what
 // used to be inline per-field width/class literals in a fixed sequence).
@@ -8484,7 +8611,7 @@ function _psPersistHiddenCustom(arr){ localStorage.setItem('bd_ps_hiddencustom_'
 
 // ── Products custom-column triangle menu (mirrors the Sales sheet) ──
 function psColMenuOpen(ev, key) {
-  openColMenuPortal(ev, [
+  const items = [
     ['\u270F\uFE0F Rename Header', "psColRename('"+key+"')"],
     ['+ Insert column left', "psColInsert('"+key+"','left')"],
     ['+ Insert column right', "psColInsert('"+key+"','right')"],
@@ -8492,7 +8619,11 @@ function psColMenuOpen(ev, key) {
     ['\u2699 Assign Cells', "psColAssignCells('"+key+"')"],
     ['\u2715 Clear column', "psColClear('"+key+"')"],
     ['\uD83D\uDEAB\uD83D\uDC41 Hide column', "psColHide('"+key+"')"],
-  ]);
+  ];
+  if (key === 'total_cost' || key === 'total_sell') {
+    items.splice(4, 0, ['\uD83D\uDD22 Configure total', "psOpenTotalFormulaDialog('"+key+"')"]);
+  }
+  openColMenuPortal(ev, items);
 }
 function psColRename(key) {
   const cols = _psCustomCols();
@@ -8596,7 +8727,7 @@ function psCustomInput(i, key, val){
   psRows[i].custom = psRows[i].custom || {};
   psRows[i].custom[key] = val;
   psRows[i].saved = false;
-  psRefreshTotalsRow();
+  psUpdateTotals(i);
 }
 function psSnapshot(){ psSheet.undo.push(JSON.stringify(psRows)); if(psSheet.undo.length>40)psSheet.undo.shift(); psSheet.redo=[]; }
 function psUndo(){ if(!psSheet.undo.length)return; psSheet.redo.push(JSON.stringify(psRows)); psRows=JSON.parse(psSheet.undo.pop()); renderProductsPage(); }
@@ -8823,8 +8954,8 @@ function psRenderTable() {
   const _visible = psRows.map(function(r,i){ return {r:r,i:i}; })
     .filter(function(o){ return !psSheet.search || (o.r.name||'').toLowerCase().indexOf(psSheet.search.toLowerCase())>=0; });
   const bodyHtml = _visible.map(function(o){ const r=o.r, i=o.i;
-    const atCost = r.cost_price * r.qty;
-    const atSell = r.sell_price * r.qty;
+    const atCost = psComputeConfiguredTotal(r, 'total_cost');
+    const atSell = psComputeConfiguredTotal(r, 'total_sell');
     let td = '<td class="ps-sn">'+(i+1)+'</td>';
     visibleKeys.forEach(key => {
       if (customByKey[key]) {
@@ -8925,8 +9056,10 @@ function psAmtInput(el, i, field) {
 function psUpdateTotals(i) {
   const r=psRows[i];
   const ac=document.getElementById(`psAtCost_${i}`), as_=document.getElementById(`psAtSell_${i}`);
-  if(ac) ac.textContent=r.cost_price*r.qty>0?fmt(r.cost_price*r.qty):'';
-  if(as_) as_.textContent=r.sell_price*r.qty>0?fmt(r.sell_price*r.qty):'';
+  const atCost = psComputeConfiguredTotal(r, 'total_cost');
+  const atSell = psComputeConfiguredTotal(r, 'total_sell');
+  if(ac) ac.textContent=atCost>0?fmt(atCost):'';
+  if(as_) as_.textContent=atSell>0?fmt(atSell):'';
   psRefreshTotalsRow();
 }
 // Recomputes the grand totals row from current state, without a full
