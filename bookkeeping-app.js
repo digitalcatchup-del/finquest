@@ -8487,13 +8487,19 @@ function _psNumericValueOf(row, key) {
 function psComputeConfiguredTotal(row, key) {
   const formula = _psEffectiveTotalFormula(key);
   if (!formula.columns.length) return 0;
-  const values = formula.columns.map(c => _psNumericValueOf(row, c));
+  // A column with nothing entered (parses to 0) is skipped rather than
+  // included as 0 — otherwise a genuinely-filled Selling Price gets
+  // wiped out to blank just because Quantity hasn't been entered yet.
+  // If only one selected column actually has a value, the total is
+  // simply that value.
+  const values = formula.columns.map(c => _psNumericValueOf(row, c)).filter(v => v !== 0);
+  if (!values.length) return 0;
   let result = values[0];
   for (let i=1; i<values.length; i++) {
     if (formula.operation==='multiply') result *= values[i];
     else if (formula.operation==='add') result += values[i];
     else if (formula.operation==='subtract') result -= values[i];
-    else if (formula.operation==='divide') result = values[i]!==0 ? result/values[i] : 0;
+    else if (formula.operation==='divide') result = values[i]!==0 ? result/values[i] : result;
   }
   return result;
 }
