@@ -277,7 +277,13 @@ function showAuthScreen(view) {
           <div><label class="su-label">LAST NAME *</label><input class="bk-login-input" id="ri_last" placeholder="Okafor"/></div>
         </div>
         <div class="ri-grid2">
-          <div><label class="su-label">DATE OF BIRTH *</label><input class="bk-login-input" type="date" id="ri_dob"/></div>
+          <div><label class="su-label">DATE OF BIRTH *</label>
+            <div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:6px;">
+              <select class="bk-login-input" id="ri_dob_day"><option value="">Day</option>${Array.from({length:31},(_,i)=>i+1).map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+              <select class="bk-login-input" id="ri_dob_month"><option value="">Month</option>${['January','February','March','April','May','June','July','August','September','October','November','December'].map((m,i)=>`<option value="${i+1}">${m}</option>`).join('')}</select>
+              <select class="bk-login-input" id="ri_dob_year"><option value="">Year</option>${Array.from({length:88},(_,i)=>new Date().getFullYear()-13-i).map(y=>`<option value="${y}">${y}</option>`).join('')}</select>
+            </div>
+          </div>
           <div><label class="su-label">GENDER *</label><select class="bk-login-input" id="ri_gender"><option value="">Select Gender</option>
             <option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
         </div>
@@ -369,6 +375,22 @@ async function riRegister() {
   const first = document.getElementById('ri_first')?.value?.trim();
   const last  = document.getElementById('ri_last')?.value?.trim();
   if (!first || !last) { if(err) err.textContent='First and last name are required.'; return; }
+  const dobDay   = document.getElementById('ri_dob_day')?.value;
+  const dobMonth = document.getElementById('ri_dob_month')?.value;
+  const dobYear  = document.getElementById('ri_dob_year')?.value;
+  let dateOfBirth = null;
+  if (dobDay && dobMonth && dobYear) {
+    // Round-trip check catches impossible combinations (e.g. day 30 for
+    // February) — JS silently rolls those over into the next month
+    // rather than erroring, so comparing back against what was picked
+    // is what actually catches it.
+    const d = new Date(parseInt(dobYear,10), parseInt(dobMonth,10)-1, parseInt(dobDay,10));
+    if (d.getMonth() !== parseInt(dobMonth,10)-1 || d.getDate() !== parseInt(dobDay,10)) {
+      if (err) { err.textContent = "That's not a real date — check the day for that month."; err.style.color='var(--red)'; }
+      return;
+    }
+    dateOfBirth = dobYear + '-' + String(dobMonth).padStart(2,'0') + '-' + String(dobDay).padStart(2,'0');
+  }
   if (err) { err.textContent='Saving…'; err.style.color='var(--muted)'; }
   try {
     profileData = {
@@ -376,7 +398,7 @@ async function riRegister() {
       middle_name:document.getElementById('ri_middle')?.value?.trim()||'',
       last_name:last,
       full_name:first+' '+last,
-      date_of_birth:document.getElementById('ri_dob')?.value||null,
+      date_of_birth:dateOfBirth,
       gender:document.getElementById('ri_gender')?.value||'',
       phone:document.getElementById('ri_phone')?.value?.trim()||'',
       country:document.getElementById('ri_origin_country')?.value?.trim()||'Nigeria',
