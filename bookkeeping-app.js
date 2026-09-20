@@ -2592,6 +2592,7 @@ function bdOfflineBanner() {
 // ── Sales sheet: search-and-select a registered product ──────
 let salesProductCache = [];
 let salesProductCacheBizId = undefined;
+let salesProductCustomCols = [];
 async function bdLoadSalesProductCache() {
   const bizId = activeBusiness?.id || null;
   if (salesProductCacheBizId === bizId) return; // already loaded for this business
@@ -2602,19 +2603,23 @@ async function bdLoadSalesProductCache() {
     salesProductCache = data || [];
     salesProductCacheBizId = bizId;
   } catch(e) { salesProductCache = []; }
+  try {
+    let sq = bkDb.from('bk_sheet_settings').select('settings').eq('sheet_key', 'products');
+    sq = bizId ? sq.eq('business_id', bizId) : sq.is('business_id', null).eq('user_id', bkUser.id);
+    const { data: settingsRow } = await sq.maybeSingle();
+    salesProductCustomCols = settingsRow?.settings?.customCols || [];
+  } catch(e) { salesProductCustomCols = []; }
 }
 // Some users create a custom "Name" column in Products to hold the
 // specific item (e.g. "Mamuda Choco Snacks"), using the built-in
 // Product/Product Type fields as broader categories instead (e.g.
-// "Beverage"/"Biscuit"). Reads Products' own stored column list
-// directly — not the psType-dependent _psCustomCols() helper, since
-// this runs from the Sales page where psType may not even be 'products'.
+// "Beverage"/"Biscuit"). Reads Products' own column list from the
+// cache loaded above (business-scoped, from the database) — not the
+// psType-dependent _psCustomCols() helper, since this runs from the
+// Sales page where psType may not even be 'products'.
 function _salesProductNameColKey() {
-  try {
-    const cols = JSON.parse(localStorage.getItem('bd_ps_custom_products') || '[]');
-    const nameCol = cols.find(c => (c.name||'').trim().toLowerCase() === 'name');
-    return nameCol ? nameCol.key : null;
-  } catch(e) { return null; }
+  const nameCol = salesProductCustomCols.find(c => (c.name||'').trim().toLowerCase() === 'name');
+  return nameCol ? nameCol.key : null;
 }
 function bdShowProductSuggestions(i, query) {
   const box = document.getElementById('salesSuggest_'+i);
@@ -8238,13 +8243,105 @@ async function psSaveColPrefs() {
 
 // ── Products page toolbox (mirrors the sales-record toolbox) ──
 let psSheet = { open:false, search:'', decimals:null, font:'Nunito', wrap:'overflow', undo:[], redo:[] };
-function _psCustomCols(){ try { return JSON.parse(localStorage.getItem('bd_ps_custom_'+psType)||'[]'); } catch(e){ return []; } }
-function _psSetCustomCols(c){ localStorage.setItem('bd_ps_custom_'+psType, JSON.stringify(c)); }
+// ── SHARED, BUSINESS-SCOPED SHEET SETTINGS ─────────────────────
+// Custom columns, column types, widths, alignment, Total formulas,
+// renamed labels, hidden columns, column order and date format used
+// to live only in this browser's localStorage — meaning switching
+// between businesses showed the same formatting regardless of which
+// business was active, and different devices/employees working on the
+// same business saw completely different setups. These now live in
+// the database, scoped to the active business (or the user, when no
+// business is selected), so the same business looks the same
+// everywhere.
+let _psSheetSettings = {};
+let _psSheetSettingsScope = null;
+
+function _psSettingsScopeKey() {
+  return (activeBusiness?.id || bkUser?.id || 'none') + '::' + psType;
+}
+
+// Must be awaited before rendering the Products/Services page — every
+// getter below reads from the in-memory _psSheetSettings this loads.
+async function psEnsureSheetSettingsLoaded() {
+  const scopeKey = _psSettingsScopeKey();
+  if (_psSheetSettingsScope === scopeKey) return;
+  _psSheetSettingsScope = scopeKey; // set first, so concurrent calls don't double-load
+  try {
+    let q = bkDb.from('bk_sheet_settings').select('*').eq('sheet_key', psType);
+    q = activeBusiness?.id ? q.eq('business_id', activeBusiness.id) : q.is('business_id', null).eq('user_id', bkUser.id);
+    const { data } = await q.maybeSingle();
+    if (data) {
+      _psSheetSettings = data.settings || {};
+    } else if (!localStorage.getItem('bd_ps_migrated_'+psType)) {
+      // No row yet, and this browser has never migrated its old
+      // localStorage-only settings for this sheet before. This can
+      // only ever happen once per sheet, regardless of which business
+      // happens to be active at that moment — the flag below prevents
+      // it from ever firing again, so switching to (or creating) a
+      // genuinely different business later always starts empty rather
+      // than inheriting this same old data too.
+      localStorage.setItem('bd_ps_migrated_'+psType, '1');
+      const migrated = _psMigrateLegacyLocalStorage();
+      _psSheetSettings = migrated;
+      if (Object.keys(migrated).length) _psSaveSheetSettingsNow();
+    } else {
+      _psSheetSettings = {};
+    }
+  } catch(e) {
+    _psSheetSettings = {};
+  }
+}
+
+function _psMigrateLegacyLocalStorage() {
+  const map = {
+    customCols: 'bd_ps_custom_'+psType,
+    colMeta: 'bd_ps_colmeta_'+psType,
+    colWidths: 'bd_ps_colwidths_'+psType,
+    colAlign: 'bd_ps_colalign_'+psType,
+    colOrder: 'bd_ps_colorder_'+psType,
+    totalFormulas: 'bd_ps_totalformulas_'+psType,
+    labels: 'bd_ps_labels_'+psType,
+    hiddenCustom: 'bd_ps_hiddencustom_'+psType,
+  };
+  const s = {};
+  Object.entries(map).forEach(([key, lsKey]) => {
+    try { const v = JSON.parse(localStorage.getItem(lsKey)||'null'); if (v!=null) s[key]=v; } catch(e){}
+  });
+  try { const qdf = localStorage.getItem('bd_ps_qtydateformat_'+psType); if (qdf) s.qtyDateFormat = qdf; } catch(e){}
+  return s;
+}
+
+let _psSaveDebounceTimer = null;
+function _psSaveSheetSettingsNow() {
+  clearTimeout(_psSaveDebounceTimer);
+  _psSaveDebounceTimer = setTimeout(async () => {
+    if (!bkUser?.id) return;
+    try {
+      const payload = {
+        sheet_key: psType,
+        settings: _psSheetSettings,
+        user_id: bkUser.id,
+        business_id: activeBusiness?.id || null,
+        updated_at: new Date().toISOString(),
+      };
+      const onConflict = activeBusiness?.id ? 'business_id,sheet_key' : 'user_id,sheet_key';
+      await bkDb.from('bk_sheet_settings').upsert(payload, { onConflict });
+    } catch(e) {}
+  }, 400);
+}
+
+// Generic get/set matching the old per-setting function shapes below,
+// so every existing caller throughout the codebase keeps working
+// completely unchanged.
+function _psSettingGet(key, fallback) { return _psSheetSettings[key] !== undefined ? _psSheetSettings[key] : fallback; }
+function _psSettingSet(key, value) { _psSheetSettings[key] = value; _psSaveSheetSettingsNow(); }
 function _psCustomVals(){ try { return JSON.parse(localStorage.getItem('bd_ps_customvals')||'{}'); } catch(e){ return {}; } }
-function _psColMeta(){ try { return JSON.parse(localStorage.getItem('bd_ps_colmeta_'+psType)||'{}'); } catch(e){ return {}; } }
-function _psPersistColMeta(m){ localStorage.setItem('bd_ps_colmeta_'+psType, JSON.stringify(m)); }
-function _psLabels(){ try { return JSON.parse(localStorage.getItem('bd_ps_labels_'+psType)||'{}'); } catch(e){ return {}; } }
-function _psPersistLabels(m){ localStorage.setItem('bd_ps_labels_'+psType, JSON.stringify(m)); }
+function _psCustomCols(){ return _psSettingGet('customCols', []); }
+function _psSetCustomCols(c){ _psSettingSet('customCols', c); }
+function _psColMeta(){ return _psSettingGet('colMeta', {}); }
+function _psPersistColMeta(m){ _psSettingSet('colMeta', m); }
+function _psLabels(){ return _psSettingGet('labels', {}); }
+function _psPersistLabels(m){ _psSettingSet('labels', m); }
 function _psBuiltinDefaultLabel(key){
   if (key==='name') return psType==='services' ? 'Service' : 'Product';
   const def = (PS_COL_DEFS[psType]||[]).find(x=>x.id===key);
@@ -8321,8 +8418,8 @@ function psCellAssignCells(i, key) {
 // is rendered entirely by the browser with zero access for page JS/CSS
 // to inject anything into it. This is a fully custom calendar instead,
 // giving full control over the format-switcher's placement.
-function _psQtyDateFormat(){ return localStorage.getItem('bd_ps_qtydateformat_'+psType) || 'slash'; }
-function _psPersistQtyDateFormat(f){ localStorage.setItem('bd_ps_qtydateformat_'+psType, f); }
+function _psQtyDateFormat(){ return _psSettingGet('qtyDateFormat', 'slash'); }
+function _psPersistQtyDateFormat(f){ _psSettingSet('qtyDateFormat', f); }
 function _psOrdinalSuffix(n) {
   const s = ['th','st','nd','rd'], v = n % 100;
   return s[(v-20)%10] || s[v] || s[0];
@@ -8445,8 +8542,8 @@ function psSetQtyDateFormat(f) {
 // ── CONFIGURABLE TOTAL FORMULAS ──────────────────────────────
 // total_cost and total_sell default to cost_price×qty / sell_price×qty,
 // but users can reassign which columns feed into them and how.
-function _psTotalFormulas(){ try { return JSON.parse(localStorage.getItem('bd_ps_totalformulas_'+psType)||'{}'); } catch(e){ return {}; } }
-function _psPersistTotalFormulas(f){ localStorage.setItem('bd_ps_totalformulas_'+psType, JSON.stringify(f)); }
+function _psTotalFormulas(){ return _psSettingGet('totalFormulas', {}); }
+function _psPersistTotalFormulas(f){ _psSettingSet('totalFormulas', f); }
 function _psDefaultTotalFormula(key) {
   if (key === 'total_cost') return { columns: ['cost_price','qty'], operation: 'multiply' };
   if (key === 'total_sell') return { columns: ['sell_price','qty'], operation: 'multiply' };
@@ -8606,8 +8703,8 @@ function _psColApplies(key, isSvc) {
 function _psDefaultColOrder() {
   return ['qty_date','name','barcode','product_type','service_type','cost_price','sell_price','qty','total_cost','total_sell','income_acct'];
 }
-function _psColOrder(){ try { return JSON.parse(localStorage.getItem('bd_ps_colorder_'+psType)||'null') || _psDefaultColOrder(); } catch(e){ return _psDefaultColOrder(); } }
-function _psPersistColOrder(arr){ localStorage.setItem('bd_ps_colorder_'+psType, JSON.stringify(arr)); }
+function _psColOrder(){ return _psSettingGet('colOrder', null) || _psDefaultColOrder(); }
+function _psPersistColOrder(arr){ _psSettingSet('colOrder', arr); }
 // Merges the stored order with any keys not yet present — a newly
 // created custom column, or (for forward-compatibility) a built-in id
 // added in some future update — so nothing silently disappears.
@@ -8623,8 +8720,8 @@ function _psEffectiveColOrder() {
   if (qtyDateIdx > 0) { order.splice(qtyDateIdx, 1); order.unshift('qty_date'); }
   return order;
 }
-function _psHiddenCustomCols(){ try { return JSON.parse(localStorage.getItem('bd_ps_hiddencustom_'+psType)||'[]'); } catch(e){ return []; } }
-function _psPersistHiddenCustom(arr){ localStorage.setItem('bd_ps_hiddencustom_'+psType, JSON.stringify(arr)); }
+function _psHiddenCustomCols(){ return _psSettingGet('hiddenCustom', []); }
+function _psPersistHiddenCustom(arr){ _psSettingSet('hiddenCustom', arr); }
 
 // ── Products custom-column triangle menu (mirrors the Sales sheet) ──
 function psColMenuOpen(ev, key) {
@@ -8757,8 +8854,8 @@ function psSetWrap(w){ psSheet.wrap=w; renderProductsPage(); }
 // Default is right for every column (built-in or custom); users can
 // override individual columns via the toolbox align buttons. Headers
 // are never affected — they always stay left-aligned.
-function _psColAlign(){ try { return JSON.parse(localStorage.getItem('bd_ps_colalign_'+psType)||'{}'); } catch(e){ return {}; } }
-function _psPersistColAlign(a){ localStorage.setItem('bd_ps_colalign_'+psType, JSON.stringify(a)); }
+function _psColAlign(){ return _psSettingGet('colAlign', {}); }
+function _psPersistColAlign(a){ _psSettingSet('colAlign', a); }
 function _psEffectiveColAlign(key){ return _psColAlign()[key] || 'right'; }
 let _psFocusedColKey = null;
 function psSetColumnAlign(alignment) {
@@ -8835,8 +8932,8 @@ function psAutoGrowCell(el) {
   el.style.height = el.scrollHeight + 'px';
 }
 
-function _psColWidths(){ try { return JSON.parse(localStorage.getItem('bd_ps_colwidths_'+psType)||'{}'); } catch(e){ return {}; } }
-function _psPersistColWidths(w){ localStorage.setItem('bd_ps_colwidths_'+psType, JSON.stringify(w)); }
+function _psColWidths(){ return _psSettingGet('colWidths', {}); }
+function _psPersistColWidths(w){ _psSettingSet('colWidths', w); }
 function psColResized(key, widthPx) {
   const widths = _psColWidths();
   widths[key] = widthPx;
@@ -8875,6 +8972,7 @@ async function showProductsPage(type) {
   psType = type || 'products';
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
   await loadPsColPrefs();
+  await psEnsureSheetSettingsLoaded();
 
   let data;
   if (!navigator.onLine) {
