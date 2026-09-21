@@ -273,19 +273,19 @@ function showAuthScreen(view) {
           <div><label class="su-label">FIRST NAME *</label><input class="bk-login-input" id="ri_first"/></div>
           <div><label class="su-label">LAST NAME *</label><input class="bk-login-input" id="ri_last"/></div>
         </div>
-        <div class="ri-grid2">
-          <div><label class="su-label">DATE OF BIRTH *</label>
-            <div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:6px;">
-              <select class="bk-login-input" id="ri_dob_day"><option value="">Day</option>${Array.from({length:31},(_,i)=>i+1).map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
-              <select class="bk-login-input" id="ri_dob_month"><option value="">Month</option>${['January','February','March','April','May','June','July','August','September','October','November','December'].map((m,i)=>`<option value="${i+1}">${m}</option>`).join('')}</select>
-              <select class="bk-login-input" id="ri_dob_year"><option value="">Year</option>${Array.from({length:88},(_,i)=>new Date().getFullYear()-13-i).map(y=>`<option value="${y}">${y}</option>`).join('')}</select>
-            </div>
+        <div><label class="su-label">DATE OF BIRTH *</label>
+          <div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:6px;max-width:420px;">
+            <select class="bk-login-input" id="ri_dob_day"><option value="">Day</option>${Array.from({length:31},(_,i)=>i+1).map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+            <select class="bk-login-input" id="ri_dob_month"><option value="">Month</option>${['January','February','March','April','May','June','July','August','September','October','November','December'].map((m,i)=>`<option value="${i+1}">${m}</option>`).join('')}</select>
+            <select class="bk-login-input" id="ri_dob_year"><option value="">Year</option>${Array.from({length:88},(_,i)=>new Date().getFullYear()-13-i).map(y=>`<option value="${y}">${y}</option>`).join('')}</select>
           </div>
-          <div><label class="su-label">GENDER *</label><select class="bk-login-input" id="ri_gender"><option value="">Select Gender</option>
-            <option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
         </div>
         <div class="ri-grid2">
+          <div><label class="su-label">GENDER *</label><select class="bk-login-input" id="ri_gender"><option value="">Select Gender</option>
+            <option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
           <div><label class="su-label">PHONE NUMBER *</label><input class="bk-login-input" type="tel" id="ri_phone"/></div>
+        </div>
+        <div class="ri-grid2">
           <div><label class="su-label">EMAIL ADDRESS</label><input class="bk-login-input" value="${escH(bkUser?.email||'')}" disabled style="opacity:0.55;"/></div>
         </div>
         <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin:14px 0 4px;">Origin</div>
