@@ -12306,20 +12306,51 @@ function riCountryChanged(countryCode, stateSelectId) {
   const sel = document.getElementById(stateSelectId);
   if (sel) sel.innerHTML = riStateOptions(countryCode);
 }
-// LGA is a Nigeria-specific concept, so this only ever swaps to a
-// dropdown when the selected country is Nigeria AND that state has
-// LGA data — every other country (and any Nigerian state that somehow
-// isn't in the dataset) keeps the plain free-text field it always had.
-function riStateChanged(stateValue, countryFieldId, lgaWrapId) {
+// Populates the "Local Government Area" field with that state's actual
+// sub-divisions once a state is picked, for every country — not just
+// Nigeria. Nigeria uses the dedicated, more accurate 774-LGA dataset
+// that's already embedded (instant, no fetch needed). Every other
+// country lazy-loads a small (a few KB to ~200KB for the largest,
+// averaging under 10KB) per-country file on demand — fetching all 223
+// countries' data upfront would mean downloading several megabytes on
+// a page nobody should have to wait on, when a given registration only
+// ever needs one country's worth.
+let _riCityCache = {};
+let _riStateChangeToken = 0;
+async function riStateChanged(stateValue, countryFieldId, lgaWrapId) {
   const wrap = document.getElementById(lgaWrapId);
   if (!wrap) return;
   const countryCode = document.getElementById(countryFieldId)?.value;
-  const lgas = (countryCode === 'NG' && typeof BD_NG_LGAS_BY_STATE !== 'undefined') ? BD_NG_LGAS_BY_STATE[stateValue] : null;
   const inputId = lgaWrapId.replace('_wrap', '');
-  if (lgas && lgas.length) {
-    wrap.innerHTML = `<label class="su-label">LOCAL GOVERNMENT AREA *</label><select class="bk-login-input" id="${inputId}"><option value="">Select LGA</option>${lgas.map(l=>`<option>${escH(l)}</option>`).join('')}</select>`;
-  } else {
+  const myToken = ++_riStateChangeToken; // guards against a slower, older fetch overwriting a newer selection
+
+  const renderPlainInput = () => {
+    if (myToken !== _riStateChangeToken) return;
     wrap.innerHTML = `<label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" id="${inputId}" placeholder="Local Government Area"/>`;
+  };
+  const renderDropdown = (list) => {
+    if (myToken !== _riStateChangeToken) return;
+    wrap.innerHTML = `<label class="su-label">LOCAL GOVERNMENT AREA *</label><select class="bk-login-input" id="${inputId}"><option value="">Select</option>${list.map(l=>`<option>${escH(l)}</option>`).join('')}</select>`;
+  };
+
+  if (countryCode === 'NG') {
+    const lgas = (typeof BD_NG_LGAS_BY_STATE !== 'undefined') ? BD_NG_LGAS_BY_STATE[stateValue] : null;
+    if (lgas && lgas.length) renderDropdown(lgas); else renderPlainInput();
+    return;
+  }
+
+  if (!stateValue || !countryCode) { renderPlainInput(); return; }
+
+  wrap.innerHTML = `<label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" placeholder="Loading…" disabled style="opacity:0.5;"/>`;
+  try {
+    if (!_riCityCache[countryCode]) {
+      _riCityCache[countryCode] = fetch(`/cities/${countryCode}.json`).then(r => r.ok ? r.json() : null).catch(() => null);
+    }
+    const data = await _riCityCache[countryCode];
+    const cities = data ? data[stateValue] : null;
+    if (cities && cities.length) renderDropdown(cities); else renderPlainInput();
+  } catch (e) {
+    renderPlainInput();
   }
 }
 
