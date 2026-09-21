@@ -290,21 +290,21 @@ function showAuthScreen(view) {
         </div>
         <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin:14px 0 4px;">Origin</div>
         <div class="ri-grid2">
-          <div><label class="su-label">COUNTRY OF ORIGIN *</label><select class="bk-login-input" id="ri_origin_country" onchange="riCountryChanged(this.value,'ri_state')">${riCountryOptions('NG')}</select></div>
-          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_state">${riStateOptions('NG')}</select></div>
+          <div><label class="su-label">COUNTRY OF ORIGIN *</label><select class="bk-login-input" id="ri_origin_country" onchange="riCountryChanged(this.value,'ri_state');riStateChanged('','ri_origin_country','ri_lga_wrap')">${riCountryOptions('NG')}</select></div>
+          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_state" onchange="riStateChanged(this.value,'ri_origin_country','ri_lga_wrap')">${riStateOptions('NG')}</select></div>
         </div>
         <div class="ri-grid2">
-          <div><label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" id="ri_lga" placeholder="Local Government Area"/></div>
+          <div id="ri_lga_wrap"><label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" id="ri_lga" placeholder="Local Government Area"/></div>
           <div><label class="su-label">TOWN / CITY</label><input class="bk-login-input" id="ri_town" placeholder="Enter your town or city"/></div>
         </div>
         <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin:14px 0 0;">Primary Location</div>
         <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px;">Where you currently live or primarily operate from.</div>
         <div class="ri-grid2">
-          <div><label class="su-label">COUNTRY *</label><select class="bk-login-input" id="ri_p_country" onchange="riCountryChanged(this.value,'ri_p_state')">${riCountryOptions('NG')}</select></div>
-          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_p_state">${riStateOptions('NG')}</select></div>
+          <div><label class="su-label">COUNTRY *</label><select class="bk-login-input" id="ri_p_country" onchange="riCountryChanged(this.value,'ri_p_state');riStateChanged('','ri_p_country','ri_p_lga_wrap')">${riCountryOptions('NG')}</select></div>
+          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_p_state" onchange="riStateChanged(this.value,'ri_p_country','ri_p_lga_wrap')">${riStateOptions('NG')}</select></div>
         </div>
         <div class="ri-grid2">
-          <div><label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" id="ri_p_lga" placeholder="Local Government Area"/></div>
+          <div id="ri_p_lga_wrap"><label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" id="ri_p_lga" placeholder="Local Government Area"/></div>
           <div><label class="su-label">TOWN</label><input class="bk-login-input" id="ri_p_town" placeholder="Enter your town"/></div>
         </div>
         <div class="bk-login-err" id="riErr"></div>
@@ -12305,6 +12305,22 @@ function riStateOptions(countryCode) {
 function riCountryChanged(countryCode, stateSelectId) {
   const sel = document.getElementById(stateSelectId);
   if (sel) sel.innerHTML = riStateOptions(countryCode);
+}
+// LGA is a Nigeria-specific concept, so this only ever swaps to a
+// dropdown when the selected country is Nigeria AND that state has
+// LGA data — every other country (and any Nigerian state that somehow
+// isn't in the dataset) keeps the plain free-text field it always had.
+function riStateChanged(stateValue, countryFieldId, lgaWrapId) {
+  const wrap = document.getElementById(lgaWrapId);
+  if (!wrap) return;
+  const countryCode = document.getElementById(countryFieldId)?.value;
+  const lgas = (countryCode === 'NG' && typeof BD_NG_LGAS_BY_STATE !== 'undefined') ? BD_NG_LGAS_BY_STATE[stateValue] : null;
+  const inputId = lgaWrapId.replace('_wrap', '');
+  if (lgas && lgas.length) {
+    wrap.innerHTML = `<label class="su-label">LOCAL GOVERNMENT AREA *</label><select class="bk-login-input" id="${inputId}"><option value="">Select LGA</option>${lgas.map(l=>`<option>${escH(l)}</option>`).join('')}</select>`;
+  } else {
+    wrap.innerHTML = `<label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" id="${inputId}" placeholder="Local Government Area"/>`;
+  }
 }
 
 const BIZ_TYPES = ['Sole Proprietorship','Partnership','Limited Liability Company (LLC)',
