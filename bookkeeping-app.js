@@ -321,7 +321,7 @@ function showAuthScreen(view) {
       <div style="text-align:center;padding:36px 0;">
         <div style="width:74px;height:74px;border-radius:50%;background:var(--gold-t015);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--gold);">✓</div>
         <div style="font-size:1.5rem;font-weight:900;color:var(--white);">You're all set${fname?', '+escH(fname):''}!</div>
-        <div style="font-size:0.82rem;color:var(--muted);margin:10px 0 26px;line-height:1.6;">Your account has been created successfully.<br>Welcome to Butterfly Dynamix Accounting.</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin:10px 0 26px;line-height:1.6;">Your account has been created successfully.<br>Welcome to Butterfly Dynamix.</div>
         ${['Account verified','Profile saved','Ready to go'].map(t=>`
           <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:0.82rem;color:var(--off);">
             <span style="color:var(--gold);">✓</span> ${t}
@@ -790,14 +790,21 @@ function showRegisterBusinessPage() {
   document.getElementById('bkContent').innerHTML = `
     <div style="max-width:${window.innerWidth>=900?'760px':'520px'};margin:0 auto;padding:24px 16px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;">
-        <div style="width:30px;height:30px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:0.9rem;">🏦</div>
-        <span style="font-weight:800;font-size:0.82rem;">Butterfly Dynamix Accounting</span>
+        <svg viewBox="0 0 100 100" width="30" height="30" xmlns="http://www.w3.org/2000/svg" aria-label="Butterfly Dynamix">
+          <path d="M48 42 C30 20, 8 22, 6 38 C4 52, 22 56, 48 48 Z" fill="var(--gold)"/>
+          <path d="M52 42 C70 20, 92 22, 94 38 C96 52, 78 56, 52 48 Z" fill="var(--gold)"/>
+          <path d="M48 50 C34 58, 20 62, 16 76 C14 84, 22 88, 30 82 C34 78, 30 68, 48 58 Z" fill="var(--gold)"/>
+          <path d="M52 50 C66 58, 80 62, 84 76 C86 84, 78 88, 70 82 C66 78, 70 68, 52 58 Z" fill="var(--gold)"/>
+          <path d="M50 30 Q46 20 42 16 M50 30 Q54 20 58 16" stroke="var(--gold)" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <ellipse cx="50" cy="50" rx="2.5" ry="22" fill="var(--gold)"/>
+        </svg>
+        <span style="font-weight:800;font-size:0.82rem;">Butterfly Dynamix</span>
       </div>
       <div style="font-size:1.4rem;font-weight:900;color:var(--white);">Register Your Business</div>
       <div style="font-size:0.8rem;color:var(--muted);margin:4px 0 22px;">Enter your business details to get started.</div>
 
       <label class="su-label">BUSINESS NAME *</label>
-      <input class="bk-login-input" id="rb_name" placeholder="e.g. Butterfly Dynamix LLC" style="width:100%;margin-bottom:14px;"/>
+      <input class="bk-login-input" id="rb_name" style="width:100%;margin-bottom:14px;"/>
 
       <div class="ri-grid2">
         <div><label class="su-label">BUSINESS STRUCTURE *</label>
@@ -831,16 +838,16 @@ function showRegisterBusinessPage() {
 
       <label class="su-label">BUSINESS ADDRESS *</label>
       <div class="ri-grid2">
-        <div><label class="su-label" style="font-size:0.56rem;">COUNTRY</label><input class="bk-login-input" id="rb_country" value="Nigeria"/></div>
-        <div><label class="su-label" style="font-size:0.56rem;">STATE / PROVINCE</label><input class="bk-login-input" id="rb_state" placeholder="e.g. Rivers"/></div>
+        <div><label class="su-label" style="font-size:0.56rem;">COUNTRY</label><select class="bk-login-input" id="rb_country" onchange="riCountryChanged(this.value,'rb_state');riStateChanged('','rb_country','rb_lga_wrap')">${riCountryOptions('NG')}</select></div>
+        <div><label class="su-label" style="font-size:0.56rem;">STATE / PROVINCE</label><select class="bk-login-input" id="rb_state" onchange="riStateChanged(this.value,'rb_country','rb_lga_wrap')">${riStateOptions('NG')}</select></div>
       </div>
       <div class="ri-grid2">
-        <div><label class="su-label" style="font-size:0.56rem;">LOCAL GOVERNMENT AREA</label><input class="bk-login-input" id="rb_lga" placeholder="LGA"/></div>
-        <div><label class="su-label" style="font-size:0.56rem;">CITY</label><input class="bk-login-input" id="rb_city" placeholder="City"/></div>
+        <div id="rb_lga_wrap"><label class="su-label" style="font-size:0.56rem;">LOCAL GOVERNMENT AREA</label><input class="bk-login-input" id="rb_lga"/></div>
+        <div><label class="su-label" style="font-size:0.56rem;">TOWN / CITY</label><input class="bk-login-input" id="rb_city"/></div>
       </div>
       <div class="ri-grid2" style="margin-bottom:14px;">
-        <div><label class="su-label" style="font-size:0.56rem;">STREET</label><input class="bk-login-input" id="rb_street" placeholder="Street name"/></div>
-        <div><label class="su-label" style="font-size:0.56rem;">STREET NUMBER</label><input class="bk-login-input" id="rb_streetno" placeholder="No."/></div>
+        <div><label class="su-label" style="font-size:0.56rem;">STREET</label><input class="bk-login-input" id="rb_street"/></div>
+        <div><label class="su-label" style="font-size:0.56rem;">STREET NUMBER</label><input class="bk-login-input" id="rb_streetno"/></div>
       </div>
 
       <label class="su-label">CAC REGISTRATION NUMBER (IF REGISTERED)</label>
@@ -860,8 +867,17 @@ async function rbSaveBusiness() {
   if (!name) { if(err) err.textContent='Business name is required.'; return; }
   const cac = document.getElementById('rb_cac')?.value?.trim()||'';
   const position = document.getElementById('rb_position')?.value||'Owner';
-  const addr = ['rb_streetno','rb_street','rb_city','rb_lga','rb_state','rb_country']
-    .map(id=>document.getElementById(id)?.value?.trim()).filter(Boolean).join(', ');
+  const rbCountryCode = document.getElementById('rb_country')?.value||'NG';
+  const rbCountryList = (typeof BD_COUNTRIES !== 'undefined' && BD_COUNTRIES.length) ? BD_COUNTRIES : [{code:'NG',name:'Nigeria'}];
+  const rbCountryName = rbCountryList.find(c=>c.code===rbCountryCode)?.name || 'Nigeria';
+  const addr = [
+      document.getElementById('rb_streetno')?.value?.trim(),
+      document.getElementById('rb_street')?.value?.trim(),
+      document.getElementById('rb_city')?.value?.trim(),
+      document.getElementById('rb_lga')?.value?.trim(),
+      document.getElementById('rb_state')?.value?.trim(),
+      rbCountryName,
+    ].filter(Boolean).join(', ');
   if (err) { err.textContent='Saving…'; err.style.color='var(--muted)'; }
   try {
     // Does this business already exist on the platform?
@@ -9820,11 +9836,17 @@ async function fetchStaffList() {
 // ── Show/hide menu items based on the logged-in user's role ───
 function applyRoleMenu(role){
   const isOwnerOrManager = (role === 'owner' || role === 'manager');
+  const isEmployee = (role === 'employee');
   document.querySelectorAll('[data-role="owner-manager"]').forEach(function(el){
     el.style.display = isOwnerOrManager ? '' : 'none';
   });
   document.querySelectorAll('[data-role="employee"]').forEach(function(el){
-    el.style.display = isOwnerOrManager ? 'none' : '';
+    // Explicitly requires role to actually BE 'employee' — an
+    // undefined/unset role (e.g. a brand-new user still mid-setup,
+    // before their role is determined) previously fell through to
+    // showing these by default, which is exactly why new users were
+    // seeing "Colleagues" and the staff "Record" item they shouldn't.
+    el.style.display = isEmployee ? '' : 'none';
   });
 }
 
