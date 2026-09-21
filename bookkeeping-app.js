@@ -262,8 +262,6 @@ function showAuthScreen(view) {
       <div style="display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.08em;color:var(--muted);margin:-16px 0 20px;font-weight:700;">
         <span>CREDENTIALS</span><span style="color:var(--gold);">PERSONAL INFO</span><span>DONE</span>
       </div>`;
-    const stateOpts = NG_STATES.map(s=>`<option>${s}</option>`).join('');
-    content.style.maxWidth = window.innerWidth>=900 ? '860px' : '520px';
     content.innerHTML = `
       ${logo}
       <div style="font-size:1.4rem;font-weight:900;color:var(--white);margin:14px 0 4px;">Personal Information</div>
@@ -271,10 +269,9 @@ function showAuthScreen(view) {
       ${stepper}
       <div class="bk-login-form" style="gap:2px;">
         <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin-bottom:4px;">Full Name</div>
-        <div class="ri-grid3">
-          <div><label class="su-label">FIRST NAME *</label><input class="bk-login-input" id="ri_first" placeholder="Jennifer"/></div>
-          <div><label class="su-label">MIDDLE NAME</label><input class="bk-login-input" id="ri_middle" placeholder="Grace"/></div>
-          <div><label class="su-label">LAST NAME *</label><input class="bk-login-input" id="ri_last" placeholder="Okafor"/></div>
+        <div class="ri-grid2">
+          <div><label class="su-label">FIRST NAME *</label><input class="bk-login-input" id="ri_first"/></div>
+          <div><label class="su-label">LAST NAME *</label><input class="bk-login-input" id="ri_last"/></div>
         </div>
         <div class="ri-grid2">
           <div><label class="su-label">DATE OF BIRTH *</label>
@@ -288,13 +285,13 @@ function showAuthScreen(view) {
             <option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
         </div>
         <div class="ri-grid2">
-          <div><label class="su-label">PHONE NUMBER *</label><input class="bk-login-input" type="tel" id="ri_phone" placeholder="+234 801 234 5678"/></div>
+          <div><label class="su-label">PHONE NUMBER *</label><input class="bk-login-input" type="tel" id="ri_phone"/></div>
           <div><label class="su-label">EMAIL ADDRESS</label><input class="bk-login-input" value="${escH(bkUser?.email||'')}" disabled style="opacity:0.55;"/></div>
         </div>
         <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin:14px 0 4px;">Origin</div>
         <div class="ri-grid2">
-          <div><label class="su-label">COUNTRY OF ORIGIN *</label><input class="bk-login-input" id="ri_origin_country" value="Nigeria"/></div>
-          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_state"><option value="">Select State</option>${stateOpts}</select></div>
+          <div><label class="su-label">COUNTRY OF ORIGIN *</label><select class="bk-login-input" id="ri_origin_country" onchange="riCountryChanged(this.value,'ri_state')">${riCountryOptions('NG')}</select></div>
+          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_state">${riStateOptions('NG')}</select></div>
         </div>
         <div class="ri-grid2">
           <div><label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" id="ri_lga" placeholder="Local Government Area"/></div>
@@ -303,8 +300,8 @@ function showAuthScreen(view) {
         <div style="font-size:0.8rem;font-weight:800;color:var(--white);margin:14px 0 0;">Primary Location</div>
         <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px;">Where you currently live or primarily operate from.</div>
         <div class="ri-grid2">
-          <div><label class="su-label">COUNTRY *</label><input class="bk-login-input" id="ri_p_country" value="Nigeria"/></div>
-          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_p_state"><option value="">Select State</option>${stateOpts}</select></div>
+          <div><label class="su-label">COUNTRY *</label><select class="bk-login-input" id="ri_p_country" onchange="riCountryChanged(this.value,'ri_p_state')">${riCountryOptions('NG')}</select></div>
+          <div><label class="su-label">STATE *</label><select class="bk-login-input" id="ri_p_state">${riStateOptions('NG')}</select></div>
         </div>
         <div class="ri-grid2">
           <div><label class="su-label">LOCAL GOVERNMENT AREA *</label><input class="bk-login-input" id="ri_p_lga" placeholder="Local Government Area"/></div>
@@ -393,15 +390,17 @@ async function riRegister() {
   }
   if (err) { err.textContent='Saving…'; err.style.color='var(--muted)'; }
   try {
+    const originCode = document.getElementById('ri_origin_country')?.value||'NG';
+    const originCountryList = (typeof BD_COUNTRIES !== 'undefined' && BD_COUNTRIES.length) ? BD_COUNTRIES : [{code:'NG',name:'Nigeria'}];
+    const originCountryName = originCountryList.find(c=>c.code===originCode)?.name || 'Nigeria';
     profileData = {
       first_name:first,
-      middle_name:document.getElementById('ri_middle')?.value?.trim()||'',
       last_name:last,
       full_name:first+' '+last,
       date_of_birth:dateOfBirth,
       gender:document.getElementById('ri_gender')?.value||'',
       phone:document.getElementById('ri_phone')?.value?.trim()||'',
-      country:document.getElementById('ri_origin_country')?.value?.trim()||'Nigeria',
+      country:originCountryName,
       state:document.getElementById('ri_state')?.value||'',
       lga:document.getElementById('ri_lga')?.value?.trim()||'',
       town:document.getElementById('ri_town')?.value?.trim()||'',
@@ -12286,6 +12285,28 @@ const NG_STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Be
   'Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT (Abuja)','Gombe','Imo','Jigawa',
   'Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo',
   'Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
+
+// ── COUNTRY / STATE CASCADING DROPDOWNS (registration) ──────────
+// Backed by geo_data.js (BD_COUNTRIES, BD_STATES_BY_COUNTRY) — a
+// trimmed, ~70KB dataset covering all 250 countries and their
+// states/provinces, derived from the dr5hn/countries-states-cities-
+// database (ODbL v1.0). Falls back gracefully to just Nigeria's
+// states if that script somehow failed to load, rather than leaving
+// the dropdown empty.
+function riCountryOptions(selectedCode) {
+  const list = (typeof BD_COUNTRIES !== 'undefined' && BD_COUNTRIES.length) ? BD_COUNTRIES : [{code:'NG',name:'Nigeria'}];
+  return list.map(c => `<option value="${c.code}"${c.code===selectedCode?' selected':''}>${escH(c.name)}</option>`).join('');
+}
+function riStateOptions(countryCode) {
+  const states = (typeof BD_STATES_BY_COUNTRY !== 'undefined' && BD_STATES_BY_COUNTRY[countryCode]) || (countryCode==='NG' ? NG_STATES : []);
+  if (!states.length) return '<option value="">No states listed for this country</option>';
+  return '<option value="">Select State</option>' + states.map(s => `<option>${escH(s)}</option>`).join('');
+}
+function riCountryChanged(countryCode, stateSelectId) {
+  const sel = document.getElementById(stateSelectId);
+  if (sel) sel.innerHTML = riStateOptions(countryCode);
+}
+
 const BIZ_TYPES = ['Sole Proprietorship','Partnership','Limited Liability Company (LLC)',
   'Public Limited Company (PLC)','Cooperative','NGO / Non-profit','Other'];
 const PROFILE_INDUSTRIES = ['General','Retail','Food & Beverage','Consulting & Tech','Real Estate',
