@@ -3287,13 +3287,38 @@ async function smartAutoCorrect(journalId, drAmt, crAmt) {
 
 // ── Page guard — prevents stale async callbacks from navigating away ──
 let currentPage = 'dashboard'; // updated by every page-entry function
+// Converts an internal route string (e.g. "products", or a
+// colon-separated one like "ledger:123:456") into a clean URL path
+// ("/products", "/ledger/123/456") and back. This is what makes pages
+// bookmarkable/shareable and lets the browser's own back/forward
+// buttons work — previously every page rendered under the exact same
+// URL, so Back left the app entirely instead of going to the
+// previous in-app page.
+function _bdRouteToPath(route) {
+  if (!route) return '/';
+  return '/' + route.split(':').map(encodeURIComponent).join('/');
+}
+function _bdPathToRoute(path) {
+  const parts = path.replace(/^\/|\/$/g, '').split('/').filter(Boolean).map(decodeURIComponent);
+  if (!parts.length) return null;
+  return parts.join(':');
+}
 function bdSaveRoute(page) {
   currentPage = page;
   try { sessionStorage.setItem('bd_route', page); } catch(e) {}
+  try {
+    const path = _bdRouteToPath(page);
+    if (window.location.pathname !== path) history.pushState({ bdRoute: page }, '', path);
+  } catch(e) {}
 }
 function bdRestoreRoute() {
   try {
-    const r = sessionStorage.getItem('bd_route');
+    // The URL is the primary source of truth (supports direct links,
+    // bookmarks, and refreshing mid-page) — sessionStorage is only a
+    // fallback for the plain root path, preserving the existing
+    // "resume where you left off" behavior within the same tab.
+    const pathRoute = _bdPathToRoute(window.location.pathname);
+    const r = pathRoute || sessionStorage.getItem('bd_route');
     if (r === 'all-businesses') { showAllBusinessesDashboard(); return; }
     if (r === 'journal')  { openJournal(); return; }
     if (r === 'settings') { showSettings(); return; }
@@ -3320,6 +3345,13 @@ function bdRestoreRoute() {
     showDashboard();
   } catch(e) { showDashboard(); }
 }
+// Fires when the user clicks the browser's Back/Forward buttons. The
+// browser has already updated window.location itself at this point —
+// bdRestoreRoute() just needs to render whatever page that now points
+// to, without pushing another history entry (that would break Forward).
+window.addEventListener('popstate', function(){
+  if (typeof bkUser !== 'undefined' && bkUser) bdRestoreRoute();
+});
 
 
 // ── SALES & EXPENSES BREAKDOWN DRILLDOWN ─────────────────────
@@ -8172,8 +8204,11 @@ async function bkSignOut() {
   // Clear the saved route — otherwise it's still sitting in
   // sessionStorage from before logout, and logging back in would
   // restore whatever page was open then instead of landing on the
-  // dashboard.
+  // dashboard. The URL needs resetting too now that it's the primary
+  // source of truth for routing — otherwise a stale deep URL like
+  // /products would reintroduce this exact bug via the URL instead.
   try { sessionStorage.removeItem('bd_route'); } catch(e) {}
+  try { if (window.location.pathname !== '/') history.pushState(null, '', '/'); } catch(e) {}
   showAuthScreen('landing');
 }
 
