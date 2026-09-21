@@ -138,7 +138,7 @@ function showAuthScreen(view) {
   if (!screen || !content) return;
   screen.classList.remove('hidden');
   const isDesk = window.innerWidth >= 900;
-  content.style.maxWidth = (isDesk && (view==='landing'||view==='signup'||view==='login')) ? '1100px' : '520px';
+  content.style.maxWidth = (isDesk && (view==='landing'||view==='signup'||view==='login'||view==='verify-email')) ? '1100px' : '520px';
 
   const logo = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
     <svg viewBox="0 0 100 100" width="38" height="38" xmlns="http://www.w3.org/2000/svg" aria-label="Butterfly Dynamix">
