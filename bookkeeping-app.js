@@ -956,8 +956,15 @@ function showModeChoice() {
   document.getElementById('bkContent').innerHTML = `
     <div style="text-align:center;padding:34px 20px 8px;">
       <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:26px;">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;">🏦</div>
-        <span style="font-weight:800;font-size:0.85rem;">Butterfly Dynamix Accounting</span>
+        <svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" aria-label="Butterfly Dynamix">
+          <path d="M48 42 C30 20, 8 22, 6 38 C4 52, 22 56, 48 48 Z" fill="var(--gold)"/>
+          <path d="M52 42 C70 20, 92 22, 94 38 C96 52, 78 56, 52 48 Z" fill="var(--gold)"/>
+          <path d="M48 50 C34 58, 20 62, 16 76 C14 84, 22 88, 30 82 C34 78, 30 68, 48 58 Z" fill="var(--gold)"/>
+          <path d="M52 50 C66 58, 80 62, 84 76 C86 84, 78 88, 70 82 C66 78, 70 68, 52 58 Z" fill="var(--gold)"/>
+          <path d="M50 30 Q46 20 42 16 M50 30 Q54 20 58 16" stroke="var(--gold)" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <ellipse cx="50" cy="50" rx="2.5" ry="22" fill="var(--gold)"/>
+        </svg>
+        <span style="font-weight:800;font-size:0.85rem;">Butterfly Dynamix</span>
       </div>
       <div style="font-size:0.68rem;letter-spacing:0.16em;color:var(--muted);font-weight:700;">${greeting}</div>
       <div style="font-size:1.7rem;font-weight:900;color:var(--white);margin:4px 0;">${escH(fname)} 👋</div>

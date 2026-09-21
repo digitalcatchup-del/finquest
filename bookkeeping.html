@@ -1273,7 +1273,7 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
   <!-- Menu header -->
   <div style="padding:20px 20px 12px 62px;border-bottom:1px solid var(--border);flex-shrink:0;">
     <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Butterfly Dynamix</div>
-    <div style="font-size:1.05rem;font-weight:800;color:var(--white);">Accounting</div>
+    <div style="font-size:1.05rem;font-weight:800;color:var(--white);">ERP</div>
   </div>
 
   <!-- Menu items -->
@@ -1366,16 +1366,6 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
     <!-- Staff directory (owner/manager only) -->
     <div class="bk-menu-item" data-role="owner-manager" onclick="showStaffDirectory();closeBkMenu()" id="mnu-staff-directory">
       <span class="bk-menu-icon">👥</span> Staff
-    </div>
-
-    <!-- Record (employee only) — straight into Sales/Expenses choice -->
-    <div class="bk-menu-item" data-role="employee" onclick="showStaffChoice();closeBkMenu()" id="mnu-staff-record">
-      <span class="bk-menu-icon">📝</span> Record
-    </div>
-
-    <!-- Colleagues (employee only) -->
-    <div class="bk-menu-item" data-role="employee" onclick="showColleagues();closeBkMenu()" id="mnu-colleagues">
-      <span class="bk-menu-icon">👥</span> Colleagues
     </div>
 
     <!-- BUSINESSES section (owner/manager only) — from Image 8 Figma -->
@@ -1544,7 +1534,7 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script src="geo_data.js?v=2"></script>
-<script src="bookkeeping-app.js?v=52"></script>
+<script src="bookkeeping-app.js?v=53"></script>
 <script>
   // Cleans up any lingering service worker from an earlier version of
   // this app. Nothing here registers one anymore, so a worker still
