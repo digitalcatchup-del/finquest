@@ -4872,39 +4872,46 @@ function addJournalRow(){
   }, 40);
 }
 
+// Deletes one journal entry and everything that must go with it:
+// its ledger transaction rows, its linked sibling entry if it came
+// from a sale (revenue and COGS share one sale_ref_id and must go
+// together), and the stock quantity that sale had deducted, restored
+// exactly once. Shared by the Journal view's own delete action and by
+// deleting an already-saved row directly from the Sales/Expenses
+// sheet — previously the sheet's delete only spliced the row out of
+// the on-screen list, leaving the real journal entry, its ledger
+// impact, and the stock deduction completely untouched underneath.
+async function bdCascadeDeleteJournalEntry(journalId) {
+  if (!journalId) return;
+  const { data: row } = await bkDb.from('bk_journal').select('id,sale_ref_id,product_id,qty')
+    .eq('id', journalId).eq('user_id', bkUser.id).maybeSingle();
+  if (!row) return;
+  if (row.sale_ref_id) {
+    const { data: linked } = await bkDb.from('bk_journal').select('id,product_id,qty')
+      .eq('sale_ref_id', row.sale_ref_id).eq('user_id', bkUser.id);
+    for (const entry of (linked || [])) {
+      await bkDb.from('bk_transactions').delete().eq('journal_id', entry.id).eq('user_id', bkUser.id);
+      await bkDb.from('bk_journal').delete().eq('id', entry.id).eq('user_id', bkUser.id);
+    }
+    const restoreQty = parseFloat(row.qty) || 0;
+    if (row.product_id && restoreQty > 0) {
+      try {
+        const { data: product } = await bkDb.from('bk_products').select('qty_in_stock').eq('id', row.product_id).single();
+        if (product) {
+          const restoredQty = (parseFloat(product.qty_in_stock) || 0) + restoreQty;
+          await bkDb.from('bk_products').update({ qty_in_stock: restoredQty }).eq('id', row.product_id);
+          salesProductCacheBizId = undefined; // stock changed — refresh the picker cache next time it's used
+        }
+      } catch(e) {}
+    }
+  } else {
+    await bkDb.from('bk_transactions').delete().eq('journal_id', row.id).eq('user_id', bkUser.id);
+    await bkDb.from('bk_journal').delete().eq('id', row.id).eq('user_id', bkUser.id);
+  }
+}
 async function deleteJournalRow(i){
   const row=journalRows[i];
-  if(row.id){
-    if (row.sale_ref_id) {
-      // This entry came from a sale — it has a sibling entry (revenue
-      // and Cost of Goods Sold share one sale_ref_id), and stock was
-      // deducted when the sale was originally posted. Both entries
-      // need to go together, and the deduction needs to be reversed
-      // exactly once — restoring it separately for each of the two
-      // linked rows would double-count it back.
-      const { data: linked } = await bkDb.from('bk_journal').select('id,product_id,qty')
-        .eq('sale_ref_id', row.sale_ref_id).eq('user_id', bkUser.id);
-      for (const entry of (linked || [])) {
-        await bkDb.from('bk_transactions').delete().eq('journal_id', entry.id).eq('user_id', bkUser.id);
-        await bkDb.from('bk_journal').delete().eq('id', entry.id).eq('user_id', bkUser.id);
-      }
-      const restoreQty = parseFloat(row.qty) || 0;
-      if (row.product_id && restoreQty > 0) {
-        try {
-          const { data: product } = await bkDb.from('bk_products').select('qty_in_stock').eq('id', row.product_id).single();
-          if (product) {
-            const restoredQty = (parseFloat(product.qty_in_stock) || 0) + restoreQty;
-            await bkDb.from('bk_products').update({ qty_in_stock: restoredQty }).eq('id', row.product_id);
-            salesProductCacheBizId = undefined; // stock changed — refresh the picker cache next time it's used
-          }
-        } catch(e) {}
-      }
-    } else {
-      // Delete ledger transactions first, then the journal entry
-      await bkDb.from('bk_transactions').delete().eq('journal_id',row.id).eq('user_id',bkUser.id);
-      await bkDb.from('bk_journal').delete().eq('id',row.id).eq('user_id',bkUser.id);
-    }
-  }
+  if (row.id) await bdCascadeDeleteJournalEntry(row.id);
   journalRows.splice(i,1);
   renderJournalRows();
   await refreshEquation();
@@ -11821,9 +11828,33 @@ function sheetAddRow(kind){
   renderRecordSheet(kind);
 }
 
-function sheetDeleteRow(kind,i){
-  sheetSnapshot(kind);
+async function sheetDeleteRow(kind,i){
   const rows = sheetRows(kind);
+  const row = rows[i];
+
+  // A saved row carries a link back to its real database record —
+  // deleting it here needs to remove that too (journal entry, ledger
+  // transactions, and restore any stock it had deducted), not just
+  // disappear it from the on-screen list while the underlying data
+  // stays behind untouched.
+  if (row && row._posted) {
+    const txnIds = row._bundle ? (row.items||[]).map(x=>x._txnId).filter(Boolean) : [row._txnId].filter(Boolean);
+    if (txnIds.length) {
+      try {
+        const { data: txns } = await bkDb.from('bk_transactions').select('id,journal_id').in('id', txnIds);
+        const journalIds = [...new Set((txns||[]).map(t=>t.journal_id).filter(Boolean))];
+        for (const jid of journalIds) await bdCascadeDeleteJournalEntry(jid);
+        await refreshEquation();
+      } catch(e) {}
+    }
+  }
+
+  // Undo is purely an in-memory/visual mechanism — it can't reverse
+  // the database cascade above, so offering it here would silently
+  // bring the row back on screen while its journal entry stays
+  // deleted underneath. Only snapshot (and offer undo) for rows that
+  // were never posted in the first place, where undo is fully honest.
+  if (!(row && row._posted)) sheetSnapshot(kind);
   rows.splice(i,1);
   if (rows.length === 0) rows.push(kind==='sales' ? staffEmptySaleRow(1) : staffEmptyExpRow(1));
   renderRecordSheet(kind);
