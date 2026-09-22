@@ -2797,16 +2797,29 @@ function _salesProductNameColKey() {
   return nameCol ? nameCol.key : null;
 }
 function bdShowProductSuggestions(i, query) {
-  const box = document.getElementById('salesSuggest_'+i);
-  if (!box) return;
+  bdHideProductSuggestions(i); // only one suggestion box open at a time
   const q = (query||'').trim().toLowerCase();
-  if (!q) { box.classList.add('hidden'); box.innerHTML=''; return; }
+  if (!q) return;
   const nameColKey = _salesProductNameColKey();
   const specificNameOf = p => (nameColKey && p.custom && p.custom[nameColKey]) || '';
   const matches = salesProductCache.filter(p =>
     (p.product_name||'').toLowerCase().includes(q) || specificNameOf(p).toLowerCase().includes(q)
   ).slice(0,6);
-  if (!matches.length) { box.classList.add('hidden'); box.innerHTML=''; return; }
+  if (!matches.length) return;
+
+  const input = document.getElementById('salesNarrInput_'+i);
+  if (!input) return;
+  const rect = input.getBoundingClientRect();
+
+  const box = document.createElement('div');
+  box.id = 'bdSuggestPortal';
+  box.className = 'bd-suggest-box';
+  // position:fixed + appended to document.body — escapes the sales
+  // sheet's own scroll/overflow clipping, which is why this dropdown
+  // was getting cut off before: it was a child of the scrollable
+  // table body, and position:absolute is still clipped by a
+  // scrollable ancestor regardless of its own z-index.
+  box.style.cssText = 'position:fixed;z-index:12000;';
   box.innerHTML = matches.map(p => {
     const label = [p.product_name, p.product_type, specificNameOf(p)].filter(Boolean).join(', ');
     return `<div class="bd-suggest-item" onmousedown="bdPickProduct(${i},'${p.id}')">
@@ -2814,11 +2827,21 @@ function bdShowProductSuggestions(i, query) {
     <span style="color:var(--muted);font-size:0.66rem;white-space:nowrap;">${fmt(p.price)} \u00b7 ${p.qty_in_stock} in stock</span>
   </div>`;
   }).join('');
-  box.classList.remove('hidden');
+  document.body.appendChild(box);
+  box.style.left = rect.left + 'px';
+  box.style.width = rect.width + 'px';
+
+  // Measure the box's REAL rendered height, now that its width is set
+  // — an estimate based on item count alone is wrong whenever a longer
+  // product name wraps within a narrow narration column, which would
+  // throw off the flip-above decision below.
+  const boxHeight = box.getBoundingClientRect().height;
+  let top = rect.bottom + 2;
+  if (top + boxHeight > window.innerHeight) top = Math.max(8, rect.top - boxHeight - 2); // flip above if no room below
+  box.style.top = top + 'px';
 }
 function bdHideProductSuggestions(i) {
-  const box = document.getElementById('salesSuggest_'+i);
-  if (box) { box.classList.add('hidden'); box.innerHTML=''; }
+  document.getElementById('bdSuggestPortal')?.remove();
 }
 function bdPickProduct(i, productId) {
   const p = salesProductCache.find(x => String(x.id) === String(productId));
@@ -8406,26 +8429,6 @@ const PS_COL_DEFS = {
   ],
 };
 
-// Active column preferences — { products:{col_id:bool,...}, services:{...} }
-let psColPrefs = { products:{}, services:{} };
-
-function psDefaultPrefs(type) {
-  const prefs = {};
-  PS_COL_DEFS[type].forEach(c => { prefs[c.id] = c.def; });
-  return prefs;
-}
-
-async function loadPsColPrefs() {
-  PS_COL_DEFS.products.forEach(c => { if(!(c.id in psColPrefs.products)) psColPrefs.products[c.id]=c.def; });
-  PS_COL_DEFS.services.forEach(c => { if(!(c.id in psColPrefs.services)) psColPrefs.services[c.id]=c.def; });
-  try {
-    const { data } = await bkDb.from('bk_settings')
-      .select('products_columns,services_columns').eq('user_id',bkUser.id).maybeSingle();
-    if (data?.products_columns) psColPrefs.products = { ...psDefaultPrefs('products'), ...JSON.parse(data.products_columns) };
-    if (data?.services_columns) psColPrefs.services = { ...psDefaultPrefs('services'), ...JSON.parse(data.services_columns) };
-  } catch(e) {}
-}
-
 function togglePsColSelector() {
   const existing = document.getElementById('psColSelectorPortal');
   if (existing) { existing.remove(); return; }
@@ -8434,18 +8437,30 @@ function togglePsColSelector() {
   if (!btn) return;
   const rect = btn.getBoundingClientRect();
 
-  const prefs = psColPrefs[psType] || psDefaultPrefs(psType);
-  const cols  = PS_COL_DEFS[psType];
-  const selectorRows = cols.map(c => {
-    const checked = prefs[c.id] !== false;
-    return '<div class="ps-col-row">'
-      + '<label class="ps-col-label">'
-      + '<input type="checkbox" class="ps-col-check" data-col="'+c.id+'"'
-      + (checked?' checked':'')
-      + ' onchange="psColCheck(this.dataset.col,this.checked)"/>'
-      + escH(c.label)
-      + '</label></div>';
-  }).join('');
+  renderColSelectorPanel(rect);
+}
+function renderColSelectorPanel(rect) {
+  document.getElementById('psColSelectorPortal')?.remove();
+
+  // Every column, built-in AND custom, in one list — previously this
+  // only ever showed PS_COL_DEFS (built-in columns), so a custom
+  // column someone had added was invisible here entirely and could
+  // never be re-shown once hidden, or found at all if added elsewhere.
+  const builtIn = PS_COL_DEFS[psType].filter(c => c.id !== 'name'); // name is always shown, never listed as optional
+  const custom = _psCustomCols();
+  const selectorRows = builtIn.map(c => ({ id: c.id, label: c.label, isCustom: false }))
+    .concat(custom.map(c => ({ id: c.key, label: c.name, isCustom: true })))
+    .map(c => {
+      const checked = _psIsColVisible(c.id);
+      return '<div class="ps-col-row">'
+        + '<label class="ps-col-label">'
+        + '<input type="checkbox" class="ps-col-check" data-col="'+c.id+'"'
+        + (checked?' checked':'')
+        + ' onchange="psColCheck(this.dataset.col,this.checked)"/>'
+        + escH(c.label)
+        + (c.isCustom ? ' <span style="color:var(--muted);font-size:0.62rem;">(custom)</span>' : '')
+        + '</label></div>';
+    }).join('');
 
   const wrap = document.createElement('div');
   wrap.id = 'psColSelectorPortal';
@@ -8459,29 +8474,36 @@ function togglePsColSelector() {
   panel.addEventListener('click', e => e.stopPropagation());
   panel.innerHTML = '<div class="ps-col-selector-title">Show / hide columns</div>'
     + selectorRows
-    + '<button onclick="psSaveColPrefs()" id="psSaveColBtn"'
-    + ' style="width:100%;margin-top:10px;background:var(--gold);color:#000;border:none;font-size:0.78rem;font-weight:700;padding:9px;border-radius:7px;cursor:pointer;">'
-    + 'Save &amp; Close</button>';
+    + '<button onclick="psAddColumnFromSelector()" id="psAddColBtn"'
+    + ' style="width:100%;margin-top:10px;background:transparent;color:var(--gold);border:1px dashed var(--gold);font-size:0.76rem;font-weight:700;padding:8px;border-radius:7px;cursor:pointer;">'
+    + '+ Add New Column</button>';
 
   wrap.appendChild(panel);
   document.body.appendChild(wrap);
 }
-
-// Called on every checkbox change — re-renders the table immediately
-// Save button at bottom of dropdown — persists prefs and closes menu
-async function psSaveColPrefs() {
-  const btn = document.getElementById('psSaveColBtn');
-  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
-  const field = psType === 'products' ? 'products_columns' : 'services_columns';
-  try {
-    await bkDb.from('bk_settings').upsert({
-      user_id: bkUser.id,
-      [field]: JSON.stringify(psColPrefs[psType]),
-      updated_at: new Date().toISOString(),
-    }, { onConflict:'user_id' });
-  } catch(e) {}
-  document.getElementById('psColSelectorPortal')?.remove();
-  if (btn) { btn.textContent = 'Saved ✓'; btn.disabled = false; }
+// Every change here saves immediately (via _psSettingSet's own debounce
+// further down) — there's no separate "Save & Close" step to remember,
+// and no risk of losing a toggle by clicking away from the panel.
+function psColCheck(colId, checked) {
+  psSetColVisible(colId, checked);
+  psRenderTable();
+}
+// Adds a new custom column directly from the Columns menu, at the end
+// of the column order, then keeps the menu open with the new column
+// already checked and visible — so it can be immediately renamed via
+// the usual column-header menu without hunting for it afterward.
+function psAddColumnFromSelector() {
+  const btn = document.getElementById('psColBtn');
+  const rect = btn ? btn.getBoundingClientRect() : null;
+  const newKey = 'c'+Date.now();
+  const order = _psEffectiveColOrder();
+  order.push(newKey);
+  _psPersistColOrder(order);
+  const cols = _psCustomCols();
+  cols.push({name:'New Column', key:newKey});
+  _psSetCustomCols(cols);
+  renderProductsPage();
+  if (rect) renderColSelectorPanel(rect); // reopen so the new column shows immediately, already visible
 }
 
 
@@ -8533,6 +8555,16 @@ async function psEnsureSheetSettingsLoaded() {
     }
   } catch(e) {
     _psSheetSettings = {};
+  }
+  // Seed default-hidden built-in columns (e.g. Cost Price) the first
+  // time this sheet's settings are ever loaded — without this, a
+  // column meant to start hidden would incorrectly show for anyone
+  // who hasn't explicitly touched the Columns menu yet, since an
+  // empty hidden-list otherwise just means "nothing is hidden".
+  if (_psSheetSettings.hiddenCustom === undefined) {
+    const defaultHidden = (PS_COL_DEFS[psType]||[]).filter(c=>c.def===false).map(c=>c.id);
+    _psSheetSettings.hiddenCustom = defaultHidden;
+    if (defaultHidden.length) _psSaveSheetSettingsNow();
   }
 }
 
@@ -9073,8 +9105,7 @@ function psColHide(key) {
     return;
   }
   if (key==='name') { alert('The name column cannot be hidden.'); return; }
-  psColPrefs[psType][key] = false;
-  psSaveColPrefs();
+  psSetColVisible(key, false);
   renderProductsPage();
 }
 function psColUnhide(key) {
@@ -9101,6 +9132,22 @@ function psSetWrap(w){ psSheet.wrap=w; renderProductsPage(); }
 function _psColAlign(){ return _psSettingGet('colAlign', {}); }
 function _psPersistColAlign(a){ _psSettingSet('colAlign', a); }
 function _psEffectiveColAlign(key){ return _psColAlign()[key] || 'right'; }
+// Column show/hide, unified onto the single hidden-columns list that
+// custom columns already used (_psHiddenCustomCols, further below) —
+// built-in columns previously tracked visibility separately in a
+// user-scoped bk_settings row that only persisted when a "Save &
+// Close" button was explicitly clicked, so a toggle was silently lost
+// if the user instead just clicked away to dismiss the panel, which
+// is the natural thing to do. Now both use the one already-working,
+// business-scoped, auto-saving list.
+function _psIsColVisible(key){ return !_psHiddenCustomCols().includes(key); }
+function psSetColVisible(key, visible){
+  const hidden = _psHiddenCustomCols();
+  const idx = hidden.indexOf(key);
+  if (visible && idx !== -1) hidden.splice(idx, 1);
+  if (!visible && idx === -1) hidden.push(key);
+  _psPersistHiddenCustom(hidden);
+}
 let _psFocusedColKey = null;
 function psSetColumnAlign(alignment) {
   if (!_psFocusedColKey) { alert('Click into a cell in the column you want to align first.'); return; }
@@ -9206,7 +9253,7 @@ function psToolboxHtml(){
     + '<button class="tb-icon" title="Sort by date/time recorded — descending (newest first)" onclick="psSortByCreated(\'desc\')">▼</button>'
     + '<button class="tb-icon" title="Insert column" onclick="psInsertColumn()">+▥</button>'
     + '<button class="tb-icon" title="Delete column" onclick="psDeleteColumn()">−▥</button>'
-    + '<button class="tb-icon" id="psColBtn" onclick="togglePsColSelector()">🎛 Default Columns ▾</button>'
+    + '<button class="tb-icon" id="psColBtn" onclick="togglePsColSelector()">🎛 Columns ▾</button>'
     + '</div>';
 }
 
@@ -9215,7 +9262,6 @@ async function showProductsPage(type) {
   staffHideChrome();
   psType = type || 'products';
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
-  await loadPsColPrefs();
   await psEnsureSheetSettingsLoaded();
 
   let data;
@@ -9263,7 +9309,6 @@ async function showProductsPage(type) {
 
 function renderProductsPage() {
   const isSvc = psType === 'services';
-  const prefs = psColPrefs[psType] || psDefaultPrefs(psType);
 
   document.getElementById('bkContent').innerHTML =
     '<div class="bk-content-header">'
@@ -9307,8 +9352,7 @@ function renderProductsPage() {
 // Only re-renders the table — dropdown stays untouched
 function psRenderTable() {
   const isSvc  = psType === 'services';
-  const prefs  = psColPrefs[psType] || psDefaultPrefs(psType);
-  const show   = function(id){ return prefs[id] !== false; };
+  const show   = function(id){ return _psIsColVisible(id); };
   const incomeAccts = (accounts.income || []).map(function(a){
     return '<option value="'+escH(a.account_name)+'">'+escH(a.account_name)+'</option>';
   }).join('');
@@ -9421,12 +9465,6 @@ function psRenderTable() {
   if (psSheet.wrap === 'wrap' && tbody) {
     tbody.querySelectorAll('.ps-cell-wrap').forEach(psAutoGrowCell);
   }
-}
-
-// Checkbox changed — update prefs and re-render TABLE ONLY (dropdown stays open)
-function psColCheck(colId, checked) {
-  psColPrefs[psType][colId] = checked;
-  psRenderTable();
 }
 
 
@@ -10733,7 +10771,7 @@ function renderRecordSheet(kind) {
       case 'narration': return kind==='sales' ? `<td style="${hlCss(c)}position:relative;"><input class="staff-cell" type="text" id="salesNarrInput_${i}" value="${escH(r.narration||'')}" placeholder="${narrPh}" style="${wrapCss}min-width:150px;"
         oninput="sheetRows('${kind}')[${i}].narration=this.value;sheetRows('${kind}')[${i}]._posted=false;sheetRows('${kind}')[${i}].product_id=null;bdShowProductSuggestions(${i},this.value)"
         onfocus="bdShowProductSuggestions(${i},this.value)"
-        onblur="setTimeout(()=>bdHideProductSuggestions(${i}),150)"/><div id="salesSuggest_${i}" class="bd-suggest-box hidden"></div></td>`
+        onblur="setTimeout(()=>bdHideProductSuggestions(${i}),150)"/></td>`
         : `<td style="${hlCss(c)}"><input class="staff-cell" type="text" value="${escH(r.narration||'')}" placeholder="${narrPh}" style="${wrapCss}min-width:150px;"
         oninput="sheetRows('${kind}')[${i}].narration=this.value;sheetRows('${kind}')[${i}]._posted=false"/></td>`;
       case 'custom': {
