@@ -2784,26 +2784,67 @@ async function bdLoadSalesProductCache() {
     const { data: settingsRow } = await sq.maybeSingle();
     salesProductCustomCols = settingsRow?.settings?.customCols || [];
   } catch(e) { salesProductCustomCols = []; }
+  await _loadSalesSuggestSettings(bizId);
 }
-// Some users create a custom "Name" column in Products to hold the
-// specific item (e.g. "Mamuda Choco Snacks"), using the built-in
-// Product/Product Type fields as broader categories instead (e.g.
-// "Beverage"/"Biscuit"). Reads Products' own column list from the
-// cache loaded above (business-scoped, from the database) — not the
-// psType-dependent _psCustomCols() helper, since this runs from the
-// Sales page where psType may not even be 'products'.
-function _salesProductNameColKey() {
-  const nameCol = salesProductCustomCols.find(c => (c.name||'').trim().toLowerCase() === 'name');
-  return nameCol ? nameCol.key : null;
+// Which Products/Services columns show in the sales dropdown (max 3)
+// and which of those get written into the narration field on pick —
+// configured from the Sales toolbox's own "Suggestions" panel, stored
+// under its own sheet_key so it's independent of the Products page's
+// own settings row, business-scoped like everything else here.
+let salesSuggestCols = ['product_type','product_name'];
+let salesNarrationCols = ['product_type','product_name'];
+async function _loadSalesSuggestSettings(bizId) {
+  salesSuggestCols = ['product_type','product_name'];
+  salesNarrationCols = ['product_type','product_name'];
+  try {
+    let sq = bkDb.from('bk_sheet_settings').select('settings').eq('sheet_key', 'sales_suggest');
+    sq = bizId ? sq.eq('business_id', bizId) : sq.is('business_id', null).eq('user_id', bkUser.id);
+    const { data: row } = await sq.maybeSingle();
+    if (row?.settings?.suggestCols?.length) salesSuggestCols = row.settings.suggestCols;
+    if (row?.settings?.narrationCols) salesNarrationCols = row.settings.narrationCols;
+  } catch(e) {}
+}
+async function _saveSalesSuggestSettings() {
+  const bizId = activeBusiness?.id || null;
+  const payload = {
+    user_id: bkUser.id, business_id: bizId, sheet_key: 'sales_suggest',
+    settings: { suggestCols: salesSuggestCols, narrationCols: salesNarrationCols },
+    updated_at: new Date().toISOString(),
+  };
+  const onConflict = bizId ? 'business_id,sheet_key' : 'user_id,sheet_key';
+  try { await bkDb.from('bk_sheet_settings').upsert(payload, { onConflict }); } catch(e) {}
+}
+// Every available product column, built-in and custom, that could be
+// shown in the sales dropdown or written into the narration — same
+// combined list the Products page's own Columns menu shows.
+function _salesAvailableProductCols() {
+  const builtIn = (PS_COL_DEFS.products||[]).filter(c=>c.id!=='name').map(c=>({id:c.id, label:c.label}));
+  const custom = (salesProductCustomCols||[]).map(c=>({id:c.key, label:c.name}));
+  return [{id:'product_name', label:'Product Name'}, ...builtIn, ...custom];
+}
+// Reads one configured column's value off a product row — handles
+// the built-in fields directly and custom columns via their `custom`
+// object, so the suggestion/narration logic doesn't need to care
+// which kind of column it's showing.
+function _salesColValue(p, colId) {
+  if (colId === 'product_name') return p.product_name || '';
+  if (colId === 'product_type') return p.product_type || '';
+  if (colId === 'cost_price') return p.cost_price != null ? fmt(p.cost_price) : '';
+  if (colId === 'sell_price' || colId === 'price') return p.price != null ? fmt(p.price) : '';
+  if (colId === 'qty_in_stock') return p.qty_in_stock != null ? String(p.qty_in_stock) : '';
+  return (p.custom && p.custom[colId]) || '';
 }
 function bdShowProductSuggestions(i, query) {
   bdHideProductSuggestions(i); // only one suggestion box open at a time
   const q = (query||'').trim().toLowerCase();
   if (!q) return;
-  const nameColKey = _salesProductNameColKey();
-  const specificNameOf = p => (nameColKey && p.custom && p.custom[nameColKey]) || '';
+  const cols = salesSuggestCols.length ? salesSuggestCols : ['product_type','product_name'];
+  // Matches if the typed text appears in ANY of the configured display
+  // columns — so with Pharmaceutical/Antibiotics/Cefodoxime shown,
+  // typing any one of those three (or the start of any of them) finds
+  // the product, not just the primary name field.
   const matches = salesProductCache.filter(p =>
-    (p.product_name||'').toLowerCase().includes(q) || specificNameOf(p).toLowerCase().includes(q)
+    cols.some(c => _salesColValue(p, c).toLowerCase().includes(q))
   ).slice(0,6);
   if (!matches.length) return;
 
@@ -2821,7 +2862,7 @@ function bdShowProductSuggestions(i, query) {
   // scrollable ancestor regardless of its own z-index.
   box.style.cssText = 'position:fixed;z-index:12000;';
   box.innerHTML = matches.map(p => {
-    const label = [p.product_name, p.product_type, specificNameOf(p)].filter(Boolean).join(', ');
+    const label = cols.map(c=>_salesColValue(p,c)).filter(Boolean).join(', ');
     return `<div class="bd-suggest-item" onmousedown="bdPickProduct(${i},'${p.id}')">
     <span>${escH(label)}</span>
     <span style="color:var(--muted);font-size:0.66rem;white-space:nowrap;">${fmt(p.price)} \u00b7 ${p.qty_in_stock} in stock</span>
@@ -2844,13 +2885,13 @@ function bdHideProductSuggestions(i) {
   document.getElementById('bdSuggestPortal')?.remove();
 }
 function bdPickProduct(i, productId) {
+  bdHideProductSuggestions(i); // close immediately — left open, this silently blocks the next click (e.g. Save All) landing underneath it
   const p = salesProductCache.find(x => String(x.id) === String(productId));
   if (!p) return;
   const row = salesRows[i];
   if (!row) return;
-  const nameColKey = _salesProductNameColKey();
-  const specificName = (nameColKey && p.custom && p.custom[nameColKey]) || p.product_name;
-  row.narration = [p.product_type, specificName].filter(Boolean).join(', ');
+  const narrCols = salesNarrationCols.length ? salesNarrationCols : salesSuggestCols;
+  row.narration = narrCols.map(c => _salesColValue(p, c)).filter(Boolean).join(', ');
   row.unit_price = parseFloat(p.price)||0;
   row.product_id = p.id;
   row.qty = row.qty || 1;
@@ -8436,6 +8477,88 @@ const PS_COL_DEFS = {
   ],
 };
 
+// Sales toolbox panel — choose up to 3 Products columns to show in
+// the sale-narration dropdown, and which of those get written into
+// the narration itself when a product is picked. Same portal pattern
+// as the Products page's own Columns menu (position:fixed, appended
+// to document.body, closes on outside click).
+function toggleSalesSuggestSelector() {
+  const existing = document.getElementById('salesSuggestSelectorPortal');
+  if (existing) { existing.remove(); return; }
+  const btn = document.querySelector('[onclick="toggleSalesSuggestSelector()"]');
+  if (!btn) return;
+  renderSalesSuggestSelectorPanel(btn.getBoundingClientRect());
+}
+function renderSalesSuggestSelectorPanel(rect) {
+  document.getElementById('salesSuggestSelectorPortal')?.remove();
+  const available = _salesAvailableProductCols();
+  const atMax = salesSuggestCols.length >= 3;
+
+  const showRows = available.map(c => {
+    const checked = salesSuggestCols.includes(c.id);
+    const disable = !checked && atMax;
+    return `<div class="col-row"${disable?' style="opacity:0.4;"':''}>
+      <label class="col-left" style="display:flex;align-items:center;gap:9px;font-size:0.78rem;">
+        <input type="checkbox" ${checked?'checked':''} ${disable?'disabled':''} onchange="salesSuggestColToggle('${c.id}',this.checked)"/>
+        <span>${escH(c.label)}</span>
+      </label>
+    </div>`;
+  }).join('');
+
+  const narrRows = salesSuggestCols.length ? salesSuggestCols.map(id => {
+    const col = available.find(c=>c.id===id);
+    const checked = salesNarrationCols.includes(id);
+    return `<div class="col-row" style="display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:0.78rem;">${escH(col?col.label:id)}</span>
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.66rem;color:${checked?'var(--gold)':'var(--muted)'};font-weight:${checked?'700':'400'};cursor:pointer;">
+        <input type="checkbox" ${checked?'checked':''} onchange="salesNarrationColToggle('${id}',this.checked)"/> include
+      </label>
+    </div>`;
+  }).join('') : '<div style="font-size:0.7rem;color:var(--muted);padding:6px 2px;">Pick suggestion columns above first.</div>';
+
+  const wrap = document.createElement('div');
+  wrap.id = 'salesSuggestSelectorPortal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:12000;';
+  wrap.addEventListener('click', e => { if (e.target === wrap) wrap.remove(); });
+
+  const panel = document.createElement('div');
+  panel.className = 'ps-col-selector';
+  panel.style.cssText = 'position:fixed;z-index:12001;top:'+(rect.bottom+6)+'px;left:'+Math.min(rect.left, window.innerWidth-300)+'px;width:280px;max-height:80vh;overflow-y:auto;';
+  panel.addEventListener('click', e => e.stopPropagation());
+  panel.innerHTML = `
+    <div class="ps-col-selector-title">Suggestion columns</div>
+    <div style="font-size:0.66rem;color:var(--muted);margin:-2px 0 8px;line-height:1.5;">Pick up to 3 columns from Products &amp; Services to show in the sales dropdown.</div>
+    ${showRows}
+    <div style="font-size:0.64rem;color:${atMax?'var(--gold)':'var(--muted)'};background:${atMax?'var(--gold-dim)':'transparent'};border-radius:6px;padding:6px 8px;margin-top:6px;">
+      ${salesSuggestCols.length} of 3 selected${atMax?' — uncheck one to pick a different column.':''}
+    </div>
+    <div class="ps-col-selector-title" style="margin-top:16px;">Insert into narration</div>
+    <div style="font-size:0.66rem;color:var(--muted);margin:-2px 0 8px;line-height:1.5;">Of the columns above, choose which text fills the narration field when a product is picked.</div>
+    ${narrRows}
+  `;
+  wrap.appendChild(panel);
+  document.body.appendChild(wrap);
+}
+function salesSuggestColToggle(colId, checked) {
+  if (checked) {
+    if (salesSuggestCols.length >= 3) return; // shouldn't happen — checkbox is disabled at the limit, but guard anyway
+    salesSuggestCols.push(colId);
+  } else {
+    salesSuggestCols = salesSuggestCols.filter(c => c !== colId);
+    salesNarrationCols = salesNarrationCols.filter(c => c !== colId); // a column no longer shown shouldn't stay picked for narration either
+  }
+  _saveSalesSuggestSettings();
+  const btn = document.querySelector('[onclick="toggleSalesSuggestSelector()"]');
+  if (btn) renderSalesSuggestSelectorPanel(btn.getBoundingClientRect());
+}
+function salesNarrationColToggle(colId, checked) {
+  if (checked) { if (!salesNarrationCols.includes(colId)) salesNarrationCols.push(colId); }
+  else salesNarrationCols = salesNarrationCols.filter(c => c !== colId);
+  _saveSalesSuggestSettings();
+  const btn = document.querySelector('[onclick="toggleSalesSuggestSelector()"]');
+  if (btn) renderSalesSuggestSelectorPanel(btn.getBoundingClientRect());
+}
+
 function togglePsColSelector() {
   const existing = document.getElementById('psColSelectorPortal');
   if (existing) { existing.remove(); return; }
@@ -10935,6 +11058,7 @@ function renderRecordSheet(kind) {
       <button class="tb-icon" title="Freeze rows" onclick="sheetTogglePanel('${kind}','freeze')">❄</button>
       <button class="tb-icon" title="Date filter" onclick="sheetTogglePanel('${kind}','date')">📅</button>
       <button class="tb-icon" title="Today" onclick="sheetToday('${kind}')">Today</button>
+      ${isSales ? `<button class="tb-icon" title="Choose which product columns appear in the dropdown" onclick="toggleSalesSuggestSelector()">🎛 Suggestions</button>` : ''}
       ${isSales ? `<button class="tb-icon" title="Scan a product barcode to add it to this sale" onclick="sheetScanToSell('${kind}')">\uD83D\uDCF7 Scan</button>` : ''}
       ${isSales ? `<label class="tb-icon" title="Generate a receipt for each row" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
         <input type="checkbox" ${st.receipt?'checked':''} onchange="sheetToggleReceipt('${kind}',this.checked)" style="accent-color:var(--gold);"/> Receipt
