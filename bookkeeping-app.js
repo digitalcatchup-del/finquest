@@ -8707,6 +8707,19 @@ async function psEnsureSheetSettingsLoaded() {
   } catch(e) {
     _psSheetSettings = {};
   }
+  // If a local backup still exists at this point, the database save
+  // for it never actually completed (a successful save clears this
+  // backup) — most likely the tab was closed or refreshed before the
+  // network request could finish. Recover from it instead of silently
+  // using the older, saved-but-now-outdated database version, and
+  // immediately try to push it through again.
+  try {
+    const pending = localStorage.getItem('bd_ps_pending_'+scopeKey);
+    if (pending) {
+      _psSheetSettings = JSON.parse(pending);
+      _psSaveSheetSettingsNow();
+    }
+  } catch(e) {}
   // Seed default-hidden built-in columns (e.g. Cost Price) the first
   // time this sheet's settings are ever loaded — without this, a
   // column meant to start hidden would incorrectly show for anyone
@@ -8754,7 +8767,8 @@ async function _psSaveSheetSettingsImmediate() {
       updated_at: new Date().toISOString(),
     };
     const onConflict = activeBusiness?.id ? 'business_id,sheet_key' : 'user_id,sheet_key';
-    await bkDb.from('bk_sheet_settings').upsert(payload, { onConflict });
+    const { error } = await bkDb.from('bk_sheet_settings').upsert(payload, { onConflict });
+    if (!error) { try { localStorage.removeItem('bd_ps_pending_'+_psSettingsScopeKey()); } catch(e) {} }
   } catch(e) {}
 }
 
@@ -8762,7 +8776,20 @@ async function _psSaveSheetSettingsImmediate() {
 // so every existing caller throughout the codebase keeps working
 // completely unchanged.
 function _psSettingGet(key, fallback) { return _psSheetSettings[key] !== undefined ? _psSheetSettings[key] : fallback; }
-function _psSettingSet(key, value) { _psSheetSettings[key] = value; _psSaveSheetSettingsNow(); }
+// Writes a synchronous localStorage backup immediately, before the
+// debounced database save even starts. A network request can be cut
+// off mid-flight the instant the page unloads, no matter how early it
+// was started — this was the real reason a change made right before a
+// refresh could still be lost even after flushing early on unload.
+// localStorage.setItem is synchronous and completes instantly, so it
+// can't be interrupted the same way; psEnsureSheetSettingsLoaded()
+// checks for this backup on the next load and re-syncs it if the
+// database save never actually made it through.
+function _psSettingSet(key, value) {
+  _psSheetSettings[key] = value;
+  try { localStorage.setItem('bd_ps_pending_'+_psSettingsScopeKey(), JSON.stringify(_psSheetSettings)); } catch(e) {}
+  _psSaveSheetSettingsNow();
+}
 function _psCustomVals(){ try { return JSON.parse(localStorage.getItem('bd_ps_customvals')||'{}'); } catch(e){ return {}; } }
 function _psCustomCols(){ return _psSettingGet('customCols', []); }
 function _psSetCustomCols(c){ _psSettingSet('customCols', c); }
