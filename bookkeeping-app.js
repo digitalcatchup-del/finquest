@@ -3417,6 +3417,27 @@ window.addEventListener('popstate', function(){
   if (typeof bkUser !== 'undefined' && bkUser) bdRestoreRoute();
 });
 
+// A debounced settings save (adding a Products column, toggling its
+// visibility, changing alignment, etc.) has a short delay before it
+// actually reaches the database. Refreshing or closing the tab within
+// that window — plausible right after making a change, since
+// refreshing is a natural way to check whether it took — previously
+// lost that change entirely, since the delayed timer never got to
+// fire. Flushing here, the instant the page starts to go away, gives
+// that save its best chance to actually complete before the browser
+// tears the page down.
+function _bdFlushPendingSaves() {
+  if (_psSaveDebounceTimer) {
+    clearTimeout(_psSaveDebounceTimer);
+    _psSaveDebounceTimer = null;
+    try { _psSaveSheetSettingsImmediate(); } catch(e) {}
+  }
+}
+window.addEventListener('beforeunload', _bdFlushPendingSaves);
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'hidden') _bdFlushPendingSaves();
+});
+
 
 // ── SALES & EXPENSES BREAKDOWN DRILLDOWN ─────────────────────
 async function showSalesBreakdown() {
@@ -8720,20 +8741,21 @@ function _psMigrateLegacyLocalStorage() {
 let _psSaveDebounceTimer = null;
 function _psSaveSheetSettingsNow() {
   clearTimeout(_psSaveDebounceTimer);
-  _psSaveDebounceTimer = setTimeout(async () => {
-    if (!bkUser?.id) return;
-    try {
-      const payload = {
-        sheet_key: psType,
-        settings: _psSheetSettings,
-        user_id: bkUser.id,
-        business_id: activeBusiness?.id || null,
-        updated_at: new Date().toISOString(),
-      };
-      const onConflict = activeBusiness?.id ? 'business_id,sheet_key' : 'user_id,sheet_key';
-      await bkDb.from('bk_sheet_settings').upsert(payload, { onConflict });
-    } catch(e) {}
-  }, 400);
+  _psSaveDebounceTimer = setTimeout(_psSaveSheetSettingsImmediate, 400);
+}
+async function _psSaveSheetSettingsImmediate() {
+  if (!bkUser?.id) return;
+  try {
+    const payload = {
+      sheet_key: psType,
+      settings: _psSheetSettings,
+      user_id: bkUser.id,
+      business_id: activeBusiness?.id || null,
+      updated_at: new Date().toISOString(),
+    };
+    const onConflict = activeBusiness?.id ? 'business_id,sheet_key' : 'user_id,sheet_key';
+    await bkDb.from('bk_sheet_settings').upsert(payload, { onConflict });
+  } catch(e) {}
 }
 
 // Generic get/set matching the old per-setting function shapes below,
