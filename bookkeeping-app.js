@@ -4520,6 +4520,23 @@ function bdSetupStickyClone(part, cellSelector, offset, edge) {
   _bdStickyCloneConfigs.push({ key, part, partEl, table, wrap, offset, edge });
   bdSyncStickyClones();
 }
+// A cloned thead/tfoot is rendered as its own standalone mini-table —
+// containing only that one row, never the tbody alongside it — so the
+// browser has no shared context to work out matching column widths
+// from, even with table-layout:fixed. An explicit <colgroup> normally
+// supplies that, but not every sheet has one (Products' .ps-table has
+// none), and even where one exists it can go stale after a manual
+// column resize. Measuring the REAL table's currently-rendered column
+// widths directly and baking them into the clone's own <colgroup> is
+// correct in every case, since the real row is still in the layout
+// (kept visibility:hidden rather than removed) and always reflects
+// the table's true, current column widths — including resizes.
+function bdMeasureColWidths(table) {
+  const refRow = table.querySelector('thead tr') || table.querySelector('tr');
+  if (!refRow) return null;
+  const widths = Array.from(refRow.children).map(cell => cell.getBoundingClientRect().width);
+  return widths.every(w => w > 0) ? widths : null;
+}
 function bdSyncStickyClones() {
   _bdStickyCloneConfigs.forEach(cfg => {
     const { key, part, partEl, table, wrap, offset, edge } = cfg;
@@ -4535,8 +4552,21 @@ function bdSyncStickyClones() {
         clone.style.cssText = 'position:fixed;overflow:hidden;z-index:45;pointer-events:none;';
         document.body.appendChild(clone);
       }
-      clone.innerHTML = '<table class="'+table.className+'" style="border-collapse:collapse;table-layout:fixed;width:'+table.offsetWidth+'px;background:var(--bg);">'
-        + (table.querySelector('colgroup')?.outerHTML || '')
+      const measuredWidths = bdMeasureColWidths(table);
+      // The clone table's own declared width MUST equal the exact sum of
+      // its column widths, not the real table's offsetWidth — a
+      // table-layout:fixed table whose <col> widths don't sum to exactly
+      // its own declared width gets every column proportionally
+      // stretched or shrunk to fill it (confirmed empirically: using
+      // table.offsetWidth here reintroduced a several-percent, uniform
+      // width mismatch against the real table on every column), which
+      // silently undoes the whole point of measuring exact widths.
+      const cloneTableWidth = measuredWidths ? measuredWidths.reduce((a,b)=>a+b,0) : table.offsetWidth;
+      const colgroupHtml = measuredWidths
+        ? '<colgroup>' + measuredWidths.map(w => '<col style="width:'+w+'px;">').join('') + '</colgroup>'
+        : (table.querySelector('colgroup')?.outerHTML || '');
+      clone.innerHTML = '<table class="'+table.className+'" style="border-collapse:collapse;table-layout:fixed;width:'+cloneTableWidth+'px;background:var(--bg);">'
+        + colgroupHtml
         + '<'+part+'>' + partEl.innerHTML + '</'+part+'>'
         + '</table>';
       clone.style.left = tableRect.left + 'px';
