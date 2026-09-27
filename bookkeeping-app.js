@@ -4472,24 +4472,108 @@ function jrnInitRowDrag() {
   tbody.addEventListener('pointercancel', end);
 }
 function jrnToggleToolbox(){ jrnTb.open=!jrnTb.open; renderJournal(); }
-function jrnToggleFreeze(){ jrnTb.freeze=!jrnTb.freeze; renderJournal(); }
-function jrnApplyFreeze() {
-  const header = document.querySelector('#bkContent .bk-content-header');
+// Keeps a page's heading, toolbox (when open), and table's column
+// headers pinned in place while its rows scroll underneath — and its
+// total row (if it has one) pinned to the bottom, always visible
+// without scrolling down. Shared by Products/Services, Sales and
+// Expenses (the Master Journal has its own near-identical version,
+// jrnApplyFreeze, since it predates this and already worked).
+function bdApplyStickyLayout(theadSelector, tfootSelector) {
+  const header = document.querySelector('#bkContent .bk-content-header, #bkContent .bk-sticky-wrap');
   const toolbox = document.querySelector('#bkContent .sheet-toolbox');
-  const theadCells = document.querySelectorAll('#journalTable thead th');
-  if (jrnTb.freeze) {
-    document.body.classList.add('jrn-frozen');
-    if (header) { header.style.position='sticky'; header.style.top='0px'; header.style.zIndex='50'; header.style.background='var(--bg)'; }
-    const headerH = header ? header.offsetHeight : 0;
-    if (toolbox) { toolbox.style.position='sticky'; toolbox.style.top=headerH+'px'; toolbox.style.zIndex='49'; toolbox.style.background='var(--bg)'; }
-    const totalOffset = headerH + (toolbox ? toolbox.offsetHeight : 0);
-    theadCells.forEach(th => { th.style.position='sticky'; th.style.top=totalOffset+'px'; th.style.zIndex='40'; th.style.background='var(--surface2)'; });
-  } else {
-    document.body.classList.remove('jrn-frozen');
-    if (header) { header.style.position=''; header.style.top=''; header.style.zIndex=''; header.style.background=''; }
-    if (toolbox) { toolbox.style.position=''; toolbox.style.top=''; toolbox.style.zIndex=''; toolbox.style.background=''; }
-    theadCells.forEach(th => { th.style.position=''; th.style.top=''; th.style.zIndex=''; th.style.background=''; });
-  }
+  if (header) { header.style.position='sticky'; header.style.top='0px'; header.style.zIndex='50'; header.style.background='var(--bg)'; }
+  const headerH = header ? header.offsetHeight : 0;
+  // If the toolbox sits inside the header (rather than as a separate
+  // sibling), it's already covered by the header's own sticky
+  // position and offsetHeight — making it independently sticky too
+  // would nest one sticky element inside another, which behaves
+  // unpredictably.
+  const toolboxIsNested = header && toolbox && header.contains(toolbox);
+  if (toolbox && !toolboxIsNested) { toolbox.style.position='sticky'; toolbox.style.top=headerH+'px'; toolbox.style.zIndex='49'; toolbox.style.background='var(--bg)'; }
+  const totalOffset = headerH + (toolbox && !toolboxIsNested ? toolbox.offsetHeight : 0);
+
+  // The column headers and total row live inside .bk-sheet-wrap, which
+  // needs overflow-x:auto for wide tables to scroll sideways — but per
+  // the CSS overflow spec, that alone makes this element the
+  // position:sticky reference frame for BOTH axes, regardless of what
+  // overflow-y is set to. There's no CSS-only way around that while
+  // keeping horizontal scroll, so these two use a synced JS clone
+  // instead, set up once here and kept in place on scroll below.
+  bdSetupStickyClone('thead', theadSelector, totalOffset, 'top');
+  if (tfootSelector) bdSetupStickyClone('tfoot', tfootSelector, 0, 'bottom');
+}
+
+// Keeps a synced, position:fixed visual copy of a table's thead or
+// tfoot pinned in place, matching the real one's content, column
+// widths and horizontal scroll position — the real element stays in
+// the table (invisible, not display:none) purely to keep its space
+// reserved so the table layout never jumps.
+let _bdStickyCloneConfigs = [];
+function bdSetupStickyClone(part, cellSelector, offset, edge) {
+  const cell = document.querySelector(cellSelector);
+  const partEl = cell ? cell.closest(part) : null;
+  const table = partEl ? partEl.closest('table') : null;
+  const wrap = table ? table.closest('.bk-sheet-wrap') : null;
+  if (!partEl || !table || !wrap) return;
+  const key = part + ':' + cellSelector;
+  _bdStickyCloneConfigs = _bdStickyCloneConfigs.filter(c => c.key !== key); // replace any stale config for this same table
+  _bdStickyCloneConfigs.push({ key, part, partEl, table, wrap, offset, edge });
+  bdSyncStickyClones();
+}
+function bdSyncStickyClones() {
+  _bdStickyCloneConfigs.forEach(cfg => {
+    const { key, part, partEl, table, wrap, offset, edge } = cfg;
+    if (!document.body.contains(partEl)) { document.getElementById('bdClone_'+cssEscapeKey(key))?.remove(); return; } // page re-rendered elsewhere — old config, stop
+    const tableRect = table.getBoundingClientRect();
+    const shouldPin = edge === 'top' ? (tableRect.top < offset) : (tableRect.bottom > window.innerHeight - offset);
+    const cloneId = 'bdClone_' + cssEscapeKey(key);
+    let clone = document.getElementById(cloneId);
+    if (shouldPin) {
+      if (!clone) {
+        clone = document.createElement('div');
+        clone.id = cloneId;
+        clone.style.cssText = 'position:fixed;overflow:hidden;z-index:45;pointer-events:none;';
+        document.body.appendChild(clone);
+      }
+      clone.innerHTML = '<table class="'+table.className+'" style="border-collapse:collapse;table-layout:fixed;width:'+table.offsetWidth+'px;background:var(--bg);">'
+        + (table.querySelector('colgroup')?.outerHTML || '')
+        + '<'+part+'>' + partEl.innerHTML + '</'+part+'>'
+        + '</table>';
+      clone.style.left = tableRect.left + 'px';
+      clone.style.width = wrap.clientWidth + 'px';
+      clone.style.height = partEl.offsetHeight + 'px';
+      clone.style[edge] = (edge === 'top' ? offset : offset) + 'px';
+      const innerTable = clone.firstElementChild;
+      if (innerTable) innerTable.style.transform = 'translateX(-' + wrap.scrollLeft + 'px)';
+      partEl.style.visibility = 'hidden';
+    } else {
+      if (clone) clone.remove();
+      partEl.style.visibility = '';
+    }
+  });
+}
+function cssEscapeKey(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
+let _bdStickyScrollHooked = false;
+function bdHookStickyScroll() {
+  if (_bdStickyScrollHooked) return;
+  _bdStickyScrollHooked = true;
+  window.addEventListener('scroll', bdSyncStickyClones, { passive: true });
+  document.addEventListener('scroll', function(e){
+    if (e.target && e.target.classList && e.target.classList.contains('bk-sheet-wrap')) bdSyncStickyClones();
+  }, { passive: true, capture: true });
+}
+bdHookStickyScroll();
+
+// Keeps the page heading, toolbox (when open), column headers, and
+// (via the shared function) any total row pinned in place while the
+// rows scroll underneath — always on now, previously an opt-in
+// "Freeze" checkbox in the toolbox. Still called jrnApplyFreeze for
+// now to avoid touching every call site's name; the Journal has no
+// tfoot, so the total-row half of the shared function is simply a
+// no-op here.
+function jrnApplyFreeze() {
+  document.body.classList.add('jrn-frozen');
+  bdApplyStickyLayout('#journalTable thead th', null);
 }
 function jrnExecuteSearch(){ jrnTb.search=document.getElementById('jrnSearch')?.value||''; jrnApplySearch(); }
 function jrnApplySearch() {
@@ -4709,9 +4793,6 @@ function renderJournal() {
       <button class="tb-icon ${jrnTb.autocomplete?'tb-active':''}" title="Autocomplete suggestions while typing" onclick="jrnToggleAutocomplete()">\uD83D\uDD24 Autocomplete</button>
       <button class="tb-icon ${jrnSelRows.length?'tb-active':''}" title="Select rows" onclick="jrnToggleSelectHint()">☑ Select</button>
       <button class="tb-icon" title="Delete selected rows" onclick="jrnDeleteRowsFrom(jrnSelRows[0]??-1)">🗑 Delete</button>
-      <label class="tb-icon" title="Keep the headers visible while scrolling" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
-        <input type="checkbox" ${jrnTb.freeze?'checked':''} onchange="jrnToggleFreeze()" style="accent-color:var(--gold);"/> Freeze
-      </label>
     </div>`:''}
 
     <div class="bk-sheet-wrap">
@@ -9638,6 +9719,7 @@ function psRenderTable() {
     '<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--muted);font-size:0.82rem;">No '+(isSvc?'services':'products')+' yet. Click + Add below.</td></tr>';
 
   psRenderTotalsRow(visibleKeys, customByKey, _visible.map(o=>o.r));
+  bdApplyStickyLayout('.ps-table th', '.ps-total-row td');
 
   setTimeout(()=>initColumnResize('.ps-table', psColResized), 50);
 
@@ -11080,6 +11162,7 @@ function renderRecordSheet(kind) {
     </div>` : '';
 
   document.getElementById('bkContent').innerHTML = `
+    <div class="bk-sticky-wrap">
     <div style="text-align:center;padding:12px 16px 0;">
       <button class="bk-btn bk-btn-outline" style="font-size:0.78rem;" onclick="showDashboard()">🏠 Back to Home</button>
     </div>
@@ -11122,6 +11205,7 @@ function renderRecordSheet(kind) {
       <div class="bk-content-title">${title}</div>
       <div id="sheetDateLabel_${kind}" style="color:var(--gold);font-size:0.72rem;font-weight:700;margin-top:3px;">${sheetHeaderDate(kind)}</div>
     </div>
+    </div>
 
     <div class="bk-sheet-wrap" style="font-family:'${st.font}',sans-serif;">
       <table class="staff-table staff-table-compact" id="sheetTable_${kind}" style="min-width:${totalMinW}px;table-layout:fixed;">
@@ -11159,6 +11243,7 @@ function renderRecordSheet(kind) {
     });
   }
   sheetSaveDraft(kind);
+  bdApplyStickyLayout('.staff-table th', '.staff-total-row td');
 }
 
 // ── Header interactions ──────────────────────────────────────
