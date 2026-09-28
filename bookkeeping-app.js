@@ -1959,7 +1959,7 @@ function bkLoadScriptOnce(src) {
   });
 }
 async function ensureSalesModuleLoaded() {
-  await bkLoadScriptOnce('/sales-module.js?v=1');
+  await bkLoadScriptOnce('/sales-module.js?v=2');
 }
 async function openSalesDashboard() { await ensureSalesModuleLoaded(); showSalesDashboard(); }
 async function openSalesCustomers() { await ensureSalesModuleLoaded(); showCustomersPage(); }

@@ -3,8 +3,9 @@
 // Customers · Invoices · Quotes · Payments · AR Aging · Dashboard
 // Lazy-loaded on demand (see loadScriptOnce in bookkeeping-app.js) —
 // depends on globals already defined there: bkDb, bkUser,
-// activeBusiness, bizMatch(), escH(), staffIncomeAccount(),
-// setSaveMsg(), closeBkMenu(), bdSaveRoute(), staffHideChrome().
+// activeBusiness, bizMatch(), acctBizFilter(), acctBizStamp(), escH(),
+// staffIncomeAccount(), setSaveMsg(), closeBkMenu(), bdSaveRoute(),
+// staffHideChrome().
 // ============================================================
 
 let salesCustomers      = [];
@@ -21,12 +22,16 @@ const DEFAULT_VAT_RATE  = 7.5; // Nigerian standard VAT — change per business 
 // to it. Unlike the existing quick-sale poster (which silently skips a
 // side of the entry if the account is missing), this creates it —
 // so a first-ever invoice's VAT never silently vanishes from the books.
+// Scoped with acctBizFilter()/acctBizStamp() (defined in bookkeeping-app.js)
+// so an account auto-created from an invoice/payment in one business does
+// not leak into every other business the same user owns — same fix as the
+// Chart of Accounts got in v64; this function was missed at the time.
 async function ensureAccountExists(name, recordType) {
-  const { data } = await bkDb.from('bk_accounts')
-    .select('id').eq('user_id', bkUser.id).eq('account_name', name).maybeSingle();
+  const { data } = await acctBizFilter(bkDb.from('bk_accounts')
+    .select('id')).eq('account_name', name).maybeSingle();
   if (data) return data.id;
   const { data: created, error } = await bkDb.from('bk_accounts')
-    .insert({ user_id: bkUser.id, account_name: name, record_type: recordType, opening_balance: 0 })
+    .insert({ user_id: bkUser.id, account_name: name, record_type: recordType, opening_balance: 0, ...acctBizStamp() })
     .select('id').single();
   if (error) { console.error('ensureAccountExists failed for', name, error); return null; }
   return created.id;
