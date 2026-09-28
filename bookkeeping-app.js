@@ -892,7 +892,7 @@ async function rbSaveBusiness() {
       if (err) {
         err.style.color='var(--gold)';
         err.innerHTML = '“'+escH(ex.name)+'” already exists on the platform.'
-          + '<button onclick="rbJoinExisting(\''+ex.id+'\',\''+escH(ex.name).replace(/\'/g,'')+'\')" '
+          + '<button onclick="rbJoinExisting(\''+ex.id+'\',\''+escH(escJs(ex.name))+'\')" '
           + 'style="display:block;width:100%;margin-top:10px;background:var(--gold);color:#000;border:none;font-weight:800;font-size:0.78rem;padding:10px;border-radius:8px;cursor:pointer;">Register with this company →</button>';
       }
       return;
@@ -2096,15 +2096,20 @@ async function loadAccounts() {
   }
   window._bdShowingOfflineData = false;
 
-  const { data } = await bkDb.from('bk_accounts').select('*').eq('user_id',bkUser.id).order('created_at');
+  const { data } = await acctBizFilter(bkDb.from('bk_accounts').select('*')).order('created_at');
   const existing = data||[];
   existing.forEach(a => { if(accounts[a.record_type]) accounts[a.record_type].push(a); });
 
-  // Create default accounts if none exist for a type
+  // Create default accounts if none exist for a type — scoped (stamped)
+  // to the currently active business, so a brand-new business that has
+  // no grandfathered legacy accounts to inherit gets its own default
+  // chart of accounts rather than accidentally reusing another
+  // business's.
   for (const type of Object.keys(DEFAULT_ACCOUNTS)) {
     if (accounts[type].length === 0) {
       const inserts = DEFAULT_ACCOUNTS[type].map(name => ({
         user_id: bkUser.id,
+        ...acctBizStamp(),
         record_type: type,
         account_name: name,
         opening_balance: 0,
@@ -2179,6 +2184,7 @@ async function confirmAddAccount() {
 
   const { data, error } = await bkDb.from('bk_accounts').insert({
     user_id: bkUser.id,
+    ...acctBizStamp(),
     record_type: addingForType,
     account_name: name,
     opening_balance: ob,
@@ -2614,7 +2620,7 @@ async function saveOpeningBalance(val) {
     activeAccount.ob_date = obDate;
     if (!activeAccount.id) {
       const {data:na, error:e0} = await bkDb.from('bk_accounts').insert({
-        user_id: bkUser.id, account_name: activeAccount.account_name,
+        user_id: bkUser.id, ...acctBizStamp(), account_name: activeAccount.account_name,
         record_type: activeType, opening_balance: newOB, ob_date: obDate,
       }).select().single();
       if (e0) throw e0;
@@ -2695,6 +2701,23 @@ function applyFilter() {
 
 function escH(s) {
   return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// Makes a string safe to drop inside a single-quoted JS string literal
+// that's itself embedded in an inline onclick="..." HTML attribute —
+// escapes backslashes and single quotes. escH() alone does NOT do this
+// (it only escapes & < > "), so any account/customer/product name or
+// narration containing an apostrophe (e.g. "Ishiagu's Army Generator")
+// would terminate the JS string early and leave the rest as a syntax
+// error, silently turning that whole onclick handler into a no-op —
+// which is exactly what made the Chart of Accounts' ✕ delete button
+// "click into" the account instead: its own handler broke on the
+// apostrophe before event.stopPropagation() ever ran, so the click
+// fell through to the row's own onclick underneath it. Use as
+// escH(escJs(value)) (or escJs(escH(value)) — order doesn't matter,
+// the two escape disjoint character sets) wherever a free-text value
+// is interpolated inside a single-quoted onclick argument.
+function escJs(s) {
+  return (s==null?'':String(s)).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,'\\n');
 }
 
 // ── CELL CHANGES ──────────────────────────────────────────────
@@ -3149,8 +3172,8 @@ async function refreshEquation() {
       document.getElementById('bkMainChrome').style.display === 'none') return;
   const { data } = await bkDb.from('bk_transactions')
     .select('record_type,debit,credit').match(bizMatch());
-  const { data:accts } = await bkDb.from('bk_accounts')
-    .select('record_type,opening_balance').eq('user_id',bkUser.id);
+  const { data:accts } = await acctBizFilter(bkDb.from('bk_accounts')
+    .select('record_type,opening_balance'));
 
   let cap=0, lia=0, ast=0, rev=0, exp=0;
   (accts||[]).forEach(a=>{
@@ -5704,7 +5727,7 @@ function showSmartResult(rule, amount, narration, principle) {
       <div style="font-size:0.75rem;color:var(--off);line-height:1.5;">${escH(principle)}</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button onclick="applySmartEntry('${escH(drAcct)}','${escH(crAcct)}',${amount},'${escH(narration)}')"
+      <button onclick="applySmartEntry('${escH(escJs(drAcct))}','${escH(escJs(crAcct))}',${amount},'${escH(escJs(narration))}')"
         style="background:var(--gold);border:none;color:#000;font-size:0.78rem;font-weight:700;padding:8px 18px;border-radius:6px;cursor:pointer;">
         ✓ Add to Journal
       </button>
@@ -7856,7 +7879,7 @@ async function coaGroupAdd(type, title) {
   if (!name) return;
   try {
     const {data, error} = await bkDb.from('bk_accounts').insert({
-      user_id: bkUser.id, account_name: name, record_type: type, opening_balance: 0,
+      user_id: bkUser.id, ...acctBizStamp(), account_name: name, record_type: type, opening_balance: 0,
     }).select().single();
     if (error) throw error;
     (accounts[type]=accounts[type]||[]).push(data);
@@ -7938,7 +7961,7 @@ async function coaAddChild(parentId, type) {
   openTextPortal('NAME OF THE NEW SUB-LEDGER', '', async name=>{
     try {
       const {data, error} = await bkDb.from('bk_accounts').insert({
-        user_id: bkUser.id, account_name: name, record_type: type,
+        user_id: bkUser.id, ...acctBizStamp(), account_name: name, record_type: type,
         opening_balance: 0, parent_id: parentId,
       }).select().single();
       if (error) throw error;
@@ -8147,7 +8170,7 @@ function renderCOA() {
             <span class="coa-account-type">${active==='asset'||active==='expenditure'?'Dr normal':'Cr normal'}</span>
             <button class="staff-save-row-btn" style="color:var(--green);" onclick="event.stopPropagation();coaAddChild('${a.id}','${active}')" title="Add a sub-ledger under ${escH(a.account_name)}">+</button>
             <button class="staff-save-row-btn" onclick="event.stopPropagation();bdSaveWrap(this,()=>coaSaveName('${a.id}'))" title="Save name">&rsaquo;</button>
-            <button class="coa-del-btn" onclick="event.stopPropagation();coaDeleteAccount('${a.id}','${escH(a.account_name)}')" title="Delete">✕</button>
+            <button class="coa-del-btn" onclick="event.stopPropagation();coaDeleteAccount('${a.id}','${escH(escJs(a.account_name))}')" title="Delete">✕</button>
             <button class="staff-save-row-btn" title="Edit name and chart of account number" onclick="event.stopPropagation();coaOpenEditDialog('account',{id:'${a.id}',name:'${escH(a.account_name).replace(/'/g,"\\'")}',code:(_coaCodes()['${a.id}']||'')})">✎</button>
           </div>` + (accts.filter(c=>c.parent_id===a.id).map(c=>rowT(c,0,true)).join(''));
           const groupsFor = {
@@ -8225,18 +8248,23 @@ async function coaAddAccount() {
   const name = document.getElementById('coaNewName')?.value.trim();
   if (!name||!bkUser) return;
   const { data,error } = await bkDb.from('bk_accounts').insert({
-    user_id:bkUser.id, record_type:coaActiveType, account_name:name, opening_balance:0, is_default:false,
+    user_id:bkUser.id, ...acctBizStamp(), record_type:coaActiveType, account_name:name, opening_balance:0, is_default:false,
   }).select().single();
   if (!error&&data) { if(!accounts[coaActiveType]) accounts[coaActiveType]=[]; accounts[coaActiveType].push(data); buildDropdowns(); renderCOA(); }
 }
 
 async function coaDeleteAccount(id,name) {
   if (!confirm(`Delete "${name}"? This also permanently deletes every transaction posted to it — in the ledger, the Master Journal, and every other book of prime entry. This cannot be undone.`)) return;
+  // Scoped to the active business (falling back to legacy user-wide rows
+  // that predate business_id, same grandfathering as everywhere else) —
+  // without this, deleting an account here could also wipe out
+  // transactions and journal entries under the SAME account name
+  // belonging to a completely different business owned by this user.
   try {
     await Promise.all([
-      bkDb.from('bk_transactions').delete().eq('user_id',bkUser.id).eq('account_name',name).eq('record_type',coaActiveType),
-      bkDb.from('bk_journal').delete().eq('user_id',bkUser.id).eq('debit_account_name',name),
-      bkDb.from('bk_journal').delete().eq('user_id',bkUser.id).eq('credit_account_name',name),
+      acctBizFilter(bkDb.from('bk_transactions').delete()).eq('account_name',name).eq('record_type',coaActiveType),
+      acctBizFilter(bkDb.from('bk_journal').delete()).eq('debit_account_name',name),
+      acctBizFilter(bkDb.from('bk_journal').delete()).eq('credit_account_name',name),
       bkDb.from('bk_accounts').delete().eq('id',id).eq('user_id',bkUser.id),
     ]);
     accounts[coaActiveType]=accounts[coaActiveType].filter(a=>a.id!==id);
@@ -9898,8 +9926,8 @@ async function showReport(type) {
   });
   // Opening balances flow into the statements
   try {
-    const {data:OBs} = await bkDb.from('bk_accounts')
-      .select('account_name,record_type,opening_balance').eq('user_id', bkUser.id);
+    const {data:OBs} = await acctBizFilter(bkDb.from('bk_accounts')
+      .select('account_name,record_type,opening_balance'));
     (OBs||[]).forEach(a=>{
       const ob = parseFloat(a.opening_balance)||0;
       if (!ob || !byAcct[a.record_type]) return;
@@ -12613,8 +12641,8 @@ async function autoPostExpenseRow(row, forcedBusinessId) {
     }).select().single();
     if (jnl) {
       const [cashR, expR] = await Promise.all([
-        bkDb.from('bk_accounts').select('id').eq('user_id',bkUser.id).eq('account_name',cashAcct).maybeSingle(),
-        bkDb.from('bk_accounts').select('id').eq('user_id',bkUser.id).eq('account_name',expAcct).maybeSingle(),
+        acctBizFilter(bkDb.from('bk_accounts').select('id')).eq('account_name',cashAcct).maybeSingle(),
+        acctBizFilter(bkDb.from('bk_accounts').select('id')).eq('account_name',expAcct).maybeSingle(),
       ]);
       const txns = [];
       if (cashR?.data) txns.push({user_id:bkUser.id,journal_id:jnl.id,record_type:'asset',account_name:cashAcct,txn_date:date,narration,debit:0,credit:amount,balance:0,created_at:new Date().toISOString()});
@@ -13357,6 +13385,26 @@ async function bdLoadActiveBizFromCloud() {
 }
 
 function bizMatch(){ return (activeBusiness && activeBusiness.id) ? {business_id: activeBusiness.id} : {user_id: bkUser.id}; }
+
+// bk_accounts (Chart of Accounts) — scoped the same way bk_products and
+// bk_transactions already are: an account created while a specific
+// business is active belongs only to that business, while accounts
+// that predate business-scoping (business_id IS NULL) are grandfathered
+// in under every business the same user has, so nothing already in a
+// user's chart of accounts disappears the moment this ships. This is
+// what fixes accounts created for one business (e.g. a "Crushed Rock"
+// custom account) showing up in a completely different business's
+// chart of accounts (e.g. "Manny Pharmacy") — they only leaked before
+// because every bk_accounts query filtered by user_id alone, with no
+// business_id filtering or stamping at all.
+function acctBizFilter(query) {
+  return (activeBusiness && activeBusiness.id)
+    ? query.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+    : query.eq('user_id', bkUser.id);
+}
+function acctBizStamp() {
+  return (activeBusiness && activeBusiness.id) ? { business_id: activeBusiness.id } : {};
+}
 async function loadUserBusinesses() {
   if (!bkUser) return;
   try {
@@ -14396,8 +14444,8 @@ async function autoPostSaleRow(row, customerName, txnDate, forcedBusinessId) {
 
   // 2. Find account IDs and calculate new running balances
   const [cashRes, incomeRes] = await Promise.all([
-    bkDb.from('bk_accounts').select('id,opening_balance').eq('user_id',bkUser.id).eq('account_name',cashAcct).maybeSingle(),
-    bkDb.from('bk_accounts').select('id,opening_balance').eq('user_id',bkUser.id).eq('account_name',incomeAcct).maybeSingle(),
+    acctBizFilter(bkDb.from('bk_accounts').select('id,opening_balance')).eq('account_name',cashAcct).maybeSingle(),
+    acctBizFilter(bkDb.from('bk_accounts').select('id,opening_balance')).eq('account_name',incomeAcct).maybeSingle(),
   ]);
 
   // 3. Get last balance for each account to calculate running balance
@@ -14479,8 +14527,8 @@ async function postCogsForSale(row, bizId, date, saleRefId) {
     if (jErr || !jnl) return;
 
     const [cogsRes, invRes] = await Promise.all([
-      bkDb.from('bk_accounts').select('id').eq('user_id', bkUser.id).eq('account_name', 'Cost of Goods Sold').maybeSingle(),
-      bkDb.from('bk_accounts').select('id').eq('user_id', bkUser.id).eq('account_name', 'Inventory / Stock').maybeSingle(),
+      acctBizFilter(bkDb.from('bk_accounts').select('id')).eq('account_name', 'Cost of Goods Sold').maybeSingle(),
+      acctBizFilter(bkDb.from('bk_accounts').select('id')).eq('account_name', 'Inventory / Stock').maybeSingle(),
     ]);
     const getLastBal = async (acctName) => {
       const { data } = await bkDb.from('bk_transactions').select('balance').match(bizMatch())
