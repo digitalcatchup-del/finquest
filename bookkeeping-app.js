@@ -1959,13 +1959,22 @@ function bkLoadScriptOnce(src) {
   });
 }
 async function ensureSalesModuleLoaded() {
-  await bkLoadScriptOnce('/sales-module.js?v=2');
+  await bkLoadScriptOnce('/sales-module.js?v=3');
 }
 async function openSalesDashboard() { await ensureSalesModuleLoaded(); showSalesDashboard(); }
 async function openSalesCustomers() { await ensureSalesModuleLoaded(); showCustomersPage(); }
 async function openSalesInvoices()  { await ensureSalesModuleLoaded(); showInvoicesPage(); }
 async function openSalesQuotes()    { await ensureSalesModuleLoaded(); showQuotesPage(); }
 async function openSalesARAging()   { await ensureSalesModuleLoaded(); showARAgingPage(); }
+
+// Accounts Payable module (vendors, bills, vendor payments, AP aging) —
+// same lazy-load-on-demand pattern as Sales.
+async function ensureAPModuleLoaded() {
+  await bkLoadScriptOnce('/ap-module.js?v=1');
+}
+async function openAPVendors() { await ensureAPModuleLoaded(); await showVendorsPage(); }
+async function openAPBills()   { await ensureAPModuleLoaded(); await showBillsPage(); }
+async function openAPAging()   { await ensureAPModuleLoaded(); await showAPAgingPage(); }
 let accounts      = {};   // { capital:[{id,account_name,opening_balance},...], ... }
 let activeType    = null;
 let activeAccount = null; // { id, account_name, opening_balance, opening_date }
@@ -3411,7 +3420,10 @@ function bdRestoreRoute() {
     if (r === 'settings') { showSettings(); return; }
     if (r === 'products') { showProductsPage('products'); return; }
     if (r === 'services') { showProductsPage('services'); return; }
-    if (r === 'suppliers'){ showSuppliersPage(); return; }
+    if (r === 'suppliers'){ openAPVendors(); return; } // old Suppliers route now opens the same data as Vendors
+    if (r === 'ap-vendors'){ openAPVendors(); return; }
+    if (r === 'ap-bills')  { openAPBills(); return; }
+    if (r === 'ap-aging')  { openAPAging(); return; }
     if (r === 'staff')    { showStaffDashboard(); return; }
     if (r === 'record-biz-choice') { showRecordBusinessChoice(); return; }
     if (r === 'mode-choice')      { showDashboard(); return; }
@@ -13405,6 +13417,77 @@ function acctBizFilter(query) {
 function acctBizStamp() {
   return (activeBusiness && activeBusiness.id) ? { business_id: activeBusiness.id } : {};
 }
+
+// ── SHARED LEDGER HELPERS ────────────────────────────────────
+// Used by both sales-module.js (Customers/Invoices/AR) and
+// ap-module.js (Vendors/Bills/AP) so this logic exists in exactly one
+// place. It used to be duplicated inside sales-module.js, and that
+// duplicate copy of ensureAccountExists() was missed when the
+// business-scoping fix (acctBizFilter/acctBizStamp) shipped in v64 —
+// it kept leaking accounts across businesses until v66. Putting it
+// here once removes the chance of a third, ap-module.js copy going
+// stale the same way.
+async function ensureAccountExists(name, recordType) {
+  const { data } = await acctBizFilter(bkDb.from('bk_accounts')
+    .select('id')).eq('account_name', name).maybeSingle();
+  if (data) return data.id;
+  const { data: created, error } = await bkDb.from('bk_accounts')
+    .insert({ user_id: bkUser.id, account_name: name, record_type: recordType, opening_balance: 0, ...acctBizStamp() })
+    .select('id').single();
+  if (error) { console.error('ensureAccountExists failed for', name, error); return null; }
+  return created.id;
+}
+
+async function getLastAccountBalance(acctName) {
+  const { data } = await bkDb.from('bk_transactions')
+    .select('balance').match(bizMatch()).eq('account_name', acctName)
+    .order('created_at', { ascending: false }).limit(1);
+  return parseFloat(data?.[0]?.balance) || 0;
+}
+
+// Posts one balanced debit/credit pair to bk_journal + bk_transactions.
+async function postJournalPair({ date, narration, debitAccount, debitType, creditAccount, creditType, amount, bizId, invoiceId, billId }) {
+  if (!amount || amount <= 0) return null;
+
+  const { data: jnl, error: jErr } = await bkDb.from('bk_journal').insert({
+    user_id: bkUser.id, business_id: bizId, txn_date: date, narration,
+    debit_account_name: debitAccount, debit_record_type: debitType,
+    credit_account_name: creditAccount, credit_record_type: creditType,
+    debit_amount: amount, credit_amount: amount, created_at: new Date().toISOString(),
+  }).select().single();
+  if (jErr || !jnl) { console.error('postJournalPair: journal insert failed', jErr); return null; }
+
+  await Promise.all([
+    ensureAccountExists(debitAccount, debitType),
+    ensureAccountExists(creditAccount, creditType),
+  ]);
+
+  const [debitLastBal, creditLastBal] = await Promise.all([
+    getLastAccountBalance(debitAccount),
+    getLastAccountBalance(creditAccount),
+  ]);
+
+  const txns = [
+    { user_id: bkUser.id, journal_id: jnl.id, record_type: debitType, account_name: debitAccount,
+      txn_date: date, narration, debit: amount, credit: 0, balance: debitLastBal + amount, created_at: new Date().toISOString() },
+    { user_id: bkUser.id, journal_id: jnl.id, record_type: creditType, account_name: creditAccount,
+      txn_date: date, narration, debit: 0, credit: amount, balance: creditLastBal + amount, created_at: new Date().toISOString() },
+  ];
+  txns.forEach(t => { if (bizId) t.business_id = bizId; if (invoiceId) t.invoice_id = invoiceId; if (billId) t.bill_id = billId; });
+  await bkDb.from('bk_transactions').insert(txns);
+
+  return jnl.id;
+}
+
+// ── DOCUMENT NUMBERING ───────────────────────────────────────
+async function getNextDocNumber(table, col, prefix) {
+  const { data } = await bkDb.from(table).select(col).match(bizMatch())
+    .order('created_at', { ascending: false }).limit(1);
+  const last = data?.[0]?.[col] || '';
+  const lastNum = parseInt((last.match(/(\d+)$/) || [0, 0])[1], 10) || 0;
+  return prefix + '-' + String(lastNum + 1).padStart(4, '0');
+}
+
 async function loadUserBusinesses() {
   if (!bkUser) return;
   try {

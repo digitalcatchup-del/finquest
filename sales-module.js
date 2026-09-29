@@ -3,9 +3,10 @@
 // Customers · Invoices · Quotes · Payments · AR Aging · Dashboard
 // Lazy-loaded on demand (see loadScriptOnce in bookkeeping-app.js) —
 // depends on globals already defined there: bkDb, bkUser,
-// activeBusiness, bizMatch(), acctBizFilter(), acctBizStamp(), escH(),
-// staffIncomeAccount(), setSaveMsg(), closeBkMenu(), bdSaveRoute(),
-// staffHideChrome().
+// activeBusiness, bizMatch(), acctBizFilter(), acctBizStamp(),
+// ensureAccountExists(), getLastAccountBalance(), postJournalPair(),
+// getNextDocNumber(), escH(), staffIncomeAccount(), setSaveMsg(),
+// closeBkMenu(), bdSaveRoute(), staffHideChrome().
 // ============================================================
 
 let salesCustomers      = [];
@@ -18,68 +19,12 @@ let editingQuoteId      = null;
 const DEFAULT_VAT_RATE  = 7.5; // Nigerian standard VAT — change per business later if needed
 
 // ── LEDGER HELPERS ───────────────────────────────────────────
-// Makes sure an account row exists in bk_accounts before we try to post
-// to it. Unlike the existing quick-sale poster (which silently skips a
-// side of the entry if the account is missing), this creates it —
-// so a first-ever invoice's VAT never silently vanishes from the books.
-// Scoped with acctBizFilter()/acctBizStamp() (defined in bookkeeping-app.js)
-// so an account auto-created from an invoice/payment in one business does
-// not leak into every other business the same user owns — same fix as the
-// Chart of Accounts got in v64; this function was missed at the time.
-async function ensureAccountExists(name, recordType) {
-  const { data } = await acctBizFilter(bkDb.from('bk_accounts')
-    .select('id')).eq('account_name', name).maybeSingle();
-  if (data) return data.id;
-  const { data: created, error } = await bkDb.from('bk_accounts')
-    .insert({ user_id: bkUser.id, account_name: name, record_type: recordType, opening_balance: 0, ...acctBizStamp() })
-    .select('id').single();
-  if (error) { console.error('ensureAccountExists failed for', name, error); return null; }
-  return created.id;
-}
-
-async function getLastAccountBalance(acctName) {
-  const { data } = await bkDb.from('bk_transactions')
-    .select('balance').match(bizMatch()).eq('account_name', acctName)
-    .order('created_at', { ascending: false }).limit(1);
-  return parseFloat(data?.[0]?.balance) || 0;
-}
-
-// Posts one balanced debit/credit pair to bk_journal + bk_transactions.
-// Mirrors the exact shape autoPostSaleRow() already uses elsewhere in
-// this app, so invoice-driven postings look identical to quick-sale
-// postings in the ledger and reports.
-async function postJournalPair({ date, narration, debitAccount, debitType, creditAccount, creditType, amount, bizId, invoiceId }) {
-  if (!amount || amount <= 0) return null;
-
-  const { data: jnl, error: jErr } = await bkDb.from('bk_journal').insert({
-    user_id: bkUser.id, business_id: bizId, txn_date: date, narration,
-    debit_account_name: debitAccount, debit_record_type: debitType,
-    credit_account_name: creditAccount, credit_record_type: creditType,
-    debit_amount: amount, credit_amount: amount, created_at: new Date().toISOString(),
-  }).select().single();
-  if (jErr || !jnl) { console.error('postJournalPair: journal insert failed', jErr); return null; }
-
-  await Promise.all([
-    ensureAccountExists(debitAccount, debitType),
-    ensureAccountExists(creditAccount, creditType),
-  ]);
-
-  const [debitLastBal, creditLastBal] = await Promise.all([
-    getLastAccountBalance(debitAccount),
-    getLastAccountBalance(creditAccount),
-  ]);
-
-  const txns = [
-    { user_id: bkUser.id, journal_id: jnl.id, record_type: debitType, account_name: debitAccount,
-      txn_date: date, narration, debit: amount, credit: 0, balance: debitLastBal + amount, created_at: new Date().toISOString() },
-    { user_id: bkUser.id, journal_id: jnl.id, record_type: creditType, account_name: creditAccount,
-      txn_date: date, narration, debit: 0, credit: amount, balance: creditLastBal + amount, created_at: new Date().toISOString() },
-  ];
-  txns.forEach(t => { if (bizId) t.business_id = bizId; if (invoiceId) t.invoice_id = invoiceId; });
-  await bkDb.from('bk_transactions').insert(txns);
-
-  return jnl.id;
-}
+// ensureAccountExists(), getLastAccountBalance(), postJournalPair() and
+// getNextDocNumber() used to live here, duplicated from nowhere in
+// particular. They now live once in bookkeeping-app.js (shared with
+// ap-module.js) — see the comment there for why: a duplicate copy of
+// ensureAccountExists() in this exact spot was what caused the
+// cross-business account-leak bug fixed in v66.
 
 // Debit Debtors (full total, including VAT) — Credit Sales Revenue
 // (subtotal) and, as a second linked entry, Credit VAT Payable (the
@@ -123,15 +68,6 @@ async function postPaymentToLedger(payment, invoice) {
     creditAccount: 'Debtors', creditType: 'asset',
     amount: payment.amount, bizId, invoiceId: invoice.id,
   });
-}
-
-// ── DOCUMENT NUMBERING ───────────────────────────────────────
-async function getNextDocNumber(table, col, prefix) {
-  const { data } = await bkDb.from(table).select(col).match(bizMatch())
-    .order('created_at', { ascending: false }).limit(1);
-  const last = data?.[0]?.[col] || '';
-  const lastNum = parseInt((last.match(/(\d+)$/) || [0, 0])[1], 10) || 0;
-  return prefix + '-' + String(lastNum + 1).padStart(4, '0');
 }
 
 // ── CUSTOMERS ─────────────────────────────────────────────────
