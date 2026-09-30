@@ -2256,7 +2256,10 @@ async function openAccount(type, acct) {
       id:r.id, txn_date:r.txn_date||'', payee:r.payee||'',
       payer:r.payer||'', narration:r.narration||'',
       debit:parseFloat(r.debit)||0, credit:parseFloat(r.credit)||0,
-      balance:parseFloat(r.balance)||0, row_order:r.row_order, saved:true
+      balance:parseFloat(r.balance)||0, row_order:r.row_order, saved:true,
+      // Carried through so deleteRow() can tell a Master-Journal-backed
+      // posting apart from a standalone one — see deleteRow()'s comment.
+      journal_id:r.journal_id||null,
     }));
 
     // Keep only saved rows — no empty padding when there's actual data.
@@ -3125,7 +3128,7 @@ function addRow() {
   },40);
 }
 
-function deleteRow(i) {
+async function deleteRow(i) {
   const removed = rows[i];
   // Remove from the screen immediately — no waiting on the network
   rows.splice(i,1);
@@ -3133,18 +3136,37 @@ function deleteRow(i) {
   renderRows();
   setSaveMsg('Deleted','ok');
   refreshEquation();
-  // Delete on the server in the background; only if it actually
-  // fails do we put the row back and tell the user.
-  if (removed && removed.id) {
-    bkDb.from('bk_transactions').delete().eq('id', removed.id).then(({error})=>{
-      if (error) {
-        rows.splice(i, 0, removed);
-        recalcBalances();
-        renderRows();
-        refreshEquation();
-        alert('Could not delete this row: '+(error.message||'unknown error'));
-      }
-    });
+  if (!removed || !removed.id) return;
+  // A ledger row posted from the Master Journal (or the Sales/Expenses
+  // quick-entry sheet, which also posts through the Journal) is one leg
+  // of a double entry — deleting just this bk_transactions row used to
+  // leave its journal entry AND its other leg, in a different ledger,
+  // completely untouched: the books went out of balance and the entry
+  // kept showing up everywhere except the one ledger you deleted it
+  // from. Routing through the same cascade the Journal view itself uses
+  // removes the journal entry and every leg it posted, from here too.
+  if (removed.journal_id) {
+    try {
+      await bdCascadeDeleteJournalEntry(removed.journal_id);
+    } catch (e) {
+      rows.splice(i, 0, removed);
+      recalcBalances();
+      renderRows();
+      refreshEquation();
+      alert('Could not delete this row: '+(e?.message||'unknown error'));
+    }
+    return;
+  }
+  // No journal_id — a standalone posting (e.g. from Accounts Payable/
+  // Sales, which don't post through the Master Journal). Delete just
+  // this row, same as before.
+  const { error } = await bkDb.from('bk_transactions').delete().eq('id', removed.id);
+  if (error) {
+    rows.splice(i, 0, removed);
+    recalcBalances();
+    renderRows();
+    refreshEquation();
+    alert('Could not delete this row: '+(error.message||'unknown error'));
   }
 }
 
@@ -4607,25 +4629,29 @@ function jrnSnHighlight(idx) {
     sn.classList.toggle('jrn-sn-hl', on);
   });
 }
-function jrnDeleteRowsFrom(idx) {
+async function jrnDeleteRowsFrom(idx) {
   if (idx < 0 && !jrnSelRows.length) { bdToast('Select a row first', 'error'); return; }
   const targets = (jrnSelRows.length>1 && jrnSelRows.includes(idx)) ? jrnSelRows.slice() : (idx<0 ? jrnSelRows.slice() : [idx]);
   if (!confirm('Delete '+targets.length+' row(s)?')) return;
-  targets.sort((a,b)=>b-a).forEach(i=>{
+  for (const i of targets.slice().sort((a,b)=>b-a)) {
     const r = journalRows[i];
     if (r && r.id) {
-      // Delete ledger transactions first, then the journal entry — same
-      // order deleteJournalRow() already used correctly. This bulk-delete
-      // path previously only deleted the bk_journal row and left its
-      // bk_transactions legs behind, orphaned in the ledgers and
-      // financial statements even after the entry was "deleted" here.
-      bkDb.from('bk_transactions').delete().eq('journal_id', r.id).eq('user_id', bkUser.id)
-        .then(()=> bkDb.from('bk_journal').delete().eq('id', r.id).eq('user_id', bkUser.id));
+      // Routed through the same bdCascadeDeleteJournalEntry() the single-
+      // row delete uses (also business-scoped, not just user_id-scoped —
+      // see its own comment), instead of a separate, narrower copy of
+      // the same logic. That separate copy is what previously deleted
+      // only the bk_journal row and left its bk_transactions legs
+      // behind, orphaned in the ledgers and financial statements even
+      // after the entry was "deleted" here — and it also never handled
+      // a sale's linked revenue/COGS pair the way the shared function
+      // does. Awaited (not fire-and-forget) so the deletes are done
+      // before jrnSelRows/rows are cleared below.
+      await bdCascadeDeleteJournalEntry(r.id);
     } else if (r && r._txnId) {
-      bkDb.from('bk_transactions').delete().eq('id', r._txnId).eq('user_id', bkUser.id).then(()=>{});
+      await acctBizFilter(bkDb.from('bk_transactions').delete().eq('id', r._txnId));
     }
     journalRows.splice(i,1);
-  });
+  }
   jrnSelRows = [];
   if (!journalRows.length) journalRows.push({ txn_date:'', payee:'', payer:'', narration:'',
     debit_account_name:'', debit_record_type:'', credit_account_name:'', credit_record_type:'',
@@ -5463,15 +5489,38 @@ function addJournalRow(){
 // impact, and the stock deduction completely untouched underneath.
 async function bdCascadeDeleteJournalEntry(journalId) {
   if (!journalId) return;
-  const { data: row } = await bkDb.from('bk_journal').select('id,sale_ref_id,product_id,qty')
-    .eq('id', journalId).eq('user_id', bkUser.id).maybeSingle();
-  if (!row) return;
+  // Scoped by business (acctBizFilter — the account business_id when a
+  // business is active, grandfathering in older business_id-IS-NULL
+  // rows the same way the Chart of Accounts already does, else the
+  // personal user_id fallback), NOT by "user_id = whoever is logged in
+  // right now". A journal entry belongs to the BUSINESS, and any of
+  // that business's staff should be able to delete an entry a
+  // colleague or the owner created. The old `.eq('user_id', bkUser.id)`
+  // filter looked up (and deleted) rows by whoever happened to create
+  // them — on a business with more than one login, a delete by anyone
+  // else silently matched zero rows. Nothing checked that, so the row
+  // vanished from the screen (deleteJournalRow always splices it out of
+  // journalRows regardless) while staying completely untouched in the
+  // database — reappearing in the Ledger and financial statements as
+  // if it had never been deleted at all.
+  const { data: row } = await acctBizFilter(bkDb.from('bk_journal').select('id,sale_ref_id,product_id,qty')
+    .eq('id', journalId)).maybeSingle();
+  if (!row) {
+    // The journal entry itself is already gone — most likely one of the
+    // orphans left behind by the old jrnDeleteRowsFrom bug (its
+    // bk_journal row was deleted back then, but its bk_transactions legs
+    // were not). Rather than silently doing nothing — which is exactly
+    // what made those orphans impossible to clear by clicking delete on
+    // them again — clean up any stray legs still pointing at this id.
+    await acctBizFilter(bkDb.from('bk_transactions').delete().eq('journal_id', journalId));
+    return;
+  }
   if (row.sale_ref_id) {
-    const { data: linked } = await bkDb.from('bk_journal').select('id,product_id,qty')
-      .eq('sale_ref_id', row.sale_ref_id).eq('user_id', bkUser.id);
+    const { data: linked } = await acctBizFilter(bkDb.from('bk_journal').select('id,product_id,qty')
+      .eq('sale_ref_id', row.sale_ref_id));
     for (const entry of (linked || [])) {
-      await bkDb.from('bk_transactions').delete().eq('journal_id', entry.id).eq('user_id', bkUser.id);
-      await bkDb.from('bk_journal').delete().eq('id', entry.id).eq('user_id', bkUser.id);
+      await acctBizFilter(bkDb.from('bk_transactions').delete().eq('journal_id', entry.id));
+      await acctBizFilter(bkDb.from('bk_journal').delete().eq('id', entry.id));
     }
     const restoreQty = parseFloat(row.qty) || 0;
     if (row.product_id && restoreQty > 0) {
@@ -5485,8 +5534,8 @@ async function bdCascadeDeleteJournalEntry(journalId) {
       } catch(e) {}
     }
   } else {
-    await bkDb.from('bk_transactions').delete().eq('journal_id', row.id).eq('user_id', bkUser.id);
-    await bkDb.from('bk_journal').delete().eq('id', row.id).eq('user_id', bkUser.id);
+    await acctBizFilter(bkDb.from('bk_transactions').delete().eq('journal_id', row.id));
+    await acctBizFilter(bkDb.from('bk_journal').delete().eq('id', row.id));
   }
 }
 async function deleteJournalRow(i){
@@ -10293,40 +10342,60 @@ async function showReport(type) {
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading…</div>';
   const _rb = window._reportBiz;
   window._reportBizName = _rb ? _rb.name : null;
-  let _rq = bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date');
-  const _rbid = _rb ? _rb.id : activeBusiness?.id;
-  _rq = _rbid
-    ? _rq.or('business_id.eq.'+_rbid+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
-    : _rq.eq('user_id', bkUser.id);
-  const {data}=await _rq;
-  window._reportBiz = null;
-  const T=data||[];
-  const tots={capital:{dr:0,cr:0},liability:{dr:0,cr:0},asset:{dr:0,cr:0},income:{dr:0,cr:0},expenditure:{dr:0,cr:0}};
-  const byAcct={capital:{},liability:{},asset:{},income:{},expenditure:{}};
-  T.forEach(r=>{
-    tots[r.record_type].dr+=parseFloat(r.debit)||0;tots[r.record_type].cr+=parseFloat(r.credit)||0;
-    const nm=r.account_name||'Unspecified';
-    byAcct[r.record_type][nm]=(byAcct[r.record_type][nm]||0)+((parseFloat(r.debit)||0)-(parseFloat(r.credit)||0));
-  });
-  // Opening balances flow into the statements
   try {
-    const {data:OBs} = await acctBizFilter(bkDb.from('bk_accounts')
-      .select('account_name,record_type,opening_balance'));
-    (OBs||[]).forEach(a=>{
-      const ob = parseFloat(a.opening_balance)||0;
-      if (!ob || !byAcct[a.record_type]) return;
-      const nm = a.account_name||'Unspecified';
-      const drNormal = a.record_type==='asset' || a.record_type==='expenditure';
-      byAcct[a.record_type][nm] = (byAcct[a.record_type][nm]||0) + (drNormal ? ob : -ob);
-      tots[a.record_type][drNormal?'dr':'cr'] += ob;
+    let _rq = bkDb.from('bk_transactions').select('record_type,debit,credit,account_name,txn_date');
+    const _rbid = _rb ? _rb.id : activeBusiness?.id;
+    _rq = _rbid
+      ? _rq.or('business_id.eq.'+_rbid+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+      : _rq.eq('user_id', bkUser.id);
+    const {data, error} = await _rq;
+    if (error) throw error;
+    window._reportBiz = null;
+    const T=data||[];
+    const tots={capital:{dr:0,cr:0},liability:{dr:0,cr:0},asset:{dr:0,cr:0},income:{dr:0,cr:0},expenditure:{dr:0,cr:0}};
+    const byAcct={capital:{},liability:{},asset:{},income:{},expenditure:{}};
+    T.forEach(r=>{
+      // Skip any row whose record_type isn't one of the five known
+      // books — a stray or corrupted row (e.g. an old orphaned entry)
+      // used to crash this whole page with `tots[r.record_type]` being
+      // undefined, which — since nothing here caught it — left "Loading…"
+      // on screen forever and made every refresh repeat the same crash.
+      if (!tots[r.record_type]) return;
+      tots[r.record_type].dr+=parseFloat(r.debit)||0;tots[r.record_type].cr+=parseFloat(r.credit)||0;
+      const nm=r.account_name||'Unspecified';
+      byAcct[r.record_type][nm]=(byAcct[r.record_type][nm]||0)+((parseFloat(r.debit)||0)-(parseFloat(r.credit)||0));
     });
-  } catch(e){}
-  window._reportByAcct = byAcct;
-  if(type==='trial') renderTrialBalance(tots);
-  else if(type==='pl')  renderPL(tots);
-  else if(type==='bs')  renderBS(tots);
-  else if(type==='cf')  renderCashFlow(T,tots);
-  else if(type==='eq')  renderEquity(tots);
+    // Opening balances flow into the statements
+    try {
+      const {data:OBs} = await acctBizFilter(bkDb.from('bk_accounts')
+        .select('account_name,record_type,opening_balance'));
+      (OBs||[]).forEach(a=>{
+        const ob = parseFloat(a.opening_balance)||0;
+        if (!ob || !byAcct[a.record_type]) return;
+        const nm = a.account_name||'Unspecified';
+        const drNormal = a.record_type==='asset' || a.record_type==='expenditure';
+        byAcct[a.record_type][nm] = (byAcct[a.record_type][nm]||0) + (drNormal ? ob : -ob);
+        tots[a.record_type][drNormal?'dr':'cr'] += ob;
+      });
+    } catch(e){}
+    window._reportByAcct = byAcct;
+    if(type==='trial') renderTrialBalance(tots);
+    else if(type==='pl')  renderPL(tots);
+    else if(type==='bs')  renderBS(tots);
+    else if(type==='cf')  renderCashFlow(T,tots);
+    else if(type==='eq')  renderEquity(tots);
+  } catch (e) {
+    window._reportBiz = null;
+    console.error('showReport failed:', e);
+    document.getElementById('bkContent').innerHTML = `
+      <div style="max-width:420px;margin:60px auto;text-align:center;padding:0 16px;">
+        <div style="font-size:2rem;margin-bottom:10px;">⚠️</div>
+        <div style="font-weight:800;color:var(--white);margin-bottom:6px;">Couldn't load this statement</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin-bottom:20px;">${escH(e?.message || 'An unexpected error occurred.')}</div>
+        <button class="bk-btn bk-btn-gold" style="margin-right:8px;" onclick="showReport('${escJs(type)}')">↻ Retry</button>
+        <button class="bk-btn bk-btn-outline" onclick="showDashboard()">← Back to Dashboard</button>
+      </div>`;
+  }
 }
 
 function renderCashFlow(T,tots) {
