@@ -10439,7 +10439,21 @@ async function psSaveRow(i) {
 }
 
 // ── EXTENDED REPORTS ─────────────────────────────────────────
-function isCOSAccount(name){ return /cost of (goods|sales|production)|purchase|raw material|direct (labou?r|wages)|carriage inward|production/i.test(name||''); }
+// An expenditure account's Cost-of-Sales-vs-Operating-Expenses split is
+// normally guessed from its name. But the Chart of Accounts page lets a
+// user manually move an account into "Cost of Sales / Production" or
+// "Operating Expenses" (via the Move picker or a custom main sub-ledger
+// under one of those exact titles) — that manual choice must win over
+// the name guess everywhere the split is used (P&L, dropdown grouping,
+// dashboard figures), or an account like "Consumption of Oxygen &
+// Acetylene" that the user filed under Cost of Sales keeps showing up
+// under Operating Expenses in the actual financial statements.
+function isCOSAccount(name){
+  const label = _coaMemb()[name];
+  if (label === 'Cost of Sales / Production') return true;
+  if (label === 'Operating Expenses') return false;
+  return /cost of (goods|sales|production)|purchase|raw material|direct (labou?r|wages)|carriage inward|production/i.test(name||'');
+}
 function isFixedAsset(name){ return /equipment|machin|vehicle|motor|building|land|furniture|fixture|plant|computer|premise/i.test(name||''); }
 function isLongTermLiab(name){ return /loan|mortgage|debenture|long[- ]?term/i.test(name||''); }
 
