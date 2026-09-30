@@ -4410,8 +4410,19 @@ function buildAccountOptions(selectedName, includeCoaOption) {
   types.forEach(type => {
     const accts = accounts[type]||[];
     if (!accts.length) return;
+    // A sub-ledger (added via the Chart of Accounts "+" under a parent
+    // account, e.g. "FIP Charges" under "Bank Charges") carries a
+    // parent_id. It must be listed immediately under its parent here,
+    // not bucketed/ordered independently — otherwise it can land
+    // anywhere else in the list depending only on when it was created.
+    const byId = {}; accts.forEach(a=>{ byId[a.id]=a; });
+    const childrenOf = {};
+    accts.forEach(a=>{ if (a.parent_id && byId[a.parent_id]) (childrenOf[a.parent_id]=childrenOf[a.parent_id]||[]).push(a); });
+    // Top-level = no parent, or an orphaned child whose parent isn't in
+    // this same type's list (so it still shows up instead of vanishing).
+    const topLevel = accts.filter(a=>!a.parent_id || !byId[a.parent_id]);
     const buckets = {};
-    accts.forEach(a=>{
+    topLevel.forEach(a=>{
       let label = memb[a.account_name];
       if (!label) {
         const base = groupsFor[type]||[];
@@ -4420,11 +4431,16 @@ function buildAccountOptions(selectedName, includeCoaOption) {
       }
       (buckets[label]=buckets[label]||[]).push(a);
     });
+    const optionFor = (a, indent) => {
+      const sel = a.account_name === selectedName ? 'selected' : '';
+      const label = indent ? ('    ↳ ' + escH(a.account_name)) : escH(a.account_name);
+      return `<option value="${escH(a.account_name)}|${type}" ${sel}>${label}</option>`;
+    };
     Object.keys(buckets).forEach(label=>{
       html += `<optgroup label="${type.charAt(0).toUpperCase()+type.slice(1)} — ${escH(label)}">`;
       buckets[label].forEach(a => {
-        const sel = a.account_name === selectedName ? 'selected' : '';
-        html += `<option value="${escH(a.account_name)}|${type}" ${sel}>${escH(a.account_name)}</option>`;
+        html += optionFor(a, false);
+        (childrenOf[a.id]||[]).forEach(c => { html += optionFor(c, true); });
       });
       html += '</optgroup>';
     });
