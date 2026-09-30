@@ -3989,6 +3989,113 @@ function jrnClearHeaderFilter(ev) {
   jrnSetFilterDate(null);
 }
 
+// ── JOURNAL COLUMN SEARCH FILTERS ──────────────────────────────
+// Click any of Payee / Payer / Narration / Debit Account / Credit
+// Account / Debit / Credit to search that column — filters combine
+// (AND) with each other and with the header 📅 date filter above.
+// Persisted the same way and scoped per-business.
+const JRN_COL_FIELD = { payee:'payee', payer:'payer', narration:'narration', debit_account:'debit_account_name', credit_account:'credit_account_name', debit:'debit_amount', credit:'credit_amount' };
+const JRN_COL_LABEL = { payee:'Payee', payer:'Payer', narration:'Narration', debit_account:'Debit Account', credit_account:'Credit Account', debit:'Debit', credit:'Credit' };
+const JRN_COL_NUMERIC = ['debit','credit'];
+let jrnColFilters = { payee:'', payer:'', narration:'', debit_account:'', credit_account:'', debit:'', credit:'' };
+
+function _jrnColFilterKey() {
+  return 'bd_jrn_colfilters_' + (activeBusiness?.id || bkUser?.id || 'default');
+}
+function jrnLoadColFilters() {
+  try {
+    const raw = localStorage.getItem(_jrnColFilterKey());
+    jrnColFilters = raw ? Object.assign({ payee:'', payer:'', narration:'', debit_account:'', credit_account:'', debit:'', credit:'' }, JSON.parse(raw)) : { payee:'', payer:'', narration:'', debit_account:'', credit_account:'', debit:'', credit:'' };
+  } catch(e) { jrnColFilters = { payee:'', payer:'', narration:'', debit_account:'', credit_account:'', debit:'', credit:'' }; }
+}
+function jrnSaveColFilters() {
+  try { localStorage.setItem(_jrnColFilterKey(), JSON.stringify(jrnColFilters)); } catch(e) {}
+}
+function jrnRowMatchesColFilters(row) {
+  return Object.keys(jrnColFilters).every(function(col){
+    const v = jrnColFilters[col]; if (!v) return true;
+    const field = JRN_COL_FIELD[col];
+    if (JRN_COL_NUMERIC.includes(col)) {
+      const rowVal = String(row[field]||'').replace(/,/g,'');
+      const needle = v.replace(/,/g,'');
+      return rowVal.includes(needle);
+    }
+    return (row[field]||'').toLowerCase().includes(v.toLowerCase());
+  });
+}
+function jrnAnyColFilterActive() {
+  return Object.keys(jrnColFilters).some(function(c){ return jrnColFilters[c]; });
+}
+function jcolApplyFilter(col) {
+  const input = document.getElementById('jcolInput');
+  jrnColFilters[col] = input ? input.value.trim() : jrnColFilters[col];
+  document.getElementById('jcolPopup')?.remove();
+  jrnSaveColFilters();
+  renderJournal();
+}
+function jcolClearFilter(col, ev) {
+  if (ev) ev.stopPropagation();
+  jrnColFilters[col] = '';
+  document.getElementById('jcolPopup')?.remove();
+  jrnSaveColFilters();
+  renderJournal();
+}
+function jrnClearAllFilters() {
+  jrnFilterDate = null;
+  Object.keys(jrnColFilters).forEach(function(c){ jrnColFilters[c] = ''; });
+  jrnSaveFilterDate();
+  jrnSaveColFilters();
+  renderJournal();
+}
+function jcolToggleFilterPopup(col, ev) {
+  ev.stopPropagation();
+  const existing = document.getElementById('jcolPopup');
+  if (existing) existing.remove();
+  const th = ev.currentTarget.closest('th');
+  // Appended to <body> (a "portal"), not the <th>, so it can't be clipped
+  // by .bk-sheet-wrap{overflow-x:auto} the way a th-child absolute popup
+  // would be — same fix already used for the jcal calendar panels.
+  const popup = document.createElement('div');
+  popup.id = 'jcolPopup';
+  popup.className = 'jcol-filter-popup';
+  const isNum = JRN_COL_NUMERIC.includes(col);
+  popup.innerHTML = '<label>Search '+escH(JRN_COL_LABEL[col])+'</label>'+
+    '<input type="text" inputmode="'+(isNum?'decimal':'text')+'" id="jcolInput" placeholder="'+(isNum?'e.g. 500':'Type a name…')+'" value="'+escH(jrnColFilters[col]||'')+'" onkeydown="if(event.key===\'Enter\')jcolApplyFilter(\''+col+'\')"/>'+
+    '<div class="jcol-filter-row">'+
+      '<button class="jcol-filter-apply" onclick="jcolApplyFilter(\''+col+'\')">Apply</button>'+
+      '<button class="jcol-filter-clearbtn" onclick="jcolClearFilter(\''+col+'\')">Clear</button>'+
+    '</div>';
+  document.body.appendChild(popup);
+  const rect = th.getBoundingClientRect();
+  requestAnimationFrame(function(){
+    const pw = popup.offsetWidth || 220, ph = popup.offsetHeight || 112;
+    let left = Math.max(8, Math.min(rect.left, window.innerWidth - pw - 8));
+    let top = rect.bottom + 6;
+    if (top + ph > window.innerHeight) top = Math.max(8, rect.top - ph - 6);
+    popup.style.left = left+'px';
+    popup.style.top = top+'px';
+  });
+  document.getElementById('jcolInput').focus();
+  setTimeout(function(){
+    document.addEventListener('click', function onDoc(e){
+      if (!e.target.closest('#jcolPopup') && !e.target.closest('.jcol-filter-label')) {
+        popup.remove(); document.removeEventListener('click', onDoc);
+      }
+    });
+  }, 10);
+}
+function jrnRenderFilterBar() {
+  const chips = [];
+  if (jrnFilterDate) chips.push({ label:'Date', value:jrnFilterLabel(), clear:'jrnClearHeaderFilter(event)' });
+  Object.keys(jrnColFilters).forEach(function(c){
+    if (jrnColFilters[c]) chips.push({ label:JRN_COL_LABEL[c], value:jrnColFilters[c], clear:"jcolClearFilter('"+c+"',event)" });
+  });
+  if (!chips.length) return '';
+  return '<div class="jrn-filterbar">' +
+    chips.map(function(ch){ return '<span class="jrn-filter-chip">'+escH(ch.label)+': '+escH(ch.value)+'<span class="x" onclick="'+ch.clear+'">✕</span></span>'; }).join('') +
+    '<span class="jrn-filter-clearall" onclick="jrnClearAllFilters()">Clear all filters</span></div>';
+}
+
 // ── IN-APP CALENDAR (jcal) — shared by every Journal row's date cell
 // and the header date filter above. Renders as a body-appended
 // "portal" positioned under whichever element opened it, so it is
@@ -4946,6 +5053,7 @@ async function openJournal() {
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading Master Journal…</div>';
   jrnLoadFilterDate(); // restore whatever date (or "All dates") was left showing last time
+  jrnLoadColFilters(); // ...and whatever column searches (payee, account, amount, etc.) were left active
 
   // Direct postings (sales, expenses, ledgers) — the journal is the book of prime entry
   let _txLegs = [];
@@ -5062,20 +5170,29 @@ function renderJournal() {
       <button class="tb-icon" title="Delete selected rows" onclick="jrnDeleteRowsFrom(jrnSelRows[0]??-1)">🗑 Delete</button>
     </div>`:''}
 
+    ${jrnRenderFilterBar()}
+
     <div class="bk-sheet-wrap">
       <table class="bk-sheet" id="journalTable" style="min-width:1214px;">
         <thead><tr>
           <th class="num" style="width:44px;">S/N</th>
           ${(()=>{ const lbl=Object.assign({1:'Date',2:'Payee',3:'Payer',4:'Narration',5:'Debit Account',6:'Credit Account',7:'Debit',8:'Credit'}, _jrnLabels());
+            const colKey={2:'payee',3:'payer',4:'narration',5:'debit_account',6:'credit_account',7:'debit',8:'credit'};
             const sym=CURRENCIES[activeCurrency].symbol;
             const tri=n=>'';
             const w={1:110,2:120,3:120,4:180,5:175,6:175,7:110,8:110};
             let h='';
             for(let n=1;n<=8;n++){
               const money=n>=7?' ('+sym+')':'';
-              const label = n===1
-                ? '<span onclick="jrnDatePortal(event)" style="cursor:pointer;">'+escH(lbl[1])+' 📅</span>'
-                : escH(lbl[n])+money;
+              let label;
+              if (n===1) {
+                label = '<span onclick="jrnDatePortal(event)" style="cursor:pointer;">'+escH(lbl[1])+' 📅</span>';
+              } else {
+                const key = colKey[n];
+                const active = !!jrnColFilters[key];
+                label = '<span class="jcol-filter-label'+(active?' jcol-active':'')+'" onclick="jcolToggleFilterPopup(\''+key+'\',event)">'+escH(lbl[n])+money+'</span>'
+                  + (active ? '<span class="jcol-filter-clear" title="Clear filter" onclick="jcolClearFilter(\''+key+'\',event)">✕</span>' : '');
+              }
               h+='<th class="col-head'+(n>=7?' num':'')+'" style="width:'+w[n]+'px;position:relative;">'+label+tri(n)+'</th>';
             }
             return h; })()}
@@ -5117,15 +5234,27 @@ function renderJournalRows() {
       return r.txn_date === jrnFilterDate;
     });
   }
+  // Column search filters (Payee, Payer, Narration, Debit/Credit Account, Debit, Credit)
+  if (jrnAnyColFilterActive()) {
+    visibleRows = visibleRows.filter(function(r){
+      if (!journalHasData(r) && !r.id) return true; // keep blank unsaved rows
+      return jrnRowMatchesColFilters(r);
+    });
+  }
   const totalDr=visibleRows.reduce((a,r)=>a+(r.debit_amount||0),0);
   const totalCr=visibleRows.reduce((a,r)=>a+(r.credit_amount||0),0);
   const balanced=Math.abs(totalDr-totalCr)<0.01;
 
   if (visibleRows.length === 0) {
-    tbody.innerHTML = jrnFilterDate
+    const dateOnly = jrnFilterDate && !jrnAnyColFilterActive();
+    const anyFilterActive = jrnFilterDate || jrnAnyColFilterActive();
+    const emptyMsg = dateOnly
+      ? `No transactions recorded for ${jrnFilterLabel()}.`
+      : `No transactions match these filters.`;
+    tbody.innerHTML = anyFilterActive
       ? `<tr><td colspan="10" style="text-align:center;padding:32px 12px;color:var(--muted);font-size:0.82rem;">
-          No transactions recorded for <strong style="color:var(--gold)">${escH(jrnFilterLabel())}</strong> yet.<br/>
-          Use <strong style="color:var(--gold)">+ Add another row</strong> below to add one.
+          ${emptyMsg}<br/>
+          Use <strong style="color:var(--gold)">+ Add another row</strong> below to add one, or clear a filter above.
         </td></tr>`
       : `<tr><td colspan="10" style="text-align:center;padding:32px 12px;color:var(--muted);font-size:0.82rem;">
           No entries yet. Use <strong style="color:var(--gold)">+ Add another row</strong> below to record a transaction.

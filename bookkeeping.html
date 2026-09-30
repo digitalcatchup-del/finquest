@@ -627,6 +627,31 @@ select.bk-cell {
 .jrn-filter-clear:hover{color:var(--red);}
 .jrn-filter-active{border-color:var(--gold) !important;color:var(--gold) !important;}
 
+/* ── Master Journal column search filters (Payee, Payer, Narration, ── */
+/* Debit/Credit Account, Debit, Credit) — click the header text itself. */
+.jcol-filter-label{cursor:pointer;border-bottom:1px dashed transparent;}
+.jcol-filter-label:hover{color:var(--white);border-bottom-color:var(--border3);}
+.jcol-filter-label.jcol-active{color:var(--gold);border-bottom-color:var(--gold-t03);}
+.jcol-filter-clear{font-size:0.65rem;color:var(--muted);cursor:pointer;padding:0 2px;vertical-align:middle;}
+.jcol-filter-clear:hover{color:var(--red);}
+.jcol-filter-popup{position:fixed;background:var(--surface2);border:1px solid var(--gold);border-radius:10px;padding:12px;min-width:220px;z-index:12000;box-shadow:0 10px 28px rgba(0,0,0,0.5);text-transform:none;letter-spacing:normal;font-weight:400;}
+.jcol-filter-popup label{font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:6px;}
+.jcol-filter-popup input{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:7px 10px;font-size:0.8rem;font-family:inherit;outline:none;margin-bottom:10px;}
+.jcol-filter-popup input:focus{border-color:var(--gold);}
+.jcol-filter-row{display:flex;gap:6px;}
+.jcol-filter-row button{flex:1;font-size:0.72rem;font-weight:700;padding:7px;border-radius:6px;cursor:pointer;font-family:inherit;}
+.jcol-filter-apply{background:var(--gold);color:#000;border:none;}
+.jcol-filter-apply:hover{opacity:0.88;}
+.jcol-filter-clearbtn{background:none;border:1px solid var(--border2);color:var(--muted);}
+.jcol-filter-clearbtn:hover{border-color:var(--red);color:var(--red);}
+/* Active-filters summary bar */
+.jrn-filterbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0;}
+.jrn-filter-chip{display:inline-flex;align-items:center;gap:6px;background:var(--gold-dim);border:1px solid var(--gold-t03);color:var(--gold);font-size:0.72rem;font-weight:700;padding:5px 6px 5px 12px;border-radius:20px;}
+.jrn-filter-chip span.x{cursor:pointer;color:var(--muted);font-weight:900;padding:2px 6px;border-radius:50%;}
+.jrn-filter-chip span.x:hover{color:var(--red);background:rgba(255,255,255,0.08);}
+.jrn-filter-clearall{font-size:0.72rem;color:var(--muted);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+.jrn-filter-clearall:hover{color:var(--red);}
+
 /* Fill handle */
 .jcell-selected{outline:2px solid var(--gold);outline-offset:-2px;}
 .jfill-handle{position:absolute;bottom:-4px;right:-4px;width:8px;height:8px;background:var(--gold);border:1px solid #000;cursor:crosshair;z-index:10;}
@@ -1570,7 +1595,7 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script src="geo_data.js?v=2"></script>
-<script src="bookkeeping-app.js?v=68"></script>
+<script src="bookkeeping-app.js?v=70"></script>
 <script>
   // Cleans up any lingering service worker from an earlier version of
   // this app. Nothing here registers one anymore, so a worker still
