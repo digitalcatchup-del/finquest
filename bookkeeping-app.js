@@ -4431,18 +4431,34 @@ function buildAccountOptions(selectedName, includeCoaOption) {
       }
       (buckets[label]=buckets[label]||[]).push(a);
     });
-    const optionFor = (a, indent) => {
+    const optionFor = (a) => {
       const sel = a.account_name === selectedName ? 'selected' : '';
-      const label = indent ? ('    ↳ ' + escH(a.account_name)) : escH(a.account_name);
-      return `<option value="${escH(a.account_name)}|${type}" ${sel}>${label}</option>`;
+      return `<option value="${escH(a.account_name)}|${type}" ${sel}>${escH(a.account_name)}</option>`;
     };
     Object.keys(buckets).forEach(label=>{
-      html += `<optgroup label="${type.charAt(0).toUpperCase()+type.slice(1)} — ${escH(label)}">`;
+      // Sub-ledgers get their own small "↳ Sub-ledgers of X" group right
+      // where their parent account appears — never baked into the
+      // option's own text, so the closed cell reads as a plain account
+      // name once one is selected, and only the open list shows the
+      // hierarchy. The main classification group is closed and reopened
+      // around any sub-ledger group so it can hold more than one parent.
+      const optgroupLabel = `${type.charAt(0).toUpperCase()+type.slice(1)} — ${escH(label)}`;
+      let groupOpen = false;
+      const openGroup = () => { if (!groupOpen) { html += `<optgroup label="${optgroupLabel}">`; groupOpen = true; } };
+      const closeGroup = () => { if (groupOpen) { html += '</optgroup>'; groupOpen = false; } };
+      openGroup();
       buckets[label].forEach(a => {
-        html += optionFor(a, false);
-        (childrenOf[a.id]||[]).forEach(c => { html += optionFor(c, true); });
+        html += optionFor(a);
+        const kids = childrenOf[a.id];
+        if (kids && kids.length) {
+          closeGroup();
+          html += `<optgroup label="↳ Sub-ledgers of ${escH(a.account_name)}">`;
+          kids.forEach(c => { html += optionFor(c); });
+          html += '</optgroup>';
+          openGroup();
+        }
       });
-      html += '</optgroup>';
+      closeGroup();
     });
   });
   return html;
