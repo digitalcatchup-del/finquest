@@ -2225,38 +2225,63 @@ async function openAccount(type, acct) {
 
   document.getElementById('bkContent').innerHTML = '<div class="bk-loading">Loading…</div>';
 
-  let data;
-  if (!navigator.onLine) {
-    const cached = bdCacheRead('ledger', acct.id);
-    window._bdShowingOfflineData = !!cached;
-    data = cached ? cached.data : [];
-  } else {
-    window._bdShowingOfflineData = false;
-    let _lq = bkDb.from('bk_transactions').select('*').eq('record_type', type);
-    _lq = activeBusiness?.id
-      ? _lq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
-      : _lq.eq('user_id', bkUser.id);
-    const res = await _lq
-      .or(`account_name.eq."${acct.account_name}",account_name.is.null`)
-      .order('txn_date', { ascending:true })
-      .order('row_order', { ascending:true });
-    data = res.data;
-    bdCacheWrite('ledger', data, acct.id);
+  try {
+    let data;
+    if (!navigator.onLine) {
+      const cached = bdCacheRead('ledger', acct.id);
+      window._bdShowingOfflineData = !!cached;
+      data = cached ? cached.data : [];
+    } else {
+      window._bdShowingOfflineData = false;
+      let _lq = bkDb.from('bk_transactions').select('*').eq('record_type', type);
+      _lq = activeBusiness?.id
+        ? _lq.or('business_id.eq.'+activeBusiness.id+',and(business_id.is.null,user_id.eq.'+bkUser.id+')')
+        : _lq.eq('user_id', bkUser.id);
+      // Fetch every transaction of this record_type (scoped to the
+      // business above), then match the account name in JS rather than
+      // building it into a PostgREST .or() filter string. An account
+      // name with a double-quote, comma, or parenthesis in it — any of
+      // which are valid characters to type into "Add Account" — would
+      // break that filter string's syntax and make the whole query
+      // fail; matching in JS can never be broken by what's in a name.
+      const res = await _lq
+        .order('txn_date', { ascending:true })
+        .order('row_order', { ascending:true });
+      if (res.error) throw res.error;
+      data = (res.data||[]).filter(r => !r.account_name || r.account_name === acct.account_name);
+      bdCacheWrite('ledger', data, acct.id);
+    }
+
+    rows = (data||[]).map(r=>({
+      id:r.id, txn_date:r.txn_date||'', payee:r.payee||'',
+      payer:r.payer||'', narration:r.narration||'',
+      debit:parseFloat(r.debit)||0, credit:parseFloat(r.credit)||0,
+      balance:parseFloat(r.balance)||0, row_order:r.row_order, saved:true
+    }));
+
+    // Keep only saved rows — no empty padding when there's actual data.
+    // If the account has no entries at all, rows stays empty and renderRows shows the empty state.
+    const savedCount = rows.filter(r => r.id).length;
+    if (savedCount === 0) rows = []; // show empty state, not blank rows
+    recalcBalances();
+    renderLedger();
+  } catch (e) {
+    // Previously an error here (a failed query, or any exception while
+    // processing/rendering the result) left the "Loading…" placeholder
+    // on screen forever — nothing ever replaced it, and since refreshing
+    // just re-runs this same call, refreshing looked like it "didn't
+    // work" and the page appeared permanently frozen. Show a real error
+    // with a way forward instead of silently hanging.
+    console.error('openAccount failed:', e);
+    document.getElementById('bkContent').innerHTML = `
+      <div style="max-width:420px;margin:60px auto;text-align:center;padding:0 16px;">
+        <div style="font-size:2rem;margin-bottom:10px;">⚠️</div>
+        <div style="font-weight:800;color:var(--white);margin-bottom:6px;">Couldn't load this ledger</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin-bottom:20px;">${escH(e?.message || 'An unexpected error occurred.')}</div>
+        <button class="bk-btn bk-btn-gold" style="margin-right:8px;" onclick="openAccount('${escJs(type)}', accounts['${escJs(type)}'].find(a=>String(a.id)==='${escJs(String(acct?.id||''))}'))">↻ Retry</button>
+        <button class="bk-btn bk-btn-outline" onclick="renderCOA()">← Back to Chart of Accounts</button>
+      </div>`;
   }
-
-  rows = (data||[]).map(r=>({
-    id:r.id, txn_date:r.txn_date||'', payee:r.payee||'',
-    payer:r.payer||'', narration:r.narration||'',
-    debit:parseFloat(r.debit)||0, credit:parseFloat(r.credit)||0,
-    balance:parseFloat(r.balance)||0, row_order:r.row_order, saved:true
-  }));
-
-  // Keep only saved rows — no empty padding when there's actual data.
-  // If the account has no entries at all, rows stays empty and renderRows shows the empty state.
-  const savedCount = rows.filter(r => r.id).length;
-  if (savedCount === 0) rows = []; // show empty state, not blank rows
-  recalcBalances();
-  renderLedger();
 }
 
 function emptyRow(order) {
