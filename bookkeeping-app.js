@@ -3887,6 +3887,92 @@ function renderPL(t) {
     </div>`;
 }
 
+let bsToolboxOpen = false;
+function bsToggleToolbox(){ bsToolboxOpen = !bsToolboxOpen; showReport('bs'); }
+
+// ── Balance Sheet — "Delete Balance Sheet Data" ────────────────
+// Deliberately narrow in what it removes: only journal entries where
+// BOTH sides are Asset/Liability/Capital (capital injections, loans
+// drawn or repaid, transfers between asset accounts, and the like) —
+// never one where the other side is Income or Expenditure. A sale or
+// an expense payment also posts an Asset leg (the Cash side), but
+// deleting just that leg would leave the Income/Expenditure leg
+// without its other half — breaking that entry's own double entry and
+// silently corrupting the P&L this button has no business touching.
+// Standalone postings with no journal_id (Accounts Payable bills,
+// which post directly to bk_transactions — see the AP audit notes on
+// bdCascadeDeleteJournalEntry) are left alone for the same reason:
+// there is no way to reverse a bill's own balance from here safely.
+function bsOpenDeleteModal() {
+  const bizName = (window._reportBizName || activeBusiness?.name || '').trim();
+  const confirmPhrase = bizName || 'DELETE';
+  const overlay = document.createElement('div');
+  overlay.className = 'bk-modal-overlay';
+  overlay.id = 'bsDeleteModalOverlay';
+  overlay.innerHTML = `
+    <div class="bk-modal danger">
+      <div class="bk-modal-icon">⚠️</div>
+      <h3>Delete all Balance Sheet data?</h3>
+      <p>This permanently deletes${bizName?', for <b style="color:var(--white)">'+escH(bizName)+'</b> only':''}:</p>
+      <ul>
+        <li>Every Master Journal entry that is purely between <b>Asset</b>, <b>Liability</b>, and <b>Capital</b> accounts (capital injections, loans, transfers, etc.) and their ledger legs</li>
+        <li>The <b>opening balance</b> on every Asset, Liability, and Capital account (reset to zero)</li>
+      </ul>
+      <p style="color:#e0796d;font-weight:700;">This cannot be undone.</p>
+      <p>Sales, Expense, and Accounts Payable postings are not touched, even the Cash side of them — removing just that side would break those entries' own double entry.</p>
+      <label class="confirm-label">Type <span class="confirm-bizname">${escH(confirmPhrase)}</span> to confirm</label>
+      <input class="confirm-input" id="bsDeleteConfirmInput" placeholder="${bizName?'Business name…':'Type DELETE…'}" oninput="bsConfirmInputChanged(this.value)" autocomplete="off"/>
+      <div class="bk-modal-actions">
+        <button class="bk-btn bk-btn-outline" onclick="bsCloseDeleteModal()">Cancel</button>
+        <button class="bk-btn bk-btn-danger" id="bsDeleteConfirmBtn" disabled onclick="bsExecuteDelete()">Delete Everything</button>
+      </div>
+    </div>`;
+  overlay._confirmPhrase = confirmPhrase;
+  document.body.appendChild(overlay);
+  setTimeout(()=>document.getElementById('bsDeleteConfirmInput')?.focus(), 30);
+}
+function bsCloseDeleteModal() {
+  document.getElementById('bsDeleteModalOverlay')?.remove();
+}
+function bsConfirmInputChanged(val) {
+  const overlay = document.getElementById('bsDeleteModalOverlay');
+  const btn = document.getElementById('bsDeleteConfirmBtn');
+  if (!overlay || !btn) return;
+  btn.disabled = val.trim() !== overlay._confirmPhrase;
+}
+async function bsExecuteDelete() {
+  const btn = document.getElementById('bsDeleteConfirmBtn');
+  if (!btn || btn.disabled) return;
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Deleting…';
+  try {
+    const BS_TYPES = ['asset','liability','capital'];
+    const { data: candidates } = await acctBizFilter(bkDb.from('bk_journal')
+      .select('id,debit_record_type,credit_record_type'));
+    const pureIds = (candidates||[])
+      .filter(j => BS_TYPES.includes(j.debit_record_type) && BS_TYPES.includes(j.credit_record_type))
+      .map(j => j.id);
+    for (const jid of pureIds) {
+      await acctBizFilter(bkDb.from('bk_transactions').delete().eq('journal_id', jid));
+      await acctBizFilter(bkDb.from('bk_journal').delete().eq('id', jid));
+    }
+    for (const type of BS_TYPES) {
+      await acctBizFilter(bkDb.from('bk_accounts').update({ opening_balance: 0, ob_date: null }))
+        .eq('record_type', type);
+      const acctArr = accounts[type] || [];
+      acctArr.forEach(a => { a.opening_balance = 0; a.ob_date = null; });
+    }
+    bsCloseDeleteModal();
+    bdToast('Balance Sheet data deleted', 'ok');
+    await showReport('bs');
+    refreshEquation();
+    bdRefreshDashboardIfVisible();
+  } catch (e) {
+    btn.disabled = false; btn.textContent = original;
+    alert('Could not complete the delete: '+(e?.message||'unknown error'));
+  }
+}
+
 function renderBS(t) {
   const A = window._reportByAcct || {asset:{},liability:{},capital:{},income:{},expenditure:{}};
   const sym = CURRENCIES[activeCurrency].symbol;
@@ -3909,8 +3995,13 @@ function renderBS(t) {
     <div class="bk-content-header">
       <div><div class="bk-content-title">STATEMENT OF FINANCIAL POSITION</div>
       <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${escH((window._reportBizName||activeBusiness?.name)||'')} — IFRS presentation</div></div>
-      <div class="bk-header-actions"></div>
+      <div class="bk-header-actions">
+        <button class="bk-btn bk-btn-outline" onclick="bsToggleToolbox()">⚙ Tools</button>
+      </div>
     </div>
+    ${bsToolboxOpen?`<div class="sheet-toolbox">
+      <button class="tb-icon tb-danger" onclick="bsOpenDeleteModal()">🗑 Delete Balance Sheet Data</button>
+    </div>`:''}
     <div class="report-wrap">
       <table class="report-table">
         <thead><tr><th>Item</th><th class="num">Amount (${sym})</th></tr></thead>

@@ -1063,6 +1063,25 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 .tb-icon{background:var(--surface2);border:1px solid var(--border2);color:var(--off);font-size:0.78rem;padding:6px 9px;border-radius:6px;cursor:pointer;white-space:nowrap;line-height:1;}
 .tb-icon:hover{border-color:var(--gold);color:var(--gold);}
 .tb-icon.tb-active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+/* Destructive toolbox action (e.g. Balance Sheet "Delete Balance Sheet
+   Data") — visually separated (margin-left:auto pushes it to the far
+   end of the bar) and red, so it never gets mistaken for a routine tool. */
+.tb-danger{background:rgba(192,57,43,0.12);border:1px solid rgba(192,57,43,0.4);color:#e0796d;margin-left:auto;}
+.tb-danger:hover{background:var(--red);border-color:var(--red);color:#fff;}
+/* Destructive-action confirmation modal (reuses .bk-modal-overlay/.bk-modal) */
+.bk-modal.danger{border-color:rgba(192,57,43,0.5);}
+.bk-modal-icon{font-size:2rem;text-align:center;margin-bottom:10px;}
+.bk-modal.danger h3{text-align:center;}
+.bk-modal.danger p{font-size:0.8rem;color:var(--muted);line-height:1.6;margin:0 0 4px;}
+.bk-modal.danger ul{font-size:0.8rem;color:var(--off);line-height:1.7;margin:10px 0 16px;padding-left:18px;}
+.bk-modal.danger ul li b{color:var(--white);}
+.confirm-label{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:block;margin:14px 0 6px;}
+.confirm-bizname{color:var(--gold);font-weight:800;}
+.confirm-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:10px 12px;font-size:0.85rem;font-family:inherit;outline:none;box-sizing:border-box;}
+.confirm-input:focus{border-color:var(--red);}
+.bk-btn-danger{background:var(--red);color:#fff;}
+.bk-btn-danger:disabled{background:var(--surface2);color:var(--muted2);cursor:not-allowed;}
+.bk-modal.danger .bk-modal-actions .bk-btn{flex:1;}
 .tb-select{background:var(--surface2);border:1px solid var(--border2);color:var(--off);font-size:0.74rem;padding:6px;border-radius:6px;}
 .sheet-panel{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:6px 16px 0;padding:8px 10px;}
 .sheet-panel.hidden{display:none;}
@@ -1595,7 +1614,7 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script src="geo_data.js?v=2"></script>
-<script src="bookkeeping-app.js?v=72"></script>
+<script src="bookkeeping-app.js?v=73"></script>
 <script>
   // Cleans up any lingering service worker from an earlier version of
   // this app. Nothing here registers one anymore, so a worker still
