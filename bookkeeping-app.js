@@ -3943,6 +3943,203 @@ function exportPDF() {
 // ── GENERAL JOURNAL ───────────────────────────────────────────
 let journalRows = [];
 
+// ── JOURNAL DATE FILTER (header 📅 button) ────────────────────
+// Independent of the shared jDateFrom/jDateTo used elsewhere (Ledger
+// sheets etc.) so filtering the Journal never bleeds into other pages.
+// null = "All dates". Persisted per-business so leaving and returning
+// to Master Journal shows exactly what was left, never a silent reset
+// to today's date.
+let jrnFilterDate = null;
+
+function _jrnFilterKey() {
+  return 'bd_jrn_filterdate_' + (activeBusiness?.id || bkUser?.id || 'default');
+}
+function jrnLoadFilterDate() {
+  try { jrnFilterDate = localStorage.getItem(_jrnFilterKey()) || null; }
+  catch(e) { jrnFilterDate = null; }
+}
+function jrnSaveFilterDate() {
+  try {
+    if (jrnFilterDate) localStorage.setItem(_jrnFilterKey(), jrnFilterDate);
+    else localStorage.removeItem(_jrnFilterKey());
+  } catch(e) {}
+}
+function jrnFilterLabel() {
+  if (!jrnFilterDate) return 'All dates';
+  const lbl = formatDateDisplay(jrnFilterDate);
+  return jrnFilterDate === today() ? lbl + ' (Today)' : lbl;
+}
+function jrnSetFilterDate(dateStr) {
+  jrnFilterDate = dateStr || null;
+  jrnSaveFilterDate();
+  renderJournal();
+}
+function jcalOpenForHeaderFilter(ev) {
+  ev.stopPropagation();
+  jcalOpen(ev.currentTarget, {
+    value: jrnFilterDate || '',
+    clearLabel: 'All dates',
+    onPick: function(dateStr){ jrnSetFilterDate(dateStr); },
+    onToday: function(){ jrnSetFilterDate(today()); },
+    onClear: function(){ jrnSetFilterDate(null); }
+  });
+}
+function jrnClearHeaderFilter(ev) {
+  if (ev) ev.stopPropagation();
+  jrnSetFilterDate(null);
+}
+
+// ── IN-APP CALENDAR (jcal) — shared by every Journal row's date cell
+// and the header date filter above. Renders as a body-appended
+// "portal" positioned under whichever element opened it, so it is
+// never clipped by a scrolling ancestor (the Journal table itself
+// scrolls horizontally). Year range 1926–2026, reachable either by
+// scrolling a single list (auto-centered on the current year when
+// opened) or by typing a year to jump straight to it.
+let _jcalState = null;
+
+function jcalClose() {
+  document.getElementById('jcalPortal')?.remove();
+  document.removeEventListener('click', _jcalOutsideClick, true);
+  _jcalState = null;
+}
+function _jcalOutsideClick(ev) {
+  const portal = document.getElementById('jcalPortal');
+  const anchor = _jcalState?.anchorEl;
+  if (portal && !portal.contains(ev.target) && ev.target !== anchor && !(anchor && anchor.contains(ev.target))) {
+    jcalClose();
+  }
+}
+function jcalOpen(anchorEl, opts) {
+  jcalClose();
+  const val = opts.value || '';
+  const base = val ? new Date(val+'T00:00:00') : new Date();
+  _jcalState = { year: base.getFullYear(), month: base.getMonth(), anchorEl: anchorEl, value: val, opts: opts };
+  const portal = document.createElement('div');
+  portal.id = 'jcalPortal';
+  portal.style.cssText = 'position:fixed;z-index:12000;';
+  document.body.appendChild(portal);
+  _jcalRender();
+  _jcalReposition();
+  setTimeout(()=>document.addEventListener('click', _jcalOutsideClick, true), 10);
+}
+function _jcalReposition() {
+  const s = _jcalState; if (!s) return;
+  const portal = document.getElementById('jcalPortal'); if (!portal) return;
+  const rect = s.anchorEl.getBoundingClientRect();
+  requestAnimationFrame(function(){
+    const panel = portal.querySelector('.jcal-panel'); if (!panel) return;
+    const pw = panel.offsetWidth || 266, ph = panel.offsetHeight || 320;
+    let left = Math.max(8, Math.min(rect.left, window.innerWidth - pw - 8));
+    let top = rect.bottom + 6;
+    if (top + ph > window.innerHeight) top = Math.max(8, rect.top - ph - 6);
+    panel.style.left = left+'px'; panel.style.top = top+'px';
+  });
+}
+function _jcalRender() {
+  const s = _jcalState; if (!s) return;
+  const portal = document.getElementById('jcalPortal'); if (!portal) return;
+  const todayStr = today();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const first = new Date(s.year, s.month, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(s.year, s.month+1, 0).getDate();
+  const daysInPrevMonth = new Date(s.year, s.month, 0).getDate();
+  let cells = '';
+  for (let i=startDow-1;i>=0;i--) cells += '<div class="jcal-day jcal-out">'+(daysInPrevMonth-i)+'</div>';
+  for (let d=1; d<=daysInMonth; d++){
+    const ds = s.year+'-'+String(s.month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    let cls = 'jcal-day';
+    if (ds === todayStr) cls += ' jcal-today';
+    if (ds === s.value) cls += ' jcal-selected';
+    cells += '<div class="'+cls+'" onclick="jcalPickDay(\''+ds+'\')">'+d+'</div>';
+  }
+  const totalCells = startDow + daysInMonth;
+  const trailing = (7 - (totalCells % 7)) % 7;
+  for (let d=1; d<=trailing; d++) cells += '<div class="jcal-day jcal-out">'+d+'</div>';
+
+  portal.innerHTML = `
+    <div class="jcal-panel">
+      <div class="jcal-head">
+        <button class="jcal-nav" onclick="jcalNavMonth(-1)">‹</button>
+        <span class="jcal-monthyear" onclick="jcalToggleYearMenu(event)">${monthNames[s.month]} ${s.year}</span>
+        <button class="jcal-nav" onclick="jcalNavMonth(1)">›</button>
+        <div class="jcal-yearmenu hidden" id="jcalYearMenu">
+          <div class="jcal-year-jump"><input type="text" inputmode="numeric" placeholder="Jump to year…" oninput="jcalYearJumpInput(this)"/></div>
+          <div class="jcal-year-list" id="jcalYearList"></div>
+        </div>
+      </div>
+      <div class="jcal-grid jcal-dow"><div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div></div>
+      <div class="jcal-grid">${cells}</div>
+      <div class="jcal-footer">
+        <button class="jcal-today-btn" onclick="jcalPickToday()">Today</button>
+        <button class="jcal-clear-btn" onclick="jcalPickClear()">${s.opts.clearLabel||'Clear'}</button>
+      </div>
+    </div>`;
+}
+function jcalNavMonth(delta) {
+  const s = _jcalState; if (!s) return;
+  s.month += delta;
+  if (s.month<0){ s.month=11; s.year--; } else if (s.month>11){ s.month=0; s.year++; }
+  _jcalRender();
+  _jcalReposition();
+}
+function jcalToggleYearMenu(ev) {
+  ev.stopPropagation();
+  const menu = document.getElementById('jcalYearMenu');
+  const willOpen = menu.classList.contains('hidden');
+  menu.classList.toggle('hidden');
+  if (willOpen) {
+    const list = document.getElementById('jcalYearList');
+    let html = '';
+    for (let y=2026; y>=1926; y--) html += '<div class="jcal-yr'+(y===_jcalState.year?' jcal-yr-current':'')+'" data-y="'+y+'" onclick="jcalPickYear('+y+')">'+y+'</div>';
+    list.innerHTML = html;
+    const cur = list.querySelector('.jcal-yr-current');
+    if (cur) cur.scrollIntoView({block:'center'});
+  }
+}
+function jcalYearJumpInput(input) {
+  const val = input.value.replace(/[^0-9]/g,'');
+  const list = document.getElementById('jcalYearList');
+  list.querySelectorAll('.jcal-yr').forEach(function(y){ y.classList.remove('jcal-yr-jumphit'); });
+  if (!val) return;
+  let match = list.querySelector('.jcal-yr[data-y="'+val+'"]');
+  if (!match) match = Array.from(list.querySelectorAll('.jcal-yr')).find(function(el){ return el.getAttribute('data-y').indexOf(val)===0; });
+  if (match) { match.classList.add('jcal-yr-jumphit'); match.scrollIntoView({block:'center'}); }
+}
+function jcalPickYear(y) {
+  _jcalState.year = y;
+  document.getElementById('jcalYearMenu').classList.add('hidden');
+  _jcalRender();
+  _jcalReposition();
+}
+function jcalPickDay(dateStr) {
+  const opts = _jcalState.opts;
+  jcalClose();
+  if (opts.onPick) opts.onPick(dateStr);
+}
+function jcalPickToday() {
+  const opts = _jcalState.opts;
+  const todayStr = today();
+  jcalClose();
+  if (opts.onToday) opts.onToday(); else if (opts.onPick) opts.onPick(todayStr);
+}
+function jcalPickClear() {
+  const opts = _jcalState.opts;
+  jcalClose();
+  if (opts.onClear) opts.onClear();
+}
+function jcalOpenForRow(idx, ev) {
+  ev.stopPropagation();
+  const anchor = ev.currentTarget;
+  jcalOpen(anchor, {
+    value: journalRows[idx].txn_date || '',
+    clearLabel: 'Clear',
+    onPick: function(dateStr){ jCellChange(idx,'txn_date',dateStr); anchor.innerHTML = formatDateDisplay(dateStr); },
+    onClear: function(){ jCellChange(idx,'txn_date',''); anchor.innerHTML = '<span style="color:var(--muted2)">Date</span>'; }
+  });
+}
+
 function getAllAccounts() {
   const all = [];
   ['capital','liability','asset','income','expenditure'].forEach(type => {
@@ -4748,6 +4945,7 @@ async function openJournal() {
   document.getElementById('recordsDD')?.classList.add('hidden');
   setActiveNav('navRecords');
   document.getElementById('bkContent').innerHTML='<div class="bk-loading">Loading Master Journal…</div>';
+  jrnLoadFilterDate(); // restore whatever date (or "All dates") was left showing last time
 
   // Direct postings (sales, expenses, ledgers) — the journal is the book of prime entry
   let _txLegs = [];
@@ -4833,6 +5031,10 @@ function renderJournal() {
         <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Transactions entered here post automatically to the relevant ledgers.</div>
       </div>
       <div class="bk-header-actions">
+        <div class="jrn-hdr-datewrap">
+          <button class="bk-btn bk-btn-outline${jrnFilterDate?' jrn-filter-active':''}" id="jrnFilterBtn" onclick="jcalOpenForHeaderFilter(event)">📅 <span id="jrnFilterLabel">${escH(jrnFilterLabel())}</span></button>
+          ${jrnFilterDate?'<span class="jrn-filter-clear" title="Clear filter" onclick="jrnClearHeaderFilter(event)">✕</span>':''}
+        </div>
         <span class="bk-save-msg" id="journalSaveMsg"></span>
         <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;" onclick="showDashboard()">← Back</button>
         <button class="bk-btn bk-btn-outline" style="font-size:0.72rem;" onclick="jrnToggleToolbox()">⚙ Tools</button>
@@ -4907,14 +5109,27 @@ function renderJournalRows() {
       return true;
     });
   }
+  // Header 📅 date filter — separate from jDateFrom/jDateTo above so it
+  // never bleeds into the Ledger sheets, which share those variables.
+  if (jrnFilterDate) {
+    visibleRows = visibleRows.filter(function(r){
+      if (!r.txn_date && !journalHasData(r)) return true; // keep blank unsaved rows
+      return r.txn_date === jrnFilterDate;
+    });
+  }
   const totalDr=visibleRows.reduce((a,r)=>a+(r.debit_amount||0),0);
   const totalCr=visibleRows.reduce((a,r)=>a+(r.credit_amount||0),0);
   const balanced=Math.abs(totalDr-totalCr)<0.01;
 
   if (visibleRows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px 12px;color:var(--muted);font-size:0.82rem;">
-      No entries yet. Use <strong style="color:var(--gold)">+ Add another row</strong> below to record a transaction.
-    </td></tr>`;
+    tbody.innerHTML = jrnFilterDate
+      ? `<tr><td colspan="10" style="text-align:center;padding:32px 12px;color:var(--muted);font-size:0.82rem;">
+          No transactions recorded for <strong style="color:var(--gold)">${escH(jrnFilterLabel())}</strong> yet.<br/>
+          Use <strong style="color:var(--gold)">+ Add another row</strong> below to add one.
+        </td></tr>`
+      : `<tr><td colspan="10" style="text-align:center;padding:32px 12px;color:var(--muted);font-size:0.82rem;">
+          No entries yet. Use <strong style="color:var(--gold)">+ Add another row</strong> below to record a transaction.
+        </td></tr>`;
     return;
   }
 
@@ -4932,9 +5147,7 @@ function renderJournalRows() {
         <span class="jrn-sn-tri" onclick="event.stopPropagation();jrnSnMenu(event,${idx})">▼</span>
       </td>
       <td style="position:relative;min-width:110px;">
-        <input class="bk-cell staff-date-hidden" type="date" value="${row.txn_date}"
-          onchange="jCellChange(${idx},'txn_date',this.value);this.nextElementSibling.textContent=this.value?formatDateDisplay(this.value):'Date'"/>
-        <div class="bk-date-disp-overlay" onclick="this.previousElementSibling.showPicker?this.previousElementSibling.showPicker():this.previousElementSibling.focus()">
+        <div class="bk-date-disp-overlay" onclick="jcalOpenForRow(${idx},event)">
           ${row.txn_date ? formatDateDisplay(row.txn_date) : '<span style="color:var(--muted2)">Date</span>'}
         </div>
       </td>
@@ -5064,11 +5277,16 @@ function updateJournalBalance() {
 
 function addJournalRow(){
   const nr = emptyJournalRow(journalRows.length);
-  const prev = journalRows.length ? journalRows[journalRows.length-1] : null;
-  if (prev && prev.txn_date) {
-    const d = new Date(prev.txn_date+'T00:00:00');
-    d.setDate(d.getDate()+1);
-    nr.txn_date = d.toISOString().slice(0,10);
+  if (jrnFilterDate) {
+    // Viewing one day's transactions — a new row is almost certainly for that same day
+    nr.txn_date = jrnFilterDate;
+  } else {
+    const prev = journalRows.length ? journalRows[journalRows.length-1] : null;
+    if (prev && prev.txn_date) {
+      const d = new Date(prev.txn_date+'T00:00:00');
+      d.setDate(d.getDate()+1);
+      nr.txn_date = d.toISOString().slice(0,10);
+    }
   }
   journalRows.push(nr);
   renderJournalRows();

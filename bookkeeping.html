@@ -587,6 +587,46 @@ select.bk-cell {
 .jdate-filter-popup label{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;}
 .jdate-filter-popup input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:6px 10px;font-size:0.8rem;font-family:inherit;margin-bottom:10px;}
 .jdate-filter-row{display:flex;gap:8px;margin-top:10px;}
+
+/* ── IN-APP CALENDAR (jcal) — Master Journal date cells + header filter ── */
+.jcal-panel{position:fixed;z-index:12000;width:266px;background:var(--surface2);border:1px solid var(--gold);border-radius:10px;padding:12px;box-shadow:0 10px 28px rgba(0,0,0,0.55);}
+.jcal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;position:relative;}
+.jcal-monthyear{font-size:0.8rem;font-weight:800;color:var(--white);cursor:pointer;padding:3px 8px;border-radius:6px;}
+.jcal-monthyear:hover{background:var(--gold-dim);color:var(--gold);}
+.jcal-nav{background:none;border:none;color:var(--gold);cursor:pointer;font-size:1.05rem;padding:2px 8px;font-weight:700;}
+.jcal-nav:hover{color:var(--white);}
+.jcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.jcal-dow{color:var(--muted);font-size:0.6rem;text-align:center;margin-bottom:4px;font-weight:700;}
+.jcal-day{text-align:center;padding:6px 0;font-size:0.72rem;color:var(--white);cursor:pointer;border-radius:5px;position:relative;}
+.jcal-day:hover{background:var(--gold-dim);}
+.jcal-out{color:var(--muted2);}
+.jcal-selected{background:var(--gold);color:#000;font-weight:800;}
+.jcal-today{box-shadow:inset 0 0 0 1.5px var(--gold);font-weight:800;}
+.jcal-today.jcal-selected{box-shadow:none;}
+.jcal-footer{display:flex;gap:6px;margin-top:8px;}
+.jcal-footer button{flex:1;background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.7rem;padding:7px;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:700;}
+.jcal-footer button.jcal-today-btn{color:var(--gold);border-color:var(--gold-t03);}
+.jcal-footer button.jcal-today-btn:hover{border-color:var(--gold);background:var(--gold-dim);}
+.jcal-footer button.jcal-clear-btn:hover{border-color:var(--red);color:var(--red);}
+/* Year jump menu — a single scrollable column across the full 1926–2026
+   range, with a type-to-jump box pinned at the top. Auto-scrolls to the
+   current year when opened. */
+.jcal-yearmenu{position:absolute;top:100%;left:0;margin-top:4px;background:var(--surface2);border:1px solid var(--gold);border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.45);z-index:5;width:150px;display:flex;flex-direction:column;overflow:hidden;}
+.jcal-year-jump{padding:7px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.jcal-year-jump input{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:6px 8px;font-size:0.72rem;font-family:inherit;outline:none;}
+.jcal-year-jump input:focus{border-color:var(--gold);}
+.jcal-year-jump input::placeholder{color:var(--muted2);}
+.jcal-year-list{overflow-y:auto;max-height:184px;padding:4px;}
+.jcal-yr{padding:7px 0;text-align:center;font-size:0.74rem;border-radius:5px;cursor:pointer;color:var(--white);}
+.jcal-yr:hover{background:var(--gold-dim);color:var(--gold);}
+.jcal-yr.jcal-yr-current{color:var(--gold);font-weight:800;background:var(--gold-t008);}
+.jcal-yr.jcal-yr-jumphit{outline:1px solid var(--gold);}
+/* Header date-filter button (Master Journal) */
+.jrn-hdr-datewrap{position:relative;display:inline-flex;align-items:center;}
+.jrn-filter-clear{background:none;border:none;color:var(--muted);font-size:0.85rem;cursor:pointer;padding:0 2px 0 6px;line-height:1;}
+.jrn-filter-clear:hover{color:var(--red);}
+.jrn-filter-active{border-color:var(--gold) !important;color:var(--gold) !important;}
+
 /* Fill handle */
 .jcell-selected{outline:2px solid var(--gold);outline-offset:-2px;}
 .jfill-handle{position:absolute;bottom:-4px;right:-4px;width:8px;height:8px;background:var(--gold);border:1px solid #000;cursor:crosshair;z-index:10;}
@@ -1530,7 +1570,7 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script src="geo_data.js?v=2"></script>
-<script src="bookkeeping-app.js?v=67"></script>
+<script src="bookkeeping-app.js?v=68"></script>
 <script>
   // Cleans up any lingering service worker from an earlier version of
   // this app. Nothing here registers one anymore, so a worker still
