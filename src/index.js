@@ -49,15 +49,25 @@ async function handleBankfeedRoute(request, env, path) {
       if (!code) return json({ error: 'code is required for Mono' }, 400);
       const { account_id } = await monoExchangeCode(env, { code });
       let institutionName = null;
+      let accountNumberMasked = null;
       try {
         const acct = await monoGetAccount(env, { accountId: account_id });
         institutionName = acct?.institution?.name || null;
+        const num = acct?.accountNumber || acct?.account_number;
+        if (num) accountNumberMasked = '••' + String(num).slice(-4);
       } catch (e) { /* non-fatal — proceed without institution name */ }
+      // The frontend never has an account name to send for Mono (unlike
+      // Plaid, which gets one from its own widget metadata) — fall back
+      // to "Institution — ••1234" built from what Mono's account lookup
+      // gives us, so the connected account never shows up blank.
+      const resolvedName = account_name
+        || [institutionName, accountNumberMasked].filter(Boolean).join(' — ')
+        || 'Connected bank account';
       itemRow = {
         user_id, business_id: business_id || null, provider: 'mono',
         provider_item_id: account_id, access_handle: account_id,
-        institution_name: institutionName, account_name: account_name || null,
-        bank_asset_account_name: account_name || null,
+        institution_name: institutionName, account_name: resolvedName,
+        bank_asset_account_name: resolvedName,
         country: country || 'NG', status: 'connected',
       };
     } else {

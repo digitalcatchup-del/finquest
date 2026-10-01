@@ -33,15 +33,22 @@ export function monoGetWidgetConfig(env) {
 // requires in the connect flow.
 export async function monoExchangeCode(env, { code }) {
   const data = await monoRequest(env, '/v2/accounts/auth', { method: 'POST', body: { code } });
-  return { account_id: data.id };
+  // Mono's own docs show the id at the top level ({"id": "..."}), but
+  // several of their other endpoints wrap responses in a {data: {...}}
+  // envelope — accept either shape rather than guess, and fail loudly
+  // (instead of silently inserting a null) if neither is present.
+  const accountId = data.id || data.data?.id;
+  if (!accountId) throw new Error('Mono /v2/accounts/auth did not return an account id. Raw response: ' + JSON.stringify(data));
+  return { account_id: accountId };
 }
 
 export async function monoGetAccount(env, { accountId }) {
   const data = await monoRequest(env, '/v2/accounts/' + accountId);
-  return data.account || data;
+  return data.account || data.data?.account || data.data || data;
 }
 
 export async function monoGetTransactions(env, { accountId, page = 1 }) {
   const data = await monoRequest(env, '/v2/accounts/' + accountId + '/transactions?paginate=true&page=' + page);
-  return { transactions: data.data || [], meta: data.meta || {} };
+  const list = data.data?.data || data.data || [];
+  return { transactions: Array.isArray(list) ? list : [], meta: data.meta || data.data?.meta || {} };
 }
