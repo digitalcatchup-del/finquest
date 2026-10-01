@@ -19,10 +19,24 @@ export function supaFetch(env, path, { method = 'GET', body, query } = {}) {
   });
 }
 
+// Supabase returns 204 No Content with a genuinely empty body whenever
+// a request carries "Prefer: return=minimal" (supaUpdate's default) —
+// that's a SUCCESS, not an error, but a bare res.json() on an empty
+// body throws "Unexpected end of JSON input" regardless. Every helper
+// below reads the body as text first and only parses it if there's
+// actually something there, so a successful empty response doesn't
+// get mistaken for a crash.
+async function parseJsonBody(res) {
+  const raw = await res.text();
+  if (!raw) return null;
+  try { return JSON.parse(raw); }
+  catch (e) { throw new Error('Supabase returned a non-JSON response (HTTP ' + res.status + '): ' + raw.slice(0, 300)); }
+}
+
 export async function supaInsert(env, table, rows) {
   const res = await supaFetch(env, table, { method: 'POST', body: rows });
   if (!res.ok) throw new Error('Supabase insert into ' + table + ' failed: ' + await res.text());
-  return res.json();
+  return (await parseJsonBody(res)) || [];
 }
 
 export async function supaSelect(env, table, filters = {}) {
@@ -30,7 +44,7 @@ export async function supaSelect(env, table, filters = {}) {
   Object.entries(filters).forEach(([k, v]) => { query[k] = 'eq.' + v; });
   const res = await supaFetch(env, table, { query });
   if (!res.ok) throw new Error('Supabase select from ' + table + ' failed: ' + await res.text());
-  return res.json();
+  return parseJsonBody(res);
 }
 
 export async function supaUpdate(env, table, filters, patch) {
@@ -38,7 +52,7 @@ export async function supaUpdate(env, table, filters, patch) {
   Object.entries(filters).forEach(([k, v]) => { query[k] = 'eq.' + v; });
   const res = await supaFetch(env, table, { method: 'PATCH', query, body: patch });
   if (!res.ok) throw new Error('Supabase update of ' + table + ' failed: ' + await res.text());
-  return res.json();
+  return parseJsonBody(res);
 }
 
 // Upsert that ignores duplicate rows (used for de-duping staged
@@ -59,5 +73,5 @@ export async function supaUpsertIgnoreDup(env, table, rows, onConflict) {
     body: JSON.stringify(rows),
   });
   if (!res.ok) throw new Error('Supabase upsert into ' + table + ' failed: ' + await res.text());
-  return res.json();
+  return (await parseJsonBody(res)) || [];
 }
