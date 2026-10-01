@@ -14,8 +14,17 @@ async function monoRequest(env, path, { method = 'GET', body } = {}) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error('Mono ' + path + ' failed: ' + JSON.stringify(data));
+  // Read as text first — Mono's API can return a non-JSON body (an
+  // empty response, an HTML rate-limit/error page, a timeout) and a
+  // bare res.json() would then throw a generic "Unexpected end of JSON
+  // input" that hides what Mono actually sent back and why.
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (parseErr) {
+    throw new Error('Mono ' + path + ' returned a non-JSON response (HTTP ' + res.status + '): ' + raw.slice(0, 300));
+  }
+  if (!res.ok) throw new Error('Mono ' + path + ' failed (HTTP ' + res.status + '): ' + JSON.stringify(data));
   return data;
 }
 

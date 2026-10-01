@@ -18,8 +18,17 @@ async function plaidPost(env, path, body) {
       ...body,
     }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error('Plaid ' + path + ' failed: ' + JSON.stringify(data));
+  // Same defensive read as Mono — Plaid can return a non-JSON body
+  // (rate limiting, a timeout, an outage page) and a bare res.json()
+  // would throw an opaque "Unexpected end of JSON input" that hides
+  // the real HTTP status and whatever Plaid actually sent back.
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (parseErr) {
+    throw new Error('Plaid ' + path + ' returned a non-JSON response (HTTP ' + res.status + '): ' + raw.slice(0, 300));
+  }
+  if (!res.ok) throw new Error('Plaid ' + path + ' failed (HTTP ' + res.status + '): ' + JSON.stringify(data));
   return data;
 }
 
