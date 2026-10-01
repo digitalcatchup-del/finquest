@@ -114,7 +114,12 @@ async function bfStartConnect(provider) {
       });
       handler.open();
     } else if (provider === 'mono') {
-      await bkLoadScriptOnce('https://connect.mono.co/connect.js');
+      // Mono Connect isn't distributed as a plain CDN <script> global —
+      // it's published as an npm/ES module package (@mono.co/connect.js).
+      // jsDelivr's `+esm` endpoint serves any npm package pre-bundled as
+      // a native browser ES module, so a dynamic import() works here
+      // without adding a bundler to this app.
+      const { default: Connect } = await import('https://cdn.jsdelivr.net/npm/@mono.co/connect.js/+esm');
       const handler = new Connect({
         key: data.public_key,
         onSuccess: async ({ code }) => {
