@@ -499,6 +499,23 @@ body{background:var(--bg);color:var(--white);font-family:'Lora',Georgia,serif;mi
 
 .bk-cell{width:100%;height:34px;background:transparent;border:none;color:var(--white);font-size:0.8rem;font-family:inherit;padding:0 8px;outline:none;white-space:normal;word-break:break-word;overflow-wrap:break-word;}
 .bk-date-disp-overlay{font-size:0.8rem;color:var(--white);padding:0 8px;cursor:pointer;height:34px;display:flex;align-items:center;white-space:normal;word-break:break-word;line-height:1.2;}
+.bk-acct-disp{font-size:0.8rem;color:var(--white);padding:0 8px;cursor:pointer;height:34px;display:flex;align-items:center;white-space:normal;word-break:break-word;line-height:1.2;flex:1;min-width:0;}
+
+/* Custom Master Journal Debit/Credit Account picker (a body-appended
+   "portal", same pattern as the jcal calendar / column-filter popups).
+   A plain <select> can only show one text style per row and Chrome
+   mirrors an option's own font-style/color into the closed box too, so
+   this is what lets a sub-ledger be italic only while the list is open. */
+.apk-panel{position:fixed;background:var(--surface);border:1px solid var(--border3);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.45);overflow-y:auto;min-width:240px;max-width:340px;font-size:0.78rem;z-index:12001;}
+.apk-coa{padding:9px 14px;color:var(--gold);font-weight:700;cursor:pointer;border-bottom:1px solid var(--border);background:var(--surface2);}
+.apk-coa:hover{background:var(--gold-dim);}
+.apk-type{color:var(--gold);font-weight:800;text-transform:uppercase;letter-spacing:0.08em;font-size:0.7rem;padding:10px 14px 4px;background:var(--surface2);}
+.apk-type-sep{border-top:1px solid var(--border);margin-top:2px;}
+.apk-sub{color:var(--white);font-weight:700;font-size:0.72rem;padding:7px 14px 3px 18px;}
+.apk-acct{color:var(--off);padding:6px 20px;cursor:pointer;}
+.apk-acct:hover{background:var(--gold-t007);}
+.apk-acct.apk-child{color:var(--muted);font-style:italic;padding-left:34px;}
+.apk-acct.sel{background:var(--gold-dim);color:var(--gold);}
 .bk-cell:focus{background:var(--gold-t007);}
 .bk-cell.num{text-align:right;}
 .bk-cell.bal{text-align:right;pointer-events:none;font-weight:700;}
@@ -1614,7 +1631,7 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script src="geo_data.js?v=2"></script>
-<script src="bookkeeping-app.js?v=76"></script>
+<script src="bookkeeping-app.js?v=77"></script>
 <script>
   // Cleans up any lingering service worker from an earlier version of
   // this app. Nothing here registers one anymore, so a worker still

@@ -4395,7 +4395,13 @@ function getAllAccounts() {
   return all;
 }
 
-function buildAccountOptions(selectedName, includeCoaOption) {
+// Shared source of truth for how every account picker (the native
+// <select> fallback below, and the custom Master Journal picker further
+// down) groups and orders accounts: by main ledger (type), then by main
+// sub-ledger (a built-in classification like "Operating Expenses", or a
+// custom main sub-ledger the user made), then any of that account's own
+// sub-ledgers (added via the Chart of Accounts "+") immediately after it.
+function _acctPickerStructure() {
   const types = ['asset','liability','capital','expenditure','income'];
   const memb = _coaMemb();
   const groupsFor = {
@@ -4405,8 +4411,7 @@ function buildAccountOptions(selectedName, includeCoaOption) {
     income: [['Operating Income', a=>!/other|interest|dividend|gain/i.test(a.account_name)], ['Other Income', a=>/other|interest|dividend|gain/i.test(a.account_name)]],
     capital: [['Capital & Equity', ()=>true]],
   };
-  let html = '<option value="">— Select Account —</option>';
-  if (includeCoaOption) html += '<option value="__open_coa__">📋 Chart of Accounts</option>';
+  const out = [];
   types.forEach(type => {
     const accts = accounts[type]||[];
     if (!accts.length) return;
@@ -4421,7 +4426,7 @@ function buildAccountOptions(selectedName, includeCoaOption) {
     // Top-level = no parent, or an orphaned child whose parent isn't in
     // this same type's list (so it still shows up instead of vanishing).
     const topLevel = accts.filter(a=>!a.parent_id || !byId[a.parent_id]);
-    const buckets = {};
+    const buckets = {}; const order = [];
     topLevel.forEach(a=>{
       let label = memb[a.account_name];
       if (!label) {
@@ -4429,13 +4434,27 @@ function buildAccountOptions(selectedName, includeCoaOption) {
         const match = base.find(([,test])=>test(a));
         label = match ? match[0] : 'Other';
       }
-      (buckets[label]=buckets[label]||[]).push(a);
+      if (!buckets[label]) { buckets[label] = []; order.push(label); }
+      buckets[label].push(a);
     });
-    const optionFor = (a) => {
-      const sel = a.account_name === selectedName ? 'selected' : '';
-      return `<option value="${escH(a.account_name)}|${type}" ${sel}>${escH(a.account_name)}</option>`;
-    };
-    Object.keys(buckets).forEach(label=>{
+    out.push({ type, buckets: order.map(label => ({
+      label, items: buckets[label].map(a => ({ account: a, children: childrenOf[a.id]||[] })),
+    })) });
+  });
+  return out;
+}
+
+// Native <select> fallback (still used by the quick-entry sheet and
+// anywhere else a plain dropdown is simpler than a custom picker).
+function buildAccountOptions(selectedName, includeCoaOption) {
+  let html = '<option value="">— Select Account —</option>';
+  if (includeCoaOption) html += '<option value="__open_coa__">📋 Chart of Accounts</option>';
+  const optionFor = (a, type) => {
+    const sel = a.account_name === selectedName ? 'selected' : '';
+    return `<option value="${escH(a.account_name)}|${type}" ${sel}>${escH(a.account_name)}</option>`;
+  };
+  _acctPickerStructure().forEach(({type, buckets}) => {
+    buckets.forEach(({label, items}) => {
       // Sub-ledgers get their own small "↳ Sub-ledgers of X" group right
       // where their parent account appears — never baked into the
       // option's own text, so the closed cell reads as a plain account
@@ -4447,13 +4466,12 @@ function buildAccountOptions(selectedName, includeCoaOption) {
       const openGroup = () => { if (!groupOpen) { html += `<optgroup label="${optgroupLabel}">`; groupOpen = true; } };
       const closeGroup = () => { if (groupOpen) { html += '</optgroup>'; groupOpen = false; } };
       openGroup();
-      buckets[label].forEach(a => {
-        html += optionFor(a);
-        const kids = childrenOf[a.id];
-        if (kids && kids.length) {
+      items.forEach(({account, children}) => {
+        html += optionFor(account, type);
+        if (children.length) {
           closeGroup();
-          html += `<optgroup label="↳ Sub-ledgers of ${escH(a.account_name)}">`;
-          kids.forEach(c => { html += optionFor(c); });
+          html += `<optgroup label="↳ Sub-ledgers of ${escH(account.account_name)}">`;
+          children.forEach(c => { html += optionFor(c, type); });
           html += '</optgroup>';
           openGroup();
         }
@@ -4462,6 +4480,87 @@ function buildAccountOptions(selectedName, includeCoaOption) {
     });
   });
   return html;
+}
+
+// ── Custom Master Journal Debit/Credit Account picker ─────────
+// A native <select> can only render one plain-text style per row, and
+// Chrome mirrors a selected <option>'s own font-style/color into the
+// CLOSED box too — so italics on a sub-ledger in the open list would
+// also show once it's picked. This body-appended "portal" (same
+// pattern as the jcal calendar and column-filter popups) gives full
+// control instead: gold caps for the 5 main ledgers, bold white for
+// main sub-ledgers, italics only on a sub-ledger row in the open list,
+// and a plain, unstyled account name once something is chosen.
+let _acctPickerCtx = null;
+function _acctPickerOutsideClick(e) {
+  if (!e.target.closest('#acctPickerPortal')) jAcctPickerClose();
+}
+function jAcctPickerClose() {
+  document.getElementById('acctPickerPortal')?.remove();
+  document.removeEventListener('click', _acctPickerOutsideClick, true);
+  _acctPickerCtx = null;
+}
+function jAcctPickerOpen(idx, side, ev) {
+  ev.stopPropagation();
+  jAcctPickerClose();
+  closeColMenu();
+  const anchor = ev.currentTarget;
+  const row = journalRows[idx];
+  const currentVal = (side==='debit' ? row.debit_account_name : row.credit_account_name) || '';
+  _acctPickerCtx = { idx, side, anchor };
+
+  const rowHtml = (a, type, isChild) => {
+    const sel = a.account_name === currentVal ? ' sel' : '';
+    return `<div class="apk-acct${isChild?' apk-child':''}${sel}" data-val="${escH(a.account_name)}|${type}" onclick="jAcctPickerChoose(event)">${escH(a.account_name)}</div>`;
+  };
+  let listHtml = `<div class="apk-coa" data-val="__open_coa__" onclick="jAcctPickerChoose(event)">📋 Chart of Accounts</div>`;
+  _acctPickerStructure().forEach(({type, buckets}, ti) => {
+    listHtml += `<div class="apk-type${ti>0?' apk-type-sep':''}">${escH(type)}</div>`;
+    buckets.forEach(({label, items}) => {
+      listHtml += `<div class="apk-sub">${escH(label)}</div>`;
+      items.forEach(({account, children}) => {
+        listHtml += rowHtml(account, type, false);
+        children.forEach(c => { listHtml += rowHtml(c, type, true); });
+      });
+    });
+  });
+
+  const wrap = document.createElement('div');
+  wrap.id = 'acctPickerPortal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:12000;';
+  const panel = document.createElement('div');
+  panel.className = 'apk-panel';
+  panel.innerHTML = listHtml;
+  wrap.appendChild(panel);
+  document.body.appendChild(wrap);
+
+  const rect = anchor.getBoundingClientRect();
+  requestAnimationFrame(() => {
+    const pw = panel.offsetWidth || 260;
+    const naturalH = panel.scrollHeight;
+    let left = Math.max(8, Math.min(rect.left, window.innerWidth - pw - 8));
+    let top = rect.bottom + 4;
+    let maxH = window.innerHeight - top - 8;
+    if (naturalH > maxH && rect.top - 8 > maxH) { top = Math.max(8, rect.top - Math.min(naturalH, rect.top - 12) - 4); maxH = window.innerHeight - top - 8; }
+    panel.style.left = left+'px';
+    panel.style.top = top+'px';
+    panel.style.maxHeight = Math.min(naturalH, maxH)+'px';
+    const selEl = panel.querySelector('.apk-acct.sel');
+    if (selEl) selEl.scrollIntoView({ block:'center' });
+  });
+  setTimeout(() => { document.addEventListener('click', _acctPickerOutsideClick, true); }, 10);
+}
+function jAcctPickerChoose(ev) {
+  ev.stopPropagation();
+  const val = ev.currentTarget.dataset.val;
+  const ctx = _acctPickerCtx;
+  jAcctPickerClose();
+  if (!ctx) return;
+  jAccountChange(ctx.idx, ctx.side, val);
+  if (val !== '__open_coa__' && ctx.anchor) {
+    const name = val.split('|')[0];
+    ctx.anchor.innerHTML = name ? escH(name) : '<span style="color:var(--muted2)">Select Account</span>';
+  }
 }
 
 function emptyJournalRow(order) {
@@ -5466,19 +5565,19 @@ function renderJournalRows() {
           oninput="jCellChange(${idx},'narration',this.value);jrnShowNarrSuggestions(${idx},this.value)"
           onblur="setTimeout(()=>jrnHideNarrSuggestions(${idx}),150)"/>`}<div id="jrnNarrSuggest_${idx}" class="bd-suggest-box hidden"></div></td>
       <td><div style="display:flex;align-items:center;gap:2px;">
-          <select class="bk-cell" style="flex:1;min-width:0;"
-            onchange="jAccountChange(${idx},'debit',this.value)">
-            ${row._drSplits&&row._drSplits.length?`<option selected>Multiple (${row._drSplits.length} accounts)</option>`:''}
-            ${buildAccountOptions(row.debit_account_name, true)}
-          </select>
+          <div class="bk-acct-disp" onclick="jAcctPickerOpen(${idx},'debit',event)">${
+            row._drSplits&&row._drSplits.length ? `Multiple (${row._drSplits.length} accounts)`
+            : row.debit_account_name ? escH(row.debit_account_name)
+            : '<span style="color:var(--muted2)">Select Account</span>'
+          }</div>
           <span onclick="jrnSplitOpen(${idx},'debit')" title="Split across accounts" style="cursor:pointer;font-size:0.72rem;color:var(--gold);padding:2px 4px;">✎</span>
       </div></td>
       <td><div style="display:flex;align-items:center;gap:2px;">
-          <select class="bk-cell" style="flex:1;min-width:0;"
-            onchange="jAccountChange(${idx},'credit',this.value)">
-            ${row._crSplits&&row._crSplits.length?`<option selected>Multiple (${row._crSplits.length} accounts)</option>`:''}
-            ${buildAccountOptions(row.credit_account_name, true)}
-          </select>
+          <div class="bk-acct-disp" onclick="jAcctPickerOpen(${idx},'credit',event)">${
+            row._crSplits&&row._crSplits.length ? `Multiple (${row._crSplits.length} accounts)`
+            : row.credit_account_name ? escH(row.credit_account_name)
+            : '<span style="color:var(--muted2)">Select Account</span>'
+          }</div>
           <span onclick="jrnSplitOpen(${idx},'credit')" title="Split across accounts" style="cursor:pointer;font-size:0.72rem;color:var(--gold);padding:2px 4px;">✎</span>
       </div></td>
       <td><input class="bk-cell num bk-amt-input" type="text" inputmode="decimal"
