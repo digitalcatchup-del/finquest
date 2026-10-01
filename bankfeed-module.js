@@ -1,17 +1,21 @@
 // ── Bank Feeds module (Mono + Plaid) — lazy-loaded like sales-module.js
 // and ap-module.js, only fetched when the user actually opens the
-// "Bank Feeds" nav item. Phase 1: connect + manual review/post. No
-// webhooks/auto-sync yet (see plaid_integration_plan.md Phase 2).
+// "Bank Feeds" nav item. Phase 1: connect + manual review/post. Phase 2
+// adds webhook-driven auto-sync (server-side, see src/index.js) and a
+// Reconciliation tab comparing each bank's reported balance to its
+// ledger balance.
 //
 // Reuses the exact same shared helpers the rest of the app's double
 // entry posting already relies on: bizMatch(), acctBizFilter(),
-// acctBizStamp(), postJournalPair(), ensureAccountExists(), escH(),
-// bdToast(), staffHideChrome(), and the gold/white/italic account
-// picker CSS (.apk-*) already shipped for the Master Journal.
+// acctBizStamp(), postJournalPair(), ensureAccountExists(),
+// getLastAccountBalance(), escH(), bdToast(), staffHideChrome(), and
+// the gold/white/italic account picker CSS (.apk-*) already shipped
+// for the Master Journal.
 
 let bfBankItems = [];
 let bfStagedRows = [];
 let _bfPickerCtx = null;
+let bfActiveTab = 'accounts';
 
 async function showBankFeedsPage() {
   staffHideChrome();
@@ -26,10 +30,29 @@ async function showBankFeedsPage() {
     + '<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">' + escH(businessDisplayName) + '</div></div>'
     + '<button class="bk-btn" style="background:var(--gold);color:#000;font-weight:800;" onclick="bfOpenConnectModal()">+ Connect Bank Account</button>'
     + '</div>'
-    + '<div id="bfAccountsList" class="bf-accounts-list">' + bfRenderAccountsList() + '</div>'
-    + '<div id="bfReviewArea"></div>';
+    + '<div class="bf-tabs">'
+    + '<div class="bf-tab' + (bfActiveTab==='accounts'?' active':'') + '" onclick="bfSwitchTab(\'accounts\')">Accounts</div>'
+    + '<div class="bf-tab' + (bfActiveTab==='reconciliation'?' active':'') + '" onclick="bfSwitchTab(\'reconciliation\')">Reconciliation</div>'
+    + '</div>'
+    + '<div id="bfTabContent"></div>';
 
-  if (bfBankItems.length) await bfOpenReview(bfBankItems[0].id);
+  await bfRenderActiveTab();
+}
+
+async function bfSwitchTab(tab) {
+  bfActiveTab = tab;
+  await showBankFeedsPage();
+}
+
+async function bfRenderActiveTab() {
+  if (bfActiveTab === 'reconciliation') {
+    await bfRenderReconciliationTab();
+  } else {
+    document.getElementById('bfTabContent').innerHTML =
+      '<div id="bfAccountsList" class="bf-accounts-list">' + bfRenderAccountsList() + '</div>'
+      + '<div id="bfReviewArea"></div>';
+    if (bfBankItems.length) await bfOpenReview(bfBankItems[0].id);
+  }
 }
 
 function bfRenderAccountsList() {
@@ -48,8 +71,96 @@ function bfRenderAccountsList() {
       + '</div>'
       + '<div class="bf-acct-right">'
       + '<span class="bf-status-pill ' + statusCls + '">' + statusLabel + '</span>'
+      + '<div class="bf-live-badge"><span class="bf-live-dot"></span>Auto-sync on</div>'
       + '<button class="bk-btn" onclick="event.stopPropagation();bfSync(\'' + item.id + '\')">Refresh</button>'
       + '</div></div>';
+  }).join('');
+}
+
+// ── Reconciliation: bank-reported balance vs. ledger balance ─────
+async function bfGetBankBalance(bankItemId) {
+  try {
+    const res = await fetch('/api/bankfeed/balance', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bank_item_id: bankItemId }),
+    });
+    const raw = await res.text();
+    let data;
+    try { data = JSON.parse(raw); }
+    catch (e) { return { balance: null, currency: null, error: 'non-JSON response (HTTP ' + res.status + ')' }; }
+    if (!res.ok) return { balance: null, currency: null, error: data.error || 'balance lookup failed' };
+    return data;
+  } catch (e) {
+    return { balance: null, currency: null, error: e.message || 'network error' };
+  }
+}
+
+function bfCurrencyFmt(amount, currency) {
+  const symbol = currency === 'NGN' ? '₦' : (currency === 'USD' ? '$' : (currency || '') + ' ');
+  const abs = Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (amount < 0 ? '− ' : '') + symbol + abs;
+}
+
+async function bfRenderReconciliationTab() {
+  const el = document.getElementById('bfTabContent');
+  el.innerHTML = '<div class="bk-loading">Loading reconciliation…</div>';
+
+  if (!bfBankItems.length) {
+    el.innerHTML = '<div class="bf-empty">Connect a bank account to see reconciliation here.</div>';
+    return;
+  }
+
+  el.innerHTML =
+    '<div class="bf-webhook-note">🔔 <div><b>Auto-sync is on.</b> New transactions arrive automatically as your banks report them — no need to click Refresh. You can still refresh manually any time.</div></div>'
+    + '<div class="panel" style="margin-top:4px;">'
+    + '<table class="recon-table"><thead><tr>'
+    + '<th>Account</th><th>Bank-reported balance</th><th>Ledger balance</th><th>Difference</th><th>Status</th><th></th>'
+    + '</tr></thead><tbody id="bfReconBody">'
+    + bfBankItems.map(() => '<tr><td colspan="6" style="color:var(--muted);">Loading…</td></tr>').join('')
+    + '</tbody></table></div>';
+
+  const rows = await Promise.all(bfBankItems.map(async item => {
+    const [{ balance: bankBalance, currency, error: balErr }, { data: unpostedRows }, ledgerBalance] = await Promise.all([
+      bfGetBankBalance(item.id),
+      bkDb.from('bk_bank_feed_transactions').select('id')
+        .eq('bank_item_id', item.id).neq('status', 'posted').neq('status', 'excluded'),
+      getLastAccountBalance(item.bank_asset_account_name || item.account_name),
+    ]);
+    return { item, bankBalance, currency, balErr, unpostedCount: (unpostedRows || []).length, ledgerBalance };
+  }));
+
+  document.getElementById('bfReconBody').innerHTML = rows.map(r => {
+    const providerTag = r.item.provider === 'mono' ? 'via Mono' : 'via Plaid';
+    const acctCell = '<div class="recon-acct-cell">' + escH(r.item.account_name || r.item.institution_name || 'Connected account') + '</div>'
+      + '<span class="bf-provider-tag bf-provider-' + r.item.provider + '">' + providerTag + '</span>';
+
+    if (r.balErr || r.bankBalance === null) {
+      return '<tr><td>' + acctCell + '</td>'
+        + '<td colspan="3" style="color:var(--muted);">Could not fetch balance' + (r.balErr ? ': ' + escH(r.balErr) : '') + '</td>'
+        + '<td><span class="bf-status-pill bf-status-attn">Unavailable</span></td><td></td></tr>';
+    }
+
+    const diff = Math.round((r.bankBalance - r.ledgerBalance) * 100) / 100;
+    const hasUnposted = r.unpostedCount > 0;
+    const matched = Math.abs(diff) < 0.01 && !hasUnposted;
+    // The sign of the difference isn't "good" or "bad" here — any
+    // non-zero difference just means something needs review, so it
+    // always reads as a flagged amount, never green regardless of
+    // which direction the bank and ledger disagree.
+    const diffCls = matched ? 'recon-diff-zero' : 'recon-diff-neg';
+    const statusHtml = matched
+      ? '<span class="bf-status-pill bf-status-ok">Matched</span>'
+      : '<span class="bf-status-pill status-mismatch">' + (hasUnposted ? r.unpostedCount + ' unposted' : 'Mismatch') + '</span>';
+    const actionHtml = hasUnposted
+      ? '<span class="recon-link" onclick="bfSwitchTab(\'accounts\')">Review →</span>' : '';
+
+    return '<tr class="' + (matched ? '' : 'mismatch') + '">'
+      + '<td>' + acctCell + '</td>'
+      + '<td class="recon-num">' + bfCurrencyFmt(r.bankBalance, r.currency) + '</td>'
+      + '<td class="recon-num">' + bfCurrencyFmt(r.ledgerBalance, r.currency) + '</td>'
+      + '<td class="recon-num ' + diffCls + '">' + bfCurrencyFmt(diff, r.currency) + '</td>'
+      + '<td>' + statusHtml + '</td>'
+      + '<td>' + actionHtml + '</td></tr>';
   }).join('');
 }
 

@@ -1,5 +1,5 @@
-import { plaidCreateLinkToken, plaidExchangePublicToken, plaidSyncTransactions } from './providers/plaid.js';
-import { monoGetWidgetConfig, monoExchangeCode, monoGetAccount, monoGetTransactions } from './providers/mono.js';
+import { plaidCreateLinkToken, plaidExchangePublicToken, plaidSyncTransactions, plaidGetBalance, plaidVerifyWebhook } from './providers/plaid.js';
+import { monoGetWidgetConfig, monoExchangeCode, monoGetAccount, monoGetTransactions, monoGetBalance, monoVerifyWebhook } from './providers/mono.js';
 import { supaInsert, supaSelect, supaUpdate, supaUpsertIgnoreDup } from './supabase.js';
 
 function json(data, status = 200) {
@@ -11,6 +11,40 @@ function json(data, status = 200) {
 
 async function readJson(request) {
   try { return await request.json(); } catch (e) { return {}; }
+}
+
+// Shared by the manual "Refresh" route and both providers' webhooks, so
+// an automatic webhook-triggered sync and a manual click run the exact
+// same code — one place to fix bugs, one place that stays correct.
+async function runBankfeedSync(env, item) {
+  let staged = [];
+  if (item.provider === 'plaid') {
+    const result = await plaidSyncTransactions(env, { accessToken: item.access_handle });
+    staged = (result.added || []).map(t => ({
+      user_id: item.user_id, business_id: item.business_id, bank_item_id: item.id,
+      provider: 'plaid', provider_transaction_id: t.transaction_id,
+      txn_date: t.date, description: t.name,
+      // Plaid: positive amount = money OUT of the account. Normalize
+      // so positive = money IN everywhere in our own staging table.
+      amount: -t.amount, status: 'unmatched',
+    }));
+  } else if (item.provider === 'mono') {
+    const { transactions } = await monoGetTransactions(env, { accountId: item.access_handle });
+    staged = transactions.map(t => ({
+      user_id: item.user_id, business_id: item.business_id, bank_item_id: item.id,
+      provider: 'mono', provider_transaction_id: t._id || t.id,
+      txn_date: (t.date || '').slice(0, 10), description: t.narration,
+      // Mono: type 'credit' = money in, 'debit' = money out. Amount is in kobo.
+      amount: (t.type === 'credit' ? 1 : -1) * (Number(t.amount) || 0) / 100,
+      status: 'unmatched',
+    }));
+  }
+
+  const saved = staged.length
+    ? await supaUpsertIgnoreDup(env, 'bk_bank_feed_transactions', staged, 'bank_item_id,provider_transaction_id')
+    : [];
+  await supaUpdate(env, 'bk_bank_items', { id: item.id }, { last_synced_at: new Date().toISOString() });
+  return { synced: saved.length };
 }
 
 // ── Bank feed API routes ────────────────────────────────────────
@@ -85,34 +119,64 @@ async function handleBankfeedRoute(request, env, path) {
     const [item] = await supaSelect(env, 'bk_bank_items', { id: bank_item_id });
     if (!item) return json({ error: 'Bank item not found' }, 404);
 
-    let staged = [];
-    if (item.provider === 'plaid') {
-      const result = await plaidSyncTransactions(env, { accessToken: item.access_handle });
-      staged = (result.added || []).map(t => ({
-        user_id: item.user_id, business_id: item.business_id, bank_item_id: item.id,
-        provider: 'plaid', provider_transaction_id: t.transaction_id,
-        txn_date: t.date, description: t.name,
-        // Plaid: positive amount = money OUT of the account. Normalize
-        // so positive = money IN everywhere in our own staging table.
-        amount: -t.amount, status: 'unmatched',
-      }));
-    } else if (item.provider === 'mono') {
-      const { transactions } = await monoGetTransactions(env, { accountId: item.access_handle });
-      staged = transactions.map(t => ({
-        user_id: item.user_id, business_id: item.business_id, bank_item_id: item.id,
-        provider: 'mono', provider_transaction_id: t._id || t.id,
-        txn_date: (t.date || '').slice(0, 10), description: t.narration,
-        // Mono: type 'credit' = money in, 'debit' = money out. Amount is in kobo.
-        amount: (t.type === 'credit' ? 1 : -1) * (Number(t.amount) || 0) / 100,
-        status: 'unmatched',
-      }));
-    }
+    const result = await runBankfeedSync(env, item);
+    return json(result);
+  }
 
-    const saved = staged.length
-      ? await supaUpsertIgnoreDup(env, 'bk_bank_feed_transactions', staged, 'bank_item_id,provider_transaction_id')
-      : [];
-    await supaUpdate(env, 'bk_bank_items', { id: item.id }, { last_synced_at: new Date().toISOString() });
-    return json({ synced: saved.length });
+  // Phase 2 — reconciliation: the bank's own reported current balance
+  // for a connected item, to compare against the ledger balance of its
+  // asset account (computed on the frontend, which already has the
+  // running-balance logic every other account uses).
+  if (path === '/api/bankfeed/balance' && request.method === 'POST') {
+    const { bank_item_id } = await readJson(request);
+    if (!bank_item_id) return json({ error: 'bank_item_id is required' }, 400);
+
+    const [item] = await supaSelect(env, 'bk_bank_items', { id: bank_item_id });
+    if (!item) return json({ error: 'Bank item not found' }, 404);
+
+    let result = { balance: null, currency: null };
+    if (item.provider === 'plaid') result = await plaidGetBalance(env, { accessToken: item.access_handle });
+    else if (item.provider === 'mono') result = await monoGetBalance(env, { accountId: item.access_handle });
+    return json(result);
+  }
+
+  // ── Webhooks: automatic sync, no "Refresh" click needed ─────────
+  // Each one verifies the request really came from the provider before
+  // doing anything, then runs the exact same sync path as the manual
+  // button — a forged POST here can't be used to inject fake rows.
+  if (path === '/api/bankfeed/webhook/plaid' && request.method === 'POST') {
+    const rawBody = await request.text();
+    try {
+      await plaidVerifyWebhook(env, request.headers.get('Plaid-Verification'), rawBody);
+    } catch (err) {
+      return json({ error: 'Webhook verification failed: ' + err.message }, 401);
+    }
+    const payload = JSON.parse(rawBody);
+    // SYNC_UPDATES_AVAILABLE is the current /transactions/sync webhook;
+    // the older DEFAULT_UPDATE/INITIAL_UPDATE/HISTORICAL_UPDATE codes
+    // are handled too since Plaid sandbox items can still send them.
+    const transactionCodes = ['SYNC_UPDATES_AVAILABLE', 'DEFAULT_UPDATE', 'INITIAL_UPDATE', 'HISTORICAL_UPDATE'];
+    if (payload.webhook_type === 'TRANSACTIONS' && transactionCodes.includes(payload.webhook_code)) {
+      const [item] = await supaSelect(env, 'bk_bank_items', { provider: 'plaid', provider_item_id: payload.item_id });
+      if (item) await runBankfeedSync(env, item);
+    }
+    return json({ ok: true });
+  }
+
+  if (path === '/api/bankfeed/webhook/mono' && request.method === 'POST') {
+    const rawBody = await request.text();
+    try {
+      monoVerifyWebhook(env, request.headers.get('mono-webhook-secret'));
+    } catch (err) {
+      return json({ error: 'Webhook verification failed: ' + err.message }, 401);
+    }
+    const payload = JSON.parse(rawBody);
+    const accountId = payload.data?.account?._id || payload.data?.account?.id || payload.data?.id;
+    if (accountId) {
+      const [item] = await supaSelect(env, 'bk_bank_items', { provider: 'mono', provider_item_id: accountId });
+      if (item) await runBankfeedSync(env, item);
+    }
+    return json({ ok: true });
   }
 
   return json({ error: 'Not found' }, 404);

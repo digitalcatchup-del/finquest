@@ -61,3 +61,21 @@ export async function monoGetTransactions(env, { accountId, page = 1 }) {
   const list = data.data?.data || data.data || [];
   return { transactions: Array.isArray(list) ? list : [], meta: data.meta || data.data?.meta || {} };
 }
+
+export async function monoGetBalance(env, { accountId }) {
+  const acct = await monoGetAccount(env, { accountId });
+  // Balance comes back in kobo, same convention as transaction amounts.
+  const raw = acct?.balance;
+  return { balance: typeof raw === 'number' ? raw / 100 : null, currency: acct?.currency || 'NGN' };
+}
+
+// ── Webhook verification ─────────────────────────────────────────
+// Mono doesn't sign webhooks with a JWT the way Plaid does — it sends a
+// shared secret (set in the Mono dashboard) back in the
+// mono-webhook-secret header, and the check is a plain string compare.
+// Still worth doing: without it, anyone who finds this URL could POST
+// fake "new transaction" events into your review queue.
+export function monoVerifyWebhook(env, secretHeader) {
+  if (!env.MONO_WEBHOOK_SECRET) throw new Error('MONO_WEBHOOK_SECRET is not configured');
+  if (!secretHeader || secretHeader !== env.MONO_WEBHOOK_SECRET) throw new Error('invalid webhook secret');
+}

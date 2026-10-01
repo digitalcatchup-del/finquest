@@ -566,6 +566,32 @@ body{background:var(--bg);color:var(--white);font-family:'Lora',Georgia,serif;mi
 .bk-add-row-btn{background:none;border:1px dashed var(--border2);color:var(--muted);font-size:0.76rem;font-weight:600;padding:7px 18px;border-radius:6px;cursor:pointer;width:100%;}
 .bk-add-row-btn:hover{border-color:var(--gold);color:var(--gold);}
 
+/* Bank Feeds — Phase 2: tabs, auto-sync badge, reconciliation */
+.bf-tabs{display:flex;gap:22px;margin:16px 0 4px;border-bottom:1px solid var(--border);}
+.bf-tab{padding:8px 2px;font-size:0.82rem;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;}
+.bf-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.bf-live-badge{display:flex;align-items:center;gap:6px;font-size:0.7rem;font-weight:700;color:#4ade80;}
+.bf-live-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:bfPulse 1.8s infinite;}
+@keyframes bfPulse{
+  0%{box-shadow:0 0 0 0 rgba(74,222,128,0.45);}
+  70%{box-shadow:0 0 0 7px rgba(74,222,128,0);}
+  100%{box-shadow:0 0 0 0 rgba(74,222,128,0);}
+}
+.bf-webhook-note{display:flex;gap:10px;align-items:flex-start;background:var(--gold-t007);border:1px solid var(--gold-t02);border-radius:8px;padding:12px 14px;margin:14px 0 4px;font-size:0.78rem;color:var(--off);}
+.bf-webhook-note b{color:var(--gold);}
+.recon-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+.recon-table th{text-align:left;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--border2);}
+.recon-table td{padding:13px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+.recon-table tr:last-child td{border-bottom:none;}
+.recon-table tr.mismatch{background:rgba(224,122,107,0.07);}
+.recon-acct-cell{font-weight:700;}
+.recon-num{font-variant-numeric:tabular-nums;}
+.recon-diff-zero{color:var(--muted);}
+.recon-diff-neg{color:var(--red);}
+.recon-diff-pos{color:#6bbf8e;}
+.status-mismatch{background:#f8d7da;color:#7a1f28;}
+.recon-link{color:var(--gold);font-weight:700;cursor:pointer;font-size:0.8rem;}
+
 /* REPORTS */
 .report-wrap{padding:24px;max-width:760px;margin:0 auto;}
 .report-table{width:100%;border-collapse:collapse;font-size:0.83rem;}
@@ -1672,7 +1698,7 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script src="geo_data.js?v=2"></script>
-<script src="bookkeeping-app.js?v=81"></script>
+<script src="bookkeeping-app.js?v=82"></script>
 <script>
   // Cleans up any lingering service worker from an earlier version of
   // this app. Nothing here registers one anymore, so a worker still
