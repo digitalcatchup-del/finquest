@@ -8890,13 +8890,43 @@ async function coaSaveName(id) {
   if (!inp) return;
   const name = inp.value.trim();
   if (!name) { alert('Account name cannot be empty.'); return; }
-  const {error} = await bkDb.from('bk_accounts').update({account_name:name}).eq('id',id).eq('user_id',bkUser.id);
-  if (error) { alert('Could not save: '+error.message); return; }
   const arr = accounts[coaActiveType]||[];
   const a = arr.find(x=>x.id===id);
-  if (a) a.account_name = name;
-  buildDropdowns();
-  renderCOA();
+  const oldName = a ? a.account_name : null;
+  if (oldName === name) { renderCOA(); return; }
+  try {
+    const { error } = await bkDb.from('bk_accounts').update({account_name:name}).eq('id',id).eq('user_id',bkUser.id);
+    if (error) throw error;
+    // The app has no account_id foreign key — every transaction and
+    // journal entry already posted to this account stores its OWN copy
+    // of the account name. Without cascading the rename here, every
+    // already-posted row (and the Debit/Credit Account picker for any
+    // row that already has this account selected) would keep showing
+    // the old name forever. Scoped to this record type and business, the
+    // same way coaDeleteAccount already scopes its cascade.
+    if (oldName) {
+      await Promise.all([
+        acctBizFilter(bkDb.from('bk_transactions').update({account_name:name})).eq('account_name',oldName).eq('record_type',coaActiveType),
+        acctBizFilter(bkDb.from('bk_journal').update({debit_account_name:name})).eq('debit_account_name',oldName).eq('debit_record_type',coaActiveType),
+        acctBizFilter(bkDb.from('bk_journal').update({credit_account_name:name})).eq('credit_account_name',oldName).eq('credit_record_type',coaActiveType),
+      ]);
+      // Also fix up the Master Journal sheet already sitting in memory
+      // (unsaved rows, or rows loaded before the rename), so returning
+      // to that page shows the new name immediately — the original bug.
+      if (Array.isArray(journalRows)) {
+        journalRows.forEach(r => {
+          if (r.debit_account_name === oldName && r.debit_record_type === coaActiveType) r.debit_account_name = name;
+          if (r.credit_account_name === oldName && r.credit_record_type === coaActiveType) r.credit_account_name = name;
+        });
+      }
+    }
+    if (a) a.account_name = name;
+    buildDropdowns();
+    renderCOA();
+    bdToast('✓ Renamed to "'+name+'" — already-posted entries were updated too');
+  } catch(e) {
+    alert('Could not save: '+(e.message||''));
+  }
 }
 
 async function coaAddAccount() {
