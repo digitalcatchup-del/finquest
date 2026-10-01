@@ -517,6 +517,42 @@ body{background:var(--bg);color:var(--white);font-family:'Lora',Georgia,serif;mi
 .apk-acct.apk-child{color:var(--muted);font-style:italic;padding-left:34px;}
 .apk-acct.sel{background:var(--gold-dim);color:var(--gold);}
 .bk-cell:focus{background:var(--gold-t007);}
+.bk-acct-disp.placeholder{color:var(--muted2);}
+
+/* Bank Feeds page */
+.bf-accounts-list{margin-top:10px;}
+.bf-empty{color:var(--muted);font-size:0.82rem;font-style:italic;padding:20px 4px;}
+.bf-acct-card{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;}
+.bf-acct-card:hover{border-color:var(--gold-t02);}
+.bf-acct-name{font-weight:700;font-size:0.9rem;}
+.bf-acct-sub{color:var(--muted);font-size:0.76rem;margin-top:2px;}
+.bf-acct-right{display:flex;align-items:center;gap:12px;}
+.bf-provider-tag{font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:5px;margin-left:6px;text-transform:uppercase;letter-spacing:0.03em;vertical-align:middle;}
+.bf-provider-mono{background:rgba(31,157,85,0.15);color:#4ade80;}
+.bf-provider-plaid{background:rgba(10,37,64,0.25);color:#8bb4e0;}
+.bf-status-pill{font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:0.04em;}
+.bf-status-ok{background:var(--green-l);color:#065f32;}
+.bf-status-attn{background:#fff3cd;color:#7a5c00;}
+.bf-modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:12500;display:flex;align-items:center;justify-content:center;}
+.bf-modal{width:380px;max-width:90vw;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;overflow:hidden;}
+.bf-modal-header{padding:18px 20px;border-bottom:1px solid var(--border2);font-weight:800;font-size:0.95rem;}
+.bf-modal-body{padding:20px;display:flex;flex-direction:column;gap:10px;}
+.bf-provider-choice{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;cursor:pointer;}
+.bf-provider-choice:hover{border-color:var(--gold-t02);}
+.bf-provider-choice-icon{font-size:1.4rem;}
+.rt-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+.rt-table th{text-align:left;color:var(--muted);font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;padding:8px 10px;border-bottom:1px solid var(--border2);}
+.rt-table td{padding:10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.rt-desc{font-weight:600;}
+.bf-amt-debit{color:#e07a6b;font-weight:700;}
+.bf-amt-credit{color:#6bbf8e;font-weight:700;}
+.status-badge{font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:999px;text-transform:capitalize;}
+.badge-unmatched{background:#fff3cd;color:#7a5c00;}
+.badge-ready{background:var(--green-l);color:#065f32;}
+.badge-excluded{background:var(--border2);color:var(--muted);}
+.row-action{font-size:0.72rem;font-weight:700;border:1px solid var(--border2);background:transparent;color:var(--off);border-radius:6px;padding:6px 10px;cursor:pointer;font-family:inherit;}
+.row-action.primary{background:var(--gold);color:#1a1200;border:none;}
+.row-action.ghost{color:var(--muted);}
 .bk-cell.num{text-align:right;}
 .bk-cell.bal{text-align:right;pointer-events:none;font-weight:700;}
 .bk-cell.bal.pos{color:var(--green);}
@@ -1460,6 +1496,11 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
       <div class="bk-submenu-item" onclick="openAPAging();closeBkMenu()">⏱ AP Aging</div>
     </div>
 
+    <!-- Bank Feeds (owner/manager only) -->
+    <div class="bk-menu-item" data-role="owner-manager" onclick="openBankFeeds();closeBkMenu()" id="mnu-bank-feeds">
+      <span class="bk-menu-icon">🏦</span> Bank Feeds
+    </div>
+
     <!-- Staff directory (owner/manager only) -->
     <div class="bk-menu-item" data-role="owner-manager" onclick="showStaffDirectory();closeBkMenu()" id="mnu-staff-directory">
       <span class="bk-menu-icon">👥</span> Staff
@@ -1631,7 +1672,7 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script src="geo_data.js?v=2"></script>
-<script src="bookkeeping-app.js?v=78"></script>
+<script src="bookkeeping-app.js?v=79"></script>
 <script>
   // Cleans up any lingering service worker from an earlier version of
   // this app. Nothing here registers one anymore, so a worker still
