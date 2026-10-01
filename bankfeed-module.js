@@ -69,7 +69,14 @@ async function bfSync(bankItemId) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bank_item_id: bankItemId }),
     });
-    const data = await res.json();
+    // Read as text first — if the Worker ever returns a non-JSON body
+    // (a timeout, a Cloudflare error page, an empty response from a
+    // slow/rate-limited provider call), this surfaces the real status
+    // and raw body instead of a bare "Unexpected end of JSON input".
+    const raw = await res.text();
+    let data;
+    try { data = JSON.parse(raw); }
+    catch (parseErr) { throw new Error('server returned a non-JSON response (HTTP ' + res.status + '): ' + raw.slice(0, 200)); }
     if (!res.ok) throw new Error(data.error || 'Sync failed');
     bdToast('✓ Synced ' + data.synced + ' new transaction(s)');
   } catch (e) {

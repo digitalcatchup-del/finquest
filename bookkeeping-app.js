@@ -1979,7 +1979,7 @@ async function openAPAging()   { await ensureAPModuleLoaded(); await showAPAging
 // Bank Feeds module (Mono + Plaid connect + review/post) — same
 // lazy-load-on-demand pattern as Sales/AP.
 async function ensureBankFeedModuleLoaded() {
-  await bkLoadScriptOnce('/bankfeed-module.js?v=2');
+  await bkLoadScriptOnce('/bankfeed-module.js?v=3');
 }
 async function openBankFeeds() { await ensureBankFeedModuleLoaded(); await showBankFeedsPage(); }
 let accounts      = {};   // { capital:[{id,account_name,opening_balance},...], ... }
