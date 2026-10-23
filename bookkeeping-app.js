@@ -3159,14 +3159,21 @@ async function loadAccountsRun() {
 // ── Chart of Accounts layout (account numbers, sub-ledger groups, which group each account is in) ──
 // These used to live only in this browser. They now follow the business: saved to the account a moment
 // after every change, and loaded again on any device.
-const COA_SYNC_KEYS = ['bd_coa_codes','bd_coa_group_codes','bd_coa_groups','bd_coa_memb','bd_coa_manual','bd_coa_tpl_tagged','bd_coa_deleted','bd_coa_glabels','bd_pay_methods','bd_sales_prod_assign','bd_unreg_products','bd_sales_excl_income','bd_party_info','bd_own_accounts','bd_ac_units','bd_ac_unit_alias','bd_ac_datefmt','bd_sales_cell_cols'];
+const COA_SYNC_KEYS = ['bd_coa_codes','bd_coa_group_codes','bd_coa_groups','bd_coa_memb','bd_coa_manual','bd_coa_tpl_tagged','bd_coa_deleted','bd_coa_glabels','bd_pay_methods','bd_sales_prod_assign','bd_unreg_products','bd_sales_excl_income','bd_sales_incl_income','bd_party_info','bd_own_accounts','bd_ac_units','bd_ac_unit_alias','bd_ac_datefmt','bd_sales_cell_cols'];
 let _coaSyncBiz = null, _coaSyncMute = false, _coaSyncT = null;
-const _coaLocalEdits = {};   // key -> time of the last change made on this device (so a slow download never wipes a fresh edit)
+const _coaLocalEdits = {};   // key -> time of the last change made on this device in this visit
+// The time of every change is also kept on the device, so after a refresh a newer local change still beats an older copy in the account.
+function _coaTsGet() { try { const o = JSON.parse(localStorage.getItem('bd_coa_ts') || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; } }
+function _coaTsSet(o) { try { Storage.prototype.setItem.call(localStorage, 'bd_coa_ts', JSON.stringify(o)); } catch (e) {} }
 (function () {
   const orig = Storage.prototype.setItem;
   Storage.prototype.setItem = function (k, v) {
     orig.call(this, k, v);
-    if (this === window.localStorage && !_coaSyncMute && COA_SYNC_KEYS.indexOf(k) >= 0) { _coaLocalEdits[k] = Date.now(); coaCloudPushSoon(); }
+    if (this === window.localStorage && !_coaSyncMute && COA_SYNC_KEYS.indexOf(k) >= 0) {
+      const now = Date.now(); _coaLocalEdits[k] = now;
+      const ts = _coaTsGet(); ts[k] = now; _coaTsSet(ts);
+      coaCloudPushSoon();
+    }
   };
 })();
 function _coaSyncKey() { return (activeBusiness && activeBusiness.id) || 'u'; }
@@ -3192,18 +3199,35 @@ async function bdSaveSetting(sheetKey, settings, perUser) {
   } catch (e) { return e; }
 }
 let _coaToastAt = 0;
+// Returns { ok, error }. Never throws.
 async function coaCloudPush(quiet) {
-  if (!bkUser || _coaSyncBiz !== _coaSyncKey() || !navigator.onLine) return;
+  if (!bkUser) return { ok: false, error: 'not signed in' };
+  if (!navigator.onLine) return { ok: false, error: 'you are offline' };
+  if (_coaSyncBiz !== _coaSyncKey()) {
+    // the first download never finished (for example a dropped connection): do it now instead of silently skipping the save
+    try { await coaCloudPull(); } catch (e) {}
+    if (_coaSyncBiz !== _coaSyncKey()) return { ok: false, error: "your saved settings couldn't be read from your account" };
+  }
   const o = {};
   COA_SYNC_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v != null) o[k] = v; });
+  o.__ts = _coaTsGet();
   try {
     const error = await bdSaveSetting('coa_layout', o, false);
     if (error) throw error;
+    return { ok: true };
   } catch (e) {
     console.warn('chart layout save failed', e);
     // Your numbers and groups are still kept on this device; only the copy in your account failed.
     if (!quiet && Date.now() - _coaToastAt > 300000) { _coaToastAt = Date.now(); bdToast("Chart numbers saved on this device, but couldn't be backed up to your account (" + String((e && e.message) || e).slice(0, 90) + ')', 'error'); }
+    return { ok: false, error: String((e && (e.message || e.details)) || e) };
   }
+}
+// For choices the person has just made: save to the account now and say so if that did not work.
+async function coaSyncNow(what) {
+  clearTimeout(_coaSyncT);
+  const r = await coaCloudPush(true);
+  if (!r.ok) bdToast((what || 'This') + " is saved on this device, but couldn't be saved to your account (" + String(r.error || '').slice(0, 110) + '). Other devices won\'t see it yet.', 'error');
+  return r;
 }
 async function coaCloudPull() {
   if (!bkUser || !navigator.onLine) return;
@@ -3216,22 +3240,30 @@ async function coaCloudPull() {
     let q = bkDb.from('bk_sheet_settings').select('settings').eq('sheet_key', 'coa_layout');
     q = bizId ? q.eq('business_id', bizId) : q.is('business_id', null).eq('user_id', bkUser.id);
     const r = await q.maybeSingle(); if (r.error) throw r.error; row = r.data;
-  } catch (e) { return; }                       // couldn't read: change nothing, try again next time
+  } catch (e) { console.warn('chart layout read failed', e); return; }   // couldn't read: change nothing, try again next time
   let keptLocal = false;
   _coaSyncMute = true;
   try {
     if (row && row.settings && Object.keys(row.settings).length) {
-      const sameOwner = localStorage.getItem('bd_coa_owner') === key;
+      const ownerNow = localStorage.getItem('bd_coa_owner'), sameOwner = (ownerNow == null || ownerNow === key);   // no owner recorded yet = not known to belong to another business
+      const rts = (row.settings.__ts && typeof row.settings.__ts === 'object') ? row.settings.__ts : {};
+      let lts = _coaTsGet();
+      if (!sameOwner) { const keep = {}; Object.keys(lts).forEach(k => { if ((_coaLocalEdits[k] || 0) >= t0) keep[k] = lts[k]; }); lts = keep; }
       COA_SYNC_KEYS.forEach(k => {
         const editedSince = (_coaLocalEdits[k] || 0) >= t0;
-        if (row.settings[k] != null) { if (editedSince) keptLocal = true; else localStorage.setItem(k, row.settings[k]); }
-        else if (editedSince || (sameOwner && localStorage.getItem(k) != null)) keptLocal = true;   // not in the account yet: keep it here and upload it
+        const hasLocal = localStorage.getItem(k) != null;
+        const localNewer = hasLocal && (lts[k] || 0) > (rts[k] || 0);   // changed here after the copy in the account was written
+        if (row.settings[k] != null) {
+          if (editedSince || localNewer) keptLocal = true;
+          else { localStorage.setItem(k, row.settings[k]); if (rts[k]) lts[k] = rts[k]; }
+        } else if (editedSince || (lts[k] || 0) > 0 || (sameOwner && hasLocal)) { if (hasLocal) keptLocal = true; }   // not in the account yet: keep it here and upload it
         else localStorage.removeItem(k);
       });
+      _coaTsSet(lts);
       _jrnAcctPathMap = null;
     } else {
       const owner = localStorage.getItem('bd_coa_owner');
-      if (owner && owner !== key) COA_SYNC_KEYS.forEach(k => { if (!((_coaLocalEdits[k] || 0) >= t0)) localStorage.removeItem(k); });   // another business's leftovers
+      if (owner && owner !== key) { COA_SYNC_KEYS.forEach(k => { if (!((_coaLocalEdits[k] || 0) >= t0)) localStorage.removeItem(k); }); _coaTsSet({}); }   // another business's leftovers
       _coaSyncBiz = key;
       localStorage.setItem('bd_coa_owner', key);
       _coaSyncMute = false; await coaCloudPush(true); return;
@@ -4374,12 +4406,20 @@ async function bdLoadSalesProductCache(force) {
   const bizId = activeBusiness?.id || null;
   if (!force && salesProductCacheBizId === bizId) return; // already loaded for this business
   try {
-    let q = bkDb.from('bk_products').select('id,product_name,product_type,barcode,price,cost_price,qty_in_stock,unit,custom,custom_meta').eq('is_service', false).eq('is_active', true);
+    let q = bkDb.from('bk_products').select('*').eq('is_service', false).eq('is_active', true);
     q = bizId ? q.or('business_id.eq.'+bizId+',and(business_id.is.null,user_id.eq.'+bkUser.id+')') : q.eq('user_id', bkUser.id);
     const { data } = await q.order('product_name');
     salesProductCache = data || [];
     salesProductCacheBizId = bizId; _salesProdT = Date.now();
   } catch(e) { salesProductCache = []; }
+  try {   // the income accounts the sheet itself posts to (products and services): these always show on the Sales Record
+    let iq = bkDb.from('bk_products').select('income_account,custom').eq('is_active', true);
+    iq = bizId ? iq.or('business_id.eq.'+bizId+',and(business_id.is.null,user_id.eq.'+bkUser.id+')') : iq.eq('user_id', bkUser.id);
+    const { data: ia } = await iq;
+    const set = new Set(['sales revenue', 'service income', 'barbing revenue']);
+    (ia || []).forEach(x => [x.income_account, x.custom && x.custom.__sub].forEach(n => { if (n) set.add(String(n).trim().toLowerCase()); }));
+    _salesOwnInc = set;
+  } catch(e) {}
   try {
     let sq = bkDb.from('bk_sheet_settings').select('settings').eq('sheet_key', 'products');
     sq = bizId ? sq.eq('business_id', bizId) : sq.is('business_id', null).eq('user_id', bkUser.id);
@@ -4430,12 +4470,17 @@ function _salesAvailableProductCols() {
 // object, so the suggestion/narration logic doesn't need to care
 // which kind of column it's showing.
 function _salesColValue(p, colId) {
+  const num = v => (v != null && v !== '') ? fmt(v) : '';
   if (colId === 'product_name') return p.product_name || '';
   if (colId === 'product_type') return p.product_type || '';
-  if (colId === 'cost_price') return p.cost_price != null ? fmt(p.cost_price) : '';
-  if (colId === 'sell_price' || colId === 'price') return p.price != null ? fmt(p.price) : '';
+  if (colId === 'cost_price') return num(p.cost_price);
+  if (colId === 'sell_price' || colId === 'price') return num(p.price);
   if (colId === 'barcode') return p.barcode || '';
   if (colId === 'qty_in_stock' || colId === 'qty') return p.qty_in_stock != null ? salesProdStock(p) : '';
+  if (colId === 'qty_date') { const d = p.qty_as_at || ((parseFloat(p.qty_in_stock) > 0 && p.created_at) ? String(p.created_at).slice(0, 10) : ''); try { return d && typeof psFormatQtyDate === 'function' ? psFormatQtyDate(d, _psQtyDateFormat()) : (d || ''); } catch (e) { return d || ''; } }
+  if (colId === 'total_cost') { const v = (parseFloat(p.cost_price) || 0) * (parseFloat(p.qty_in_stock) || 0); return v ? fmt(v) : ''; }
+  if (colId === 'total_sell') { const v = (parseFloat(p.price) || 0) * (parseFloat(p.qty_in_stock) || 0); return v ? fmt(v) : ''; }
+  if (colId === 'income_acct') return p.income_account || (p.custom && p.custom.__sub) || '';
   return (p.custom && p.custom[colId]) || '';
 }
 // How a product reads in the sales sheet: name, type and any measurements, then price and stock in its own unit.
@@ -4457,16 +4502,16 @@ function salesProdStock(p) {
 // The labelled details a product shows in the dropdown: the columns ticked in Assign products, or a sensible set by default.
 function salesProdDetailPairs(p) {
   const cc = salesCellCols();
-  const lab = { product_type: 'Type', barcode: 'Barcode', cost_price: 'Cost' };
+  const lab = { product_type: 'Type', barcode: 'Barcode', cost_price: 'Cost price', qty_date: 'Stock as at', total_cost: 'Total at cost', total_sell: 'Total at selling price', income_acct: 'Posts to' };
   const custom = (salesProductCustomCols || []);
   let ids;
   if (cc) ids = cc.map(c => c.id).filter(id => !['product_name', 'sell_price', 'qty', 'qty_in_stock'].includes(id));
-  else ids = ['product_type', 'barcode', 'cost_price'].concat(custom.map(c => c.key));
+  else ids = ['product_type', 'barcode', 'cost_price', 'qty_date', 'total_cost', 'total_sell', 'income_acct'].concat(custom.map(c => c.key));   // nothing assigned: everything the Products page has
   return ids.map(id => {
-    const v = _salesColValue(p, id); if (!v || !String(v).trim()) return '';
+    const v = _salesColValue(p, id); if (!v || !String(v).trim() || String(v).trim() === '0') return '';
     const cname = (custom.find(c => c.key === id) || {}).name;
     const l = lab[id] || cname || '';
-    return l ? l + ': ' + v : String(v);
+    return l ? l + ': ' + String(v).replace(/\n+/g, ' \u00B7 ') : String(v);
   }).filter(Boolean);
 }
 // Which Products-page columns the Product cell shows once a product is picked: [{id, main}] (null = the default text).
@@ -4504,7 +4549,7 @@ function bdShowProductSuggestions(i, query) {
   // Only the products picked with Assign (header ▼) are offered; with nothing picked, every registered product is.
   const asg = salesAssignedSet();
   const pool = salesProductCache.filter(p => !asg || asg.has(String(p.id)));
-  const matches = (q ? pool.filter(p => salesProdText(p).toLowerCase().includes(q)) : pool).slice(0, q ? 8 : 80);
+  const matches = (q ? pool.filter(p => (salesProdText(p) + ' ' + (p.barcode || '') + ' ' + Object.values(p.custom || {}).filter(v => typeof v === 'string').join(' ')).toLowerCase().includes(q)) : pool).slice(0, q ? 12 : 80);
   if (!matches.length && !q) return;
   const input = document.getElementById('salesProdInput_'+i);
   if (!input) return;
@@ -20352,7 +20397,7 @@ function renderRecordSheet(kind) {
       <button class="tb-icon" title="Decrease decimals" onclick="sheetDecimals('${kind}',-1)">.0←</button>
       <button class="tb-icon" title="Increase decimals" onclick="sheetDecimals('${kind}',1)">.00→</button>
       ${isSales ? `<button class="tb-icon" title="Choose which product columns appear in the dropdown" onclick="toggleSalesSuggestSelector()">🎛 Suggestions</button>` : ''}
-      ${isSales ? `<button class="tb-icon" title="Choose which income accounts from the Master Journal also appear on this sheet" onclick="salesIncomeFilterOpen()">\uD83D\uDCCA Income accounts${salesIncomeExcluded().size?' ('+salesIncomeExcluded().size+' off)':''}</button>` : ''}
+      ${isSales ? `<button class="tb-icon" title="Choose which income accounts from the Master Journal also appear on this sheet" onclick="salesIncomeFilterOpen()">\uD83D\uDCCA Income accounts${salesIncomeChosenCount()?' ('+salesIncomeChosenCount()+' chosen)':''}</button>` : ''}
       ${isSales ? `<button class="tb-icon" title="Scan a product barcode to add it to this sale" onclick="sheetScanToSell('${kind}')">\uD83D\uDCF7 Scan</button>` : ''}
       
       ${isSales ? `<label class="tb-icon" title="Generate a receipt for each row" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
@@ -25991,7 +26036,7 @@ async function salesPayerMenu(i, input) {
 
 // Product list: which registered products the Product cells offer
 function salesAssignedSet() { const a = _lsJson('bd_sales_prod_assign', null); return Array.isArray(a) && a.length ? new Set(a.map(String)) : null; }
-const SALES_CELL_COL_CHOICES = [['product_type', 'Product type'], ['barcode', 'Barcode'], ['cost_price', 'Cost price'], ['sell_price', 'Selling price'], ['qty_in_stock', 'Stock left']];
+const SALES_CELL_COL_CHOICES = [['product_type', 'Product type'], ['barcode', 'Barcode'], ['cost_price', 'Cost price'], ['sell_price', 'Selling price'], ['qty_in_stock', 'Stock left'], ['qty_date', 'Stock as at'], ['total_cost', 'Total in stock at cost price'], ['total_sell', 'Total in stock at selling price'], ['income_acct', 'Post to']];
 async function salesAssignProducts() {
   closeColMenu();
   try { await bdLoadSalesProductCache(true); } catch (e) {}
@@ -26088,22 +26133,34 @@ async function psRegisterUnreg(k) {
 function psDismissUnreg(k) { const o = _lsJson('bd_unreg_products', {}); delete o[k]; try { localStorage.setItem('bd_unreg_products', JSON.stringify(o)); } catch (x) {} showProductsPage('products'); }
 
 // ── Sales sheet: which income accounts from the Master Journal also show on it ──
-// Stored as the accounts switched OFF, so a new income account appears on the sheet until you say otherwise.
-function salesIncomeExcluded() { const a = _lsJson('bd_sales_excl_income', []); return new Set(Array.isArray(a) ? a : []); }
-function salesIncomeShown(t) { return !salesIncomeExcluded().has(t.account_name); }
-function salesIncomeFilterOpen() {
+// Only the accounts the person ticks are brought over from the Master Journal. The accounts this sheet posts its own
+// sales to (Sales Revenue and the account each product is set to post to) always show, otherwise a sale typed on the
+// sheet would vanish from it. The choice is stored as the list of ticked account names.
+let _salesOwnInc = new Set(['sales revenue', 'service income', 'barbing revenue']);
+const _incKey = n => String(n || '').trim().toLowerCase();
+function salesIncomeIncluded() {
+  const a = _lsJson('bd_sales_incl_income', null);
+  if (Array.isArray(a)) return new Set(a);
+  const ex = _lsJson('bd_sales_excl_income', null);       // older choice (stored the other way round): carry it over
+  if (Array.isArray(ex)) return new Set((accounts.income || []).map(x => x.account_name).filter(n => ex.indexOf(n) < 0));
+  return new Set();
+}
+function salesIncomeChosenCount() { let n = 0; const inc = salesIncomeIncluded(); (accounts.income || []).forEach(a => { if (inc.has(a.account_name) && !_salesOwnInc.has(_incKey(a.account_name))) n++; }); return n; }
+function salesIncomeShown(t) { return salesIncomeIncluded().has(t.account_name) || _salesOwnInc.has(_incKey(t.account_name)); }
+async function salesIncomeFilterOpen() {
+  try { await bdLoadSalesProductCache(true); } catch (e) {}   // also learns which accounts the products post to
   const list = (accounts.income || []), byId = {}; list.forEach(a => { byId[a.id] = a; });
   const kids = {}; list.forEach(a => { if (a.parent_id && byId[a.parent_id]) (kids[a.parent_id] = kids[a.parent_id] || []).push(a); });
-  const codes = _coaCodes(), off = salesIncomeExcluded();
+  const codes = _coaCodes(), inc = salesIncomeIncluded();
   const roots = list.filter(a => !a.parent_id || !byId[a.parent_id]);
-  const row = (a, depth) => `<label class="pay-ent" data-n="${escH((a.account_name || '').toLowerCase())}" style="cursor:pointer;padding-left:${8 + depth * 18}px">
-      <span><input type="checkbox" data-id="${a.id}" data-p="${a.parent_id || ''}" ${off.has(a.account_name) ? '' : 'checked'} onchange="salesIncomeCascade(this)"/> ${codes[a.id] ? '<small style="color:var(--gold)">' + escH(String(codes[a.id])) + '</small> ' : ''}${escH(a.account_name)}</span></label>`
-    + (kids[a.id] || []).map(c => row(c, depth + 1)).join('');
+  const row = (a, depth) => { const own = _salesOwnInc.has(_incKey(a.account_name));
+    return `<label class="pay-ent" data-n="${escH((a.account_name || '').toLowerCase())}" style="cursor:${own ? 'default' : 'pointer'};padding-left:${8 + depth * 18}px">
+      <span><input type="checkbox" data-id="${a.id}" data-p="${a.parent_id || ''}" ${own || inc.has(a.account_name) ? 'checked' : ''} ${own ? 'disabled data-own="1"' : ''} onchange="salesIncomeCascade(this)"/> ${codes[a.id] ? '<small style="color:var(--gold)">' + escH(String(codes[a.id])) + '</small> ' : ''}${escH(a.account_name)}${own ? ' <small style="color:var(--muted)" title="This sheet posts its own sales here, so it always shows">\uD83D\uDD12 always on</small>' : ''}</span></label>` + (kids[a.id] || []).map(c => row(c, depth + 1)).join(''); };
   const o = document.createElement('div'); o.id = 'salesIncDlg';
   o.style.cssText = 'position:fixed;inset:0;z-index:12500;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;';
   o.innerHTML = `<div class="pay-edit" style="width:min(440px,100%);max-height:86vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px" onclick="event.stopPropagation()">
     <div class="pay-edit-h" style="font-size:.95rem">Income accounts on the Sales Record</div>
-    <div class="pay-note">Ticked accounts from the Master Journal also appear on this sheet. Unticked ones (for example rental income) post only to their own ledger. Ticking an account ticks everything under it.</div>
+    <div class="pay-note">Only the accounts you tick here are brought over from the Master Journal to this sheet. Everything else posts only to its own ledger. Ticking an account ticks everything under it. Accounts this sheet posts its own sales to are always shown.</div>
     <input id="siQ" class="bk-login-input" placeholder="Search accounts…" oninput="salesIncomeFilterSearch()" style="margin:8px 0"/>
     <div style="display:flex;gap:8px;margin-bottom:6px"><button class="pay-b" onclick="salesIncomeAll(true)">Select all</button><button class="pay-b" onclick="salesIncomeAll(false)">Clear</button></div>
     <div id="siList" style="overflow:auto;flex:1;min-height:120px;border:1px solid var(--border);border-radius:8px">${roots.length ? roots.map(a => row(a, 0)).join('') : '<div class="pay-note" style="padding:12px">No income accounts yet. Create them in the Chart of Accounts.</div>'}</div>
@@ -26113,16 +26170,16 @@ function salesIncomeFilterOpen() {
 }
 function salesIncomeCascade(cb) {
   const all = [...document.querySelectorAll('#siList input[type=checkbox]')];
-  const walk = id => all.filter(x => x.dataset.p === id).forEach(x => { x.checked = cb.checked; walk(x.dataset.id); });
+  const walk = id => all.filter(x => x.dataset.p === id).forEach(x => { if (!x.disabled) x.checked = cb.checked; walk(x.dataset.id); });
   walk(cb.dataset.id);
   salesIncomeAuto();
 }
 function salesIncomeFilterSearch() { const q = document.getElementById('siQ').value.trim().toLowerCase(); document.querySelectorAll('#siList [data-n]').forEach(l => { l.style.display = !q || l.dataset.n.includes(q) ? '' : 'none'; }); }
-function salesIncomeAll(on) { document.querySelectorAll('#siList input[type=checkbox]').forEach(c => { if (c.closest('[data-n]').style.display !== 'none') c.checked = on; }); salesIncomeAuto(); }
+function salesIncomeAll(on) { document.querySelectorAll('#siList input[type=checkbox]').forEach(c => { if (!c.disabled && c.closest('[data-n]').style.display !== 'none') c.checked = on; }); salesIncomeAuto(); }
 let _siT = null, _siBusy = false, _siAgain = false;
 function salesIncomeCollect() {
   const names = {}; (accounts.income || []).forEach(a => { names[a.id] = a.account_name; });
-  return [...document.querySelectorAll('#siList input[type=checkbox]:not(:checked)')].map(c => names[c.dataset.id]).filter(Boolean);
+  return [...document.querySelectorAll('#siList input[type=checkbox]:checked:not([data-own])')].map(c => names[c.dataset.id]).filter(Boolean);
 }
 // Every tick is saved straight away (no Save button needed): the choice is stored with the business
 // settings and the Sales sheet is refreshed from the Master Journal.
@@ -26134,13 +26191,14 @@ function salesIncomeAuto() {
 async function salesIncomeApply() {
   if (_siBusy) { _siAgain = true; return; }
   _siBusy = true;
+  let res = { ok: true };
   try {
-    const off = salesIncomeCollect();
-    try { localStorage.setItem('bd_sales_excl_income', JSON.stringify(off)); } catch (e) {}   // always a write, so it syncs to the account (an empty list means "all ticked")
-    try { await coaCloudPush(true); } catch (e) {}
+    const on = salesIncomeCollect();
+    try { localStorage.setItem('bd_sales_incl_income', JSON.stringify(on)); } catch (e) {}   // always a write, so it syncs to the account (an empty list means "none chosen")
+    res = await coaSyncNow('Your income-account choice');
     try { await sheetSyncFromJournal('sales'); } catch (e) {}
     if (document.getElementById('sheetTable_sales') || document.querySelector('.bk-sheet-wrap')) { try { renderRecordSheet('sales'); } catch (e) {} }
-    const m = document.getElementById('siMsg'); if (m) { m.textContent = '✓ Saved'; m.style.color = 'var(--green,#3fb27f)'; }
+    const m = document.getElementById('siMsg'); if (m) { m.textContent = res.ok ? '\u2713 Saved' : '\u26A0 Saved on this device only'; m.style.color = res.ok ? 'var(--green,#3fb27f)' : 'var(--red,#e5534b)'; }
   } finally { _siBusy = false; if (_siAgain) { _siAgain = false; salesIncomeApply(); } }
 }
 async function salesIncomeSave() {
@@ -26268,7 +26326,7 @@ function partyRenderEdit(box, d) {
         if (k >= 0) list[k] = Object.assign({}, list[k], vals);
         else list.push(Object.assign({ id: 'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, vals));
       }
-      ownAccountsSave(list); bdToast('Saved'); return done();
+      ownAccountsSave(list); bdToast('Saved'); coaSyncNow('Your account list'); return done();
     }
     if (b.dataset.a === 'rm') {
       if (!(await bdConfirm('Delete ' + (g === 'c' ? 'customer' : 'vendor') + ' "' + d.n + '"? It will also be removed from the ' + (g === 'c' ? 'Customers' : 'Suppliers') + ' page.'))) return;
@@ -26289,7 +26347,7 @@ function partyRenderEdit(box, d) {
       } catch (e) { bdToast('Could not rename — ' + (e.message || ''), 'error'); return; }
       delete info[oldKey];
     }
-    info[g + ':' + vals.name] = extra; partyInfoSave(info);
+    info[g + ':' + vals.name] = extra; partyInfoSave(info); coaSyncNow('These details');
     _partyC.t = 0; _salesCust = { biz: undefined, list: [] };
     await partyLoad(); bdToast('Saved'); done();
   };
