@@ -17599,7 +17599,7 @@ function psCellAssignCells(i, key) {
   openAssignCellsDialog(colName + ' — this cell', effectiveMeta, newMeta => {
     r.customMeta = r.customMeta || {};
     r.customMeta[key] = newMeta || { type: 'text' };
-    if (newMeta && newMeta.type === 'text' && newMeta.fields && !(r.custom && r.custom[key])) { r.custom = r.custom || {}; r.custom[key] = fxEncode(Object.fromEntries(newMeta.fields.map(f => [f.label, f.detail || ''])), newMeta.fields); }   // details typed in Assign Cells fill this cell
+    if (newMeta && newMeta.type === 'text' && newMeta.fields) { r.custom = r.custom || {}; r.custom[key] = fxMergeDetails(newMeta, r.custom[key]); }   // details typed in Assign Cells fill this cell (and add any rows it lacks)
     r.saved = false;
     renderProductsPage();
     psAutosaveTrigger();
@@ -18049,6 +18049,21 @@ function fxDetailsText(meta) {
   if (!meta || meta.type !== 'text' || !meta.fields || !meta.fields.some(f => f.detail)) return '';
   return fxEncode(Object.fromEntries(meta.fields.map(f => [f.label, f.detail || ''])), meta.fields);
 }
+// What a cell should hold once its column's Assign Cells details change: an empty cell gets all the details; a cell that already
+// has labelled lines keeps what is in it and gains the rows it is missing (so rows 3, 4, 5 … show in cells filled earlier).
+// Plain text typed before the column had labelled rows is left exactly as it is.
+function fxMergeDetails(meta, v) {
+  if (!meta || meta.type !== 'text' || !meta.fields || !meta.fields.some(f => f.detail)) return v;
+  const cur = String(v == null ? '' : v);
+  const vals = Object.fromEntries(meta.fields.map(f => [f.label, f.detail || '']));
+  if (!cur.trim()) return fxEncode(vals, meta.fields);
+  const lines = cur.split('\n');
+  const labelled = lines.some(l => { const k = l.indexOf(': '); return k > 0 && meta.fields.some(f => f.label === l.slice(0, k)); });
+  if (!labelled) return cur;
+  const have = fxParse(cur, meta.fields), merged = {};
+  meta.fields.forEach(f => { merged[f.label] = have[f.label] ? have[f.label] : (f.detail || ''); });
+  return fxEncode(merged, meta.fields);
+}
 function psColAssignCells(key) {
   const cols = _psCustomCols();
   const c = cols.find(x=>x.key===key);
@@ -18059,11 +18074,10 @@ function psColAssignCells(key) {
     if (!c && key==='qty' && newMeta && newMeta.type!=='measurement') { bdToast('Quantity takes a measurement unit (kg, tons, inches…) — choose Measurement or Free text'); return; }
     if (newMeta) meta[key]=newMeta; else delete meta[key];
     _psPersistColMeta(meta);
-    const fill = fxDetailsText(newMeta);
-    if (fill) psRows.forEach(r => {
+    if (fxDetailsText(newMeta)) psRows.forEach(r => {
       if (!(r.name || r.id) || (r.customMeta && Object.prototype.hasOwnProperty.call(r.customMeta, key))) return;   // never turn the blank bottom row into a product
-      if (c) { r.custom = r.custom || {}; if (!String(r.custom[key] || '').trim()) r.custom[key] = fill; }
-      else if ((key === 'barcode' || key === 'product_type' || key === 'service_type') && !String(r[key === 'service_type' ? 'product_type' : key] || '').trim()) r[key === 'service_type' ? 'product_type' : key] = fill;
+      if (c) { r.custom = r.custom || {}; r.custom[key] = fxMergeDetails(newMeta, r.custom[key]); }
+      else if (key === 'barcode' || key === 'product_type' || key === 'service_type') { const f = key === 'service_type' ? 'product_type' : key; r[f] = fxMergeDetails(newMeta, r[f]); }
     });
     psRows.forEach(r=>{ r.saved=false; });
     renderProductsPage();
@@ -20737,8 +20751,21 @@ function sheetColAssignCells(kind, key) {
   openAssignCellsDialog(sheetColLabel(kind,c), meta[key], newMeta => {
     if (newMeta) meta[key]=newMeta; else delete meta[key];
     localStorage.setItem('bd_colmeta_'+kind, JSON.stringify(meta));
-    const fill = (c.t === 'c') ? fxDetailsText(newMeta) : '';
-    if (fill) { const put = r => { if (r._bundle || !(r.total > 0 || r.narration || r.payee || r.payer || r.product)) return; r.custom = r.custom || {}; if (!String(r.custom[key] || '').trim()) r.custom[key] = fill; }; sheetRows(kind).forEach(r => { if (r._bundle) (r.items || []).forEach(put); else put(r); }); }
+    if (fxDetailsText(newMeta)) {
+      const isF = (c.t !== 'c');   // Payee / Payer / Product keep their text under _payee etc.
+      const put = r => {
+        if (r._bundle || !(r.total > 0 || r.narration || r.payee || r.payer || r.product)) return;
+        r.custom = r.custom || {};
+        if (!isF) { r.custom[key] = fxMergeDetails(newMeta, r.custom[key]); return; }
+        const k = '_' + key, old = r.custom[k] || '';
+        if (!old) return;   // only cells that already hold labelled rows gain the new ones; typed payees / payers / products stay as typed
+        const nv = fxMergeDetails(newMeta, old); r.custom[k] = nv;
+        const pv = fxParse(nv, newMeta.fields), mains = newMeta.fields.filter(x => x.main && pv[x.label]).map(x => pv[x.label]);
+        r[key] = (mains.length ? mains : newMeta.fields.map(x => pv[x.label]).filter(Boolean)).join(', ');
+        r._posted = false;
+      };
+      sheetRows(kind).forEach(r => { if (r._bundle) (r.items || []).forEach(put); else put(r); });
+    }
     renderRecordSheet(kind);
   });
 }
@@ -26023,30 +26050,35 @@ async function salesPayerMenu(i, input) {
 
 // Product list: which registered products the Product cells offer
 function salesAssignedSet() { const a = _lsJson('bd_sales_prod_assign', null); return Array.isArray(a) && a.length ? new Set(a.map(String)) : null; }
-const SALES_CELL_COL_CHOICES = [['product_type', 'Product type'], ['barcode', 'Barcode'], ['cost_price', 'Cost price'], ['sell_price', 'Selling price'], ['qty_in_stock', 'Stock left'], ['qty_date', 'Stock as at'], ['total_cost', 'Total in stock at cost price'], ['total_sell', 'Total in stock at selling price'], ['income_acct', 'Post to']];
+const SALES_CELL_COL_CHOICES = PS_COL_DEFS.products.map(c => [c.id, c.label]);
 async function salesAssignProducts() {
   closeColMenu();
   try { await bdLoadSalesProductCache(true); } catch (e) {}
   const asg = salesAssignedSet(), all = salesProductCache;
   const cc = salesCellCols();
   const choices = SALES_CELL_COL_CHOICES.concat((salesProductCustomCols || []).map(c => [c.key, c.name]));
-  const cur = id => (cc || []).find(x => x.id === id);
-  const defOn = id => false;
-  const colRow = ([id, label]) => { const c = cur(id), on = c ? true : defOn(id), main = c ? !!c.main : false;
+  const cur = id => (cc || []).find(x => (x.id === 'qty_in_stock' ? 'qty' : x.id) === id);
+  const colRow = ([id, label]) => { const c = cur(id), on = !!c, main = !!(c && c.main);
     return `<div class="sp-colrow" data-id="${escH(id)}" style="display:grid;grid-template-columns:22px 1fr 78px;gap:6px;align-items:center;margin-bottom:4px;font-size:.78rem;">
       <input type="checkbox" class="sp-on" ${on ? 'checked' : ''} onchange="salesAssignAuto()"/><span>${escH(label)}</span>
       <select class="sp-role bk-login-input" style="margin:0;padding:3px 6px;font-size:.72rem;" onchange="salesAssignAuto()"><option value="main" ${main ? 'selected' : ''}>Main</option><option value="sub" ${main ? '' : 'selected'}>Sub</option></select></div>`; };
   const o = document.createElement('div'); o.id = 'prodAssignDlg';
   o.style.cssText = 'position:fixed;inset:0;z-index:12500;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;';
-  o.innerHTML = `<div class="pay-edit" style="width:min(460px,100%);max-height:90vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;overflow:auto" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()">
+  o.innerHTML = `<div class="pay-edit" style="width:min(480px,100%);max-height:90vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;overflow:auto" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()">
     <div class="pay-edit-h" style="font-size:.95rem">Assign products</div>
     <div class="pay-note">The list comes straight from your Products page and updates as stock is sold or added.</div>
-    <div class="pay-note" style="margin:8px 0 10px">To choose which Products-page columns show in the Product cell, open the Products page, click Columns, and tick <b>Show in sales page</b> beside each column (Main or Sub).</div>
+    <label class="su-label" style="margin-top:10px">Show in the Product cell</label>
+    <div class="pay-note" style="margin-bottom:6px">Tick the Products-page columns to show. <b>Main</b> is written in the cell; <b>Sub</b> shows underneath in smaller text. (You can also set this from the Products page, Columns menu.)</div>
+    <div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:22px 1fr 78px;gap:6px;font-size:.6rem;color:var(--muted);font-weight:700;margin-bottom:4px"><span></span><span>PRODUCTS PAGE COLUMN</span><span>ROLE</span></div>
+      <div style="display:grid;grid-template-columns:22px 1fr 78px;gap:6px;align-items:center;margin-bottom:4px;font-size:.78rem;color:var(--muted)"><input type="checkbox" checked disabled/><span style="color:var(--white)">Product</span><span style="font-size:.72rem;padding-left:6px">Main</span></div>
+      <div id="paCols">${choices.map(colRow).join('')}</div>
+    </div>
     <label class="su-label">Products offered in the cells</label>
     <input id="paQ" class="bk-login-input" placeholder="Search products…" oninput="salesAssignFilter()" style="margin:4px 0 8px"/>
     <div style="display:flex;gap:8px;margin-bottom:6px"><button class="pay-b" onclick="salesAssignAll(true)">Select all</button><button class="pay-b" onclick="salesAssignAll(false)">Clear</button></div>
-    <div id="paList" style="overflow:auto;max-height:220px;min-height:100px;border:1px solid var(--border);border-radius:8px">
-      ${all.length ? all.map(p => { const n = parseFloat(p.qty_in_stock) || 0; return `<label class="pay-ent" data-n="${escH((p.product_name || '').toLowerCase())}" style="cursor:pointer"><span><input type="checkbox" value="${p.id}" ${!asg || asg.has(String(p.id)) ? 'checked' : ''} onchange="salesAssignAuto()"/> ${escH(p.product_name || '')}</span><small style="${n > 0 ? '' : 'color:var(--red,#e5534b)'}">${escH(salesProdStock(p))}</small></label>`; }).join('') : '<div class="pay-note" style="padding:12px">No registered products yet. Add them on the Products page.</div>'}
+    <div id="paList" style="overflow:auto;max-height:240px;min-height:100px;border:1px solid var(--border);border-radius:8px">
+      ${all.length ? all.map(p => { const n = parseFloat(p.qty_in_stock) || 0; const det = salesProdDetailPairs(p).slice(0, 4).join(' · '); const hay = ((p.product_name || '') + ' ' + (p.product_type || '') + ' ' + (p.barcode || '')).toLowerCase(); return `<label class="pay-ent" data-n="${escH(hay)}" style="cursor:pointer;align-items:flex-start"><span style="min-width:0"><input type="checkbox" value="${p.id}" ${!asg || asg.has(String(p.id)) ? 'checked' : ''} onchange="salesAssignAuto()"/> ${escH(p.product_name || '')}${det ? `<div style="font-size:.64rem;color:var(--muted);margin:1px 0 0 22px;white-space:normal">${escH(det)}</div>` : ''}</span><small style="white-space:nowrap;${n > 0 ? '' : 'color:var(--red,#e5534b)'}">${escH(salesProdStock(p))}</small></label>`; }).join('') : '<div class="pay-note" style="padding:12px">No registered products yet. Add them on the Products page.</div>'}
     </div>
     <div class="pay-btns"><span id="paMsg" style="margin-right:auto;font-size:.72rem;align-self:center;color:var(--muted)">Changes save automatically</span><button class="pay-b pri" onclick="salesAssignSave()">Done</button></div></div>`;
   o.onclick = () => o.remove();
@@ -26061,6 +26093,10 @@ function salesAssignAuto() {
   _saT = setTimeout(salesAssignApply, 350);
 }
 function salesAssignApply() {
+  if (document.getElementById('paCols')) {
+    const picked = [...document.querySelectorAll('#paCols .sp-colrow')].filter(r => r.querySelector('.sp-on').checked).map(r => ({ id: r.dataset.id, main: r.querySelector('.sp-role').value === 'main' }));
+    try { localStorage.setItem('bd_sales_cell_cols', JSON.stringify(picked.length ? [{ id: 'product_name', main: true }].concat(picked) : [])); } catch (e) {}
+  }
   const ids = [...document.querySelectorAll('#paList input[type=checkbox]:checked')].map(c => c.value);
   const total = document.querySelectorAll('#paList input[type=checkbox]').length;
   try { localStorage.setItem('bd_sales_prod_assign', JSON.stringify(!ids.length || ids.length === total ? [] : ids)); } catch (e) {}
