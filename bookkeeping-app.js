@@ -4402,24 +4402,23 @@ let salesProductCacheBizId = undefined;
 let salesProductCustomCols = [];
 let salesProductColMeta = {};
 let _salesProdT = 0;
-async function bdLoadSalesProductCache(force) {
+async function bdLoadSalesProductCache(force, quiet) {
   const bizId = activeBusiness?.id || null;
   if (!force && salesProductCacheBizId === bizId) return; // already loaded for this business
   try {
-    let q = bkDb.from('bk_products').select('*').eq('is_service', false).eq('is_active', true);
+    // One round trip: products and services together (services only tell us which income accounts the sheet posts to).
+    let q = bkDb.from('bk_products').select('id,product_name,product_type,barcode,price,cost_price,qty_in_stock,qty_as_at,created_at,unit,income_account,is_service,custom,custom_meta').eq('is_active', true);
     q = bizId ? q.or('business_id.eq.'+bizId+',and(business_id.is.null,user_id.eq.'+bkUser.id+')') : q.eq('user_id', bkUser.id);
-    const { data } = await q.order('product_name');
-    salesProductCache = data || [];
+    const { data, error } = await q.order('product_name');
+    if (error) throw error;
+    const all = data || [];
+    salesProductCache = all.filter(x => !x.is_service);
     salesProductCacheBizId = bizId; _salesProdT = Date.now();
-  } catch(e) { salesProductCache = []; }
-  try {   // the income accounts the sheet itself posts to (products and services): these always show on the Sales Record
-    let iq = bkDb.from('bk_products').select('income_account,custom').eq('is_active', true);
-    iq = bizId ? iq.or('business_id.eq.'+bizId+',and(business_id.is.null,user_id.eq.'+bkUser.id+')') : iq.eq('user_id', bkUser.id);
-    const { data: ia } = await iq;
-    const set = new Set(['sales revenue', 'service income', 'barbing revenue']);
-    (ia || []).forEach(x => [x.income_account, x.custom && x.custom.__sub].forEach(n => { if (n) set.add(String(n).trim().toLowerCase()); }));
+    const set = new Set(['sales revenue', 'service income', 'barbing revenue']);   // the income accounts the sheet itself posts to always show on the Sales Record
+    all.forEach(x => [x.income_account, x.custom && x.custom.__sub].forEach(n => { if (n) set.add(String(n).trim().toLowerCase()); }));
     _salesOwnInc = set;
-  } catch(e) {}
+  } catch(e) { if (!quiet) salesProductCache = []; }
+  if (quiet) return;   // background refreshes only need fresh stock and prices, not the column settings
   try {
     let sq = bkDb.from('bk_sheet_settings').select('settings').eq('sheet_key', 'products');
     sq = bizId ? sq.eq('business_id', bizId) : sq.is('business_id', null).eq('user_id', bkUser.id);
@@ -4533,15 +4532,21 @@ function salesProdSubHtml(r) {
   }).join('');
 }
 // Keeps the sheet in step with the Products page: stock and prices are re-read every few seconds and after each save.
-let _salesProdSig = '';
+let _salesProdSig = '', _salesProdBusy = false;
 function salesProdSig() { return salesProductCache.map(p => p.id + ':' + p.qty_in_stock + ':' + p.price + ':' + p.cost_price + ':' + p.product_name + ':' + p.product_type).join('|'); }
+function salesProdSubsRefresh() {   // no network: re-draw the small lines under each Product cell from the product list we already hold
+  if (!document.getElementById('sheetTable_sales')) return;
+  sheetRows('sales').forEach((r, i) => { const el = document.getElementById('spSub_' + i); if (el) { const h = salesProdSubHtml(r); if (el.innerHTML !== h) el.innerHTML = h; } });
+}
 async function salesProdRefreshNow() {
   if (!document.getElementById('sheetTable_sales') || !bkUser || !navigator.onLine) return;
-  try { await bdLoadSalesProductCache(true); } catch (e) { return; }
+  if (_sheetSaving.sales || _salesProdBusy) return;   // never compete with a save for the connection
+  _salesProdBusy = true;
+  try { await bdLoadSalesProductCache(true, true); } catch (e) { return; } finally { _salesProdBusy = false; }
   const sig = salesProdSig(); if (sig === _salesProdSig) return; _salesProdSig = sig;
   sheetRows('sales').forEach((r, i) => { const el = document.getElementById('spSub_' + i); if (el) el.innerHTML = salesProdSubHtml(r); });
 }
-setInterval(() => { if (!document.hidden) salesProdRefreshNow(); }, 8000);
+setInterval(() => { if (!document.hidden) salesProdRefreshNow(); }, 20000);
 window.addEventListener('focus', () => { salesProdRefreshNow(); });
 function bdShowProductSuggestions(i, query) {
   bdHideProductSuggestions(i); // only one suggestion box open at a time
@@ -4969,7 +4974,7 @@ async function _sheetAutosaveRun(kind) {
     const i = rows.indexOf(r);
     if (i >= 0) { try { await saveFn(i); } catch(e) {} }
   }
-  if (kind === 'sales') { try { salesProdRefreshNow(); } catch (e) {} }
+  if (kind === 'sales') { try { salesProdSubsRefresh(); } catch (e) {} setTimeout(() => { try { salesProdRefreshNow(); } catch (e) {} }, 4000); }
   const left = rows.filter(r => !r._posted && parseFloat(r.total) > 0).length;
   const m2 = document.getElementById('sheetSaveMsg_'+kind);
   if (m2) { m2.textContent = left ? 'Not saved \u2014 will retry' : '\u2713 Saved'; m2.className = 'bk-save-msg ' + (left ? 'err' : 'ok'); }
@@ -5121,7 +5126,7 @@ function setSaveMsg(msg, type) {
 let _eqT = null;
 function refreshEquation() {
   // Never holds a save up: runs once, shortly after the last change.
-  clearTimeout(_eqT); _eqT = setTimeout(() => { _refreshEquationNow().catch(()=>{}); }, 1200);
+  clearTimeout(_eqT); _eqT = setTimeout(() => { _refreshEquationNow().catch(()=>{}); }, 2500);
   return Promise.resolve();
 }
 async function _refreshEquationNow() {
@@ -8460,8 +8465,8 @@ function renderJournal() {
 }
 
 let _jrnLastBalanced=null;
-function jrnRowHtml(row,i,balanced){
-    const realIdx = journalRows.indexOf(row);
+function jrnRowHtml(row,i,balanced,idxMap){
+    const realIdx = idxMap ? (idxMap.has(row) ? idxMap.get(row) : -1) : journalRows.indexOf(row);
     const idx = realIdx >= 0 ? realIdx : i;
     const sn=journalHasData(row)?idx+1:'';
     return `<tr id="jrow_${idx}" class="${row._ro?'jrn-ro':''}${row._saveErr?' jrn-save-err':''}" ${row._saveErr?`title="Not saved: ${escH(row._saveErr)}"`:''}>
@@ -8571,7 +8576,8 @@ function renderJournalRows() {
   }
 
   _jrnLastBalanced=balanced;
-  tbody.innerHTML=visibleRows.map(function(row,i){ return jrnRowHtml(row,i,balanced); }).join('');
+  const _idxMap = new Map(); for (let k = 0; k < journalRows.length; k++) _idxMap.set(journalRows[k], k);
+  tbody.innerHTML=visibleRows.map(function(row,i){ return jrnRowHtml(row,i,balanced,_idxMap); }).join('');
 
   const msg=document.getElementById('journalSaveMsg');
   if(msg && journalRows.some(r=>journalHasData(r))){
@@ -9206,8 +9212,9 @@ let _jrnAttachCtx = null; // { idx, counts, browseKind?, browseDocs? }
 // auto-creation never overwrites a genuine link. Existing/historical rows
 // never pass through here — see receiptVoucherBackfill() for those.
 async function jrnAutoCreateSourceDocs(rows) {
-  const candidates = (rows||[]).filter(r => r.id && !r.source_doc_type && !r.source_doc_id);
+  const candidates = (rows||[]).filter(r => r.id && !r.source_doc_type && !r.source_doc_id && !r._docPending);
   if (!candidates.length) return;
+  candidates.forEach(r => { r._docPending = true; });
   await ensureSourceDocsModuleLoaded();
   for (const r of candidates) {
     try {
@@ -9224,6 +9231,7 @@ async function jrnAutoCreateSourceDocs(rows) {
       r.source_doc_type = 'receipt'; r.source_doc_id = data.id; r.source_doc_number = doc_number;
       await acctBizFilter(bkDb.from('bk_journal').update({ source_doc_type:'receipt', source_doc_id:data.id, source_doc_number:doc_number }).eq('id', r.id));
     } catch(e) { console.error('jrnAutoCreateSourceDocs: row failed', r.id, e); }
+    finally { r._docPending = false; }
   }
 }
 
@@ -11792,7 +11800,7 @@ async function salesRvConfirmPost() {
 }
 
 let _jrnAutoT = null;
-function jrnAutosave(){ clearTimeout(_jrnAutoT); _jrnAutoT = setTimeout(()=>{ saveJournal(); }, 1500); }
+function jrnAutosave(){ clearTimeout(_jrnAutoT); _jrnAutoT = setTimeout(()=>{ saveJournal(); }, 900); }
 
 function jCellChange(i,field,val){ pushUndoState(true); jrnStampRow(journalRows[i]); journalRows[i][field]=val; journalRows[i].saved=false; jrnAutosave(); }
 
@@ -11984,21 +11992,25 @@ async function bdCascadeDeleteJournalEntry(journalId, hint) {
   if (row.sale_ref_id) {
     const { data: linked } = await acctBizFilter(bkDb.from('bk_journal').select('id,product_id,qty')
       .eq('sale_ref_id', row.sale_ref_id));
-    for (const entry of (linked || [])) {
-      await acctBizFilter(bkDb.from('bk_transactions').delete().eq('journal_id', entry.id));
-      await acctBizFilter(bkDb.from('bk_journal').delete().eq('id', entry.id));
-    }
     const restoreQty = parseFloat(row.qty) || 0;
-    if (row.product_id && restoreQty > 0) {
-      try {
-        const { data: product } = await bkDb.from('bk_products').select('qty_in_stock').eq('id', row.product_id).single();
-        if (product) {
-          const restoredQty = (parseFloat(product.qty_in_stock) || 0) + restoreQty;
-          await bkDb.from('bk_products').update({ qty_in_stock: restoredQty, qty_as_at: today() }).eq('id', row.product_id);
-          salesProductCacheBizId = undefined; // stock changed — refresh the picker cache next time it's used
-        }
-      } catch(e) {}
-    }
+    // the linked entries and the stock put-back run together, not one after another
+    await Promise.all([
+      Promise.all((linked || []).map(async entry => {
+        await acctBizFilter(bkDb.from('bk_transactions').delete().eq('journal_id', entry.id));
+        await acctBizFilter(bkDb.from('bk_journal').delete().eq('id', entry.id));
+      })),
+      (async () => {
+        if (!(row.product_id && restoreQty > 0)) return;
+        try {
+          const { data: product } = await bkDb.from('bk_products').select('qty_in_stock').eq('id', row.product_id).single();
+          if (product) {
+            const restoredQty = (parseFloat(product.qty_in_stock) || 0) + restoreQty;
+            await bkDb.from('bk_products').update({ qty_in_stock: restoredQty, qty_as_at: today() }).eq('id', row.product_id);
+            const cp = salesProductCache.find(x => String(x.id) === String(row.product_id)); if (cp) { cp.qty_in_stock = restoredQty; cp.qty_as_at = today(); }
+          }
+        } catch(e) {}
+      })(),
+    ]);
   } else {
     await acctBizFilter(bkDb.from('bk_transactions').delete().eq('journal_id', row.id));
     await acctBizFilter(bkDb.from('bk_journal').delete().eq('id', row.id));
@@ -12388,13 +12400,13 @@ async function jrnPostLegsFor(rows, replaceExisting){
     const { error } = await bkDb.from('bk_transactions').insert(legs);
     return error || null;
   };
-  for (let s=0; s<rows.length; s+=CH) {
-    const chunk = rows.slice(s, s+CH);
+  const chunks = []; for (let s=0; s<rows.length; s+=CH) chunks.push(rows.slice(s, s+CH));
+  await Promise.all(chunks.map(async chunk => {   // chunks are independent, so they go out together
     const e = await doChunk(chunk);
-    if (!e) continue;
-    if (chunk.length === 1) { errs.set(chunk[0], e); continue; }
+    if (!e) return;
+    if (chunk.length === 1) { errs.set(chunk[0], e); return; }
     for (const r of chunk) { const e1 = await doChunk([r]); if (e1) errs.set(r, e1); }
-  }
+  }));
   return errs;
 }
 
@@ -12431,6 +12443,23 @@ async function _saveJournalOnce(){
   const newRows = toSave.filter(r=>!r.id);
   const existRows = toSave.filter(r=>r.id);
 
+  // ── 2 (started now). existing rows: only what changed. It does not depend on step 1, so both go out together. ──
+  const dirty = r => !r.saved || (r._sig !== undefined && r._sig !== sigStart.get(r));
+  const needRow = r => dirty(r) || ord.get(r) !== (r._pOrd !== undefined ? r._pOrd : r.row_order);
+  const step2 = (async () => {
+    const rowsToUpsert = existRows.filter(needRow);
+    for (let s=0; s<rowsToUpsert.length; s+=100) {
+      const chunk = rowsToUpsert.slice(s, s+100);
+      const mk = r => ({ id:r.id, ...jrnJournalPayload(r, ord.get(r)), updated_at:new Date().toISOString() });
+      const { error } = await bkDb.from('bk_journal').upsert(chunk.map(mk));
+      if (!error) continue;
+      for (const r of chunk) {
+        const { error:e1 } = await bkDb.from('bk_journal').upsert(mk(r));
+        if (e1) failed.set(r, e1);
+      }
+    }
+  })();
+
   // ── 1. brand-new rows ─────────────────────────────────────
   const justCreated = [];
   const CHUNK = 50;
@@ -12464,20 +12493,7 @@ async function _saveJournalOnce(){
     if (!readErr) justCreated.forEach(r=>{ if (!seen.has(r.id)) failed.set(r, new Error('Saved, but the journal cannot read it back for this business — check that the right business is selected')); });
   }
 
-  // ── 2. existing rows: only what changed ────────────────────
-  const dirty = r => !r.saved || (r._sig !== undefined && r._sig !== sigStart.get(r));
-  const needRow = r => dirty(r) || ord.get(r) !== (r._pOrd !== undefined ? r._pOrd : r.row_order);
-  const rowsToUpsert = existRows.filter(needRow);
-  for (let s=0; s<rowsToUpsert.length; s+=100) {
-    const chunk = rowsToUpsert.slice(s, s+100);
-    const mk = r => ({ id:r.id, ...jrnJournalPayload(r, ord.get(r)), updated_at:new Date().toISOString() });
-    const { error } = await bkDb.from('bk_journal').upsert(chunk.map(mk));
-    if (!error) continue;
-    for (const r of chunk) {
-      const { error:e1 } = await bkDb.from('bk_journal').upsert(mk(r));
-      if (e1) failed.set(r, e1);
-    }
-  }
+  await step2;
 
   // ── 3. ledger legs — new rows, plus existing rows that changed ──
   // First save after a page load also posts any balanced saved row that has
@@ -12491,8 +12507,7 @@ async function _saveJournalOnce(){
   const newIds = new Set(justCreated.map(r=>r.id));
   const legErrs = new Map();
   const fresh = legRows.filter(r=>newIds.has(r.id)), replace = legRows.filter(r=>!newIds.has(r.id));
-  (await jrnPostLegsFor(fresh, false)).forEach((e,r)=>legErrs.set(r,e));
-  (await jrnPostLegsFor(replace, true)).forEach((e,r)=>legErrs.set(r,e));
+  (await Promise.all([jrnPostLegsFor(fresh, false), jrnPostLegsFor(replace, true)])).forEach(m => m.forEach((e,r)=>legErrs.set(r,e)));
   // Check-and-repair: every balanced row (just posted, or saved earlier and
   // loaded now) must really have all its legs in the ledger.
   const vRows = legRows.filter(r=>!legErrs.has(r)).concat(healRows.filter(r=>!legRows.includes(r)));
@@ -12535,7 +12550,7 @@ async function _saveJournalOnce(){
   // if already linked). Done AFTER the books are posted so a slow/failed
   // voucher can never hold up or lose an entry.
   const okCreated = justCreated.filter(r=>!failed.has(r));
-  if (okCreated.length) { try { await jrnAutoCreateSourceDocs(okCreated); } catch(e) { console.error('jrnAutoCreateSourceDocs failed', e); } }
+  if (okCreated.length) { jrnAutoCreateSourceDocs(okCreated).catch(e => console.error('jrnAutoCreateSourceDocs failed', e)); }   // in the background: the save is finished without waiting for the vouchers
 
   await refreshEquation();
   bdRefreshDashboardIfVisible();
@@ -17236,6 +17251,29 @@ function salesNarrationColToggle(colId, checked) {
   if (btn) renderSalesSuggestSelectorPanel(btn.getBoundingClientRect());
 }
 
+// ── Show in sales page: which Products-page columns appear in the Product cell on the Sales Record ──
+// Stored in bd_sales_cell_cols as [{id, main}] (product_name first, always main). Hidden columns can be ticked too.
+function psSalesColsGet() {
+  const a = _lsJson('bd_sales_cell_cols', null); if (!Array.isArray(a)) return [];
+  return a.filter(c => c && c.id && c.id !== 'product_name').map(c => ({ id: c.id === 'qty_in_stock' ? 'qty' : c.id, main: !!c.main }));
+}
+function psSalesColsSave(list) {
+  const order = _psEffectiveColOrder();
+  const sorted = list.slice().sort((x, y) => { const a = order.indexOf(x.id), b = order.indexOf(y.id); return (a < 0 ? 999 : a) - (b < 0 ? 999 : b); });
+  try { localStorage.setItem('bd_sales_cell_cols', JSON.stringify(sorted.length ? [{ id: 'product_name', main: true }].concat(sorted) : [])); } catch (e) {}   // always written so it syncs, [] = back to the default text
+  try { salesRenderIfOpen(); } catch (e) {}
+}
+function psSalesColToggle(id, on, el) {
+  const list = psSalesColsGet().filter(c => c.id !== id);
+  const sel = el && el.closest('.ps-col-row') && el.closest('.ps-col-row').querySelector('select.ps-col-role');
+  if (on) list.push({ id, main: !!(sel && sel.value === 'main') });
+  if (sel) sel.disabled = !on;
+  psSalesColsSave(list);
+}
+function psSalesColRole(id, role) {
+  psSalesColsSave(psSalesColsGet().map(c => c.id === id ? { id, main: role === 'main' } : c));
+}
+function salesRenderIfOpen() { if (document.getElementById('sheetTable_sales')) renderRecordSheet('sales'); }
 function togglePsColSelector() {
   const existing = document.getElementById('psColSelectorPortal');
   if (existing) { existing.remove(); return; }
@@ -17255,10 +17293,18 @@ function renderColSelectorPanel(rect) {
   // never be re-shown once hidden, or found at all if added elsewhere.
   const builtIn = PS_COL_DEFS[psType].filter(c => c.id !== 'name'); // name is always shown, never listed as optional
   const custom = _psCustomCols();
+  const forSales = psType === 'products';   // the sales Product cell reads from Products, so only this page gets the Show in sales page options
+  const sc = forSales ? psSalesColsGet() : [];
   const selectorRows = builtIn.map(c => ({ id: c.id, label: c.label, isCustom: false }))
     .concat(custom.map(c => ({ id: c.key, label: c.name, isCustom: true })))
     .map(c => {
       const checked = _psIsColVisible(c.id);
+      const cur = sc.find(x => x.id === c.id), on = !!cur;
+      const salesCells = forSales
+        ? '<label class="ps-col-sales" title="Show this column\'s information in the Product cell on the Sales Record page"><input type="checkbox" data-col="'+c.id+'"'+(on?' checked':'')+' onchange="psSalesColToggle(this.dataset.col,this.checked,this)"/></label>'
+          + '<select class="ps-col-role" data-col="'+c.id+'"'+(on?'':' disabled')+' onchange="psSalesColRole(this.dataset.col,this.value)" title="Main = written in the cell. Sub = smaller text underneath.">'
+          + '<option value="main"'+(cur && cur.main?' selected':'')+'>Main</option><option value="sub"'+(cur && cur.main?'':' selected')+'>Sub</option></select>'
+        : '';
       return '<div class="ps-col-row">'
         + '<label class="ps-col-label">'
         + '<input type="checkbox" class="ps-col-check" data-col="'+c.id+'"'
@@ -17266,8 +17312,9 @@ function renderColSelectorPanel(rect) {
         + ' onchange="psColCheck(this.dataset.col,this.checked)"/>'
         + escH(c.label)
         + (c.isCustom ? ' <span style="color:var(--muted);font-size:0.62rem;">(custom)</span>' : '')
-        + '</label></div>';
+        + '</label>' + salesCells + '</div>';
     }).join('');
+  const salesHead = forSales ? '<div class="ps-col-row ps-col-head"><span class="ps-col-label" style="cursor:default">Column</span><span class="ps-col-sales" style="font-size:.6rem;line-height:1.15;text-align:center">Show in<br>sales page</span><span class="ps-col-role" style="font-size:.6rem;border:none;background:none">Role</span></div>' : '';
 
   const wrap = document.createElement('div');
   wrap.id = 'psColSelectorPortal';
@@ -17277,10 +17324,11 @@ function renderColSelectorPanel(rect) {
   const panel = document.createElement('div');
   panel.id = 'psColSelector';
   panel.className = 'ps-col-selector';
-  panel.style.cssText = 'position:fixed;z-index:12001;top:'+(rect.bottom+6)+'px;left:'+Math.min(rect.left, window.innerWidth-286)+'px;';
+  panel.style.cssText = 'position:fixed;z-index:12001;top:'+(rect.bottom+6)+'px;left:'+Math.max(8, Math.min(rect.left, window.innerWidth-(forSales?400:286)))+'px;max-height:'+Math.max(240, window.innerHeight-rect.bottom-24)+'px;overflow-y:auto;';
   panel.addEventListener('click', e => e.stopPropagation());
+  if (forSales) panel.style.minWidth = '380px';
   panel.innerHTML = '<div class="ps-col-selector-title">Show / hide columns</div>'
-    + selectorRows
+    + salesHead + selectorRows
     + '<button onclick="psAddColumnFromSelector()" id="psAddColBtn"'
     + ' style="width:100%;margin-top:10px;background:transparent;color:var(--gold);border:1px dashed var(--gold);font-size:0.76rem;font-weight:700;padding:8px;border-radius:7px;cursor:pointer;">'
     + '+ Add New Column</button>'
@@ -17994,6 +18042,11 @@ async function psColDeleteOne(key) {
   _psPersistColOrder(_psEffectiveColOrder().filter(k=>k!==key));
   renderProductsPage();
 }
+// Details typed in Assign Cells (Free text) fill every empty cell of the column, as the per-cell dialog already did.
+function fxDetailsText(meta) {
+  if (!meta || meta.type !== 'text' || !meta.fields || !meta.fields.some(f => f.detail)) return '';
+  return fxEncode(Object.fromEntries(meta.fields.map(f => [f.label, f.detail || ''])), meta.fields);
+}
 function psColAssignCells(key) {
   const cols = _psCustomCols();
   const c = cols.find(x=>x.key===key);
@@ -18004,6 +18057,12 @@ function psColAssignCells(key) {
     if (!c && key==='qty' && newMeta && newMeta.type!=='measurement') { bdToast('Quantity takes a measurement unit (kg, tons, inches…) — choose Measurement or Free text'); return; }
     if (newMeta) meta[key]=newMeta; else delete meta[key];
     _psPersistColMeta(meta);
+    const fill = fxDetailsText(newMeta);
+    if (fill) psRows.forEach(r => {
+      if (!(r.name || r.id) || (r.customMeta && Object.prototype.hasOwnProperty.call(r.customMeta, key))) return;   // never turn the blank bottom row into a product
+      if (c) { r.custom = r.custom || {}; if (!String(r.custom[key] || '').trim()) r.custom[key] = fill; }
+      else if ((key === 'barcode' || key === 'product_type' || key === 'service_type') && !String(r[key === 'service_type' ? 'product_type' : key] || '').trim()) r[key === 'service_type' ? 'product_type' : key] = fill;
+    });
     psRows.forEach(r=>{ r.saved=false; });
     renderProductsPage();
     psAutosaveTrigger();
@@ -20516,13 +20575,13 @@ async function sheetRestore(kind) {
 // already posted into the journal by autosave, so they are matched and never doubled.
 let _sheetSyncing = {};
 async function sheetSyncFromJournal(kind, noRender) {
-  if (!bkUser || !navigator.onLine || _sheetSyncing[kind]) return false;
+  if (!bkUser || !navigator.onLine || _sheetSyncing[kind] || _sheetSaving[kind]) return false;   // not while a save is using the connection
   _sheetSyncing[kind] = true;
   try {
     const st = sheetState[kind];
     let from = st.dateFrom || today(), to = st.dateTo || from;
     const rt = kind==='sales' ? 'income' : 'expenditure';
-    let qq = bkDb.from('bk_transactions').select('*').match(bizMatch()).eq('record_type', rt);
+    let qq = bkDb.from('bk_transactions').select('id,journal_id,txn_date,narration,payee,payer,debit,credit,account_name,payment_mode,txn_group_id,created_at').match(bizMatch()).eq('record_type', rt);
     if (st.allDates) qq = qq.order('txn_date',{ascending:false}).order('id');
     else qq = qq.gte('txn_date', from).lte('txn_date', to).order('created_at');
     const { data: T, error } = await qq;
@@ -20676,6 +20735,8 @@ function sheetColAssignCells(kind, key) {
   openAssignCellsDialog(sheetColLabel(kind,c), meta[key], newMeta => {
     if (newMeta) meta[key]=newMeta; else delete meta[key];
     localStorage.setItem('bd_colmeta_'+kind, JSON.stringify(meta));
+    const fill = (c.t === 'c') ? fxDetailsText(newMeta) : '';
+    if (fill) { const put = r => { if (r._bundle || !(r.total > 0 || r.narration || r.payee || r.payer || r.product)) return; r.custom = r.custom || {}; if (!String(r.custom[key] || '').trim()) r.custom[key] = fill; }; sheetRows(kind).forEach(r => { if (r._bundle) (r.items || []).forEach(put); else put(r); }); }
     renderRecordSheet(kind);
   });
 }
@@ -21102,7 +21163,7 @@ function acFieldsPaint() {
   const f = window._acFields || [];
   const inp = 'background:var(--surface2);border:1px solid var(--border2);color:var(--white);border-radius:6px;padding:6px 8px;font-size:.74rem;font-family:inherit;min-width:0;width:100%;box-sizing:border-box;';
   el.innerHTML = `<label class="su-label">Cell content</label>
-    <div style="font-size:0.64rem;color:var(--muted);margin-bottom:6px;">Write a <b>title</b> on the left and its <b>details</b> on the right (up to 10 rows). Tick the rows to show in the cell, and choose which are <b>Main</b> (large text) and which are <b>Sub</b> (smaller text underneath). Click a cell afterwards to type its own details.</div>
+    <div style="font-size:0.64rem;color:var(--muted);margin-bottom:6px;">Write a <b>title</b> on the left and its <b>details</b> on the right (up to 10 rows). Tick the rows to show in the cell, and choose which are <b>Main</b> (large text) and which are <b>Sub</b> (smaller text underneath). The details fill every empty cell in the column (cells that already have something keep it). Click a cell afterwards to change its own.</div>
     <div style="border:1px solid var(--border2);border-radius:8px;padding:8px;margin-bottom:8px;background:var(--surface);">
       <div style="display:grid;grid-template-columns:1fr 1.3fr 34px 66px 22px;gap:5px;font-size:.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;"><span>TITLE</span><span>DETAILS</span><span style="text-align:center">SHOW</span><span>ROLE</span><span></span></div>
       <div id="acFields">${f.map((x, i) => `<div class="ac-frow" style="display:grid;grid-template-columns:1fr 1.3fr 34px 66px 22px;gap:5px;align-items:center;margin-bottom:5px;">
@@ -21805,18 +21866,10 @@ async function sheetDeleteSelected(kind) {
   renderRecordSheet(kind);
   try { if (typeof sheetAutosaveTrigger === 'function') sheetAutosaveTrigger(kind); } catch(e) {}
   // database catches up behind the screen
-  const jids = new Set();
-  for (const row of gone) {
-    if (!(row && row._posted)) continue;
-    const ids = [row._txnId].filter(Boolean);
-    if (!ids.length) continue;
-    try {
-      const { data: txns } = await bkDb.from('bk_transactions').select('id,journal_id').in('id', ids);
-      (txns||[]).forEach(t => { if (t.journal_id) jids.add(t.journal_id); });
-    } catch(e) {}
-  }
-  for (const jid of jids) { try { await bdCascadeDeleteJournalEntry(jid); } catch(e) {} }
-  try { await refreshEquation(); } catch(e) {}
+  _jrnPendingDeletes++;
+  try { await sheetDeleteInDb(gone); } catch(e) { try { bdToast('Some entries could not be deleted. Refresh to check. ' + ((e && e.message) || ''), 'error'); } catch(_) {} }
+  finally { _jrnPendingDeletes--; }
+  try { refreshEquation(); } catch(e) {}
 }
 function sheetSelCancel(kind) {
   sheetSel[kind] = {active:false, picked:[]};
@@ -21927,36 +21980,38 @@ function sheetAddRow(kind){
   renderRecordSheet(kind);
 }
 
+// Removes the saved entries behind one or more sheet rows (journal entry, ledger legs, and the stock a sale had taken).
+async function sheetDeleteInDb(gone) {
+  const jids = new Set(), lookup = [];
+  const one = x => { if (!x) return; if (x._jid) jids.add(x._jid); else if (x._txnId) lookup.push(x._txnId); };
+  gone.forEach(r => { if (!(r && r._posted)) return; if (r._bundle) (r.items || []).forEach(one); else one(r); });
+  if (lookup.length) {
+    const { data } = await bkDb.from('bk_transactions').select('id,journal_id').in('id', lookup);
+    (data || []).forEach(t => { if (t.journal_id) jids.add(t.journal_id); });
+  }
+  await Promise.all([...jids].map(jid => bdCascadeDeleteJournalEntry(jid)));
+}
+// Deleting is instant on screen: the row leaves the sheet at once and the database clean-up runs behind it.
+// If the clean-up fails the row comes back with a message, so nothing is silently left behind.
 async function sheetDeleteRow(kind,i){
   const rows = sheetRows(kind);
   const row = rows[i];
-
-  // A saved row carries a link back to its real database record —
-  // deleting it here needs to remove that too (journal entry, ledger
-  // transactions, and restore any stock it had deducted), not just
-  // disappear it from the on-screen list while the underlying data
-  // stays behind untouched.
-  if (row && row._posted) {
-    const txnIds = row._bundle ? (row.items||[]).map(x=>x._txnId).filter(Boolean) : [row._txnId].filter(Boolean);
-    if (txnIds.length) {
-      try {
-        const { data: txns } = await bkDb.from('bk_transactions').select('id,journal_id').in('id', txnIds);
-        const journalIds = [...new Set((txns||[]).map(t=>t.journal_id).filter(Boolean))];
-        for (const jid of journalIds) await bdCascadeDeleteJournalEntry(jid);
-        await refreshEquation();
-      } catch(e) {}
-    }
-  }
-
-  // Undo is purely an in-memory/visual mechanism — it can't reverse
-  // the database cascade above, so offering it here would silently
-  // bring the row back on screen while its journal entry stays
-  // deleted underneath. Only snapshot (and offer undo) for rows that
-  // were never posted in the first place, where undo is fully honest.
-  if (!(row && row._posted)) sheetSnapshot(kind);
+  if (!row) return;
+  const posted = !!row._posted;
+  // Undo is only offered for rows that were never posted: it can't reverse the database clean-up.
+  if (!posted) sheetSnapshot(kind);
   rows.splice(i,1);
   if (rows.length === 0) rows.push(kind==='sales' ? staffEmptySaleRow(1) : staffEmptyExpRow(1));
   renderRecordSheet(kind);
+  if (!posted) return;
+  _jrnPendingDeletes++;
+  try { await sheetDeleteInDb([row]); }
+  catch(e) {
+    const rr = sheetRows(kind);
+    if (!rr.includes(row)) rr.splice(Math.min(i, Math.max(0, rr.length - 1)), 0, row);
+    try { renderRecordSheet(kind); bdToast('Could not delete that entry, so it has been put back. ' + ((e && e.message) || ''), 'error'); } catch(_) {}
+  } finally { _jrnPendingDeletes--; }
+  try { refreshEquation(); } catch(e) {}
 }
 
 function sheetToggleToolbox(kind){
@@ -24499,7 +24554,8 @@ function staffCashAccount(payMode) {
 async function bdSaleIncomeAccount(row) {
   try {
     if (row.product_id && bkUser) {
-      const { data } = await bkDb.from('bk_products').select('income_account, custom').eq('id', row.product_id).single();
+      const cp = salesProductCache.find(x => String(x.id) === String(row.product_id));
+      const data = cp || (await bkDb.from('bk_products').select('income_account, custom').eq('id', row.product_id).single()).data;
       if (data && data.custom && data.custom.__sub) return data.custom.__sub;
       if (data && data.income_account) return data.income_account;
     }
@@ -24536,16 +24592,16 @@ async function staffIncomeAccount(narration) {
 function bdValidateSaleRow(row) {
   return null; // a product from the list is optional: only linked products touch stock / cost of goods
 }
-async function bdDeductStockForSale(row) {
+async function bdDeductStockForSale(row, fresh) {
   if (!row.product_id) return;
   const qty = parseFloat(row.qty) || 1;
   if (qty <= 0) return;
   try {
-    const { data } = await bkDb.from('bk_products').select('qty_in_stock').eq('id', row.product_id).single();
+    const data = fresh || (await bkDb.from('bk_products').select('qty_in_stock').eq('id', row.product_id).single()).data;
     if (!data) return;
     const newQty = (parseFloat(data.qty_in_stock) || 0) - qty;
     await bkDb.from('bk_products').update({ qty_in_stock: newQty, qty_as_at: today() }).eq('id', row.product_id);
-    salesProductCacheBizId = undefined; // stock changed — refresh the picker cache next time it's used
+    const cp = salesProductCache.find(x => String(x.id) === String(row.product_id)); if (cp) { cp.qty_in_stock = newQty; cp.qty_as_at = today(); }   // the picker shows the new stock at once
   } catch(e) {}
 }
 // If the dashboard is the page currently on screen, refresh its
@@ -24569,11 +24625,12 @@ async function bdUpdatePostedEntry(row, date, narration) {
   const canAmt = legs && legs.length === 2;
   const jupd = Object.assign({}, upd);
   if (canAmt) { jupd.debit_amount = amount; jupd.credit_amount = amount; }
-  await bkDb.from('bk_journal').update(jupd).eq('id', row._jid);
+  const jobs = [bkDb.from('bk_journal').update(jupd).eq('id', row._jid)];
   if (legs && legs.length) {
-    await bkDb.from('bk_transactions').update(Object.assign({ payment_mode: row.pay_mode || 'cash' }, upd)).eq('journal_id', row._jid);
-    if (canAmt) for (const l of legs) await bkDb.from('bk_transactions').update((parseFloat(l.debit)||0) > 0 ? { debit: amount } : { credit: amount }).eq('id', l.id);
+    jobs.push(bkDb.from('bk_transactions').update(Object.assign({ payment_mode: row.pay_mode || 'cash' }, upd)).eq('journal_id', row._jid));
+    if (canAmt) legs.forEach(l => jobs.push(bkDb.from('bk_transactions').update((parseFloat(l.debit)||0) > 0 ? { debit: amount } : { credit: amount }).eq('id', l.id)));
   }
+  await Promise.all(jobs);   // changes to the entry and its legs go out together
 }
 async function autoPostSaleRow(row, customerName, txnDate, forcedBusinessId) {
   if (!bkUser || !row.total || row.total <= 0) return;
@@ -24594,151 +24651,79 @@ async function autoPostSaleRow(row, customerName, txnDate, forcedBusinessId) {
   if (payMode === 'credit')            cashAcct = 'Debtors';
   else if (payMode === 'transfer' || payMode === 'pos' || payMode === 'cheque' || payMode === 'debitcard' || payMode === 'creditcard') cashAcct = 'Cash at Bank';
   else                                  cashAcct = 'Cash in Hand';
-  const incomeAcct = await bdSaleIncomeAccount(row);
   const amount     = parseFloat(row.total) || 0;
   const narration  = (row.product || row.narration || 'Sale') + (customerName ? ' — ' + customerName : '');
   const date       = txnDate || new Date().toISOString().slice(0,10);
   // Shared by both journal entries this sale posts (revenue + COGS),
   // so deleting either one later finds and removes both together.
   const saleRefId  = (crypto.randomUUID ? crypto.randomUUID() : 'sale'+Date.now()+Math.random().toString(16).slice(2));
+  const qtyN = parseFloat(row.qty) || 0;
 
-  // 1. Write to bk_journal
-  const { data: jnl, error: jErr } = await bkDb.from('bk_journal').insert({
-    user_id:              bkUser.id,
-    business_id:          bizId,
-    txn_date:             date,
-    narration:            narration,
-    payee:                row.payee || null,
-    payer:                row.payer || null,
-    debit_account_name:   cashAcct,
-    debit_record_type:    'asset',
-    credit_account_name:  incomeAcct,
-    credit_record_type:   'income',
-    debit_amount:         amount,
-    credit_amount:        amount,
-    product_id:           row.product_id || null,
-    qty:                  parseFloat(row.qty) || null,
-    sale_ref_id:          saleRefId,
-    created_at:           new Date().toISOString(),
-  }).select().single();
-
-  if (jErr || !jnl) return;
-  row._jid = jnl.id; row._own = true; row._pm = payMode;
-
-  // 2. Find account IDs and calculate new running balances
-  const [cashRes, incomeRes] = await Promise.all([
-    acctBizFilter(bkDb.from('bk_accounts').select('id,opening_balance')).eq('account_name',cashAcct).maybeSingle(),
-    acctBizFilter(bkDb.from('bk_accounts').select('id,opening_balance')).eq('account_name',incomeAcct).maybeSingle(),
+  // Round 1 — what the sale needs to know (the income account comes from the in-memory product list when it can).
+  const [incomeAcct, prod] = await Promise.all([
+    bdSaleIncomeAccount(row),
+    row.product_id ? bkDb.from('bk_products').select('cost_price, custom, qty_in_stock').eq('id', row.product_id).single().then(r => r.data).catch(() => null) : null,
   ]);
-
-  // 3. Get last balance for each account to calculate running balance
+  const invName = (prod && prod.custom && prod.custom.__invsub && (accounts.asset || []).some(a => a.account_name === prod.custom.__invsub)) ? prod.custom.__invsub : 'Inventory / Stock';
+  const costPrice = parseFloat(prod && prod.cost_price) || 0;
+  const doCogs = !!(row.product_id && qtyN > 0 && costPrice > 0);
+  const cogsAmt = costPrice * qtyN;
+  const cogsNarr = 'Cost of goods sold' + (row.narration ? ' — ' + row.narration : '');
   const getLastBal = async (acctName) => {
-    const { data } = await bkDb.from('bk_transactions')
-      .select('balance').match(bizMatch()).eq('account_name',acctName)
-      .order('created_at',{ascending:false}).limit(1);
+    const { data } = await bkDb.from('bk_transactions').select('balance').match(bizMatch()).eq('account_name', acctName).order('created_at', { ascending: false }).limit(1);
     return parseFloat(data?.[0]?.balance) || 0;
   };
+  const acctId = (name) => acctBizFilter(bkDb.from('bk_accounts').select('id,opening_balance')).eq('account_name', name).maybeSingle();
 
-  const cashLastBal   = await getLastBal(cashAcct);
-  const incomeLastBal = await getLastBal(incomeAcct);
-
-  // 4. Post to bk_transactions (both sides of the entry)
-  const txns = [];
-  if (cashRes?.data) {
-    txns.push({
-      user_id:      bkUser.id,
-      journal_id:   jnl.id,
-      record_type:  'asset',
-      account_name: cashAcct,
-      txn_date:     date,
-      narration:    narration,
-      payee:        row.payee || null,
-      payer:        row.payer || null,
-      debit:        amount,
-      credit:       0,
-      balance:      cashLastBal + amount, // assets increase with debit
-      created_at:   new Date().toISOString(),
-    });
-  }
-  if (incomeRes?.data) {
-    txns.push({
-      user_id:      bkUser.id,
-      journal_id:   jnl.id,
-      record_type:  'income',
-      account_name: incomeAcct,
-      txn_date:     date,
-      narration:    narration,
-      payee:        row.payee || null,
-      payer:        row.payer || null,
-      debit:        0,
-      credit:       amount,
-      balance:      incomeLastBal + amount, // income increases with credit
-      created_at:   new Date().toISOString(),
-    });
-  }
-  txns.forEach(t=>{ if(bizId) t.business_id=bizId; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; t.payment_mode=payMode; });
-  if (txns.length) await bkDb.from('bk_transactions').insert(txns);
-
-  await postCogsForSale(row, bizId, date, saleRefId);
-  await bdDeductStockForSale(row);
-  bdRefreshDashboardIfVisible();
-}
-
-// Debit Cost of Goods Sold — Credit Inventory / Stock, at the
-// product's cost price (not selling price). This is the piece that
-// was missing alongside the existing quantity deduction: without it,
-// a sale recorded revenue but never reduced the inventory asset's
-// book value or recorded the actual cost of what was sold, so gross
-// profit and the balance sheet were both wrong. Silently does nothing
-// for a row with no linked product, or a product with no cost price
-// set — there's nothing meaningful to post in that case.
-async function postCogsForSale(row, bizId, date, saleRefId) {
-  if (!row.product_id) return;
-  const qty = parseFloat(row.qty) || 0;
-  if (qty <= 0) return;
-  try {
-    const { data: product } = await bkDb.from('bk_products').select('cost_price, custom').eq('id', row.product_id).single();
-    const invName = (product && product.custom && product.custom.__invsub && (accounts.asset || []).some(a => a.account_name === product.custom.__invsub)) ? product.custom.__invsub : 'Inventory / Stock';
-    const costPrice = parseFloat(product?.cost_price) || 0;
-    if (costPrice <= 0) return; // no cost recorded for this product — nothing to post
-    const amount = costPrice * qty;
-    const narration = 'Cost of goods sold' + (row.narration ? ' — ' + row.narration : '');
-
-    const { data: jnl, error: jErr } = await bkDb.from('bk_journal').insert({
+  // Round 2 — everything that does not depend on the new journal id runs together, so the sale costs two or three trips, not sixteen.
+  const [jRes, cashRes, incomeRes, cashLastBal, incomeLastBal, cogsJ, cogsAcc, invAcc, cogsLast, invLast] = await Promise.all([
+    bkDb.from('bk_journal').insert({
       user_id: bkUser.id, business_id: bizId, txn_date: date, narration: narration,
+      payee: row.payee || null, payer: row.payer || null,
+      debit_account_name: cashAcct, debit_record_type: 'asset',
+      credit_account_name: incomeAcct, credit_record_type: 'income',
+      debit_amount: amount, credit_amount: amount,
+      product_id: row.product_id || null, qty: parseFloat(row.qty) || null,
+      sale_ref_id: saleRefId, created_at: new Date().toISOString(),
+    }).select().single(),
+    acctId(cashAcct), acctId(incomeAcct), getLastBal(cashAcct), getLastBal(incomeAcct),
+    doCogs ? bkDb.from('bk_journal').insert({
+      user_id: bkUser.id, business_id: bizId, txn_date: date, narration: cogsNarr,
       debit_account_name: 'Cost of Goods Sold', debit_record_type: 'expenditure',
       credit_account_name: invName, credit_record_type: 'asset',
-      debit_amount: amount, credit_amount: amount,
-      product_id: row.product_id, qty: qty, sale_ref_id: saleRefId,
-      created_at: new Date().toISOString(),
-    }).select().single();
-    if (jErr || !jnl) return;
+      debit_amount: cogsAmt, credit_amount: cogsAmt,
+      product_id: row.product_id, qty: qtyN, sale_ref_id: saleRefId, created_at: new Date().toISOString(),
+    }).select().single() : null,
+    doCogs ? acctId('Cost of Goods Sold') : null, doCogs ? acctId(invName) : null,
+    doCogs ? getLastBal('Cost of Goods Sold') : 0, doCogs ? getLastBal(invName) : 0,
+  ]);
+  const jnl = jRes && jRes.data, jErr = jRes && jRes.error;
+  if (jErr || !jnl) {   // the sale did not post: remove the cost entry that was prepared alongside it
+    try { if (cogsJ && cogsJ.data) await bkDb.from('bk_journal').delete().eq('id', cogsJ.data.id); } catch (e) {}
+    return;
+  }
+  row._jid = jnl.id; row._own = true; row._pm = payMode;
 
-    const [cogsRes, invRes] = await Promise.all([
-      acctBizFilter(bkDb.from('bk_accounts').select('id')).eq('account_name', 'Cost of Goods Sold').maybeSingle(),
-      acctBizFilter(bkDb.from('bk_accounts').select('id')).eq('account_name', invName).maybeSingle(),
-    ]);
-    const getLastBal = async (acctName) => {
-      const { data } = await bkDb.from('bk_transactions').select('balance').match(bizMatch())
-        .eq('account_name', acctName).order('created_at', { ascending: false }).limit(1);
-      return parseFloat(data?.[0]?.balance) || 0;
-    };
-    const [cogsLastBal, invLastBal] = await Promise.all([getLastBal('Cost of Goods Sold'), getLastBal(invName)]);
+  const stamp = () => new Date().toISOString();
+  const txns = [];
+  if (cashRes?.data) txns.push({ user_id: bkUser.id, journal_id: jnl.id, record_type: 'asset', account_name: cashAcct, txn_date: date, narration: narration, payee: row.payee || null, payer: row.payer || null, debit: amount, credit: 0, balance: cashLastBal + amount, created_at: stamp() });
+  if (incomeRes?.data) txns.push({ user_id: bkUser.id, journal_id: jnl.id, record_type: 'income', account_name: incomeAcct, txn_date: date, narration: narration, payee: row.payee || null, payer: row.payer || null, debit: 0, credit: amount, balance: incomeLastBal + amount, created_at: stamp() });
+  txns.forEach(t=>{ if(bizId) t.business_id=bizId; if(row.txn_group_id) t.txn_group_id=row.txn_group_id; t.payment_mode=payMode; });
+  const cogsTx = [];
+  if (cogsJ && cogsJ.data) {
+    const cj = cogsJ.data;
+    if (cogsAcc?.data) cogsTx.push({ user_id: bkUser.id, journal_id: cj.id, record_type: 'expenditure', account_name: 'Cost of Goods Sold', txn_date: date, narration: cogsNarr, debit: cogsAmt, credit: 0, balance: cogsLast + cogsAmt, created_at: stamp() });
+    if (invAcc?.data) cogsTx.push({ user_id: bkUser.id, journal_id: cj.id, record_type: 'asset', account_name: invName, txn_date: date, narration: cogsNarr, debit: 0, credit: cogsAmt, balance: invLast - cogsAmt, created_at: stamp() });
+    cogsTx.forEach(t => { if (bizId) t.business_id = bizId; if (row.txn_group_id) t.txn_group_id = row.txn_group_id; });
+  }
 
-    const txns = [];
-    if (cogsRes?.data) txns.push({
-      user_id: bkUser.id, journal_id: jnl.id, record_type: 'expenditure', account_name: 'Cost of Goods Sold',
-      txn_date: date, narration, debit: amount, credit: 0,
-      balance: cogsLastBal + amount, created_at: new Date().toISOString(),
-    });
-    if (invRes?.data) txns.push({
-      user_id: bkUser.id, journal_id: jnl.id, record_type: 'asset', account_name: invName,
-      txn_date: date, narration, debit: 0, credit: amount,
-      balance: invLastBal - amount, created_at: new Date().toISOString(),
-    });
-    txns.forEach(t => { if (bizId) t.business_id = bizId; if (row.txn_group_id) t.txn_group_id = row.txn_group_id; });
-    if (txns.length) await bkDb.from('bk_transactions').insert(txns);
-  } catch (e) {}
+  // Round 3 — both ledger inserts and the stock change together.
+  await Promise.all([
+    txns.length ? bkDb.from('bk_transactions').insert(txns) : null,
+    cogsTx.length ? bkDb.from('bk_transactions').insert(cogsTx) : null,
+    bdDeductStockForSale(row, prod),
+  ]);
+  bdRefreshDashboardIfVisible();
 }
 
 // Save a customer block AND auto-post all rows to the accounting ledger
@@ -26054,13 +26039,7 @@ async function salesAssignProducts() {
   o.innerHTML = `<div class="pay-edit" style="width:min(460px,100%);max-height:90vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;overflow:auto" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()">
     <div class="pay-edit-h" style="font-size:.95rem">Assign products</div>
     <div class="pay-note">The list comes straight from your Products page and updates as stock is sold or added.</div>
-    <label class="su-label" style="margin-top:8px">What each Product cell shows</label>
-    <div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:10px">
-      <div style="display:grid;grid-template-columns:22px 1fr 78px;gap:6px;font-size:.6rem;color:var(--muted);margin-bottom:4px"><span></span><span>PRODUCTS PAGE COLUMN</span><span>ROLE</span></div>
-      <div style="display:grid;grid-template-columns:22px 1fr 78px;gap:6px;align-items:center;margin-bottom:4px;font-size:.78rem"><input type="checkbox" checked disabled/><span>Product</span><span style="font-size:.72rem;color:var(--muted)">Main</span></div>
-      ${choices.map(colRow).join('')}
-      <div style="font-size:.62rem;color:var(--muted);margin-top:4px">Main columns are written into the cell. Sub columns show underneath in smaller text and stay up to date. Ticked columns also appear as details for each product in the dropdown.</div>
-    </div>
+    <div class="pay-note" style="margin:8px 0 10px">To choose which Products-page columns show in the Product cell, open the Products page, click Columns, and tick <b>Show in sales page</b> beside each column (Main or Sub).</div>
     <label class="su-label">Products offered in the cells</label>
     <input id="paQ" class="bk-login-input" placeholder="Search products…" oninput="salesAssignFilter()" style="margin:4px 0 8px"/>
     <div style="display:flex;gap:8px;margin-bottom:6px"><button class="pay-b" onclick="salesAssignAll(true)">Select all</button><button class="pay-b" onclick="salesAssignAll(false)">Clear</button></div>
@@ -26082,12 +26061,7 @@ function salesAssignAuto() {
 function salesAssignApply() {
   const ids = [...document.querySelectorAll('#paList input[type=checkbox]:checked')].map(c => c.value);
   const total = document.querySelectorAll('#paList input[type=checkbox]').length;
-  const cols = [{ id: 'product_name', main: true }];
-  document.querySelectorAll('#prodAssignDlg .sp-colrow').forEach(r => { if (r.querySelector('.sp-on').checked) cols.push({ id: r.dataset.id, main: r.querySelector('.sp-role').value === 'main' }); });
-  try {
-    localStorage.setItem('bd_sales_prod_assign', JSON.stringify(!ids.length || ids.length === total ? [] : ids));
-    localStorage.setItem('bd_sales_cell_cols', JSON.stringify(cols.length > 1 ? cols : []));   // always written, so clearing it syncs too
-  } catch (e) {}
+  try { localStorage.setItem('bd_sales_prod_assign', JSON.stringify(!ids.length || ids.length === total ? [] : ids)); } catch (e) {}
   try { coaCloudPush(true); } catch (e) {}
   try { renderRecordSheet('sales'); } catch (e) {}
   const m = document.getElementById('paMsg'); if (m) { m.textContent = '✓ Saved'; m.style.color = 'var(--green,#3fb27f)'; }
@@ -26138,12 +26112,19 @@ function psDismissUnreg(k) { const o = _lsJson('bd_unreg_products', {}); delete 
 // sheet would vanish from it. The choice is stored as the list of ticked account names.
 let _salesOwnInc = new Set(['sales revenue', 'service income', 'barbing revenue']);
 const _incKey = n => String(n || '').trim().toLowerCase();
+let _incMemo = { raw: null, ex: null, n: -1, set: null };
 function salesIncomeIncluded() {
+  const raw = localStorage.getItem('bd_sales_incl_income'), exr = localStorage.getItem('bd_sales_excl_income'), n = (accounts.income || []).length;
+  if (_incMemo.set && _incMemo.raw === raw && _incMemo.ex === exr && _incMemo.n === n) return _incMemo.set;   // called once per transaction, so it is worked out once
+  let set;
   const a = _lsJson('bd_sales_incl_income', null);
-  if (Array.isArray(a)) return new Set(a);
-  const ex = _lsJson('bd_sales_excl_income', null);       // older choice (stored the other way round): carry it over
-  if (Array.isArray(ex)) return new Set((accounts.income || []).map(x => x.account_name).filter(n => ex.indexOf(n) < 0));
-  return new Set();
+  if (Array.isArray(a)) set = new Set(a);
+  else {
+    const ex = _lsJson('bd_sales_excl_income', null);       // older choice (stored the other way round): carry it over
+    set = Array.isArray(ex) ? new Set((accounts.income || []).map(x => x.account_name).filter(nm => ex.indexOf(nm) < 0)) : new Set();
+  }
+  _incMemo = { raw, ex: exr, n, set };
+  return set;
 }
 function salesIncomeChosenCount() { let n = 0; const inc = salesIncomeIncluded(); (accounts.income || []).forEach(a => { if (inc.has(a.account_name) && !_salesOwnInc.has(_incKey(a.account_name))) n++; }); return n; }
 function salesIncomeShown(t) { return salesIncomeIncluded().has(t.account_name) || _salesOwnInc.has(_incKey(t.account_name)); }
@@ -26225,7 +26206,10 @@ async function partyLoad() {
   _partyC = c; return c;
 }
 // Our own accounts: whatever titles the user adds. Old saved payment-method details are carried over once.
+let _ownRaw = null, _ownVal = null;
 function ownAccounts() {
+  const raw0 = localStorage.getItem('bd_own_accounts');
+  if (raw0 !== null && raw0 === _ownRaw && _ownVal) return _ownVal;
   let list = _lsJson('bd_own_accounts', null);
   if (!Array.isArray(list)) {
     list = [];
@@ -26238,13 +26222,15 @@ function ownAccounts() {
     } catch (e) {}
     ownAccountsSave(list);
   }
+  _ownRaw = localStorage.getItem('bd_own_accounts'); _ownVal = list;
   return list;
 }
-function ownAccountsSave(list) { try { localStorage.setItem('bd_own_accounts', JSON.stringify(list)); } catch (e) {} }
+function ownAccountsSave(list) { _ownRaw = null; try { localStorage.setItem('bd_own_accounts', JSON.stringify(list)); } catch (e) {} }
 function ownAccountLine(a) { return [a.bank, a.acct_name, a.acct_no, a.phone].map(x => (x || '').trim()).filter(Boolean).join(' · '); }
 function partyOwn() { return ownAccounts().filter(a => (a.title || '').trim()).map(a => ({ value: a.title.trim(), label: a.title.trim(), sub: ownAccountLine(a) })); }
-function partyInfo() { return _lsJson('bd_party_info', {}); }
-function partyInfoSave(o) { try { localStorage.setItem('bd_party_info', JSON.stringify(o)); } catch (e) {} }
+let _infoRaw = null, _infoVal = null;
+function partyInfo() { const raw = localStorage.getItem('bd_party_info'); if (raw !== null && raw === _infoRaw && _infoVal) return _infoVal; _infoVal = _lsJson('bd_party_info', {}); _infoRaw = raw; return _infoVal; }
+function partyInfoSave(o) { _infoRaw = null; try { localStorage.setItem('bd_party_info', JSON.stringify(o)); } catch (e) {} }
 const PARTY_FIELDS = [['name','Name'],['bank','Bank name'],['acct_name','Account name'],['acct_no','Account number'],['phone','Phone number']];
 function partyInfoLine(g, name) { const e = partyInfo()[g + ':' + name] || {}; return ['bank','acct_name','acct_no','phone'].map(k => (e[k] || '').trim()).filter(Boolean).join(' · '); }
 function partyClose() { const b = document.getElementById('partyPortal'); if (b) b.remove(); document.removeEventListener('mousedown', _partyOutside, true); }
@@ -26382,26 +26368,37 @@ function partyCaret(ev, el) {
   input.focus();
   partyMenu(input, true);
 }
+// The wrapper (caret and small details line) is added only to the payee/payer cells on, or just beside, the screen, so a long
+// Master Journal doesn't pay for thousands of cells nobody is looking at.
 let _partyEnhT = 0;
-function partyEnhance() {
-  _partyEnhT = 0;
-  const fresh = document.querySelectorAll('input[data-party]:not([data-pe])');
-  if (!fresh.length) return;
-  if (!_partyC.key) partyLoad().then(() => document.querySelectorAll('input[data-party][data-pe]').forEach(partyRefreshSub)).catch(() => {});
-  fresh.forEach(inp => {
-    inp.dataset.pe = '1';
-    const w = document.createElement('div'); w.className = 'party-cell';
-    inp.parentNode.insertBefore(w, inp); w.appendChild(inp);
-    const sub = document.createElement('small'); sub.className = 'party-sub'; w.appendChild(sub);
-    const car = document.createElement('span'); car.className = 'party-caret'; car.textContent = '▾'; car.title = 'Show the options';
-    car.onmousedown = e => partyCaret(e, car); w.appendChild(car);
-    partyRefreshSub(inp);
-  });
+const _partyIO = (typeof IntersectionObserver !== 'undefined') ? new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) { _partyIO.unobserve(e.target); partyWrap(e.target); } }); }, { rootMargin: '600px' }) : null;
+function partyWrap(inp) {
+  if (!inp.isConnected || inp.dataset.pe === '1') return;
+  inp.dataset.pe = '1';
+  const w = document.createElement('div'); w.className = 'party-cell';
+  inp.parentNode.insertBefore(w, inp); w.appendChild(inp);
+  const sub = document.createElement('small'); sub.className = 'party-sub'; w.appendChild(sub);
+  const car = document.createElement('span'); car.className = 'party-caret'; car.textContent = '▾'; car.title = 'Show the options';
+  car.onmousedown = e => partyCaret(e, car); w.appendChild(car);
+  partyRefreshSub(inp);
 }
+function partyQueue(root) {
+  if (!root || root.nodeType !== 1) return;
+  const list = (root.matches && root.matches('input[data-party]')) ? [root] : root.querySelectorAll('input[data-party]:not([data-pe])');
+  if (list.length && !_partyC.key) partyLoad().then(() => document.querySelectorAll('input[data-party][data-pe="1"]').forEach(partyRefreshSub)).catch(() => {});
+  for (let k = 0; k < list.length; k++) { const inp = list[k]; if (inp.dataset.pe) continue; if (_partyIO) { inp.dataset.pe = 'q'; _partyIO.observe(inp); } else partyWrap(inp); }
+}
+function partyEnhance() { _partyEnhT = 0; partyQueue(document.getElementById('bkContent') || document.body); }
 (function () {
   const start = () => {
     const root = document.getElementById('bkContent') || document.body;
-    new MutationObserver(() => { if (!_partyEnhT) _partyEnhT = requestAnimationFrame(partyEnhance); }).observe(root, { childList: true, subtree: true });
+    new MutationObserver(recs => {
+      for (let k = 0; k < recs.length; k++) {
+        const add = recs[k].addedNodes;
+        if (add.length > 40) { partyQueue(recs[k].target); continue; }   // a whole table was drawn: one scan of it
+        for (let m = 0; m < add.length; m++) partyQueue(add[m]);
+      }
+    }).observe(root, { childList: true, subtree: true });
     partyEnhance();
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
