@@ -1608,6 +1608,12 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 .ps-col-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);}
 .ps-col-row:last-child{border-bottom:none;}
 .ps-col-label{display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--off);cursor:pointer;flex:1;}
+.ps-col-row{gap:10px;}
+.ps-col-head{padding:2px 0 4px;border-bottom:1px solid var(--border);}
+.ps-col-sales{display:flex;align-items:center;justify-content:center;width:62px;flex:none;cursor:pointer;}
+.ps-col-role{width:72px;flex:none;background:var(--surface2);color:var(--off);border:1px solid var(--border2);border-radius:6px;padding:4px 4px;font-size:.72rem;font-family:inherit;}
+.ps-col-role:disabled{opacity:.35;}
+
 .ps-col-check{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
 .ps-add-btn{background:none;border:1px dashed var(--border2);color:var(--muted);font-size:0.76rem;font-weight:600;padding:8px;border-radius:6px;cursor:pointer;width:100%;margin-top:8px;}
 .ps-add-btn:hover{border-color:var(--gold);color:var(--gold);}
@@ -2336,7 +2342,7 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script defer src="/geo_data.js?v=2"></script>
-<script defer src="/bookkeeping-app.js?v=226"></script>
+<script defer src="/bookkeeping-app.js?v=227"></script>
 <script>
   // Cleans up any lingering service worker from an earlier version of
   // this app. Nothing here registers one anymore, so a worker still
