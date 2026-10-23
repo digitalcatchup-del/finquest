@@ -3180,23 +3180,28 @@ function _coaSyncKey() { return (activeBusiness && activeBusiness.id) || 'u'; }
 function coaCloudPushSoon() { clearTimeout(_coaSyncT); _coaSyncT = setTimeout(coaCloudPush, 1200); }
 // Saves one settings blob for the user (or the active business). Tries the one-step upsert first;
 // if the database has no matching unique rule for it, falls back to update-then-insert. Returns the error, if any.
-async function bdSaveSetting(sheetKey, settings, perUser) {
+// Updates the row if there is one, otherwise adds it. (The older "upsert" asked the database for a unique rule it does not
+// have, which came back as a 400 error in the console on every save and cost two extra round trips.)
+// Saves of the same setting run one after another, so two quick first-time saves can't both add a row.
+const _settingChain = {};
+function bdSaveSetting(sheetKey, settings, perUser) {
   const bizId = perUser ? null : (activeBusiness?.id || null);
-  const row = { user_id: bkUser.id, business_id: bizId, sheet_key: sheetKey, settings: settings, updated_at: new Date().toISOString() };
-  const first = await bkDb.from('bk_sheet_settings').upsert(row, { onConflict: bizId ? 'business_id,sheet_key' : 'user_id,sheet_key' });
-  if (!first.error) return null;
-  try {
-    let q = bkDb.from('bk_sheet_settings').select('id').eq('sheet_key', sheetKey);
-    q = bizId ? q.eq('business_id', bizId) : q.is('business_id', null).eq('user_id', bkUser.id);
-    const ex = await q.limit(1);
-    if (ex.data && ex.data.length) {
-      const up = await bkDb.from('bk_sheet_settings').update({ settings: settings, updated_at: row.updated_at }).eq('id', ex.data[0].id).select('id');
+  const ck = (bizId || (bkUser && bkUser.id) || 'u') + '|' + sheetKey;
+  const run = async () => {
+    const stamp = new Date().toISOString();
+    try {
+      let q = bkDb.from('bk_sheet_settings').update({ settings: settings, updated_at: stamp }).eq('sheet_key', sheetKey);
+      q = bizId ? q.eq('business_id', bizId) : q.is('business_id', null).eq('user_id', bkUser.id);
+      const up = await q.select('id');
       if (!up.error && up.data && up.data.length) return null;
-      return up.error || new Error('not allowed to update');
-    }
-    const ins = await bkDb.from('bk_sheet_settings').insert(row);
-    return ins.error || null;
-  } catch (e) { return e; }
+      const ins = await bkDb.from('bk_sheet_settings').insert({ user_id: bkUser.id, business_id: bizId, sheet_key: sheetKey, settings: settings, updated_at: stamp });
+      if (!ins.error) return null;
+      return ins.error || up.error || new Error('not allowed to save');
+    } catch (e) { return e; }
+  };
+  const p = (_settingChain[ck] || Promise.resolve()).then(run, run);
+  _settingChain[ck] = p.catch(() => {});
+  return p;
 }
 let _coaToastAt = 0;
 // Returns { ok, error }. Never throws.
@@ -4453,8 +4458,7 @@ async function _saveSalesSuggestSettings() {
     settings: { suggestCols: salesSuggestCols, narrationCols: salesNarrationCols },
     updated_at: new Date().toISOString(),
   };
-  const onConflict = bizId ? 'business_id,sheet_key' : 'user_id,sheet_key';
-  try { await bkDb.from('bk_sheet_settings').upsert(payload, { onConflict }); } catch(e) {}
+  try { await bdSaveSetting('sales_suggest', payload.settings, false); } catch(e) {}
 }
 // Every available product column, built-in and custom, that could be
 // shown in the sales dropdown or written into the narration — same
@@ -10308,8 +10312,7 @@ async function stmtLoadRules() {
 async function stmtSaveRules() {
   const bizId = activeBusiness?.id || null;
   const payload = { user_id: bkUser.id, business_id: bizId, sheet_key: 'upload_rules', settings: _stmtRules, updated_at: new Date().toISOString() };
-  const onConflict = bizId ? 'business_id,sheet_key' : 'user_id,sheet_key';
-  try { await bkDb.from('bk_sheet_settings').upsert(payload, { onConflict }); } catch (e) {}
+  try { await bdSaveSetting('upload_rules', _stmtRules, false); } catch (e) {}
 }
 const STMT_STOP = new Set(['trf','tnf','nip','neft','rtgs','pos','web','atm','ussd','mob','mobile','transfer','from','via','the','and','for','payment','pymt','pmt','ref','inv','invoice','charge','charges','fee','fees','vat','sms','alert','nibss','instant','outward','inward','customers','between','bank','plc','ltd','limited','account','acct','pur','purchase','nipost','gtw']);
 function stmtTokens(narr) { return (String(narr || '').toLowerCase().match(/[a-z]{3,}/g) || []).filter(w => !STMT_STOP.has(w)); }
@@ -17509,8 +17512,7 @@ async function _psSaveSheetSettingsImmediate() {
       business_id: activeBusiness?.id || null,
       updated_at: new Date().toISOString(),
     };
-    const onConflict = activeBusiness?.id ? 'business_id,sheet_key' : 'user_id,sheet_key';
-    const { error } = await bkDb.from('bk_sheet_settings').upsert(payload, { onConflict });
+    const error = await bdSaveSetting(psType, _psSheetSettings, false);
     if (!error) { try { localStorage.removeItem('bd_ps_pending_'+_psSettingsScopeKey()); } catch(e) {} }
   } catch(e) {}
 }
