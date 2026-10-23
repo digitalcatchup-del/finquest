@@ -176,19 +176,30 @@ async function saveVendor() {
   };
 
   try {
-    let error;
-    if (id) {
-      ({ error } = await bkDb.from('bk_suppliers').update(payload).eq('id', id));
-    } else {
-      ({ error } = await bkDb.from('bk_suppliers').insert({
-        ...payload, products_services: 'product', type: '', ...acctBizStamp(),
-      }));
+    // If the database is missing one of the optional vendor columns (the Accounts Payable migration was not run),
+    // drop just that column and try again, so the vendor still saves instead of failing silently.
+    const full = id ? payload : { ...payload, products_services: 'product', type: '', ...acctBizStamp() };
+    const pl = { ...full };
+    const dropped = [];
+    let error = null;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      ({ error } = id
+        ? await bkDb.from('bk_suppliers').update(pl).eq('id', id)
+        : await bkDb.from('bk_suppliers').insert(pl));
+      if (!error) break;
+      const m = /['"]([a-z_]+)['"]\s+column/i.exec(error.message || '') || /column\s+["']?(?:bk_suppliers\.)?([a-z_]+)["']?\s+(?:of|does not exist)/i.exec(error.message || '');
+      const col = m && m[1];
+      if (col && col in pl && col !== 'supplier_name' && col !== 'user_id') { dropped.push(col); delete pl[col]; continue; }
+      break;
     }
     if (error) throw error;
     closeVendorModal();
+    if (dropped.length && typeof bdToast === 'function') bdToast('Vendor saved, but these fields were not stored (run migration_vendors_v1.sql): ' + dropped.join(', '), 'error');
+    else if (typeof bdToast === 'function') bdToast('Vendor saved');
     await showVendorsPage();
   } catch (e) {
-    alert('Could not save vendor: ' + (e.message || JSON.stringify(e)));
+    console.error('saveVendor failed', e);
+    alert('Could not save vendor: ' + (e.message || JSON.stringify(e)) + (e.hint ? '\n' + e.hint : '') + (e.code ? '\n(code ' + e.code + ')' : ''));
     btn.textContent = 'Save'; btn.disabled = false;
   }
 }
