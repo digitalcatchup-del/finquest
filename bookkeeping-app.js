@@ -3159,7 +3159,7 @@ async function loadAccountsRun() {
 // ── Chart of Accounts layout (account numbers, sub-ledger groups, which group each account is in) ──
 // These used to live only in this browser. They now follow the business: saved to the account a moment
 // after every change, and loaded again on any device.
-const COA_SYNC_KEYS = ['bd_coa_codes','bd_coa_group_codes','bd_coa_groups','bd_coa_memb','bd_coa_manual','bd_coa_tpl_tagged','bd_coa_deleted','bd_coa_glabels','bd_pay_methods','bd_sales_prod_assign','bd_unreg_products','bd_sales_excl_income','bd_sales_incl_income','bd_party_info','bd_own_accounts','bd_ac_units','bd_ac_unit_alias','bd_ac_datefmt','bd_sales_cell_cols'];
+const COA_SYNC_KEYS = ['bd_coa_codes','bd_coa_group_codes','bd_coa_groups','bd_coa_memb','bd_coa_manual','bd_coa_tpl_tagged','bd_coa_deleted','bd_coa_glabels','bd_pay_methods','bd_sales_prod_assign','bd_unreg_products','bd_unreg_dismissed','bd_sales_excl_income','bd_sales_incl_income','bd_party_info','bd_own_accounts','bd_ac_units','bd_ac_unit_alias','bd_ac_datefmt','bd_sales_cell_cols'];
 let _coaSyncBiz = null, _coaSyncMute = false, _coaSyncT = null;
 const _coaLocalEdits = {};   // key -> time of the last change made on this device in this visit
 // The time of every change is also kept on the device, so after a refresh a newer local change still beats an older copy in the account.
@@ -3963,7 +3963,7 @@ function renderLedger() {
     : ob;
   const meta  = SCHEDULE_META[activeType] || { color:'var(--gold)' };
   const color = meta.color || 'var(--gold)';
-  const balText = fmt(Math.abs(closingBal));
+  const balText = ledFmtMoney(Math.abs(closingBal));
 
   content.innerHTML = `
     <div class="bk-sticky-wrap" id="ledStickyHead" style="padding-bottom:8px;">
@@ -3972,6 +3972,7 @@ function renderLedger() {
     <div class="sched-total-banner" id="ledgerTotalBanner" style="border-left:4px solid ${color};margin-bottom:0;">
       <div class="sched-total-label">${escH(activeAccount.account_name)}</div>
       <div class="sched-total-val" id="ledgerTotalVal" style="color:${color};">${balText}</div>
+      <span class="bk-save-msg led-save-badge" id="saveMsg" role="status" aria-live="polite"></span>
     </div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:6px;padding:0 0 8px;flex-wrap:wrap;">
@@ -4074,7 +4075,7 @@ function renderRows(displayRows) {
         <input class="bk-cell num" id="obBalInput" type="text" inputmode="decimal"
           value="${ob!==0?fmtNum(ob):''}" placeholder="0"
           style="font-weight:800;color:var(--gold);padding-left:18px;"
-          oninput="ledgerOBChanged(this.value)"
+          oninput="fmtInputCommas(this);ledgerOBChanged(this.value)"
           onblur="ledgerOBChanged(this.value);obFlush()"/>
       </td>
       <td><button class="del-btn" onclick="clearOpeningBalance()" title="Clear opening balance">✕</button></td>
@@ -4113,6 +4114,12 @@ function ledgerFmtInput(input, idx, field) {
   if (field === 'debit' || field === 'credit') ledgerCellChanged(idx);
 }
 
+// The remaining balance always shows its decimals (₦1,284,350.75), never rounded to a whole number.
+function ledFmtMoney(n) {
+  const c = CURRENCIES[activeCurrency], d = Math.max(2, decimalPlaces || 0);
+  const v = (parseFloat(n) || 0) * c.rate;
+  return (v < 0 ? '-' : '') + c.symbol + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
 function fmtNum(n){ n=parseFloat(n)||0; return n.toLocaleString('en-NG',{maximumFractionDigits:4}); }
 
 function buildEditableRow(row, idx, sn) {
@@ -4273,7 +4280,7 @@ function ledgerUpdateTotalBanner() {
     ? parseFloat(dataRows[dataRows.length-1].balance) || ob
     : ob;
   const el = document.getElementById('ledgerTotalVal');
-  if (el) el.textContent = fmt(Math.abs(closing));
+  if (el) el.textContent = ledFmtMoney(Math.abs(closing));
 }
 
 function hasData(r) {
@@ -4406,6 +4413,7 @@ let salesProductCache = [];
 let salesProductCacheBizId = undefined;
 let salesProductCustomCols = [];
 let salesProductColMeta = {};
+let salesProductLabels = {}, salesProductColOrder = [];
 let _salesProdT = 0;
 async function bdLoadSalesProductCache(force, quiet) {
   const bizId = activeBusiness?.id || null;
@@ -4430,6 +4438,7 @@ async function bdLoadSalesProductCache(force, quiet) {
     const { data: settingsRow } = await sq.maybeSingle();
     salesProductCustomCols = settingsRow?.settings?.customCols || [];
     salesProductColMeta = settingsRow?.settings?.colMeta || {};
+    salesProductLabels = settingsRow?.settings?.labels || {}; salesProductColOrder = settingsRow?.settings?.colOrder || [];
   } catch(e) { salesProductCustomCols = []; }
   await _loadSalesSuggestSettings(bizId);
 }
@@ -4552,7 +4561,13 @@ async function salesProdRefreshNow() {
 }
 setInterval(() => { if (!document.hidden) salesProdRefreshNow(); }, 20000);
 window.addEventListener('focus', () => { salesProdRefreshNow(); });
-function bdShowProductSuggestions(i, query) {
+function bdProductTyped(kind, i, v) {
+  const r = sheetRows(kind)[i]; if (!r) return;
+  r.product = v; if (kind === 'sales') r.narration = v; r._ptyped = true; r._posted = false; r.product_id = null;
+  bdShowProductSuggestions(i, v, kind);
+}
+function bdShowProductSuggestions(i, query, kind) {
+  kind = kind || 'sales';
   bdHideProductSuggestions(i); // only one suggestion box open at a time
   const q = (query||'').trim().toLowerCase();
   // Only the products picked with Assign (header ▼) are offered; with nothing picked, every registered product is.
@@ -4575,7 +4590,7 @@ function bdShowProductSuggestions(i, query) {
   box.style.cssText = 'position:fixed;z-index:12000;';
   box.innerHTML = matches.map(p => {
     const zero = !((parseFloat(p.qty_in_stock) || 0) > 0);
-    return `<div class="bd-suggest-item sp-card" onmousedown="bdPickProduct(${i},'${p.id}')">
+    return `<div class="bd-suggest-item sp-card" onmousedown="bdPickProduct(${i},'${p.id}','${kind}')">
     <div class="sp-card-top"><span class="sp-card-name">${escH(p.product_name || '')}</span><span class="sp-card-price">${fmt(p.price)}</span></div>
     <div class="sp-card-grid">${salesProdDetailPairs(p).map(x => `<span>${escH(x)}</span>`).join('')}<span style="color:${zero ? 'var(--red,#e5534b)' : 'var(--green,#3fb27f)'}">${escH(salesProdStock(p))}</span></div>
   </div>`;
@@ -4599,22 +4614,23 @@ function bdShowProductSuggestions(i, query) {
 function bdHideProductSuggestions(i) {
   document.getElementById('bdSuggestPortal')?.remove();
 }
-function bdPickProduct(i, productId) {
+function bdPickProduct(i, productId, kind) {
+  kind = kind || 'sales';
   bdHideProductSuggestions(i); // close immediately — left open, this silently blocks the next click (e.g. Save All) landing underneath it
   const p = salesProductCache.find(x => String(x.id) === String(productId));
   if (!p) return;
-  const row = salesRows[i];
+  const row = sheetRows(kind)[i];
   if (!row) return;
   row.product = salesProdMainText(p);
-  row.narration = row.product;            // the product cell IS the journal narration
+  if (kind === 'sales') row.narration = row.product;            // the product cell IS the journal narration
   row._ptyped = false;
-  row.unit_price = parseFloat(p.price)||0;
+  row.unit_price = parseFloat(kind === 'sales' ? p.price : (p.cost_price || p.price)) || 0;   // an expense is what the business pays
   row.product_id = p.id;
   row.qty = row.qty || 1;
   row.total = (row.unit_price||0) * row.qty;
   row._posted = false;
-  renderRecordSheet('sales');
-  sheetAutosaveTrigger('sales');
+  renderRecordSheet(kind);
+  sheetAutosaveTrigger(kind);
 }
 
 async function bdOpenScanner(onResult) {
@@ -5047,7 +5063,7 @@ async function deleteRow(i) {
 
 // ── SAVE ─────────────────────────────────────────────────────
 let _ledAutoT = null;
-function ledgerAutosave(){ clearTimeout(_ledAutoT); _ledAutoT = setTimeout(()=>{ if(isDirty) saveAll(); }, 700); }
+function ledgerAutosave(){ try { setSaveMsg('Saving…','pending'); } catch(e) {} clearTimeout(_ledAutoT); _ledAutoT = setTimeout(()=>{ if(isDirty) saveAll(); }, 700); }
 // Leaving or hiding the page saves a ledger edit that is still waiting.
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && typeof isDirty !== 'undefined' && isDirty && activeAccount) { try { clearTimeout(_ledAutoT); } catch(e) {} saveAll(); } });
 window.addEventListener('pagehide', () => { if (typeof isDirty !== 'undefined' && isDirty && activeAccount) { try { clearTimeout(_ledAutoT); } catch(e) {} saveAll(); } });
@@ -5121,8 +5137,20 @@ async function saveAll() {
   }
 }
 
+let _saveMsgFade = null;
 function setSaveMsg(msg, type) {
   const el=document.getElementById('saveMsg'); if(!el) return;
+  clearTimeout(_saveMsgFade);
+  const badge = el.classList.contains('led-save-badge');
+  if (badge) {
+    const t = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (type === 'pending') el.innerHTML = '<span class="led-spin"></span> Saving…';
+    else if (type === 'ok') { el.textContent = '\u2713 All changes saved \u00B7 ' + t; }
+    else if (type === 'err') { el.innerHTML = '\u26A0 ' + escH(String(msg).replace(/^Error: /, "Couldn't save: ")) + ' \u00B7 <a href="#" onclick="event.preventDefault();isDirty=true;saveAll();obFlush()" style="color:inherit;text-decoration:underline">Retry</a>'; }
+    else el.textContent = msg;
+    el.className = 'bk-save-msg led-save-badge ' + type;
+    return;
+  }
   el.textContent=msg; el.className='bk-save-msg '+type;
 }
 
@@ -17276,7 +17304,7 @@ function psSalesColToggle(id, on, el) {
 function psSalesColRole(id, role) {
   psSalesColsSave(psSalesColsGet().map(c => c.id === id ? { id, main: role === 'main' } : c));
 }
-function salesRenderIfOpen() { if (document.getElementById('sheetTable_sales')) renderRecordSheet('sales'); }
+function salesRenderIfOpen() { ['sales', 'expenses'].forEach(k => { if (document.getElementById('sheetTable_' + k)) renderRecordSheet(k); }); }
 function togglePsColSelector() {
   const existing = document.getElementById('psColSelectorPortal');
   if (existing) { existing.remove(); return; }
@@ -17532,6 +17560,15 @@ function _psSettingGet(key, fallback) { return _psSheetSettings[key] !== undefin
 // database save never actually made it through.
 function _psSettingSet(key, value) {
   _psSheetSettings[key] = value;
+  if (psType === 'products') {   // the Sales Record's Assign products widget follows the Products page's columns straight away
+    try {
+      if (key === 'customCols') salesProductCustomCols = value || [];
+      else if (key === 'colMeta') salesProductColMeta = value || {};
+      else if (key === 'labels') salesProductLabels = value || {};
+      else if (key === 'colOrder') salesProductColOrder = value || [];
+      if (['customCols', 'labels', 'colOrder'].includes(key)) salesAssignRefreshOpen();
+    } catch (e) {}
+  }
   try { localStorage.setItem('bd_ps_pending_'+_psSettingsScopeKey(), JSON.stringify(_psSheetSettings)); } catch(e) {}
   _psSaveSheetSettingsNow();
 }
@@ -17641,6 +17678,24 @@ function psFormatQtyDate(iso, format) {
   return String(d.getMonth()+1).padStart(2,'0')+'/'+String(day).padStart(2,'0')+'/'+year;
 }
 
+// Calendar panels: placed next to the cell so they are always fully on screen, and month / year are dropdowns.
+function calPlacePanel(panel, r) {
+  const vh = window.innerHeight, vw = window.innerWidth, h = panel.offsetHeight || 340, w = panel.offsetWidth || 270;
+  let top = r.bottom + 6;
+  if (top + h > vh - 8) top = (r.top - h - 6 >= 8) ? r.top - h - 6 : Math.max(8, vh - h - 8);
+  let left = Math.max(8, Math.min(r.left, vw - w - 8));
+  panel.style.top = top + 'px'; panel.style.left = left + 'px';
+}
+function calMonthYearBar(month, year, navFn, setFn) {
+  const ms = PS_MONTH_FULL.map((m, i) => '<option value="' + i + '"' + (i === month ? ' selected' : '') + '>' + m + '</option>').join('');
+  const y0 = Math.min(year, new Date().getFullYear()) - 40, y1 = Math.max(year, new Date().getFullYear()) + 15;
+  let ys = ''; for (let y = y1; y >= y0; y--) ys += '<option value="' + y + '"' + (y === year ? ' selected' : '') + '>' + y + '</option>';
+  const sel = 'style="margin:0;padding:3px 4px;font-size:.74rem;font-weight:700;background:var(--surface2);color:var(--white);border:1px solid var(--border2);border-radius:6px;cursor:pointer;"';
+  return '<div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:8px;">'
+    + '<button onclick="' + navFn + '(-1)" class="ps-cal-nav">\u2039</button>'
+    + '<span style="display:flex;gap:4px;flex:1;justify-content:center;"><select ' + sel + ' onchange="' + setFn + '(+this.value,null)">' + ms + '</select><select ' + sel + ' onchange="' + setFn + '(null,+this.value)">' + ys + '</select></span>'
+    + '<button onclick="' + navFn + '(1)" class="ps-cal-nav">\u203a</button></div>';
+}
 let _psCalState = null;
 let _psCalOutsideClickHandler = null;
 function psOpenDatePicker(ev, rowIndex) {
@@ -17654,10 +17709,11 @@ function psOpenDatePicker(ev, rowIndex) {
   const panel = document.createElement('div');
   panel.id = 'psDatePanel';
   panel.className = 'col-menu';
-  panel.style.cssText = 'position:fixed;z-index:12001;padding:12px;width:270px;top:'+(cellRect.bottom+6)+'px;left:'+Math.min(cellRect.left, window.innerWidth-286)+'px;';
+  panel.style.cssText = 'position:fixed;z-index:12001;padding:12px;width:270px;top:0;left:0;';
   panel.addEventListener('click', e=>e.stopPropagation());
   panel.innerHTML = psCalendarHtml();
   document.body.appendChild(panel);
+  calPlacePanel(panel, cellRect); panel._anchor = cellRect;
 
   // Close on any click outside the panel — but NOT a full-screen
   // overlay, which would block clicks meant for a different date
@@ -17703,10 +17759,7 @@ function psCalendarHtml() {
     + Object.entries(PS_DATE_FORMAT_LABELS).map(([key,label])=>
         '<div class="ps-cal-format-opt" onclick="psSetQtyDateFormat(\''+key+'\')">'+label+'</div>').join('')
     + '</div></div>'
-    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
-    + '<button onclick="psCalNav(-1)" class="ps-cal-nav">\u2039</button>'
-    + '<span style="font-size:0.78rem;font-weight:700;color:var(--white);">'+PS_MONTH_FULL[month]+' '+year+'</span>'
-    + '<button onclick="psCalNav(1)" class="ps-cal-nav">\u203a</button></div>'
+    + calMonthYearBar(month, year, 'psCalNav', 'psCalSet')
     + '<div class="ps-cal-grid ps-cal-dow">'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>'<div>'+d+'</div>').join('')+'</div>'
     + '<div class="ps-cal-grid" id="psCalDays">'+cells+'</div>'
     + '<button onclick="psClearDate()" class="ps-cal-clear">Clear date</button>';
@@ -17716,7 +17769,11 @@ function psCalNav(delta) {
   _psCalState.month += delta;
   if (_psCalState.month < 0) { _psCalState.month = 11; _psCalState.year--; }
   if (_psCalState.month > 11) { _psCalState.month = 0; _psCalState.year++; }
-  document.getElementById('psDatePanel').innerHTML = psCalendarHtml();
+  const pn = document.getElementById('psDatePanel'); pn.innerHTML = psCalendarHtml(); if (pn._anchor) calPlacePanel(pn, pn._anchor);
+}
+function psCalSet(m, y) {
+  if (m != null) _psCalState.month = m; if (y != null) _psCalState.year = y;
+  const pn = document.getElementById('psDatePanel'); pn.innerHTML = psCalendarHtml(); if (pn._anchor) calPlacePanel(pn, pn._anchor);
 }
 function psPickDate(iso) {
   const { rowIndex } = _psCalState;
@@ -18317,15 +18374,8 @@ function psToolboxHtml(){
     + '<button class="tb-icon" title="Redo" onclick="psRedo()">↪</button>'
     + '<button class="tb-icon" title="Print portrait" onclick="psPrint(\'portrait\')">🖨</button>'
     + '<button class="tb-icon" title="Print landscape" onclick="psPrint(\'landscape\')">🖨▭</button>'
-    + '<button class="tb-icon" title="Decrease decimals" onclick="psDecimals(-1)">.0←</button>'
-    + '<button class="tb-icon" title="Increase decimals" onclick="psDecimals(1)">.00→</button>'
-    + '<button class="tb-icon" title="Align cells left — click a cell in the target column first" onclick="psSetColumnAlign(\'left\')">L</button>'
-    + '<button class="tb-icon" title="Align cells center — click a cell in the target column first" onclick="psSetColumnAlign(\'center\')">C</button>'
-    + '<button class="tb-icon" title="Align cells right — click a cell in the target column first" onclick="psSetColumnAlign(\'right\')">R</button>'
     + '<button class="tb-icon" title="Sort by date/time recorded — ascending (oldest first)" onclick="psSortByCreated(\'asc\')">▲</button>'
     + '<button class="tb-icon" title="Sort by date/time recorded — descending (newest first)" onclick="psSortByCreated(\'desc\')">▼</button>'
-    + '<button class="tb-icon" title="Insert column" onclick="psInsertColumn()">+▥</button>'
-    + '<button class="tb-icon" title="Delete column" onclick="psDeleteColumn()">−▥</button>'
     + '<button class="tb-icon" id="psColBtn" onclick="togglePsColSelector()">🎛 Columns ▾</button>'
     + '</div>';
 }
@@ -18883,7 +18933,8 @@ function psRefreshTotalsRow() {
 
 function psAddRow() {
   psSnapshot();
-  psRows.push({id:null,name:'',barcode:'',product_type:'',cost_price:0,sell_price:0,qty:0,qty_date:'',unit:'unit',income_account:'',created_at:new Date().toISOString(),saved:false});
+  const _prevD = (() => { for (let k = psRows.length - 1; k >= 0; k--) if (psRows[k].qty_date) return psRows[k].qty_date; return ''; })();   // a new row starts on the date of the row above
+  psRows.push({id:null,name:'',barcode:'',product_type:'',cost_price:0,sell_price:0,qty:0,qty_date:_prevD,unit:'unit',income_account:'',created_at:new Date().toISOString(),saved:false});
   renderProductsPage();
   setTimeout(()=>{ document.querySelectorAll('#psBody tr').item(psRows.length-1)?.querySelector('input')?.focus(); },40);
 }
@@ -19950,7 +20001,7 @@ function showRecordChoice() {
 async function showRecordSales() {
   bdSaveRoute('sales-record');
   staffHideChrome();
-  bdLoadSalesProductCache();
+  bdLoadSalesProductCache().then(() => { if (document.getElementById('sheetTable_sales')) renderRecordSheet('sales'); }).catch(() => {});
   if (salesRows.length === 0) {
     if (sheetLoadFilterPref('sales')) { await sheetLoadDateRange('sales'); return; }
     await sheetRestore('sales');
@@ -19963,6 +20014,7 @@ async function showRecordSales() {
 async function showRecordExpenses() {
   bdSaveRoute('expenses-record');
   staffHideChrome();
+  bdLoadSalesProductCache().then(() => { if (document.getElementById('sheetTable_expenses')) renderRecordSheet('expenses'); }).catch(() => {});
   if (staffExpRows.length === 0) {
     if (sheetLoadFilterPref('expenses')) { await sheetLoadDateRange('expenses'); return; }
     await sheetRestore('expenses');
@@ -20137,7 +20189,7 @@ function sheetColOrder(kind) {
     if (!st.colOrder) {
       st.colOrder = [{k:'sn'},{k:'date'},{k:'payee'},{k:'payer'},...(kind==='sales'?[]:[{k:'narration'}]),{k:'product'},{k:'qty'},
            ...(st.customCols||[]).map(c=>({k:c.key,t:'c',label:c.name})),
-           {k:'unit_price'},{k:'total'},...(kind==='sales'?[]:[{k:'pay_mode'}]),{k:'del'}];
+           {k:'unit_price'},{k:'total'},{k:'pay_mode'},{k:'del'}];
     }
     _sheetMigrateSalesCols(st, kind);
   }
@@ -20174,6 +20226,14 @@ function _sheetMigrateSalesCols(st, kind) {
       try { localStorage.setItem('bd_cols_v4_'+kind,'1'); } catch(e) {}
     }
   }
+  // Mode of payment is back on the sales sheet (the Payee cell still sets it when a payee is chosen).
+  if (kind === 'sales') {
+    let d5 = false; try { d5 = localStorage.getItem('bd_cols_v5_'+kind)==='1'; } catch(e) {}
+    if (!d5) {
+      if (!has('pay_mode')) { const ti = o.findIndex(c=>c.k==='total'); o.splice(ti<0 ? (o.findIndex(c=>c.k==='del')<0 ? o.length : o.findIndex(c=>c.k==='del')) : ti+1, 0, {k:'pay_mode'}); changed = true; }
+      try { localStorage.setItem('bd_cols_v5_'+kind,'1'); } catch(e) {}
+    }
+  }
   let done = false; try { done = localStorage.getItem('bd_cols_v2_'+kind)==='1'; } catch(e) {}
   if (!done) {
     const qi = o.findIndex(c=>c.k==='qty'), pi = o.findIndex(c=>c.k==='product');
@@ -20195,6 +20255,7 @@ function sheetColLabel(kind, c) {
 }
 
 function renderRecordSheet(kind) {
+  try { bdScanUnregSoon(); } catch (e) {}
   _sheetKind = kind;
   const isSales = kind==='sales';
   const st   = sheetState[kind];
@@ -20271,21 +20332,18 @@ function renderRecordSheet(kind) {
       case 'sn': return `<td class="staff-sn" style="white-space:nowrap;${hlCss(c)}">%%VI%%</td>`;
       case 'date': return `<td style="position:relative;min-width:110px;${hlCss(c)}"><div class="bk-date-disp-overlay" onclick="salesDateOpen('${kind}',${i},event)">${r.txn_date?formatDateDisplay(r.txn_date):'<span style="color:var(--muted2)">Date</span>'}</div></td>`;
       case 'payee': { const am = sheetFieldAssigned(kind, 'payee', r, i); if (am) return `<td style="${hlCss(c)}">${am}</td>`;
-        if (isSales) return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" data-party="1" data-pf="payee" data-nowalkin="1" value="${escH(r.payee||'')}" placeholder="Payee…" autocomplete="off" oninput="sheetRowSet('sales',${i},'payee',this.value)"/></td>`;
-        return cellNormal({k:'payee_plain'}, r, i); }
+        return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" data-party="1" data-pf="payee" data-nowalkin="1" value="${escH(r.payee||'')}" placeholder="Payee…" autocomplete="off" oninput="sheetRowSet('${kind}',${i},'payee',this.value)"/></td>`; }
       case 'payer': { const am = sheetFieldAssigned(kind, 'payer', r, i); if (am) return `<td style="${hlCss(c)}">${am}</td>`;
-        if (isSales) return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" data-party="1" data-pf="payer" data-nowalkin="1" value="${escH(r.payer||'')}" placeholder="Payer…" autocomplete="off" oninput="sheetRowSet('sales',${i},'payer',this.value)"/></td>`;
-        return cellNormal({k:'payer_plain'}, r, i); }
+        return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" data-party="1" data-pf="payer" data-nowalkin="1" value="${escH(r.payer||'')}" placeholder="Payer…" autocomplete="off" oninput="sheetRowSet('${kind}',${i},'payer',this.value)"/></td>`; }
       case 'payee_plain': case 'payer_plain': { const f = c.k==='payee_plain' ? 'payee' : 'payer'; return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" data-party="1" value="${escH(r[f]||'')}" placeholder="—"
         oninput="sheetRowSet('${kind}',${i},'${f}',this.value)"/></td>`; }
       case 'narration': return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" value="${escH(r.narration||'')}" placeholder="${narrPh}" style="${wrapCss}"
         oninput="sheetRowSet('${kind}',${i},'narration',this.value)"/></td>`;
-      case 'product': { const am = sheetFieldAssigned(kind, 'product', r, i); if (am) return `<td style="${hlCss(c)}">${am}</td>`; if (!isSales) return `<td style="${hlCss(c)}"><input class="staff-cell" type="text" value="${escH(r.product||'')}" placeholder="Product…" style="${wrapCss}"
-        oninput="sheetRowSet('${kind}',${i},'product',this.value)"/></td>`;
+      case 'product': { const am = sheetFieldAssigned(kind, 'product', r, i); if (am) return `<td style="${hlCss(c)}">${am}</td>`;
         return `<td style="${hlCss(c)}position:relative;"><input class="staff-cell" type="text" id="salesProdInput_${i}" value="${escH(r.product||'')}" placeholder="Pick a product…" style="${wrapCss}"
-        oninput="sheetRows('${kind}')[${i}].product=this.value;sheetRows('${kind}')[${i}].narration=this.value;sheetRows('${kind}')[${i}]._ptyped=true;sheetRows('${kind}')[${i}]._posted=false;sheetRows('${kind}')[${i}].product_id=null;bdShowProductSuggestions(${i},this.value)"
-        onfocus="bdShowProductSuggestions(${i},this.value)"
-        onblur="setTimeout(()=>bdHideProductSuggestions(${i}),150)"/>${(r._ptyped && r.product && !r.product_id && !bdProductIsRegistered(r.product)) ? '<span class="sm-unreg">Not registered</span>' : ''}<div class="sp-sub" id="spSub_${i}">${salesProdSubHtml(r)}</div></td>`; }
+        oninput="bdProductTyped('${kind}',${i},this.value)"
+        onfocus="bdShowProductSuggestions(${i},this.value,'${kind}')"
+        onblur="setTimeout(()=>bdHideProductSuggestions(${i}),150)"/>${bdUnregCellHtml(kind, r, i)}<div class="sp-sub" id="spSub_${i}">${salesProdSubHtml(r)}</div></td>`; }
       case 'custom': {
         const meta = _sheetMeta(kind)[c.k];
         const val = (r.custom && r.custom[c.k]) || '';
@@ -20304,7 +20362,7 @@ function renderRecordSheet(kind) {
         oninput="${numFn}(${i},'qty',this.value)"/></td>`; }
       case 'total': return `<td style="white-space:nowrap;${hlCss(c)}"><div class="staff-cell ro" id="${kind==='sales'?'sale_total_':'etotal_'}${i}">${staffFmtAmt(r.total)}</div></td>`;
       case 'pay_mode': return `<td style="${hlCss(c)}"><select class="staff-cell" style="font-size:0.75rem;min-width:110px;"
-        onchange="sheetRows('${kind}')[${i}].pay_mode=this.value;sheetRows('${kind}')[${i}]._posted=false">
+        onchange="sheetRows('${kind}')[${i}].pay_mode=this.value;sheetRows('${kind}')[${i}]._posted=false;sheetAutosaveTrigger('${kind}')">
         ${[['cash','Cash'],['transfer','Bank Transfer'],['debitcard','Debit Card'],['creditcard','Credit Card'],['pos','POS'],['cheque','Cheque'],['credit','On Credit']].map(([v,l])=>`<option value="${v}" ${(r.pay_mode||'cash')===v?'selected':''}>${l}</option>`).join('')}
       </select></td>`;
       case 'save': return `<td><button class="staff-save-row-btn" onclick="bdSaveWrap(this,()=>${saveFn}(${i}))" title="Save">&rsaquo;</button></td>`;
@@ -20333,7 +20391,7 @@ function renderRecordSheet(kind) {
       const tail = cols.slice(spanEnd).map(c=>{
         switch(c.t==='c'?'custom':c.k) {
           case 'total': return `<td style="white-space:nowrap;text-align:right;${hlCss(c)}"><div class="staff-cell ro" id="bundleTotal_${kind}_${i}" style="color:var(--gold);font-weight:900;">${staffFmtAmt(bTotal)}</div></td>`;
-          case 'pay_mode': return `<td style="${hlCss(c)}"><select class="staff-cell" style="font-size:0.75rem;min-width:110px;" onchange="sheetRows('${kind}')[${i}].pay_mode=this.value;sheetRows('${kind}')[${i}]._posted=false">
+          case 'pay_mode': return `<td style="${hlCss(c)}"><select class="staff-cell" style="font-size:0.75rem;min-width:110px;" onchange="sheetRows('${kind}')[${i}].pay_mode=this.value;sheetRows('${kind}')[${i}]._posted=false;sheetAutosaveTrigger('${kind}')">
             ${[['cash','Cash'],['transfer','Bank Transfer'],['debitcard','Debit Card'],['creditcard','Credit Card'],['pos','POS'],['cheque','Cheque'],['credit','On Credit']].map(([v,l])=>`<option value="${v}" ${(r.pay_mode||'cash')===v?'selected':''}>${l}</option>`).join('')}
           </select></td>`;
           case 'save': return `<td><button class="staff-save-row-btn" onclick="bdSaveWrap(this,()=>sheetSaveBundle('${kind}',${i}))" title="Save bundle">&rsaquo;</button></td>`;
@@ -20471,13 +20529,13 @@ function renderRecordSheet(kind) {
       <button class="tb-icon" title="Print" onclick="sheetTogglePanel('${kind}','print')">🖨</button>
       <button class="tb-icon" title="Decrease decimals" onclick="sheetDecimals('${kind}',-1)">.0←</button>
       <button class="tb-icon" title="Increase decimals" onclick="sheetDecimals('${kind}',1)">.00→</button>
-      ${isSales ? `<button class="tb-icon" title="Choose which product columns appear in the dropdown" onclick="toggleSalesSuggestSelector()">🎛 Suggestions</button>` : ''}
+      <button class="tb-icon" title="Choose which product columns appear in the dropdown" onclick="toggleSalesSuggestSelector()">🎛 Suggestions</button>
       ${isSales ? `<button class="tb-icon" title="Choose which income accounts from the Master Journal also appear on this sheet" onclick="salesIncomeFilterOpen()">\uD83D\uDCCA Income accounts${salesIncomeChosenCount()?' ('+salesIncomeChosenCount()+' chosen)':''}</button>` : ''}
-      ${isSales ? `<button class="tb-icon" title="Scan a product barcode to add it to this sale" onclick="sheetScanToSell('${kind}')">\uD83D\uDCF7 Scan</button>` : ''}
+      <button class="tb-icon" title="Scan a product barcode to add it to this sheet" onclick="sheetScanToSell('${kind}')">\uD83D\uDCF7 Scan</button>
       
-      ${isSales ? `<label class="tb-icon" title="Generate a receipt for each row" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
+      <label class="tb-icon" title="Generate a receipt for each row" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
         <input type="checkbox" ${st.receipt?'checked':''} onchange="sheetToggleReceipt('${kind}',this.checked)" style="accent-color:var(--gold);"/> Receipt
-      </label>` : ''}
+      </label>
     </div>
 
     <div id="sheetPanel_${kind}" class="sheet-panel hidden"></div>
@@ -21057,7 +21115,7 @@ function scolToggleFilterPopup(kind, col, ev) {
 
 function sheetColMenuOpen(ev, kind, key) {
   openColMenuPortal(ev, [
-    ...((kind==='sales' && key==='product') ? [['\u2611 Assign products', "salesAssignProducts()"]] : []),
+    ...((key==='product') ? [['\u2611 Assign products', "salesAssignProducts()"]] : []),
     ['\u270F\uFE0F Rename Header', "sheetColRename('"+kind+"','"+key+"')"],
     ['+ Insert column left', "sheetColInsert('"+kind+"','"+key+"','left')"],
     ['+ Insert column right', "sheetColInsert('"+kind+"','"+key+"','right')"],
@@ -21329,9 +21387,9 @@ function acDateOpen(ev, el) {
   const base = iso ? new Date(iso + 'T00:00:00') : new Date();
   _acCal = { el, year: base.getFullYear(), month: base.getMonth() };
   const panel = document.createElement('div'); panel.id = 'acDatePanel'; panel.className = 'col-menu';
-  panel.style.cssText = 'position:fixed;z-index:12001;padding:12px;width:270px;top:' + Math.min(r.bottom + 6, window.innerHeight - 360) + 'px;left:' + Math.max(8, Math.min(r.left, window.innerWidth - 286)) + 'px;';
+  panel.style.cssText = 'position:fixed;z-index:12001;padding:12px;width:270px;top:0;left:0;';
   panel.addEventListener('click', e => e.stopPropagation());
-  panel.innerHTML = acCalHtml(); document.body.appendChild(panel);
+  panel.innerHTML = acCalHtml(); document.body.appendChild(panel); calPlacePanel(panel, r); panel._anchor = r;
   setTimeout(() => { _acCalOut = e => { if (!panel.contains(e.target) && !e.target.closest('.ac-date')) acDateClose(); }; document.addEventListener('click', _acCalOut, true); }, 0);
 }
 function acDateClose() {
@@ -21347,11 +21405,13 @@ function acCalHtml() {
   const tr = (7 - ((first + dim) % 7)) % 7; for (let i = 1; i <= tr; i++) cells += '<div class="ps-cal-day ps-cal-out">' + i + '</div>';
   return '<div style="position:relative;margin-bottom:10px;"><button onclick="acDateToggleFmt(event)" class="ps-cal-format-btn"><span>Format: ' + escH(PS_DATE_FORMAT_LABELS[fmt]) + '</span><span>▾</span></button>'
     + '<div id="acFormatMenu" class="ps-cal-format-menu hidden">' + Object.entries(PS_DATE_FORMAT_LABELS).map(([k, l]) => '<div class="ps-cal-format-opt" onclick="acDateSetFmt(\'' + k + '\')">' + l + '</div>').join('') + '</div></div>'
-    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><button onclick="acCalNav(-1)" class="ps-cal-nav">‹</button><span style="font-size:0.78rem;font-weight:700;color:var(--white);">' + PS_MONTH_FULL[month] + ' ' + year + '</span><button onclick="acCalNav(1)" class="ps-cal-nav">›</button></div>'
+    + calMonthYearBar(month, year, 'acCalNav', 'acCalSet')
     + '<div class="ps-cal-grid ps-cal-dow">' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => '<div>' + d + '</div>').join('') + '</div><div class="ps-cal-grid">' + cells + '</div>'
     + '<button onclick="acDatePick(\'\')" class="ps-cal-clear">Clear date</button>';
 }
-function acCalNav(d) { _acCal.month += d; if (_acCal.month < 0) { _acCal.month = 11; _acCal.year--; } if (_acCal.month > 11) { _acCal.month = 0; _acCal.year++; } document.getElementById('acDatePanel').innerHTML = acCalHtml(); }
+function acCalRepaint() { const pn = document.getElementById('acDatePanel'); pn.innerHTML = acCalHtml(); if (pn._anchor) calPlacePanel(pn, pn._anchor); }
+function acCalNav(d) { _acCal.month += d; if (_acCal.month < 0) { _acCal.month = 11; _acCal.year--; } if (_acCal.month > 11) { _acCal.month = 0; _acCal.year++; } acCalRepaint(); }
+function acCalSet(m, y) { if (m != null) _acCal.month = m; if (y != null) _acCal.year = y; acCalRepaint(); }
 function acDateToggleFmt(ev) { ev.stopPropagation(); document.getElementById('acFormatMenu')?.classList.toggle('hidden'); }
 function acDateSetFmt(f) {
   try { localStorage.setItem('bd_ac_datefmt', f); } catch (e) {}
@@ -26051,44 +26111,86 @@ async function salesPayerMenu(i, input) {
 // Product list: which registered products the Product cells offer
 function salesAssignedSet() { const a = _lsJson('bd_sales_prod_assign', null); return Array.isArray(a) && a.length ? new Set(a.map(String)) : null; }
 const SALES_CELL_COL_CHOICES = PS_COL_DEFS.products.map(c => [c.id, c.label]);
-async function salesAssignProducts() {
+// Every Products-page column (built-in and custom, in the Products page's own order) as [id, label].
+function salesPickCols() {
+  const all = SALES_CELL_COL_CHOICES.map(([id, l]) => [id, salesProductLabels[id] || l]).concat((salesProductCustomCols || []).map(c => [c.key, c.name]));
+  const ord = salesProductColOrder || [];
+  return all.map((x, i) => [x, i]).sort((a, b) => { const ia = ord.indexOf(a[0][0]), ib = ord.indexOf(b[0][0]); return (ia < 0 ? 999 + a[1] : ia) - (ib < 0 ? 999 + b[1] : ib); }).map(x => x[0]);
+}
+// Opens at once from what is already loaded, then refreshes the products and the Products-page columns in the background.
+let _paState = null;
+function salesAssignProducts() {
   closeColMenu();
-  try { await bdLoadSalesProductCache(true); } catch (e) {}
-  const asg = salesAssignedSet(), all = salesProductCache;
-  const cc = salesCellCols();
-  const choices = SALES_CELL_COL_CHOICES.concat((salesProductCustomCols || []).map(c => [c.key, c.name]));
-  const cur = id => (cc || []).find(x => (x.id === 'qty_in_stock' ? 'qty' : x.id) === id);
-  const colRow = ([id, label]) => { const c = cur(id), on = !!c, main = !!(c && c.main);
-    return `<div class="sp-colrow" data-id="${escH(id)}" style="display:grid;grid-template-columns:22px 1fr 78px;gap:6px;align-items:center;margin-bottom:4px;font-size:.78rem;">
-      <input type="checkbox" class="sp-on" ${on ? 'checked' : ''} onchange="salesAssignAuto()"/><span>${escH(label)}</span>
-      <select class="sp-role bk-login-input" style="margin:0;padding:3px 6px;font-size:.72rem;" onchange="salesAssignAuto()"><option value="main" ${main ? 'selected' : ''}>Main</option><option value="sub" ${main ? '' : 'selected'}>Sub</option></select></div>`; };
+  document.getElementById('prodAssignDlg')?.remove();
   const o = document.createElement('div'); o.id = 'prodAssignDlg';
   o.style.cssText = 'position:fixed;inset:0;z-index:12500;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;';
-  o.innerHTML = `<div class="pay-edit" style="width:min(480px,100%);max-height:90vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;overflow:auto" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()">
+  o.onclick = () => o.remove();
+  document.body.appendChild(o);
+  const asg = salesAssignedSet();
+  _paState = { asg: asg ? new Set(asg) : null, q: '' };
+  salesAssignRender();
+  (async () => {
+    try { salesProductCacheBizId = undefined; await bdLoadSalesProductCache(true); } catch (e) {}
+    if (document.getElementById('prodAssignDlg')) salesAssignRender();
+  })();
+}
+// Called when the Products page changes its columns, so an open widget follows.
+function salesAssignRefreshOpen() { if (document.getElementById('prodAssignDlg') && document.getElementById('paCols')) salesAssignRender(); }
+function _paCapture() {
+  if (!_paState || !document.getElementById('paList')) return;
+  const boxes = [...document.querySelectorAll('#paList input[type=checkbox]')];
+  if (boxes.length) { const all = new Set(salesProductCache.map(p => String(p.id))); const on = new Set(boxes.filter(c => c.checked).map(c => c.value)); _paState.asg = (on.size === all.size && [...all].every(x => on.has(x))) ? null : on; }
+  const q = document.getElementById('paQ'); if (q) _paState.q = q.value;
+}
+function _paTicked() {
+  const rows = document.querySelectorAll('#paCols .sp-colrow');
+  if (rows.length) return [...rows].filter(r => r.querySelector('.sp-on').checked).map(r => ({ id: r.dataset.id, main: r.querySelector('.sp-role').value === 'main' }));
+  return (salesCellCols() || []).filter(c => c.id !== 'product_name');
+}
+function salesAssignRender() {
+  const o = document.getElementById('prodAssignDlg'); if (!o) return;
+  const tickedNow = document.getElementById('paCols') ? _paTicked() : null;
+  _paCapture();
+  const all = salesProductCache, st = _paState;
+  const choices = salesPickCols();
+  const ticked = tickedNow || (salesCellCols() || []).filter(c => c.id !== 'product_name').map(c => ({ id: c.id === 'qty_in_stock' ? 'qty' : c.id, main: !!c.main }));
+  const cur = id => ticked.find(x => x.id === id);
+  const colRow = ([id, label]) => { const c = cur(id), on = !!c, main = !!(c && c.main), custom = !PS_COL_DEFS.products.some(d => d.id === id);
+    return `<div class="sp-colrow" data-id="${escH(id)}" style="display:grid;grid-template-columns:22px 1fr 78px;gap:6px;align-items:center;margin-bottom:4px;font-size:.78rem;">
+      <input type="checkbox" class="sp-on" ${on ? 'checked' : ''} onchange="salesAssignAuto(true)"/><span>${escH(label)}${custom ? ' <small style="color:var(--muted)">custom</small>' : ''}</span>
+      <select class="sp-role bk-login-input" style="margin:0;padding:3px 6px;font-size:.72rem;" onchange="salesAssignAuto(true)"><option value="main" ${main ? 'selected' : ''}>Main</option><option value="sub" ${main ? '' : 'selected'}>Sub</option></select></div>`; };
+  const lab = Object.fromEntries(choices);
+  const heads = ticked.filter(t => lab[t.id]);
+  const th = 'text-align:left;font-size:.6rem;font-weight:700;color:var(--muted);padding:4px 6px;white-space:nowrap;position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--border);';
+  const rowHtml = p => { const on = !st.asg || st.asg.has(String(p.id));
+    const hay = ((p.product_name || '') + ' ' + heads.map(h => _salesColValue(p, h.id)).join(' ')).toLowerCase();
+    const n = parseFloat(p.qty_in_stock) || 0;
+    return `<tr data-n="${escH(hay)}" style="cursor:pointer;border-bottom:1px solid var(--border)"><td style="padding:3px 6px;white-space:nowrap"><label style="cursor:pointer"><input type="checkbox" value="${p.id}" ${on ? 'checked' : ''} onchange="salesAssignAuto()"/> ${escH(p.product_name || '')}</label></td>`
+      + heads.map(h => { const v = String(_salesColValue(p, h.id) || '').replace(/\n+/g, ' · '); const stock = (h.id === 'qty' || h.id === 'qty_in_stock'); return `<td style="padding:3px 6px;font-size:.72rem;color:var(--off);white-space:nowrap;${stock && n <= 0 ? 'color:var(--red,#e5534b)' : ''}">${escH(v)}</td>`; }).join('') + '</tr>'; };
+  o.innerHTML = `<div class="pay-edit" style="width:min(680px,100%);max-height:90vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;overflow:auto" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()">
     <div class="pay-edit-h" style="font-size:.95rem">Assign products</div>
     <div class="pay-note">The list comes straight from your Products page and updates as stock is sold or added.</div>
-    <label class="su-label" style="margin-top:10px">Show in the Product cell</label>
-    <div class="pay-note" style="margin-bottom:6px">Tick the Products-page columns to show. <b>Main</b> is written in the cell; <b>Sub</b> shows underneath in smaller text. (You can also set this from the Products page, Columns menu.)</div>
+    <label class="su-label" style="margin-top:10px">Products page columns</label>
+    <div class="pay-note" style="margin-bottom:6px">Tick the columns to show in the Product cell. <b>Main</b> is written in the cell; <b>Sub</b> shows underneath in smaller text. New columns on the Products page appear here, and deleted ones disappear.</div>
     <div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:10px">
       <div style="display:grid;grid-template-columns:22px 1fr 78px;gap:6px;font-size:.6rem;color:var(--muted);font-weight:700;margin-bottom:4px"><span></span><span>PRODUCTS PAGE COLUMN</span><span>ROLE</span></div>
       <div style="display:grid;grid-template-columns:22px 1fr 78px;gap:6px;align-items:center;margin-bottom:4px;font-size:.78rem;color:var(--muted)"><input type="checkbox" checked disabled/><span style="color:var(--white)">Product</span><span style="font-size:.72rem;padding-left:6px">Main</span></div>
       <div id="paCols">${choices.map(colRow).join('')}</div>
     </div>
     <label class="su-label">Products offered in the cells</label>
-    <input id="paQ" class="bk-login-input" placeholder="Search products…" oninput="salesAssignFilter()" style="margin:4px 0 8px"/>
+    <input id="paQ" class="bk-login-input" placeholder="Search products…" value="${escH(st.q || '')}" oninput="salesAssignFilter()" style="margin:4px 0 8px"/>
     <div style="display:flex;gap:8px;margin-bottom:6px"><button class="pay-b" onclick="salesAssignAll(true)">Select all</button><button class="pay-b" onclick="salesAssignAll(false)">Clear</button></div>
-    <div id="paList" style="overflow:auto;max-height:240px;min-height:100px;border:1px solid var(--border);border-radius:8px">
-      ${all.length ? all.map(p => { const n = parseFloat(p.qty_in_stock) || 0; const det = salesProdDetailPairs(p).slice(0, 4).join(' · '); const hay = ((p.product_name || '') + ' ' + (p.product_type || '') + ' ' + (p.barcode || '')).toLowerCase(); return `<label class="pay-ent" data-n="${escH(hay)}" style="cursor:pointer;align-items:flex-start"><span style="min-width:0"><input type="checkbox" value="${p.id}" ${!asg || asg.has(String(p.id)) ? 'checked' : ''} onchange="salesAssignAuto()"/> ${escH(p.product_name || '')}${det ? `<div style="font-size:.64rem;color:var(--muted);margin:1px 0 0 22px;white-space:normal">${escH(det)}</div>` : ''}</span><small style="white-space:nowrap;${n > 0 ? '' : 'color:var(--red,#e5534b)'}">${escH(salesProdStock(p))}</small></label>`; }).join('') : '<div class="pay-note" style="padding:12px">No registered products yet. Add them on the Products page.</div>'}
+    <div id="paList" style="overflow:auto;max-height:260px;min-height:100px;border:1px solid var(--border);border-radius:8px">
+      ${all.length ? `<table style="border-collapse:collapse;width:100%"><thead><tr><th style="${th}">PRODUCT</th>${heads.map(h => `<th style="${th}">${escH(String(lab[h.id]).toUpperCase())}</th>`).join('')}</tr></thead><tbody>${all.map(rowHtml).join('')}</tbody></table>` : '<div class="pay-note" style="padding:12px">No registered products yet. Add them on the Products page.</div>'}
     </div>
     <div class="pay-btns"><span id="paMsg" style="margin-right:auto;font-size:.72rem;align-self:center;color:var(--muted)">Changes save automatically</span><button class="pay-b pri" onclick="salesAssignSave()">Done</button></div></div>`;
-  o.onclick = () => o.remove();
-  document.body.appendChild(o);
+  if (st.q) salesAssignFilter();
 }
 function salesAssignFilter() { const q = document.getElementById('paQ').value.trim().toLowerCase(); document.querySelectorAll('#paList [data-n]').forEach(l => { l.style.display = !q || l.dataset.n.includes(q) ? '' : 'none'; }); }
 function salesAssignAll(on) { document.querySelectorAll('#paList input[type=checkbox]').forEach(c => { if (c.closest('[data-n]').style.display !== 'none') c.checked = on; }); salesAssignAuto(); }
-let _saT = null;
-function salesAssignAuto() {
-  clearTimeout(_saT);
+let _saT = null, _saColsChanged = false;
+function salesAssignAuto(colsChanged) {
+  clearTimeout(_saT); _saColsChanged = _saColsChanged || !!colsChanged;
   const m = document.getElementById('paMsg'); if (m) { m.textContent = 'Saving…'; m.style.color = 'var(--muted)'; }
   _saT = setTimeout(salesAssignApply, 350);
 }
@@ -26101,7 +26203,8 @@ function salesAssignApply() {
   const total = document.querySelectorAll('#paList input[type=checkbox]').length;
   try { localStorage.setItem('bd_sales_prod_assign', JSON.stringify(!ids.length || ids.length === total ? [] : ids)); } catch (e) {}
   try { coaCloudPush(true); } catch (e) {}
-  try { renderRecordSheet('sales'); } catch (e) {}
+  try { ['sales', 'expenses'].forEach(k => { if (document.getElementById('sheetTable_' + k)) renderRecordSheet(k); }); } catch (e) {}
+  if (_saColsChanged) { _saColsChanged = false; try { salesAssignRender(); } catch (e) {} }   // the product list's columns follow the ticks
   const m = document.getElementById('paMsg'); if (m) { m.textContent = '✓ Saved'; m.style.color = 'var(--green,#3fb27f)'; }
 }
 function salesAssignSave() {
@@ -26117,32 +26220,85 @@ function bdProductIsRegistered(name) {
   const n = _normProd(name); if (!n) return true;
   return salesProductCache.some(p => _normProd(p.product_name) === n || _normProd(salesProdText(p)) === n);
 }
-function bdNoteUnregistered(row) {
-  if (!row || !row._ptyped || row.product_id || !(row.product || '').trim()) return;
-  if (bdProductIsRegistered(row.product)) return;
-  const o = _lsJson('bd_unreg_products', {}), n = _normProd(row.product);
-  const e = o[n] || { name: row.product.trim(), count: 0, price: 0 };
-  e.count += 1; e.last = row.txn_date || today(); e.price = parseFloat(row.unit_price) || e.price || 0;
-  o[n] = e; try { localStorage.setItem('bd_unreg_products', JSON.stringify(o)); } catch (x) {}
+// The tray on the Products page: names recorded on the Sales / Expenses sheets (typed there, or brought over from the
+// Master Journal) that are not registered yet. Stored as { key: { name, price, last, src: { 'Sales record': n, 'Master Journal': n } } }.
+function _unregDismissed() { return new Set(_lsJson('bd_unreg_dismissed', [])); }
+function bdNoteUnregistered(row) { try { bdScanUnreg(); } catch (e) {} }
+let _unregScanT = null;
+function bdScanUnregSoon() { clearTimeout(_unregScanT); _unregScanT = setTimeout(() => { try { bdScanUnreg(); } catch (e) {} }, 1500); }
+function bdScanUnreg() {
+  if (salesProductCacheBizId === undefined || !Array.isArray(salesProductCache)) return;   // the product list has not loaded yet
+  const dis = _unregDismissed(), seen = {};
+  [['sales', salesRows], ['expenses', staffExpRows]].forEach(([kind, list]) => {
+    (list || []).forEach(r => {
+      const rows = r && r._bundle ? (r.items || []) : [r];
+      rows.forEach(x => {
+        const name = String((x && x.product) || '').trim(); if (!name || x.product_id || !(x.total > 0)) return;
+        const n = _normProd(name); if (dis.has(n) || bdProductIsRegistered(name)) return;
+        const e = seen[n] || (seen[n] = { name, price: 0, last: '', src: {} });
+        const lab = x._ptyped ? (kind === 'sales' ? 'Sales record' : 'Expenses record') : 'Master Journal';
+        e.src[lab] = (e.src[lab] || 0) + 1;
+        if ((x.txn_date || '') >= e.last) { e.last = x.txn_date || e.last; e.price = parseFloat(x.unit_price) || e.price; }
+      });
+    });
+  });
+  const old = _lsJson('bd_unreg_products', {});
+  const next = {};
+  Object.keys(old).forEach(k => { if (!dis.has(k) && !bdProductIsRegistered(old[k].name) && !seen[k] && old[k].src) next[k] = old[k]; });   // entries from other sheets that are not open right now
+  Object.keys(seen).forEach(k => { next[k] = seen[k]; });
+  const js = JSON.stringify(next);
+  if (js !== JSON.stringify(old)) { try { localStorage.setItem('bd_unreg_products', js); } catch (x) {} }
 }
+// The clickable note in a Product cell
+function bdUnregCellHtml(kind, r, i) {
+  const name = String((r && r.product) || '').trim();
+  if (!name || r.product_id || salesProductCacheBizId === undefined || bdProductIsRegistered(name)) return '';
+  if (_unregDismissed().has(_normProd(name))) return '';
+  return `<span class="sm-unreg">Not registered · <a href="#" class="sm-unreg-link" onclick="event.preventDefault();event.stopPropagation();bdRegisterNow('${kind}',${i})">Register now →</a></span>`;
+}
+async function bdRegisterNow(kind, i) {
+  const r = sheetRows(kind)[i]; if (!r) return;
+  try { await sheetAutosave(kind); } catch (e) {}
+  const name = String(r.product || '').trim(); if (!name) return;
+  const o = _lsJson('bd_unreg_products', {}), k = _normProd(name);
+  if (!o[k]) o[k] = { name, price: parseFloat(r.unit_price) || 0, last: r.txn_date || today(), src: { [kind === 'sales' ? 'Sales record' : 'Expenses record']: 1 } };
+  try { localStorage.setItem('bd_unreg_products', JSON.stringify(o)); } catch (e) {}
+  await showProductsPage('products');
+  psRegisterUnreg(k);
+}
+let _unregHidden = false;
+function psUnregToggle() { _unregHidden = !_unregHidden; const b = document.getElementById('psUnregBody'); if (b) b.style.display = _unregHidden ? 'none' : ''; const t = document.getElementById('psUnregTog'); if (t) t.textContent = _unregHidden ? 'Show ▾' : 'Hide ▴'; }
 function psUnregBannerHtml() {
   if (psType === 'services') return '';
-  const o = _lsJson('bd_unreg_products', {}), have = new Set((psRows || []).map(r => _normProd(r.name)));
-  const keys = Object.keys(o).filter(k => !have.has(k));
+  const o = _lsJson('bd_unreg_products', {}), have = new Set((psRows || []).map(r => _normProd(r.name))), dis = _unregDismissed();
+  const keys = Object.keys(o).filter(k => !have.has(k) && !dis.has(k));
   if (!keys.length) return '';
-  return `<div class="ps-unreg"><div style="font-weight:800;margin-bottom:6px">⚠ ${keys.length} product${keys.length === 1 ? '' : 's'} sold but not registered</div>
-    <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px">These were typed on the sales sheet. Register them so stock and cost are tracked.</div>
-    ${keys.map(k => `<div class="ps-unreg-row"><span><b>${escH(o[k].name)}</b> <small>sold ${o[k].count}×${o[k].price ? ' · last price ' + fmt(o[k].price) : ''}</small></span>
-      <span><button class="pay-b pri" onclick="psRegisterUnreg('${escH(escJs(k))}')">Register</button> <button class="pay-b" onclick="psDismissUnreg('${escH(escJs(k))}')">Dismiss</button></span></div>`).join('')}</div>`;
+  const srcTxt = e => { const src = e.src || { 'Sales record': e.count || 1 }; return Object.keys(src).map(l => l + ' · ' + src[l] + (src[l] === 1 ? ' entry' : ' entries')).join(', ') + (e.last ? ' · ' + formatDateDisplay(e.last) : '') + (e.price ? ' · last price ' + fmt(e.price) : ''); };
+  return `<div class="ps-unreg"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:800">⚠ ${keys.length} product${keys.length === 1 ? '' : 's'} sold or recorded but not registered</div><a href="#" id="psUnregTog" onclick="event.preventDefault();psUnregToggle()" style="font-size:.72rem;color:var(--muted)">${_unregHidden ? 'Show ▾' : 'Hide ▴'}</a></div>
+    <div id="psUnregBody" style="${_unregHidden ? 'display:none' : ''}"><div style="font-size:.72rem;color:var(--muted);margin:4px 0 8px">Register adds the name to a new row below. Fill in the rest so stock and cost are tracked.</div>
+    ${keys.map(k => `<div class="ps-unreg-row"><span><b>${escH(o[k].name)}</b><br><small style="color:var(--muted)">${escH(srcTxt(o[k]))}</small></span>
+      <span style="white-space:nowrap"><button class="pay-b pri" onclick="psRegisterUnreg('${escH(escJs(k))}')">Register</button> <button class="pay-b" onclick="psDismissUnreg('${escH(escJs(k))}')">Dismiss</button></span></div>`).join('')}</div></div>`;
 }
-async function psRegisterUnreg(k) {
+function psRegisterUnreg(k) {
   const o = _lsJson('bd_unreg_products', {}), e = o[k]; if (!e) return;
-  const { error } = await bkDb.from('bk_products').insert({ user_id: bkUser.id, business_id: activeBusiness?.id || null, product_name: e.name, price: e.price || 0, cost_price: 0, qty_in_stock: 0, is_service: false, is_active: true, custom: {} });
-  if (error) return bdToast('Could not register: ' + error.message, 'error');
+  if (psType !== 'products') return;
+  psSnapshot();
+  const prevD = (() => { for (let j = psRows.length - 1; j >= 0; j--) if (psRows[j].qty_date) return psRows[j].qty_date; return ''; })();
+  // use the blank bottom row when there is one, otherwise add a new row
+  let row = psRows.find(r => !(r.name || r.id) && !(r.sell_price > 0) && !(r.cost_price > 0));
+  if (!row) { row = { id: null, name: '', barcode: '', product_type: '', cost_price: 0, sell_price: 0, qty: 0, qty_date: prevD, unit: 'unit', income_account: '', created_at: new Date().toISOString(), saved: false }; psRows.push(row); }
+  row.name = e.name; row.sell_price = e.price || 0; row.saved = false; if (!row.qty_date) row.qty_date = prevD;
   delete o[k]; try { localStorage.setItem('bd_unreg_products', JSON.stringify(o)); } catch (x) {}
-  salesProductCacheBizId = undefined; bdToast('Registered'); showProductsPage('products');
+  renderProductsPage(); psAutosaveTrigger();
+  salesProductCacheBizId = undefined;
+  setTimeout(() => { const i = psRows.indexOf(row); const tr = document.querySelectorAll('#psBody tr').item(i); if (tr) { tr.scrollIntoView({ block: 'center', behavior: 'smooth' }); tr.classList.add('ps-row-flash'); setTimeout(() => tr.classList.remove('ps-row-flash'), 2500); const ins = [...tr.querySelectorAll('input')]; const t = ins.find(x => x.value === '' ) || ins[0]; t && t.focus(); } }, 60);
 }
-function psDismissUnreg(k) { const o = _lsJson('bd_unreg_products', {}); delete o[k]; try { localStorage.setItem('bd_unreg_products', JSON.stringify(o)); } catch (x) {} showProductsPage('products'); }
+function psDismissUnreg(k) {
+  const d = [...new Set([...(_lsJson('bd_unreg_dismissed', [])), k])];
+  try { localStorage.setItem('bd_unreg_dismissed', JSON.stringify(d)); } catch (x) {}
+  const o = _lsJson('bd_unreg_products', {}); delete o[k]; try { localStorage.setItem('bd_unreg_products', JSON.stringify(o)); } catch (x) {}
+  renderProductsPage();
+}
 
 // ── Sales sheet: which income accounts from the Master Journal also show on it ──
 // Only the accounts the person ticks are brought over from the Master Journal. The accounts this sheet posts its own
