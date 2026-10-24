@@ -586,6 +586,13 @@ body[data-theme="cloud"] .bd-toast.bd-toast-err{background:#ffffff;border-color:
 .bk-save-msg.ok{color:var(--green);}
 .bk-save-msg.err{color:var(--red);}
 .bk-save-msg.pending{color:var(--gold);}
+.led-save-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;border:1px solid var(--border2);background:var(--surface2);white-space:nowrap;}
+.led-save-badge:empty{display:none;}
+.led-save-badge.ok{border-color:var(--green);}
+.led-save-badge.err{border-color:var(--red);}
+.led-save-badge.pending{border-color:var(--gold);}
+.led-spin{width:10px;height:10px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;animation:ledspin .7s linear infinite;}
+@keyframes ledspin{to{transform:rotate(360deg)}}
 
 /* OPENING BALANCE ROW */
 .ob-row{background:var(--gold-t006);border-bottom:2px solid var(--gold);}
@@ -1150,7 +1157,9 @@ body{padding-top:0;}
 .pay-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
 .pay-b{border:1px solid var(--border);background:transparent;color:var(--white);border-radius:8px;padding:6px 12px;font-weight:700;font-size:.74rem;cursor:pointer}
 .pay-b.pri{background:var(--gold);border-color:var(--gold);color:var(--accent-ink)}
-.sm-unreg{display:block;font-size:.6rem;color:#f59e0b;padding:0 6px 2px}
+.sm-unreg{display:block;font-size:.62rem;color:#f59e0b;padding:0 6px 2px}
+.sm-unreg-link{color:var(--gold);font-weight:700;text-decoration:underline;cursor:pointer}
+.ps-row-flash td{background:var(--gold-t010)!important;transition:background .6s}
 .ps-unreg{margin:8px 16px;padding:12px;border:1px solid #f59e0b66;background:#f59e0b14;border-radius:10px;font-size:.8rem}
 .ps-unreg-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)}
 .jrn-found td{animation:jrnFound 2.6s ease-out;}
@@ -2342,7 +2351,7 @@ td:hover .ps-cell-assign-trigger{opacity:0.55;}
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script defer src="/geo_data.js?v=2"></script>
-<script defer src="/bookkeeping-app.js?v=229"></script>
+<script defer src="/bookkeeping-app.js?v=230"></script>
 <script>
   // Cleans up any lingering service worker from an earlier version of
   // this app. Nothing here registers one anymore, so a worker still
